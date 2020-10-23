@@ -11,3 +11,8 @@ pip install matchms
 pip install streamlit
 ```
   
+## Run app locally
+Enter in terminal:
+```
+streamlit run dummy_app.py
+```
