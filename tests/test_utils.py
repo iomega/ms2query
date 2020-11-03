@@ -1,5 +1,5 @@
 import os
-from .utils import json_loader
+from ms2query.utils import json_loader
 
 
 def test_json_loader_testfile():
