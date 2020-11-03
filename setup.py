@@ -28,6 +28,7 @@ setup(
     test_suite="tests",
     python_requires='>=3.7',
     install_requires=[
+        "matchms",
         "numpy",
     ],
     extras_require={"dev": ["bump2version",
