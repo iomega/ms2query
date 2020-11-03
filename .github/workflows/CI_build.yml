@@ -4,8 +4,10 @@ on:
   push:
   pull_request:
     types: [opened, reopened]
-    
-basic_checks:
+
+jobs:
+
+  basic_checks:
     name: Basic code checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: first_check
