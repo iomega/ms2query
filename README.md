@@ -1,5 +1,5 @@
 # ms2query
-MS2Query - machine learning assisted library querying of MS/MS spectra
+MS2Query - machine learning assisted library querying of MS/MS spectra.
 
 ## Prepare environmnent
 We recommend create Anaconda environment with
