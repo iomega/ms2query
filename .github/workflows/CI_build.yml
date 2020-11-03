@@ -32,3 +32,7 @@ jobs:
       - name: Show pip list
         run: |
           pip list
+      - name: Run unit tests
+        run: |
+          python setup.py test
+
