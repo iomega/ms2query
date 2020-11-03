@@ -34,5 +34,5 @@ jobs:
           pip list
       - name: Run unit tests
         run: |
-          python setup.py test
+          pytest
 
