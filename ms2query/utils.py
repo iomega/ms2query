@@ -1,9 +1,9 @@
+import json
 from matchms.importing.load_from_json import as_spectrum
 
 
-def json_loader(file: str):
-    """
-    
+def json_loader(file):
+    """  
 
     Parameters
     ----------
