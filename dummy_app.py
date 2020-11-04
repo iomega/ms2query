@@ -1,6 +1,6 @@
 #from tempfile import NamedTemporaryFile
 import streamlit as st
-from .utils import json_loader
+from ms2query.utils import json_loader
 
 st.write("""
 # Dummy app to get started
@@ -18,4 +18,3 @@ if uploaded_file is not None:
         
         fig = spectrums[0].plot()
         st.pyplot(fig)
-        

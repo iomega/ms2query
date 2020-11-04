@@ -13,8 +13,8 @@ def json_loader(file):
     spectrums = json.load(file)
     if not isinstance(spectrums, list):
         spectrums = [spectrums]
-    for i in range(len(spectrums)):
-        spectrum = as_spectrum(spectrums[i])
+    for i, spec_i in enumerate(spectrums):
+        spectrum = as_spectrum(spec_i)
         if spectrum is not None:
             spectrums[i] = spectrum
 

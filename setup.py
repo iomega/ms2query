@@ -29,6 +29,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         "matchms",
+        "streamlit",
         "numpy",
     ],
     extras_require={"dev": ["bump2version",
