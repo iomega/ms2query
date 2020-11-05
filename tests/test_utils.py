@@ -8,5 +8,5 @@ def test_json_loader_testfile():
     testfile = os.path.join(path_tests, "testspectrum_query.json")
     spectrums = json_loader(open(testfile))
     assert isinstance(spectrums, list), "Expected output to be list."
-    assert spectrums[0].metadata["spectrum_id"] == "CCMSLIB00000479320"
+    assert spectrums[0].metadata["spectrum_id"] == "CCMSLIB00000001655"
     
