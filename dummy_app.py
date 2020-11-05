@@ -1,22 +1,28 @@
-#from tempfile import NamedTemporaryFile
 import streamlit as st
 from ms2query.utils import json_loader
 
+st.title("Query a Spec2Vec model and plot the results!")
 st.write("""
-# Dummy app to get started
-First goal is simply to plot a spectrum using **matchms**!
+Upload your query and library spectra files in json format.
+Query the library using a Spec2Vec model and inspect the results! 
 """)
 
-uploaded_file = st.file_uploader("Choose a spectrum file...",
-                                 type=['json', 'txt'])
-#temp_file = NamedTemporaryFile(delete=False)
-if uploaded_file is not None:
-    #temp_file.write(uploaded_file.getvalue())
-    if uploaded_file.name.endswith("json"):
-        #spectrums = json.load(uploaded_file)
-        uploaded_file.seek(0) #fix for streamlit issue #2235
-        spectrums = json_loader(uploaded_file)
-        st.write(spectrums[0].metadata)
-        
-        fig = spectrums[0].plot()
+# load query file in sidebar
+query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
+                                      type=['json', 'txt'])
+if query_file is not None:
+    if query_file.name.endswith("json"):
+        query_file.seek(0)  # fix for streamlit issue #2235
+        query_spectrums = json_loader(query_file)
+        st.write("Your query spectrum id: {}".format(
+                query_spectrums[0].metadata.get("spectrum_id")))
+        fig = query_spectrums[0].plot()
         st.pyplot(fig)
+
+# load library file in sidebar
+library_file = st.sidebar.file_uploader("Choose a spectra library file...",
+                                        type=['json', 'txt'])
+if library_file is not None:
+    if library_file.name.endswith("json"):
+        library_file.seek(0)  # fix for streamlit issue #2235
+        library_spectrums = json_loader(library_file)
