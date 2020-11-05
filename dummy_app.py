@@ -7,12 +7,14 @@ st.write("""
 First goal is simply to plot a spectrum using **matchms**!
 """)
 
-uploaded_file = st.file_uploader("Choose a spectrum file...", type=['json', 'txt'])
+uploaded_file = st.file_uploader("Choose a spectrum file...",
+                                 type=['json', 'txt'])
 #temp_file = NamedTemporaryFile(delete=False)
 if uploaded_file is not None:
     #temp_file.write(uploaded_file.getvalue())
     if uploaded_file.name.endswith("json"):
-        #spectrums = json.load(uploaded_file) 
+        #spectrums = json.load(uploaded_file)
+        uploaded_file.seek(0) #fix for streamlit issue #2235
         spectrums = json_loader(uploaded_file)
         st.write(spectrums[0].metadata)
         
