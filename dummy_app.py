@@ -10,6 +10,9 @@ Query the library using a Spec2Vec model and inspect the results!
 # load query file in sidebar
 query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
                                       type=['json', 'txt'])
+query_example = st.sidebar.selectbox("Load a query spectrum example",
+                                     ['testspectrum_query.json'])
+
 if query_file is not None:
     if query_file.name.endswith("json"):
         query_file.seek(0)  # fix for streamlit issue #2235
