@@ -50,3 +50,12 @@ compounds will on average break down into a higher number of meaningful
 fragment peaks we reduce the document size of each spectrum according to its
 parent mass.
 """)
+# todo: we could add some buttons later to make this adjustable
+with st.beta_expander("View processing defaults"):
+    st.markdown("""* normalize peaks (maximum intensity to 1)\n* remove peaks 
+    outside [0, 1000] m/z window\n* remove spectra with < 10 peaks\n* reduce 
+    number of peaks to maximum of 0.5 * parent mass\n* remove peaks with
+    intensities < 0.001 of maximum intensity (unless this brings number of
+    peaks to less than 10)""")
+
+
