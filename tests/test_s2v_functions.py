@@ -1,5 +1,6 @@
 from matchms.Spectrum import Spectrum
-from ms2query.s2v_functions import *
+from ms2query.s2v_functions import set_spec2vec_defaults
+from ms2query.s2v_functions import post_process_s2v
 from ms2query.utils import json_loader
 import os
 

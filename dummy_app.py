@@ -1,6 +1,7 @@
 import streamlit as st
 from ms2query.utils import json_loader
-from ms2query.s2v_functions import *
+from ms2query.s2v_functions import set_spec2vec_defaults
+from ms2query.s2v_functions import post_process_s2v
 import os
 
 st.title("Query a Spec2Vec model and plot the results!")
