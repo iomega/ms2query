@@ -1,5 +1,6 @@
 import streamlit as st
 from ms2query.utils import json_loader
+from ms2query.s2v_functions import post_process_s2v
 import os
 
 st.title("Query a Spec2Vec model and plot the results!")
@@ -9,6 +10,7 @@ Query the library using a Spec2Vec model and inspect the results!
 """)
 
 # load query file in sidebar
+query_spectrums = []  # default so later code doesn't crash
 query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
                                       type=['json', 'txt'])
 # gather default queries
@@ -34,6 +36,7 @@ if query_example or query_file:
     st.pyplot(fig)
 
 # load library file in sidebar
+library_spectrums = []  # default so later code doesn't crash
 library_file = st.sidebar.file_uploader("Choose a spectra library file...",
                                         type=['json', 'txt'])
 if library_file is not None:
@@ -58,4 +61,5 @@ with st.beta_expander("View processing defaults"):
     intensities < 0.001 of maximum intensity (unless this brings number of
     peaks to less than 10)""")
 
-
+query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
+library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
