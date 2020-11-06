@@ -39,8 +39,9 @@ elif query_file is not None:
 if query_example or query_file:
     st.write("Your query spectrum id: {}".format(
         query_spectrums[0].metadata.get("spectrum_id")))
-    fig = query_spectrums[0].plot()
-    st.pyplot(fig)
+    with st.beta_expander("View additional query information"):
+        fig = query_spectrums[0].plot()
+        st.pyplot(fig)
 
 # load library file in sidebar
 library_spectrums = []  # default so later code doesn't crash
@@ -64,7 +65,7 @@ elif library_file is not None:
 
 # write library info
 if library_spectrums:
-    st.write(f"Your library contains {len(library_spectrums)} spectra")
+    st.write(f"Your library contains {len(library_spectrums)} spectra.")
 
 # load a s2v model in sidebar
 model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
