@@ -25,6 +25,7 @@ query_example = st.sidebar.selectbox("Load a query spectrum example",
 
 st.write("## Input information")
 input_warning_placeholder = st.empty()  # input warning for later
+st.write("#### Query spectrum")
 if query_example:
     st.write('You have selected an example query:', query_example)
     query_spectrums = json_loader(open(example_queries_dict[query_example]))
@@ -51,7 +52,7 @@ example_libs_dict = {'testspectrum_library.json': test_library_file}
 example_libs_list = [''] + list(example_libs_dict.keys())  # '' as default
 library_example = st.sidebar.selectbox("Load a library spectrum example",
                                        example_libs_list)
-
+st.write("#### Library spectra")
 if library_example:
     st.write('You have selected an example library:', library_example)
     library_spectrums = json_loader(open(example_libs_dict[library_example]))
@@ -66,14 +67,16 @@ model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
 # todo: make more user friendly, currently there is no standard func to do this
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models
 model_folder = st.sidebar.text_input('Enter folder path:')
+st.write("#### Spec2Vec model")
 if model_file and model_folder:
-    st.write("### Spec2Vec model\nYour selected model:", model_file.name)
+    st.write("Your selected model:", model_file.name)
     model_path = os.path.join(model_folder, model_file.name)
     model = Word2Vec.load(model_path)
 
+# write an input warning
 if not query_spectrums or not library_spectrums or not model_folder:
     input_warning_placeholder.markdown("""<p><span style="color:red">Please
-    upload a query, library and model file</span>.</p>""",
+    upload a query, library and model file in the sidebar</span>.</p>""",
                                        unsafe_allow_html=True)
 
 # processing of query and library spectra
