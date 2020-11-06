@@ -1,3 +1,4 @@
+from gensim.models import Word2Vec
 import streamlit as st
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -84,4 +85,8 @@ library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
 # load a s2v model in sidebar
 model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
                                       type=['.model'])
+# todo: make more user friendly, currently there is no standard func to do this
+model_folder = st.sidebar.text_input('Enter folder path:')
 st.write("## Spec2Vec model\nYour model:", model_file.name)
+model_path = os.path.join(model_folder, model_file.name)
+model = Word2Vec.load(model_path)
