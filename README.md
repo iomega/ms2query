@@ -14,5 +14,5 @@ pip install streamlit
 ## Run app locally
 Enter in terminal:
 ```
-streamlit run dummy_app.py
+streamlit run ms2query_app.py
 ```
