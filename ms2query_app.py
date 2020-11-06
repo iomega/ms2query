@@ -24,6 +24,7 @@ query_example = st.sidebar.selectbox("Load a query spectrum example",
                                      example_queries_list)
 
 st.write("## Input information")
+input_warning_placeholder = st.empty()  # input warning for later
 if query_example:
     st.write('You have selected an example query:', query_example)
     query_spectrums = json_loader(open(example_queries_dict[query_example]))
@@ -69,6 +70,11 @@ if model_file and model_folder:
     st.write("### Spec2Vec model\nYour selected model:", model_file.name)
     model_path = os.path.join(model_folder, model_file.name)
     model = Word2Vec.load(model_path)
+
+if not query_spectrums or not library_spectrums or not model_folder:
+    input_warning_placeholder.markdown("""<p><span style="color:red">Please
+    upload a query, library and model file</span>.</p>""",
+                                       unsafe_allow_html=True)
 
 # processing of query and library spectra
 st.write("""## Post-process spectra
