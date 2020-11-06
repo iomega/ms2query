@@ -4,6 +4,7 @@ from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import post_process_s2v
 import os
+from spec2vec import SpectrumDocument
 
 st.title("Ms2query")
 st.write("""
@@ -101,3 +102,9 @@ with st.beta_expander("View processing defaults"):
 
 query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
 library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
+
+# turn spectra into documents
+documents_query = [SpectrumDocument(spec, n_decimals=2) for spec in
+                   query_spectrums]
+documents_library = [SpectrumDocument(spec, n_decimals=2) for spec in
+                     library_spectrums]

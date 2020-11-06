@@ -31,6 +31,7 @@ setup(
         "matchms",
         "streamlit",
         "numpy",
+        "spec2vec",
     ],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",

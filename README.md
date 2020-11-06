@@ -9,6 +9,7 @@ conda create --name ms2query python=3.7
 conda activate ms2query
 pip install matchms
 pip install streamlit
+pip install spec2vec
 ```
   
 ## Run app locally
