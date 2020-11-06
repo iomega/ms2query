@@ -80,3 +80,8 @@ with st.beta_expander("View processing defaults"):
 
 query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
 library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
+
+# load a s2v model in sidebar
+model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
+                                      type=['.model'])
+st.write("## Spec2Vec model\nYour model:", model_file.name)
