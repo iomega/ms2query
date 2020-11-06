@@ -29,7 +29,7 @@ elif query_file is not None:
 # write query info
 if query_example or query_file:
     st.write("Your query spectrum id: {}".format(
-            query_spectrums[0].metadata.get("spectrum_id")))
+        query_spectrums[0].metadata.get("spectrum_id")))
     fig = query_spectrums[0].plot()
     st.pyplot(fig)
 
@@ -38,11 +38,11 @@ library_file = st.sidebar.file_uploader("Choose a spectra library file...",
                                         type=['json', 'txt'])
 # gather default libraries
 test_library_file = os.path.join(os.path.dirname(__file__), 'tests',
-                               'testspectrum_library.json')
+                                 'testspectrum_library.json')
 example_libs_dict = {'testspectrum_query.json': test_library_file}
 example_libs_list = [''] + list(example_libs_dict.keys())  # '' as default
 library_example = st.sidebar.selectbox("Load a library spectrum example",
-                                     example_libs_list)
+                                       example_libs_list)
 
 if library_example:
     st.write('You have selected an example library:', library_example)
