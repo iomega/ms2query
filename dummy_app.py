@@ -39,7 +39,7 @@ library_file = st.sidebar.file_uploader("Choose a spectra library file...",
 # gather default libraries
 test_library_file = os.path.join(os.path.dirname(__file__), 'tests',
                                  'testspectrum_library.json')
-example_libs_dict = {'testspectrum_query.json': test_library_file}
+example_libs_dict = {'testspectrum_library.json': test_library_file}
 example_libs_list = [''] + list(example_libs_dict.keys())  # '' as default
 library_example = st.sidebar.selectbox("Load a library spectrum example",
                                        example_libs_list)
