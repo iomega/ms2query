@@ -6,9 +6,14 @@ from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
 
 
-def post_process_s2v(spectrum, mz_from=0, mz_to=1000,
-                     n_required=10, ratio_desired=0.5, intensity_from=0.001,
-                     loss_mz_from=5.0, loss_mz_to=200.0):
+def post_process_s2v(spectrum,
+                     mz_from=0,
+                     mz_to=1000,
+                     n_required=10,
+                     ratio_desired=0.5,
+                     intensity_from=0.001,
+                     loss_mz_from=5.0,
+                     loss_mz_to=200.0):
     """Process a spectrum to use it with spec2vec, returns SpectrumDocument
 
     Args:
