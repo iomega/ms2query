@@ -1,6 +1,6 @@
 import streamlit as st
 from ms2query.utils import json_loader
-from ms2query.s2v_functions import post_process_s2v
+from ms2query.s2v_functions import *
 import os
 
 st.title("Query a Spec2Vec model and plot the results!")
@@ -54,12 +54,15 @@ fragment peaks we reduce the document size of each spectrum according to its
 parent mass.
 """)
 # todo: we could add some buttons later to make this adjustable
+settings = set_spec2vec_defaults()
 with st.beta_expander("View processing defaults"):
-    st.markdown("""* normalize peaks (maximum intensity to 1)\n* remove peaks 
-    outside [0, 1000] m/z window\n* remove spectra with < 10 peaks\n* reduce 
-    number of peaks to maximum of 0.5 * parent mass\n* remove peaks with
-    intensities < 0.001 of maximum intensity (unless this brings number of
-    peaks to less than 10)""")
+    st.markdown(f"""* normalize peaks (maximum intensity to 1)\n* remove peaks 
+    outside [{settings["mz_from"]}, {settings["mz_to"]}] m/z window\n* remove
+    spectra with < {settings["n_required"]} peaks\n* reduce number of peaks to
+    maximum of {settings["ratio_desired"]} * parent mass\n* remove peaks with
+    intensities < {settings["intensity_from"]} of maximum intensity (unless
+    this brings number of peaks to less than 10)\n* add losses between m/z
+    value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
 query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
 library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
