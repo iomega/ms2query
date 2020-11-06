@@ -36,6 +36,7 @@ def post_process_s2v(spectrum,
     loss_mz_to: float, optional
         Maximum allowed m/z value for losses. Default: 200.0
     """
+    # pylint: disable=too-many-arguments
     spectrum = normalize_intensities(spectrum)
     spectrum = select_by_mz(spectrum, mz_from=mz_from, mz_to=mz_to)
     spectrum = require_minimum_number_of_peaks(spectrum,
