@@ -62,6 +62,10 @@ elif library_file is not None:
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
 
+# write library info
+if library_spectrums:
+    st.write(f"Your library contains {len(library_spectrums)} spectra")
+
 # load a s2v model in sidebar
 model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
                                       type=['.model'])
