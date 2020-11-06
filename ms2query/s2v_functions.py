@@ -14,11 +14,11 @@ def post_process_s2v(spectrum,
                      intensity_from=0.001,
                      loss_mz_from=5.0,
                      loss_mz_to=200.0):
-    """Process a spectrum to use it with spec2vec, returns SpectrumDocument
+    """Returns a processed matchms.Spectrum.Spectrum
 
     Args:
     ----------
-    spectrum: SpectrumDocument
+    spectrum: matchms.Spectrum.Spectrum
         Spectrum to process
     mz_from: float, optional
         Set lower threshold for m/z peak positions. Default: 0
