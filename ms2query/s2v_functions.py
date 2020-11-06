@@ -40,10 +40,10 @@ def post_process_s2v(spectrum, mz_from=0, mz_to=1000,
     if spectrum is None:
         return None
     s_remove_low_peaks = select_by_relative_intensity(spectrum,
-                                                      intensity_from=
-                                                      intensity_from)
+                                                intensity_from=intensity_from)
     if len(s_remove_low_peaks.peaks) >= 10:
         spectrum = s_remove_low_peaks
 
-    spectrum = add_losses(spectrum, loss_mz_from=loss_mz_from, loss_mz_to=loss_mz_to)
+    spectrum = add_losses(spectrum, loss_mz_from=loss_mz_from,
+                          loss_mz_to=loss_mz_to)
     return spectrum
