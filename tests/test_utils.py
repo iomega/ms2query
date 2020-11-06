@@ -5,8 +5,8 @@ from ms2query.utils import json_loader
 def test_json_loader_testfile():
     """Test creating spectrum(s) from test json file."""
     path_tests = os.path.dirname(__file__)
-    testfile = os.path.join(path_tests, "testspectrum.json")
+    testfile = os.path.join(path_tests, "testspectrum_query.json")
     spectrums = json_loader(open(testfile))
     assert isinstance(spectrums, list), "Expected output to be list."
-    assert spectrums[0].metadata["spectrum_id"] == "CCMSLIB00000479320"
+    assert spectrums[0].metadata["spectrum_id"] == "CCMSLIB00000001655"
     
