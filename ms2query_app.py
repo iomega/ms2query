@@ -4,9 +4,9 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import post_process_s2v
 import os
 
-st.title("Query a Spec2Vec model and plot the results!")
+st.title("Ms2query")
 st.write("""
-Upload your query and library spectra files in json format.
+Upload your query and library spectra files in json format in the sidebar.
 Query the library using a Spec2Vec model and inspect the results! 
 """)
 
@@ -18,9 +18,11 @@ query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
 test_query_file = os.path.join(os.path.dirname(__file__), 'tests',
                                'testspectrum_query.json')
 example_queries_dict = {'testspectrum_query.json': test_query_file}
-example_queries_list = [''] + list(example_queries_dict.keys())  # '' as default
+example_queries_list = [''] + list(example_queries_dict.keys())
 query_example = st.sidebar.selectbox("Load a query spectrum example",
                                      example_queries_list)
+
+st.write("## Input information")
 if query_example:
     st.write('You have selected an example query:', query_example)
     query_spectrums = json_loader(open(example_queries_dict[query_example]))
