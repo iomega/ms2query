@@ -40,3 +40,13 @@ if library_file is not None:
     if library_file.name.endswith("json"):
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
+
+# processing of query and library spectra
+st.write("""## Post-process spectra
+Spec2Vec similarity scores rely on creating a document vector for each
+spectrum. For the underlying word2vec model we want the documents (=spectra) to
+be more homogeneous in their number of unique words. Assuming that larger
+compounds will on average break down into a higher number of meaningful
+fragment peaks we reduce the document size of each spectrum according to its
+parent mass.
+""")
