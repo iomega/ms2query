@@ -36,8 +36,21 @@ def post_process_s2v(spectrum, **settings):
     ----------
     spectrum: matchms.Spectrum.Spectrum
         Spectrum to process
-    **settings: optional dict
-        Change default settings
+    mz_from
+        Set lower threshold for m/z peak positions. Default is 0.0.
+    mz_to
+        Set upper threshold for m/z peak positions. Default is 1000.0.
+    n_required
+        Number of minimal required peaks for a spectrum to be considered.
+    ratio_desired
+        Number of minimum required peaks. Spectra with fewer peaks will be set
+        to 'None'. Default is 1.
+    intensity_from
+        Set lower threshold for peak intensity. Default is 10.0.
+    loss_mz_from
+        Minimum allowed m/z value for losses. Default is 0.0.
+    loss_mz_to
+        Maximum allowed m/z value for losses. Default is 1000.0.
     """
     settings = set_spec2vec_defaults(**settings)
     spectrum = normalize_intensities(spectrum)
