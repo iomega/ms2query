@@ -59,6 +59,17 @@ elif library_file is not None:
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
 
+# load a s2v model in sidebar
+model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
+                                      type=['.model'])
+# todo: make more user friendly, currently there is no standard func to do this
+# for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models
+model_folder = st.sidebar.text_input('Enter folder path:')
+if model_file and model_folder:
+    st.write("### Spec2Vec model\nYour selected model:", model_file.name)
+    model_path = os.path.join(model_folder, model_file.name)
+    model = Word2Vec.load(model_path)
+
 # processing of query and library spectra
 st.write("""## Post-process spectra
 Spec2Vec similarity scores rely on creating a document vector for each
@@ -81,12 +92,3 @@ with st.beta_expander("View processing defaults"):
 
 query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
 library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
-
-# load a s2v model in sidebar
-model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
-                                      type=['.model'])
-# todo: make more user friendly, currently there is no standard func to do this
-model_folder = st.sidebar.text_input('Enter folder path:')
-st.write("## Spec2Vec model\nYour model:", model_file.name)
-model_path = os.path.join(model_folder, model_file.name)
-model = Word2Vec.load(model_path)
