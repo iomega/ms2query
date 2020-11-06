@@ -1,5 +1,6 @@
 import streamlit as st
 from ms2query.utils import json_loader
+from ms2query.s2v_functions import post_process_s2v
 import os
 
 st.title("Query a Spec2Vec model and plot the results!")
@@ -9,6 +10,7 @@ Query the library using a Spec2Vec model and inspect the results!
 """)
 
 # load query file in sidebar
+query_spectrums = []  # default so later code doesn't crash
 query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
                                       type=['json', 'txt'])
 # gather default queries
@@ -34,6 +36,7 @@ if query_example or query_file:
     st.pyplot(fig)
 
 # load library file in sidebar
+library_spectrums = []  # default so later code doesn't crash
 library_file = st.sidebar.file_uploader("Choose a spectra library file...",
                                         type=['json', 'txt'])
 # gather default libraries
@@ -51,3 +54,23 @@ elif library_file is not None:
     if library_file.name.endswith("json"):
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
+
+# processing of query and library spectra
+st.write("""## Post-process spectra
+Spec2Vec similarity scores rely on creating a document vector for each
+spectrum. For the underlying word2vec model we want the documents (=spectra) to
+be more homogeneous in their number of unique words. Assuming that larger
+compounds will on average break down into a higher number of meaningful
+fragment peaks we reduce the document size of each spectrum according to its
+parent mass.
+""")
+# todo: we could add some buttons later to make this adjustable
+with st.beta_expander("View processing defaults"):
+    st.markdown("""* normalize peaks (maximum intensity to 1)\n* remove peaks 
+    outside [0, 1000] m/z window\n* remove spectra with < 10 peaks\n* reduce 
+    number of peaks to maximum of 0.5 * parent mass\n* remove peaks with
+    intensities < 0.001 of maximum intensity (unless this brings number of
+    peaks to less than 10)""")
+
+query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
+library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
