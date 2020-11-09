@@ -1,7 +1,8 @@
+from gensim.models import Word2Vec
 import streamlit as st
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
-from ms2query.s2v_functions import post_process_s2v
+from ms2query.s2v_functions import process_spectrums
 import os
 
 st.title("Ms2query")
@@ -23,6 +24,8 @@ query_example = st.sidebar.selectbox("Load a query spectrum example",
                                      example_queries_list)
 
 st.write("## Input information")
+input_warning_placeholder = st.empty()  # input warning for later
+st.write("#### Query spectrum")
 if query_example:
     st.write('You have selected an example query:', query_example)
     query_spectrums = json_loader(open(example_queries_dict[query_example]))
@@ -35,8 +38,9 @@ elif query_file is not None:
 if query_example or query_file:
     st.write("Your query spectrum id: {}".format(
         query_spectrums[0].metadata.get("spectrum_id")))
-    fig = query_spectrums[0].plot()
-    st.pyplot(fig)
+    with st.beta_expander("View additional query information"):
+        fig = query_spectrums[0].plot()
+        st.pyplot(fig)
 
 # load library file in sidebar
 library_spectrums = []  # default so later code doesn't crash
@@ -49,7 +53,7 @@ example_libs_dict = {'testspectrum_library.json': test_library_file}
 example_libs_list = [''] + list(example_libs_dict.keys())  # '' as default
 library_example = st.sidebar.selectbox("Load a library spectrum example",
                                        example_libs_list)
-
+st.write("#### Library spectra")
 if library_example:
     st.write('You have selected an example library:', library_example)
     library_spectrums = json_loader(open(example_libs_dict[library_example]))
@@ -58,7 +62,30 @@ elif library_file is not None:
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
 
-# processing of query and library spectra
+# write library info
+if library_spectrums:
+    st.write(f"Your library contains {len(library_spectrums)} spectra.")
+
+# load a s2v model in sidebar
+# todo: make more user friendly, currently there is no standard func to do this
+# for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
+model_file = st.sidebar.text_input("Enter filename of Spec2Vec model (with path):")
+st.write("#### Spec2Vec model")
+if model_file:
+    if model_file.endswith(".model"):
+        st.write("Your selected model:", os.path.split(model_file)[-1])
+        model = Word2Vec.load(model_file)
+    else:
+        st.write("""<p><span style="color:red">Model file extension should be
+        .model, please try again.</span></p>""", unsafe_allow_html=True)
+
+# write an input warning
+if not query_spectrums or not library_spectrums or not model_file:
+    input_warning_placeholder.markdown("""<p><span style="color:red">Please
+    upload a query, library and model file in the sidebar.</span></p>""",
+                                       unsafe_allow_html=True)
+
+# processing of query and library spectra into SpectrumDocuments
 st.write("""## Post-process spectra
 Spec2Vec similarity scores rely on creating a document vector for each
 spectrum. For the underlying word2vec model we want the documents (=spectra) to
@@ -78,5 +105,5 @@ with st.beta_expander("View processing defaults"):
     this brings number of peaks to less than 10)\n* add losses between m/z
     value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
-library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
+documents_query = process_spectrums(query_spectrums, **settings)
+documents_library = process_spectrums(library_spectrums, **settings)
