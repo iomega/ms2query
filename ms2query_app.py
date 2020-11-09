@@ -4,6 +4,7 @@ from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 import os
+import pandas as pd
 
 st.title("Ms2query")
 st.write("""
@@ -107,3 +108,13 @@ with st.beta_expander("View processing defaults"):
 
 documents_query = process_spectrums(query_spectrums, **settings)
 documents_library = process_spectrums(library_spectrums, **settings)
+
+# do library matching
+# for now load example as library matching function isn't there yet
+path_dir = os.path.dirname(__file__)
+test_found_matches_file = os.path.join(path_dir, "tests",
+                                       "test_found_matches.csv")
+test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
+st.write("## Library matching")
+st.write("Library matches for test query:")
+st.dataframe(test_found_matches)
