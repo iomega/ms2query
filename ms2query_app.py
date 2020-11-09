@@ -77,12 +77,12 @@ if model_file:
         model = Word2Vec.load(model_file)
     else:
         st.write("""<p><span style="color:red">Model file extension should be
-        .model, please try again.</span>.</p>""", unsafe_allow_html=True)
+        .model, please try again.</span></p>""", unsafe_allow_html=True)
 
 # write an input warning
 if not query_spectrums or not library_spectrums or not model_file:
     input_warning_placeholder.markdown("""<p><span style="color:red">Please
-    upload a query, library and model file in the sidebar</span>.</p>""",
+    upload a query, library and model file in the sidebar.</span></p>""",
                                        unsafe_allow_html=True)
 
 # processing of query and library spectra into SpectrumDocuments
