@@ -32,6 +32,6 @@ def test_add_library_connections():
     test_network_lib_connect = add_library_connections(test_network,
                                                        test_sim_matrix,
                                                        test_matches.index)
-    assert test_network_lib_connect[test_matches.iloc[0].index,
-                                    test_matches.iloc[1].index],\
+    assert test_network_lib_connect[test_matches.iloc[0].name,
+                                    test_matches.iloc[1].name],\
         "Expected an edge between these library hits"
