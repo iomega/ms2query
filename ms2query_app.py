@@ -2,9 +2,8 @@ from gensim.models import Word2Vec
 import streamlit as st
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
-from ms2query.s2v_functions import post_process_s2v
+from ms2query.s2v_functions import process_spectrums
 import os
-from spec2vec import SpectrumDocument
 
 st.title("Ms2query")
 st.write("""
@@ -85,7 +84,7 @@ if not query_spectrums or not library_spectrums or not model_folder:
     upload a query, library and model file in the sidebar</span>.</p>""",
                                        unsafe_allow_html=True)
 
-# processing of query and library spectra
+# processing of query and library spectra into SpectrumDocuments
 st.write("""## Post-process spectra
 Spec2Vec similarity scores rely on creating a document vector for each
 spectrum. For the underlying word2vec model we want the documents (=spectra) to
@@ -105,11 +104,5 @@ with st.beta_expander("View processing defaults"):
     this brings number of peaks to less than 10)\n* add losses between m/z
     value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
-library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
-
-# turn spectra into documents
-documents_query = [SpectrumDocument(spec, n_decimals=2) for spec in
-                   query_spectrums]
-documents_library = [SpectrumDocument(spec, n_decimals=2) for spec in
-                     library_spectrums]
+documents_query = process_spectrums(query_spectrums, **settings)
+documents_library = process_spectrums(library_spectrums, **settings)

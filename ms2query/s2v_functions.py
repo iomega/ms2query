@@ -4,6 +4,7 @@ from matchms.filtering import select_by_mz
 from matchms.filtering import select_by_relative_intensity
 from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
+from spec2vec import SpectrumDocument
 
 
 def set_spec2vec_defaults(**settings):
@@ -74,3 +75,32 @@ def post_process_s2v(spectrum, **settings):
     spectrum = add_losses(spectrum, loss_mz_from=settings["loss_mz_from"],
                           loss_mz_to=settings["loss_mz_to"])
     return spectrum
+
+
+def process_spectrums(spectrums, **settings):
+    """Returns list of post-processed SpectrumDocuments from input spectrums
+
+    Args:
+    ----------
+    spectrums: list of matchms.Spectrum.Spectrum
+        Input spectra
+    mz_from
+        Set lower threshold for m/z peak positions. Default is 0.0.
+    mz_to
+        Set upper threshold for m/z peak positions. Default is 1000.0.
+    n_required
+        Number of minimal required peaks for a spectrum to be considered.
+    ratio_desired
+        Number of minimum required peaks. Spectra with fewer peaks will be set
+        to 'None'. Default is 1.
+    intensity_from
+        Set lower threshold for peak intensity. Default is 10.0.
+    loss_mz_from
+        Minimum allowed m/z value for losses. Default is 0.0.
+    loss_mz_to
+        Maximum allowed m/z value for losses. Default is 1000.0.
+    """
+    spectrums = [post_process_s2v(spec, **settings) for spec in spectrums]
+    documents = [SpectrumDocument(spec, n_decimals=2) for spec in spectrums]
+
+    return documents
