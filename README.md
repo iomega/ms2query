@@ -10,6 +10,7 @@ conda activate ms2query
 pip install matchms
 pip install streamlit
 pip install spec2vec
+pip install networkx
 ```
   
 ## Run app locally
