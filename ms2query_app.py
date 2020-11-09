@@ -69,7 +69,7 @@ if library_spectrums:
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
-model_file = st.sidebar.text_input("Enter path to Spec2Vec .model file:")
+model_file = st.sidebar.text_input("Enter filename of Spec2Vec model (with path):")
 st.write("#### Spec2Vec model")
 if model_file:
     if model_file.endswith(".model"):
