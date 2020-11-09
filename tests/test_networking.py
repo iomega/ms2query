@@ -13,9 +13,9 @@ def test_matches2network():
     query_name = "query"
     test_network = matches2network(query_name, test_matches)
     assert isinstance(test_network, Graph), "Expected output to be nx.Graph"
-    assert query_name in test_network.nodes,\
+    assert query_name in test_network.nodes, \
         "Expected query_id to be in the Graph"
-    assert test_network.number_of_edges() == test_matches.shape[0],\
+    assert test_network.number_of_edges() == test_matches.shape[0], \
         "Expected number of edges to be equal to amount of library matches"
 
 
@@ -32,6 +32,6 @@ def test_add_library_connections():
     test_network_lib_connect = add_library_connections(test_network,
                                                        test_sim_matrix,
                                                        test_matches.index)
-    assert test_network_lib_connect[test_matches.iloc[0].name,
-                                    test_matches.iloc[1].name],\
-        "Expected an edge between these library hits"
+    assert isinstance([test_matches.iloc[0].name][
+        test_matches.iloc[1].name]["tanimoto"], float), \
+        "Expected an edge with tanimoto score between these library hits"
