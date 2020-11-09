@@ -67,19 +67,20 @@ if library_spectrums:
     st.write(f"Your library contains {len(library_spectrums)} spectra.")
 
 # load a s2v model in sidebar
-model_file = st.sidebar.file_uploader("Choose a Spec2Vec model...",
-                                      type=['.model'])
 # todo: make more user friendly, currently there is no standard func to do this
-# for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models
-model_folder = st.sidebar.text_input('Enter folder path:')
+# for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
+model_file = st.sidebar.text_input("Enter path to Spec2Vec .model file:")
 st.write("#### Spec2Vec model")
-if model_file and model_folder:
-    st.write("Your selected model:", model_file.name)
-    model_path = os.path.join(model_folder, model_file.name)
-    model = Word2Vec.load(model_path)
+if model_file:
+    if model_file.endswith(".model"):
+        st.write("Your selected model:", os.path.split(model_file)[-1])
+        model = Word2Vec.load(model_file)
+    else:
+        st.write("""<p><span style="color:red">Model file extension should be
+        .model, please try again.</span>.</p>""", unsafe_allow_html=True)
 
 # write an input warning
-if not query_spectrums or not library_spectrums or not model_folder:
+if not query_spectrums or not library_spectrums or not model_file:
     input_warning_placeholder.markdown("""<p><span style="color:red">Please
     upload a query, library and model file in the sidebar</span>.</p>""",
                                        unsafe_allow_html=True)
