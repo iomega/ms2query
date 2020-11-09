@@ -4,6 +4,7 @@ from matchms.filtering import select_by_mz
 from matchms.filtering import select_by_relative_intensity
 from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
+from spec2vec import SpectrumDocument
 
 
 def set_spec2vec_defaults(**settings):

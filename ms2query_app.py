@@ -3,7 +3,6 @@ from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import post_process_s2v
 import os
-from spec2vec import SpectrumDocument
 
 st.title("Ms2query")
 st.write("""
