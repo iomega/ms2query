@@ -35,5 +35,5 @@ def test_process_spectrums():
     assert isinstance(documents, list), "Expected output to be list."
     assert isinstance(documents[0], SpectrumDocument),\
         "Expected output to be SpectrumDocument."
-    assert documents[0].metadata["spectrum_id"] == spectrums[0]\
+    assert documents[0]._obj.get("spectrum_id") == spectrums[0]\
         .metadata["spectrum_id"]
