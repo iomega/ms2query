@@ -1,5 +1,6 @@
 import networkx as nx
 # from networkx.drawing.nx_pydot import graphviz_layout
+import numpy as np
 
 
 def matches2network(query_id, matches):
