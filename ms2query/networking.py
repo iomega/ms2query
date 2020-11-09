@@ -3,7 +3,7 @@ import networkx as nx
 
 
 def matches2network(query_id, matches):
-    """Return a networkx graph connecting query_id to all matches
+    """Return a networkx Graph connecting query_id to all matches
 
     Args:
     ----------
@@ -23,5 +23,29 @@ def matches2network(query_id, matches):
     edge_list = []
     for lib_id in lib_ids:
         edge_list.append((query_id, lib_id, att_dicts[lib_id]))
+    graph.add_edges_from(edge_list)
+    return graph
+
+
+def add_library_connections(graph, similarity_matrix, lib_ids):
+    """Add Tanimoto similarity as edges between all library matches in graph
+
+    Args:
+    ----------
+    graph: networkx Graph
+        Initialised graph which contains lib_ids as nodes
+    similarity_matrix: pd.DataFrame
+        All vs all matrix of Tanimoto similarity between library matches
+    lib_ids: list of hashable
+        IDs of the items in the matrix
+
+    Assumes that lib_ids names correspond in order to similarity_matrix
+    rows/columns
+    """
+    matrix = np.array(similarity_matrix)
+    edge_list = []
+    for i, id_i in enumerate(lib_ids[:-1]):
+        for j, id_j in enumerate(lib_ids[i + 1:]):
+            edge_list.append((id_i, id_j, {'tanimoto': matrix[i, j + i + 1]}))
     graph.add_edges_from(edge_list)
     return graph
