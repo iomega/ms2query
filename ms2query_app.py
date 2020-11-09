@@ -1,7 +1,7 @@
 import streamlit as st
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
-from ms2query.s2v_functions import post_process_s2v
+from ms2query.s2v_functions import process_spectrums
 import os
 
 st.title("Ms2query")
@@ -78,5 +78,5 @@ with st.beta_expander("View processing defaults"):
     this brings number of peaks to less than 10)\n* add losses between m/z
     value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-documents_query = process_spectrums(query_spectrums, settings)
-documents_library = process_spectrums(library_spectrums, settings)
+documents_query = process_spectrums(query_spectrums, **settings)
+documents_library = process_spectrums(library_spectrums, **settings)
