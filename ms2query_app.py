@@ -58,7 +58,7 @@ elif library_file is not None:
         library_file.seek(0)  # fix for streamlit issue #2235
         library_spectrums = json_loader(library_file)
 
-# processing of query and library spectra
+# processing of query and library spectra into SpectrumDocuments
 st.write("""## Post-process spectra
 Spec2Vec similarity scores rely on creating a document vector for each
 spectrum. For the underlying word2vec model we want the documents (=spectra) to
@@ -78,11 +78,5 @@ with st.beta_expander("View processing defaults"):
     this brings number of peaks to less than 10)\n* add losses between m/z
     value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-query_spectrums = [post_process_s2v(spec) for spec in query_spectrums]
-library_spectrums = [post_process_s2v(spec) for spec in library_spectrums]
-
-# turn spectra into documents
-documents_query = [SpectrumDocument(spec, n_decimals=2) for spec in
-                   query_spectrums]
-documents_library = [SpectrumDocument(spec, n_decimals=2) for spec in
-                     library_spectrums]
+documents_query = process_spectrums(query_spectrums, settings)
+documents_library = process_spectrums(library_spectrums, settings)
