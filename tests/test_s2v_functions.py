@@ -59,7 +59,10 @@ def test_library_matching():
                                           allowed_missing_percentage=100,
                                           presearch_based_on=[
                                               f"spec2vec-top{lib_length}"])
-    assert isinstance(test_found_matches, pd.DataFrame),\
+    assert isinstance(test_found_matches, list), "Expected output to be list"
+    assert len(test_found_matches) == len(documents_q),\
+        "Expected output for amount of query"
+    assert isinstance(test_found_matches[0], pd.DataFrame),\
         "Expected output to be DataFrame"
-    assert test_found_matches.shape[0] == lib_length,\
+    assert test_found_matches[0].shape[0] == lib_length,\
         "Expected number of matches to be number of library documents"
