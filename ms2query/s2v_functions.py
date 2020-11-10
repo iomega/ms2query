@@ -114,9 +114,11 @@ def process_spectrums(spectrums, **settings):
 def library_matching(documents_query: List[SpectrumDocument],
                      documents_library: List[SpectrumDocument],
                      model,
-                     presearch_based_on=["parentmass", "spec2vec-top10"],
+                     presearch_based_on: List[str] = ("parentmass",
+                                                      "spec2vec-top10"),
                      ignore_non_annotated: bool = True,
-                     include_scores=["spec2vec", "cosine", "modcosine"],
+                     include_scores: List[str] = ("spec2vec", "cosine",
+                                                  "modcosine"),
                      intensity_weighting_power: float = 0.5,
                      allowed_missing_percentage: float = 0,
                      cosine_tol: float = 0.005,
@@ -137,16 +139,28 @@ def library_matching(documents_query: List[SpectrumDocument],
         List containing all library spectrum documents.
     model:
         Pretrained word2Vec model.
-    top_n: int, optional
-        Number of entries witht the top_n highest Spec2Vec scores to keep as
-        found matches. Default = 10.
+    presearch_based_on: list, optional
+        What to select candidates on. Options are now: parentmass,
+        spec2vec-topX where X can be any number. Default = ("parentmass",
+        "spec2vec-top10")
     ignore_non_annotated: bool, optional
         If True, only annotated spectra will be considered for matching.
         Default = True.
+    include_scores: list, optional
+        Scores to include in output. Default = ("spec2vec", "cosine",
+        "modcosine")
+    intensity_weighting_power: float, optional
+        Spectrum vectors are a weighted sum of the word vectors. The given word
+        intensities will be raised to the given power. Default = 0.5.
+    allowed_missing_percentage: float, optional
+        Set the maximum allowed percentage of the document that may be missing
+        from the input model. This is measured as percentage of the weighted,
+        missing words compared to all word vectors of the document. Default = 0
+        which means no missing words are allowed.
     cosine_tol: float, optional
         Set tolerance for the cosine and modified cosine score. Default = 0.005
-    mass_tolerance
-        Specify tolerance for a parentmass match.
+    mass_tolerance: float, optional
+        Specify tolerance for a parentmass match. Default = 1.
     """
 
     # Initializations
