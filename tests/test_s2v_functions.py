@@ -54,7 +54,7 @@ def test_library_matching():
     test_model_file = os.path.join(path_tests,
                                    "testspectrum_library_model.model")
     test_model = Word2Vec.load(test_model_file)
-    lib_length = len(documents_q)
+    lib_length = len(documents_l)
     test_found_matches = library_matching(documents_q, documents_l, test_model,
                                           allowed_missing_percentage=100,
                                           presearch_based_on=[
