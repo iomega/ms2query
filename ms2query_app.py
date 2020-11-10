@@ -5,6 +5,7 @@ from gensim.models import Word2Vec
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
+from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 
 
@@ -120,6 +121,16 @@ test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
 st.write("## Library matching")
 st.write("Library matches for test query:")
 st.dataframe(test_found_matches)
+
+# test library matching function
+st.write("## Testing library matching")
+test_model = Word2Vec.load(os.path.join(path_dir, "tests",
+                                        "testspectrum_library_model.model"))
+found_matches = library_matching(documents_query, documents_library,
+                                 test_model, allowed_missing_percentage=100,
+                                 presearch_based_on=[
+                                     f"spec2vec-top{len(documents_library)}"])
+st.write(found_matches)
 
 # do networking
 # for now load example similarity matrix
