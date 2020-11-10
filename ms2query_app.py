@@ -1,11 +1,12 @@
-from gensim.models import Word2Vec
+import os
+import pandas as pd
 import streamlit as st
+from gensim.models import Word2Vec
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.networking import do_networking
-import os
-import pandas as pd
+
 
 st.title("Ms2query")
 st.write("""
