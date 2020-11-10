@@ -193,10 +193,9 @@ def library_matching(documents_query: List[SpectrumDocument],
             [x.split("top")[1] for x in presearch_based_on if "spec2vec" in x][
                 0])
         print("Pre-selection includes spec2vec top {}.".format(top_n))
-        spec2vec = Spec2Vec(model=model, intensity_weighting_power=
-                            intensity_weighting_power,
-                            allowed_missing_percentage=
-                            allowed_missing_percentage)
+        spec2vec = Spec2Vec(
+            model=model, intensity_weighting_power=intensity_weighting_power,
+            allowed_missing_percentage=allowed_missing_percentage)
         m_spec2vec_similarities = spec2vec.matrix(
             [documents_library[i] for i in library_ids],
             documents_query)
@@ -264,11 +263,10 @@ def library_matching(documents_query: List[SpectrumDocument],
                 matches_df["s2v_score"] = m_spec2vec_similarities[
                     all_match_ids, i]
             elif "spec2vec" in include_scores:
-                spec2vec_similarity = Spec2Vec(model=model,
-                                               intensity_weighting_power=
-                                               intensity_weighting_power,
-                                               allowed_missing_percentage=
-                                               allowed_missing_percentage)
+                spec2vec_similarity = Spec2Vec(
+                    model=model,
+                    intensity_weighting_power=intensity_weighting_power,
+                    allowed_missing_percentage=allowed_missing_percentage)
                 spec2vec_scores = []
                 for match_id in library_ids[all_match_ids]:
                     spec2vec_scores.append(
