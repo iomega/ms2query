@@ -233,8 +233,8 @@ def library_matching(documents_query: List[SpectrumDocument],
                 cosine_scores = []
                 for match_id in library_ids[all_match_ids]:
                     cosine_scores.append(cosine_similarity.matrix(
-                        documents_library[match_id]._obj,
-                        documents_query[i]._obj))
+                        [documents_library[match_id]._obj],
+                        [documents_query[i]._obj]))
             else:
                 cosine_scores = len(all_match_ids) * ["not calculated"]
 
@@ -244,8 +244,8 @@ def library_matching(documents_query: List[SpectrumDocument],
                 mod_cosine_scores = []
                 for match_id in library_ids[all_match_ids]:
                     mod_cosine_scores.append(mod_cosine_similarity.matrix(
-                        documents_library[match_id]._obj,
-                        documents_query[i]._obj))
+                        [documents_library[match_id]._obj],
+                        [documents_query[i]._obj]))
             else:
                 mod_cosine_scores = len(all_match_ids) * ["not calculated"]
 
