@@ -50,3 +50,23 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
             edge_list.append((id_i, id_j, {'tanimoto': matrix[i, j + i + 1]}))
     graph.add_edges_from(edge_list)
     return graph
+
+
+def do_networking(query_id, matches, similarity_matrix):
+    """Wrapper function to make and use the network, returns network (nx.Graph)
+
+    Args:
+    ----------
+    query_id: str
+        ID/name of the query, will appear in the network plot
+    matches: pd.DataFrame
+        Library matches to the query where rows are the matches and columns are
+        the features of the match.
+    similarity_matrix: pd.DataFrame
+        All vs all matrix of Tanimoto similarity between library matches
+    """
+    init_network = matches2network(query_id, matches)
+    # make sure to change this with how the similarity matrix gets passed
+    lib_ids = matches.index.tolist()
+    network = add_library_connections(init_network, similarity_matrix, lib_ids)
+    return network
