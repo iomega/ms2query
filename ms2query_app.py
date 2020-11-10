@@ -130,7 +130,7 @@ found_matches = library_matching(documents_query, documents_library,
                                  test_model, allowed_missing_percentage=100,
                                  presearch_based_on=[
                                      f"spec2vec-top{len(documents_library)}"])
-st.write(found_matches)
+st.write(found_matches[0])
 
 # do networking
 # for now load example similarity matrix

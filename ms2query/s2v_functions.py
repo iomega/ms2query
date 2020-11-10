@@ -250,10 +250,10 @@ def library_matching(documents_query: List[SpectrumDocument],
                 mod_cosine_scores = len(all_match_ids) * ["not calculated"]
 
             matches_df = pd.DataFrame(
-                {"cosine_score": [x[0] for x in cosine_scores],
-                 "cosine_matches": [x[1] for x in cosine_scores],
-                 "mod_cosine_score": [x[0] for x in mod_cosine_scores],
-                 "mod_cosine_matches": [x[1] for x in mod_cosine_scores]},
+                {"cosine_score": [x[0, 0][0] for x in cosine_scores],
+                 "cosine_matches": [x[0, 0][1] for x in cosine_scores],
+                 "mod_cosine_score": [x[0, 0][0] for x in mod_cosine_scores],
+                 "mod_cosine_matches": [x[0, 0][1] for x in mod_cosine_scores]},
                 index=library_ids[all_match_ids])
 
             if m_mass_matches is not None:
