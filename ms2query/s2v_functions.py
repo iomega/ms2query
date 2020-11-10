@@ -227,7 +227,7 @@ def library_matching(documents_query: List[SpectrumDocument],
             np.concatenate((s2v_top_ids, mass_match_ids)))
 
         if len(all_match_ids) > 0:
-            if "modcosine" in include_scores:
+            if "cosine" in include_scores:
                 # Get cosine score for found matches
                 cosine_similarity = CosineGreedy(tolerance=cosine_tol)
                 cosine_scores = []
@@ -238,7 +238,7 @@ def library_matching(documents_query: List[SpectrumDocument],
             else:
                 cosine_scores = len(all_match_ids) * ["not calculated"]
 
-            if "cosine" in include_scores:
+            if "modcosine" in include_scores:
                 # Get modified cosine score for found matches
                 mod_cosine_similarity = ModifiedCosine(tolerance=cosine_tol)
                 mod_cosine_scores = []
