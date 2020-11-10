@@ -3,6 +3,7 @@ import streamlit as st
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
+from ms2query.networking import do_networking
 import os
 import pandas as pd
 
@@ -118,3 +119,13 @@ test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
 st.write("## Library matching")
 st.write("Library matches for test query:")
 st.dataframe(test_found_matches)
+
+# do networking
+# for now load example similarity matrix
+path_dir = os.path.dirname(__file__)
+test_sim_matrix_file = os.path.join(path_dir, "tests", "test_found_matches_" +
+                                    "similarity_matrix.csv")
+test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+st.write("## Networking")
+network = do_networking("query", test_found_matches, test_sim_matrix)
+st.write('Network nodes:', network.nodes)  # to test
