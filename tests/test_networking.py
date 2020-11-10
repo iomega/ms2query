@@ -1,5 +1,6 @@
 from ms2query.networking import matches2network
 from ms2query.networking import add_library_connections
+from ms2query.networking import do_networking
 from networkx import Graph
 import pandas as pd
 import os
@@ -34,4 +35,22 @@ def test_add_library_connections():
                                                        test_matches.index)
     assert isinstance(test_network_lib_connect[test_matches.iloc[0].name][
         test_matches.iloc[1].name]["tanimoto"], float), \
+        "Expected an edge with tanimoto score between these library hits"
+
+
+def test_do_networking():
+    """Test do_networking"""
+    path_tests = os.path.dirname(__file__)
+    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
+    test_matches = pd.read_csv(test_matches_file, index_col=0)
+    test_matches_sim_matrix_file = os.path.join(
+        path_tests, "test_found_matches_similarity_matrix.csv")
+    test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
+    query_name = "query"
+    test_network = do_networking(query_name, test_matches, test_sim_matrix)
+    assert isinstance(test_network, Graph), "Expected output to be nx.Graph"
+    assert query_name in test_network.nodes, \
+        "Expected query_id to be in the Graph"
+    assert isinstance(test_network[test_matches.iloc[0].name][
+                          test_matches.iloc[1].name]["tanimoto"], float), \
         "Expected an edge with tanimoto score between these library hits"
