@@ -100,6 +100,7 @@ def test_search_topn_s2v_matches():
     topn_s2v_matches = search_topn_s2v_matches(documents_q, documents_l,
                                                test_model,
                                                list(range(lib_length)),
+                                               allowed_missing_percentage=100,
                                                presearch_based_on=[
                                                    f"spec2vec-top{lib_length}"]
                                                )
