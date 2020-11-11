@@ -1,3 +1,6 @@
+from typing import List
+import numpy as np
+import pandas as pd
 from matchms.filtering import normalize_intensities
 from matchms.filtering import require_minimum_number_of_peaks
 from matchms.filtering import select_by_mz
@@ -5,11 +8,8 @@ from matchms.filtering import select_by_relative_intensity
 from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
 from matchms.similarity import CosineGreedy, ModifiedCosine, ParentmassMatch
-import numpy as np
-import pandas as pd
 from spec2vec import SpectrumDocument
 from spec2vec import Spec2Vec
-from typing import List
 
 
 # pylint: disable=protected-access,too-many-arguments
