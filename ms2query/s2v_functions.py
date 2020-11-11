@@ -150,7 +150,7 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
         List containing all library spectrum documents.
     model:
         Pretrained word2Vec model.
-    library_ids:
+    library_ids: list-like of int
         List with library ids to consider.
     presearch_based_on: list, optional
         What to select candidates on. Options are now: parentmass,
@@ -186,6 +186,51 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
         selection_spec2vec = np.empty((0, len(documents_query)), dtype="int")
 
     return selection_spec2vec, m_spec2vec_similarities
+
+
+def search_parent_mass_matches(documents_query: List[SpectrumDocument],
+                               documents_library: List[SpectrumDocument],
+                               library_ids,
+                               presearch_based_on: List[str] = (
+                                       "parentmass", "spec2vec-top10")):
+    """
+    Returns (ndarray, ndarray) of parent mass matching library IDs, s2v scores
+
+    First ndarray records all parent mass matching library IDs for each query.
+    It has shape(topn, len(queries)). The second ndarray are the mass match
+    scores against all library documents per query. It has shape (len(library),
+    len(queries)).
+
+    Args:
+    -------
+    documents_query:
+        List containing all spectrum documents that should be queried against
+        the library.
+    documents_library:
+        List containing all library spectrum documents.
+    model:
+        Pretrained word2Vec model.
+    library_ids: list-like of int
+        List with library ids to consider.
+    presearch_based_on: list, optional
+        What to select candidates on. Options are now: parentmass,
+        spec2vec-topX where X can be any number. Default = ("parentmass",
+        "spec2vec-top10")
+    """
+    m_mass_matches = None
+
+    if "parentmass" in presearch_based_on:
+        mass_matching = ParentmassMatch(mass_tolerance)
+        m_mass_matches = mass_matching.matrix(
+            [documents_library[i]._obj for i in library_ids],
+            [x._obj for x in documents_query])
+        selection_massmatch = []
+        for i in range(len(documents_query)):
+            selection_massmatch.append(np.where(m_mass_matches[:, i] == 1)[0])
+    else:
+        selection_massmatch = np.empty((len(documents_query), 0), dtype="int")
+
+    return selection_massmatch, m_mass_matches
 
 
 def library_matching(documents_query: List[SpectrumDocument],
@@ -242,7 +287,6 @@ def library_matching(documents_query: List[SpectrumDocument],
     # pylint: disable=too-many-arguments
     # Initializations
     found_matches = []
-    m_mass_matches = None
 
     library_spectra_metadata = get_metadata(documents_library)
     if ignore_non_annotated:
@@ -259,24 +303,14 @@ def library_matching(documents_query: List[SpectrumDocument],
 
     # 1. Search for top-n Spec2Vec matches ------------------------------------
     selection_spec2vec, m_spec2vec_similarities = search_topn_s2v_matches(
-                                                 documents_query,
-                                                 documents_library, model,
-                                                 library_ids,
-                                                 presearch_based_on,
-                                                 intensity_weighting_power,
-                                                 allowed_missing_percentage)
+        documents_query, documents_library, model, library_ids,
+        presearch_based_on, intensity_weighting_power,
+        allowed_missing_percentage)
 
     # 2. Search for parent mass based matches ---------------------------------
-    if "parentmass" in presearch_based_on:
-        mass_matching = ParentmassMatch(mass_tolerance)
-        m_mass_matches = mass_matching.matrix(
-            [documents_library[i]._obj for i in library_ids],
-            [x._obj for x in documents_query])
-        selection_massmatch = []
-        for i in range(len(documents_query)):
-            selection_massmatch.append(np.where(m_mass_matches[:, i] == 1)[0])
-    else:
-        selection_massmatch = np.empty((len(documents_query), 0), dtype="int")
+    selection_massmatch, m_mass_matches = search_parent_mass_matches(
+        documents_query, documents_library, model, library_ids,
+        presearch_based_on)
 
     # 3. Combine found matches ------------------------------------------------
     for i, document_query in enumerate(documents_query):
