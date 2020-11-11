@@ -12,6 +12,8 @@ from spec2vec import Spec2Vec
 from typing import List
 
 
+# pylint: disable=protected-access
+
 def set_spec2vec_defaults(**settings):
     """Set spec2vec default argument values"(where no user input is given)".
 
