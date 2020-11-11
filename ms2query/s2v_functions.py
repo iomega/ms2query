@@ -309,8 +309,7 @@ def library_matching(documents_query: List[SpectrumDocument],
 
     # 2. Search for parent mass based matches ---------------------------------
     selection_massmatch, m_mass_matches = search_parent_mass_matches(
-        documents_query, documents_library, model, library_ids,
-        presearch_based_on)
+        documents_query, documents_library, library_ids, presearch_based_on)
 
     # 3. Combine found matches ------------------------------------------------
     for i, document_query in enumerate(documents_query):
