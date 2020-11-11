@@ -33,7 +33,7 @@ models_trained/
 computed_results/
 notebooks/.ipynb_checkpoints/
 __pycache__/
-
+debug.log
 
 # conda build directory
 /_build
