@@ -6,6 +6,7 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import post_process_s2v
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
+from ms2query.s2v_functions import get_metadata
 from ms2query.utils import json_loader
 from spec2vec import SpectrumDocument
 
@@ -66,3 +67,16 @@ def test_library_matching():
         "Expected output to be DataFrame"
     assert test_found_matches[0].shape[0] == lib_length,\
         "Expected number of matches to be number of library documents"
+
+
+def test_get_metadata():
+    """Test get_metadata"""
+    path_tests = os.path.dirname(__file__)
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_l = process_spectrums(spectrums_l)
+    smiles = get_metadata(documents_l)
+    assert isinstance(smiles, list), "Expected a list"
+    assert isinstance(smiles[0], str), "Expected smiles to be strings"
+    assert len(smiles) == len(documents_l),\
+        "Expected all docs to be turned into smiles"
