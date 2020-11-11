@@ -129,9 +129,9 @@ def get_metadata(documents: List[SpectrumDocument]):
 def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
                             documents_library: List[SpectrumDocument],
                             model,
-                            library_ids: np.ndarray[int],
+                            library_ids,
                             presearch_based_on: List[str] = ("parentmass",
-                                                          "spec2vec-top10"),
+                                                             "spec2vec-top10"),
                             intensity_weighting_power: float = 0.5,
                             allowed_missing_percentage: float = 0):
     """
