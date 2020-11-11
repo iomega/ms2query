@@ -248,7 +248,7 @@ def found_matches(document_query: SpectrumDocument,
                   intensity_weighting_power: float = 0.5,
                   allowed_missing_percentage: float = 0,
                   cosine_tol: float = 0.005):
-    """Finds library matches for one query document
+    """Finds library matches for one query document, returns pd.DataFrame
 
     Args:
     -------
@@ -354,6 +354,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
                           allowed_missing_percentage: float = 0,
                           cosine_tol: float = 0.005):
     """
+    Finds library matches for all query documents, returns list of pd.DataFrame
 
     Args:
     --------
