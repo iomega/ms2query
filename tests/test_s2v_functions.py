@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from numpy import ndarray
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -7,6 +8,7 @@ from ms2query.s2v_functions import post_process_s2v
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.s2v_functions import get_metadata
+from ms2query.s2v_functions import search_topn_s2v_matches
 from ms2query.utils import json_loader
 from spec2vec import SpectrumDocument
 
@@ -80,3 +82,29 @@ def test_get_metadata():
     assert isinstance(smiles[0], str), "Expected smiles to be strings"
     assert len(smiles) == len(documents_l),\
         "Expected all docs to be turned into smiles"
+
+
+def test_search_topn_s2v_matches():
+    """Test search_topn_s2v_matches"""
+    path_tests = os.path.dirname(__file__)
+    testfile_q = os.path.join(path_tests, "testspectrum_query.json")
+    spectrums_q = json_loader(open(testfile_q))
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_q = process_spectrums(spectrums_q)
+    documents_l = process_spectrums(spectrums_l)
+    test_model_file = os.path.join(path_tests,
+                                   "testspectrum_library_model.model")
+    test_model = Word2Vec.load(test_model_file)
+    lib_length = len(documents_l)
+    topn_s2v_matches = search_topn_s2v_matches(documents_q, documents_l,
+                                               test_model,
+                                               list(range(lib_length)),
+                                               presearch_based_on=[
+                                                   f"spec2vec-top{lib_length}"]
+                                               )
+    print(topn_s2v_matches)
+    assert isinstance(topn_s2v_matches, ndarray),\
+        "Expected output to be ndarray"
+    assert topn_s2v_matches.shape == [len(documents_q), lib_length],\
+        "Expected shape to be (len(queries), len(library))"
