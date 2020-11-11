@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from numpy import ndarray
+import numpy as np
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -97,15 +97,20 @@ def test_search_topn_s2v_matches():
                                    "testspectrum_library_model.model")
     test_model = Word2Vec.load(test_model_file)
     lib_length = len(documents_l)
-    topn_s2v_matches = search_topn_s2v_matches(documents_q, documents_l,
+    topn_s2v_matches, test_spec2vec_similarities = search_topn_s2v_matches(
+                                               documents_q, documents_l,
                                                test_model,
-                                               list(range(lib_length)),
+                                               np.asarray(range(lib_length)),
                                                allowed_missing_percentage=100,
                                                presearch_based_on=[
                                                    f"spec2vec-top{lib_length}"]
                                                )
     print(topn_s2v_matches)
-    assert isinstance(topn_s2v_matches, ndarray),\
+    assert isinstance(topn_s2v_matches, np.ndarray),\
+        "Expected output to be ndarray"
+    assert isinstance(test_spec2vec_similarities, np.ndarray), \
         "Expected output to be ndarray"
     assert topn_s2v_matches.shape == (lib_length, len(documents_q)),\
+        "Expected shape to be (len(library), len(queries))"
+    assert test_spec2vec_similarities.shape == (lib_length, len(documents_q)),\
         "Expected shape to be (len(library), len(queries))"
