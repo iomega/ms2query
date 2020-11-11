@@ -9,6 +9,7 @@ from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.s2v_functions import get_metadata
 from ms2query.s2v_functions import search_topn_s2v_matches
+from ms2query.s2v_functions import search_parent_mass_matches
 from ms2query.utils import json_loader
 from spec2vec import SpectrumDocument
 
@@ -105,7 +106,6 @@ def test_search_topn_s2v_matches():
                                                presearch_based_on=[
                                                    f"spec2vec-top{lib_length}"]
                                                )
-    print(topn_s2v_matches)
     assert isinstance(topn_s2v_matches, np.ndarray),\
         "Expected output to be ndarray"
     assert isinstance(test_spec2vec_similarities, np.ndarray), \
@@ -113,4 +113,29 @@ def test_search_topn_s2v_matches():
     assert topn_s2v_matches.shape == (lib_length, len(documents_q)),\
         "Expected shape to be (len(library), len(queries))"
     assert test_spec2vec_similarities.shape == (lib_length, len(documents_q)),\
+        "Expected shape to be (len(library), len(queries))"
+
+
+def test_search_parent_mass_matches():
+    """Test search_parent_mass_matches"""
+    path_tests = os.path.dirname(__file__)
+    testfile_q = os.path.join(path_tests, "testspectrum_query.json")
+    spectrums_q = json_loader(open(testfile_q))
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_q = process_spectrums(spectrums_q)
+    documents_l = process_spectrums(spectrums_l)
+    lib_length = len(documents_l)
+    selection_massmatch, m_mass_matches = search_parent_mass_matches(
+                                               documents_q, documents_l,
+                                               np.asarray(range(lib_length)),
+                                               presearch_based_on=[
+                                                   "parentmass"])
+    assert isinstance(selection_massmatch, list),\
+        "Expected output to be list"
+    assert isinstance(m_mass_matches, np.ndarray), \
+        "Expected output to be ndarray"
+    assert len(selection_massmatch) == len(documents_q),\
+        "Expected len to be len(queries)"
+    assert m_mass_matches.shape == (lib_length, len(documents_q)),\
         "Expected shape to be (len(library), len(queries))"
