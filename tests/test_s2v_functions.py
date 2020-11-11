@@ -107,5 +107,5 @@ def test_search_topn_s2v_matches():
     print(topn_s2v_matches)
     assert isinstance(topn_s2v_matches, ndarray),\
         "Expected output to be ndarray"
-    assert topn_s2v_matches.shape == ([lib_length], len(documents_q)),\
+    assert topn_s2v_matches.shape == (lib_length, len(documents_q)),\
         "Expected shape to be (len(library), len(queries))"
