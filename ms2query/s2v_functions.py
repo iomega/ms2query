@@ -192,7 +192,8 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                documents_library: List[SpectrumDocument],
                                library_ids,
                                presearch_based_on: List[str] = (
-                                       "parentmass", "spec2vec-top10")):
+                                       "parentmass", "spec2vec-top10"),
+                               mass_tolerance: float = 1.0):
     """
     Returns (ndarray, ndarray) of parent mass matching library IDs, s2v scores
 
@@ -216,6 +217,8 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
         What to select candidates on. Options are now: parentmass,
         spec2vec-topX where X can be any number. Default = ("parentmass",
         "spec2vec-top10")
+    mass_tolerance: float, optional
+        Specify tolerance for a parentmass match. Default = 1.
     """
     m_mass_matches = None
 
@@ -309,7 +312,8 @@ def library_matching(documents_query: List[SpectrumDocument],
 
     # 2. Search for parent mass based matches ---------------------------------
     selection_massmatch, m_mass_matches = search_parent_mass_matches(
-        documents_query, documents_library, library_ids, presearch_based_on)
+        documents_query, documents_library, library_ids, presearch_based_on,
+        mass_tolerance)
 
     # 3. Combine found matches ------------------------------------------------
     for i, document_query in enumerate(documents_query):
