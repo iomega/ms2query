@@ -235,24 +235,20 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
     return selection_massmatch, m_mass_matches
 
 
-def library_matching(documents_query: List[SpectrumDocument],
-                     documents_library: List[SpectrumDocument],
-                     model,
-                     presearch_based_on: List[str] = ("parentmass",
-                                                      "spec2vec-top10"),
-                     ignore_non_annotated: bool = True,
-                     include_scores: List[str] = ("spec2vec", "cosine",
-                                                  "modcosine"),
-                     intensity_weighting_power: float = 0.5,
-                     allowed_missing_percentage: float = 0,
-                     cosine_tol: float = 0.005,
-                     mass_tolerance: float = 1.0):
-    """Selecting potential spectra matches with spectra library.
-
-    Suitable candidates will be selected by 1) top_n Spec2Vec similarity, and
-    2) same precursor mass (within given mz_ppm tolerance(s)).
-    For later matching routines, additional scores (cosine, modified cosine)
-    are added as well.
+def combine_found_matches(documents_query: List[SpectrumDocument],
+                          documents_library: List[SpectrumDocument],
+                          model,
+                          library_ids,
+                          selection_spec2vec,
+                          m_spec2vec_similarities,
+                          selection_massmatch,
+                          m_mass_matches,
+                          include_scores: List[str] = ("spec2vec", "cosine",
+                                                       "modcosine"),
+                          intensity_weighting_power: float = 0.5,
+                          allowed_missing_percentage: float = 0,
+                          cosine_tol: float = 0.005):
+    """
 
     Args:
     --------
@@ -263,13 +259,18 @@ def library_matching(documents_query: List[SpectrumDocument],
         List containing all library spectrum documents.
     model:
         Pretrained word2Vec model.
-    presearch_based_on: list, optional
-        What to select candidates on. Options are now: parentmass,
-        spec2vec-topX where X can be any number. Default = ("parentmass",
-        "spec2vec-top10")
-    ignore_non_annotated: bool, optional
-        If True, only annotated spectra will be considered for matching.
-        Default = True.
+    library_ids: list-like of int
+        List with library ids to consider.
+    selection_spec2vec: ndarray of int
+        The topn library IDs for each query. It has shape(topn, len(queries)).
+    m_spec2vec_similarities: ndarray of float
+        The second ndarray are the s2v scores against all library documents per
+        query. It has shape (len(library), len(queries)).
+    selection_massmatch: list of int
+        List of all parent mass matching library IDs for each query.
+    m_mass_matches: ndarray of float
+        The mass match scores against all library documents per query. It has
+        shape (len(library), len(queries)).
     include_scores: list, optional
         Scores to include in output. Default = ("spec2vec", "cosine",
         "modcosine")
@@ -283,38 +284,9 @@ def library_matching(documents_query: List[SpectrumDocument],
         which means no missing words are allowed.
     cosine_tol: float, optional
         Set tolerance for the cosine and modified cosine score. Default = 0.005
-    mass_tolerance: float, optional
-        Specify tolerance for a parentmass match. Default = 1.
     """
-    # pylint: disable=too-many-arguments
-    # Initializations
     found_matches = []
 
-    library_spectra_metadata = get_metadata(documents_library)
-    if ignore_non_annotated:
-        # Get array of all ids for spectra with smiles
-        library_ids = np.asarray([i for i, x in enumerate(
-            library_spectra_metadata) if x])
-    else:
-        library_ids = np.arange(len(documents_library))
-
-    msg = "Presearch must be done either by 'parentmass' and/or" + \
-          "'spec2vec-topX'"
-    assert "parentmass" in presearch_based_on or \
-           np.any(["spec2vec" in x for x in presearch_based_on]), msg
-
-    # 1. Search for top-n Spec2Vec matches ------------------------------------
-    selection_spec2vec, m_spec2vec_similarities = search_topn_s2v_matches(
-        documents_query, documents_library, model, library_ids,
-        presearch_based_on, intensity_weighting_power,
-        allowed_missing_percentage)
-
-    # 2. Search for parent mass based matches ---------------------------------
-    selection_massmatch, m_mass_matches = search_parent_mass_matches(
-        documents_query, documents_library, library_ids, presearch_based_on,
-        mass_tolerance)
-
-    # 3. Combine found matches ------------------------------------------------
     for i, document_query in enumerate(documents_query):
         s2v_top_ids = selection_spec2vec[:, i]
         mass_match_ids = selection_massmatch[i]
@@ -374,4 +346,95 @@ def library_matching(documents_query: List[SpectrumDocument],
         else:
             found_matches.append([])
 
+    return found_matches
+
+
+def library_matching(documents_query: List[SpectrumDocument],
+                     documents_library: List[SpectrumDocument],
+                     model,
+                     presearch_based_on: List[str] = ("parentmass",
+                                                      "spec2vec-top10"),
+                     ignore_non_annotated: bool = True,
+                     include_scores: List[str] = ("spec2vec", "cosine",
+                                                  "modcosine"),
+                     intensity_weighting_power: float = 0.5,
+                     allowed_missing_percentage: float = 0,
+                     cosine_tol: float = 0.005,
+                     mass_tolerance: float = 1.0):
+    """Selecting potential spectra matches with spectra library.
+
+    Suitable candidates will be selected by 1) top_n Spec2Vec similarity, and
+    2) same precursor mass (within given mz_ppm tolerance(s)).
+    For later matching routines, additional scores (cosine, modified cosine)
+    are added as well.
+
+    Args:
+    --------
+    documents_query:
+        List containing all spectrum documents that should be queried against
+        the library.
+    documents_library:
+        List containing all library spectrum documents.
+    model:
+        Pretrained word2Vec model.
+    presearch_based_on: list, optional
+        What to select candidates on. Options are now: parentmass,
+        spec2vec-topX where X can be any number. Default = ("parentmass",
+        "spec2vec-top10")
+    ignore_non_annotated: bool, optional
+        If True, only annotated spectra will be considered for matching.
+        Default = True.
+    include_scores: list, optional
+        Scores to include in output. Default = ("spec2vec", "cosine",
+        "modcosine")
+    intensity_weighting_power: float, optional
+        Spectrum vectors are a weighted sum of the word vectors. The given word
+        intensities will be raised to the given power. Default = 0.5.
+    allowed_missing_percentage: float, optional
+        Set the maximum allowed percentage of the document that may be missing
+        from the input model. This is measured as percentage of the weighted,
+        missing words compared to all word vectors of the document. Default = 0
+        which means no missing words are allowed.
+    cosine_tol: float, optional
+        Set tolerance for the cosine and modified cosine score. Default = 0.005
+    mass_tolerance: float, optional
+        Specify tolerance for a parentmass match. Default = 1.
+    """
+    # pylint: disable=too-many-arguments
+
+    # Initialise, error message
+    library_spectra_metadata = get_metadata(documents_library)
+    if ignore_non_annotated:
+        # Get array of all ids for spectra with smiles
+        library_ids = np.asarray([i for i, x in enumerate(
+            library_spectra_metadata) if x])
+    else:
+        library_ids = np.arange(len(documents_library))
+
+    msg = "Presearch must be done either by 'parentmass' and/or" + \
+          "'spec2vec-topX'"
+    assert "parentmass" in presearch_based_on or \
+           np.any(["spec2vec" in x for x in presearch_based_on]), msg
+
+    # 1. Search for top-n Spec2Vec matches ------------------------------------
+    selection_spec2vec, m_spec2vec_similarities = search_topn_s2v_matches(
+        documents_query, documents_library, model, library_ids,
+        presearch_based_on, intensity_weighting_power,
+        allowed_missing_percentage)
+
+    # 2. Search for parent mass based matches ---------------------------------
+    selection_massmatch, m_mass_matches = search_parent_mass_matches(
+        documents_query, documents_library, library_ids, presearch_based_on,
+        mass_tolerance)
+
+    # 3. Combine found matches ------------------------------------------------
+    found_matches = combine_found_matches(documents_query, documents_library,
+                                          model, library_ids,
+                                          selection_spec2vec,
+                                          m_spec2vec_similarities,
+                                          selection_massmatch, m_mass_matches,
+                                          include_scores,
+                                          intensity_weighting_power,
+                                          allowed_missing_percentage,
+                                          cosine_tol)
     return found_matches
