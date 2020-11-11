@@ -12,7 +12,7 @@ from spec2vec import Spec2Vec
 from typing import List
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-arguments
 
 def set_spec2vec_defaults(**settings):
     """Set spec2vec default argument values"(where no user input is given)".
@@ -274,7 +274,7 @@ def library_matching(documents_query: List[SpectrumDocument],
         selection_massmatch = np.empty((len(documents_query), 0), dtype="int")
 
     # 3. Combine found matches ------------------------------------------------
-    for i in range(len(documents_query)):
+    for i, document_query in enumerate(documents_query):
         s2v_top_ids = selection_spec2vec[:, i]
         mass_match_ids = selection_massmatch[i]
 
@@ -289,7 +289,7 @@ def library_matching(documents_query: List[SpectrumDocument],
                 for match_id in library_ids[all_match_ids]:
                     cosine_scores.append(cosine_similarity.matrix(
                         [documents_library[match_id]._obj],
-                        [documents_query[i]._obj]))
+                        [document_query._obj]))
             else:
                 cosine_scores = len(all_match_ids) * ["not calculated"]
 
@@ -300,7 +300,7 @@ def library_matching(documents_query: List[SpectrumDocument],
                 for match_id in library_ids[all_match_ids]:
                     mod_cosine_scores.append(mod_cosine_similarity.matrix(
                         [documents_library[match_id]._obj],
-                        [documents_query[i]._obj]))
+                        [document_query._obj]))
             else:
                 mod_cosine_scores = len(all_match_ids) * ["not calculated"]
 
@@ -327,7 +327,7 @@ def library_matching(documents_query: List[SpectrumDocument],
                 for match_id in library_ids[all_match_ids]:
                     spec2vec_scores.append(
                         spec2vec_similarity.pair(documents_library[match_id],
-                                                 documents_query[i]))
+                                                 document_query))
                 matches_df["s2v_score"] = spec2vec_scores
             found_matches.append(matches_df.fillna(0))
         else:
