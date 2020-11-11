@@ -151,7 +151,7 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
     model:
         Pretrained word2Vec model.
     library_ids: list-like of int
-        List with library ids to consider.
+        List with library ids to consider for spec2vec matching.
     presearch_based_on: list, optional
         What to select candidates on. Options are now: parentmass,
         spec2vec-topX where X can be any number. Default = ("parentmass",
@@ -235,6 +235,111 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
     return selection_massmatch, m_mass_matches
 
 
+def found_matches(document_query: SpectrumDocument,
+                  documents_library: List[SpectrumDocument],
+                  model,
+                  library_ids,
+                  all_match_ids,
+                  i,
+                  m_spec2vec_similarities,
+                  m_mass_matches,
+                  include_scores: List[str] = ("spec2vec", "cosine",
+                                               "modcosine"),
+                  intensity_weighting_power: float = 0.5,
+                  allowed_missing_percentage: float = 0,
+                  cosine_tol: float = 0.005):
+    """Finds library matches for one query document
+
+    Args:
+    -------
+    document_query:
+        Spectrum documents that should be queried against
+        the library.
+    documents_library:
+        List containing all library spectrum documents.
+    model:
+        Pretrained word2Vec model.
+    library_ids: list-like of int
+        List with library ids to consider for spec2vec matching.
+    all_match_ids: list-like of int
+        List with all library ids to consider (also parentmass match).
+    i: int
+        Keeps track of current query number
+    selection_spec2vec: ndarray of int
+        The topn library IDs for each query. It has shape(topn, len(queries)).
+    m_spec2vec_similarities: ndarray of float
+        The second ndarray are the s2v scores against all library documents per
+        query. It has shape (len(library), len(queries)).
+    selection_massmatch: list of int
+        List of all parent mass matching library IDs for each query.
+    m_mass_matches: ndarray of float
+        The mass match scores against all library documents per query. It has
+        shape (len(library), len(queries)).
+    include_scores: list, optional
+        Scores to include in output. Default = ("spec2vec", "cosine",
+        "modcosine")
+    intensity_weighting_power: float, optional
+        Spectrum vectors are a weighted sum of the word vectors. The given word
+        intensities will be raised to the given power. Default = 0.5.
+    allowed_missing_percentage: float, optional
+        Set the maximum allowed percentage of the document that may be missing
+        from the input model. This is measured as percentage of the weighted,
+        missing words compared to all word vectors of the document. Default = 0
+        which means no missing words are allowed.
+    cosine_tol: float, optional
+        Set tolerance for the cosine and modified cosine score. Default = 0.005
+    """
+    if "cosine" in include_scores:
+        # Get cosine score for found matches
+        cosine_similarity = CosineGreedy(tolerance=cosine_tol)
+        cosine_scores = []
+        for match_id in library_ids[all_match_ids]:
+            cosine_scores.append(cosine_similarity.matrix(
+                [documents_library[match_id]._obj],
+                [document_query._obj]))
+    else:
+        cosine_scores = len(all_match_ids) * ["not calculated"]
+
+    if "modcosine" in include_scores:
+        # Get modified cosine score for found matches
+        mod_cosine_similarity = ModifiedCosine(tolerance=cosine_tol)
+        mod_cosine_scores = []
+        for match_id in library_ids[all_match_ids]:
+            mod_cosine_scores.append(mod_cosine_similarity.matrix(
+                [documents_library[match_id]._obj],
+                [document_query._obj]))
+    else:
+        mod_cosine_scores = len(all_match_ids) * ["not calculated"]
+
+    matches_df = pd.DataFrame(
+        {"cosine_score": [x[0, 0][0] for x in cosine_scores],
+         "cosine_matches": [x[0, 0][1] for x in cosine_scores],
+         "mod_cosine_score": [x[0, 0][0] for x in mod_cosine_scores],
+         "mod_cosine_matches": [x[0, 0][1]
+                                for x in mod_cosine_scores]},
+        index=library_ids[all_match_ids])
+
+    if m_mass_matches is not None:
+        matches_df["mass_match"] = m_mass_matches[all_match_ids, i]
+
+    if m_spec2vec_similarities is not None:
+        matches_df["s2v_score"] = m_spec2vec_similarities[
+            all_match_ids, i]
+    elif "spec2vec" in include_scores:
+        spec2vec_similarity = Spec2Vec(
+            model=model,
+            intensity_weighting_power=intensity_weighting_power,
+            allowed_missing_percentage=allowed_missing_percentage)
+        spec2vec_scores = []
+        for match_id in library_ids[all_match_ids]:
+            spec2vec_scores.append(
+                spec2vec_similarity.pair(documents_library[match_id],
+                                         document_query))
+        matches_df["s2v_score"] = spec2vec_scores
+
+    return matches_df
+
+
 def combine_found_matches(documents_query: List[SpectrumDocument],
                           documents_library: List[SpectrumDocument],
                           model,
@@ -260,7 +365,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
     model:
         Pretrained word2Vec model.
     library_ids: list-like of int
-        List with library ids to consider.
+        List with library ids to consider for spec2vec matching.
     selection_spec2vec: ndarray of int
         The topn library IDs for each query. It has shape(topn, len(queries)).
     m_spec2vec_similarities: ndarray of float
@@ -285,7 +390,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
     cosine_tol: float, optional
         Set tolerance for the cosine and modified cosine score. Default = 0.005
     """
-    found_matches = []
+    combined_matches = []
 
     for i, document_query in enumerate(documents_query):
         s2v_top_ids = selection_spec2vec[:, i]
@@ -295,58 +400,18 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
             np.concatenate((s2v_top_ids, mass_match_ids)))
 
         if len(all_match_ids) > 0:
-            if "cosine" in include_scores:
-                # Get cosine score for found matches
-                cosine_similarity = CosineGreedy(tolerance=cosine_tol)
-                cosine_scores = []
-                for match_id in library_ids[all_match_ids]:
-                    cosine_scores.append(cosine_similarity.matrix(
-                        [documents_library[match_id]._obj],
-                        [document_query._obj]))
-            else:
-                cosine_scores = len(all_match_ids) * ["not calculated"]
-
-            if "modcosine" in include_scores:
-                # Get modified cosine score for found matches
-                mod_cosine_similarity = ModifiedCosine(tolerance=cosine_tol)
-                mod_cosine_scores = []
-                for match_id in library_ids[all_match_ids]:
-                    mod_cosine_scores.append(mod_cosine_similarity.matrix(
-                        [documents_library[match_id]._obj],
-                        [document_query._obj]))
-            else:
-                mod_cosine_scores = len(all_match_ids) * ["not calculated"]
-
-            matches_df = pd.DataFrame(
-                {"cosine_score": [x[0, 0][0] for x in cosine_scores],
-                 "cosine_matches": [x[0, 0][1] for x in cosine_scores],
-                 "mod_cosine_score": [x[0, 0][0] for x in mod_cosine_scores],
-                 "mod_cosine_matches": [x[0, 0][1]
-                                        for x in mod_cosine_scores]},
-                index=library_ids[all_match_ids])
-
-            if m_mass_matches is not None:
-                matches_df["mass_match"] = m_mass_matches[all_match_ids, i]
-
-            if m_spec2vec_similarities is not None:
-                matches_df["s2v_score"] = m_spec2vec_similarities[
-                    all_match_ids, i]
-            elif "spec2vec" in include_scores:
-                spec2vec_similarity = Spec2Vec(
-                    model=model,
-                    intensity_weighting_power=intensity_weighting_power,
-                    allowed_missing_percentage=allowed_missing_percentage)
-                spec2vec_scores = []
-                for match_id in library_ids[all_match_ids]:
-                    spec2vec_scores.append(
-                        spec2vec_similarity.pair(documents_library[match_id],
-                                                 document_query))
-                matches_df["s2v_score"] = spec2vec_scores
-            found_matches.append(matches_df.fillna(0))
+            matches_df = found_matches(document_query, documents_library,
+                                       model, library_ids, all_match_ids,
+                                       i, m_spec2vec_similarities,
+                                       m_mass_matches, include_scores,
+                                       intensity_weighting_power,
+                                       allowed_missing_percentage,
+                                       cosine_tol)
+            combined_matches.append(matches_df.fillna(0))
         else:
-            found_matches.append([])
+            combined_matches.append([])
 
-    return found_matches
+    return combined_matches
 
 
 def library_matching(documents_query: List[SpectrumDocument],
