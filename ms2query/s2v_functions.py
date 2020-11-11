@@ -195,12 +195,11 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                        "parentmass", "spec2vec-top10"),
                                mass_tolerance: float = 1.0):
     """
-    Returns (ndarray, ndarray) of parent mass matching library IDs, s2v scores
+    Returns (list, ndarray) of parent mass matching library IDs, s2v scores
 
-    First ndarray records all parent mass matching library IDs for each query.
-    It has shape(topn, len(queries)). The second ndarray are the mass match
-    scores against all library documents per query. It has shape (len(library),
-    len(queries)).
+    First list records all parent mass matching library IDs for each query.
+    The second ndarray are the mass match scores against all library documents
+    per query. It has shape (len(library), len(queries)).
 
     Args:
     -------
