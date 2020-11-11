@@ -129,14 +129,17 @@ def get_metadata(documents: List[SpectrumDocument]):
 def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
                             documents_library: List[SpectrumDocument],
                             model,
-                            library_ids: List[int],
+                            library_ids: np.ndarray[int],
                             presearch_based_on: List[str] = ("parentmass",
                                                           "spec2vec-top10"),
                             intensity_weighting_power: float = 0.5,
                             allowed_missing_percentage: float = 0):
-    """Returns ndarray recording topn library IDs for each query
+    """
+    Returns (ndarray, ndarray) recording topn library IDs, s2v scores per query
 
-    The ndarray that is returned has shape(topn, len(queries))
+    First ndarray records topn library IDs for each query. It has
+    shape(topn, len(queries)). The second ndarray are the s2v scores against
+    all library documents per query. It has shape (len(library), len(queries)).
 
     Args:
     -------
@@ -162,6 +165,8 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
         missing words compared to all word vectors of the document. Default = 0
         which means no missing words are allowed.
     """
+    m_spec2vec_similarities = None
+
     if np.any(["spec2vec" in x for x in presearch_based_on]):
         top_n = int(
             [x.split("top")[1] for x in presearch_based_on if "spec2vec" in x][
@@ -180,7 +185,7 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
     else:
         selection_spec2vec = np.empty((0, len(documents_query)), dtype="int")
 
-    return selection_spec2vec
+    return selection_spec2vec, m_spec2vec_similarities
 
 
 def library_matching(documents_query: List[SpectrumDocument],
@@ -238,7 +243,6 @@ def library_matching(documents_query: List[SpectrumDocument],
     # Initializations
     found_matches = []
     m_mass_matches = None
-    m_spec2vec_similarities = None
 
     library_spectra_metadata = get_metadata(documents_library)
     if ignore_non_annotated:
@@ -254,7 +258,8 @@ def library_matching(documents_query: List[SpectrumDocument],
            np.any(["spec2vec" in x for x in presearch_based_on]), msg
 
     # 1. Search for top-n Spec2Vec matches ------------------------------------
-    selection_spec2vec = search_topn_s2v_matches(documents_query,
+    selection_spec2vec, m_spec2vec_similarities = search_topn_s2v_matches(
+                                                 documents_query,
                                                  documents_library, model,
                                                  library_ids,
                                                  presearch_based_on,
