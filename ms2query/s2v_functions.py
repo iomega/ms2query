@@ -126,6 +126,63 @@ def get_metadata(documents: List[SpectrumDocument]):
     return metadata
 
 
+def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
+                            documents_library: List[SpectrumDocument],
+                            model,
+                            library_ids: List[int],
+                            presearch_based_on: List[str] = ("parentmass",
+                                                          "spec2vec-top10"),
+                            intensity_weighting_power: float = 0.5,
+                            allowed_missing_percentage: float = 0):
+    """Returns ndarray recording topn library IDs for each query
+
+    The ndarray that is returned has shape(topn, len(queries))
+
+    Args:
+    -------
+    documents_query:
+        List containing all spectrum documents that should be queried against
+        the library.
+    documents_library:
+        List containing all library spectrum documents.
+    model:
+        Pretrained word2Vec model.
+    library_ids:
+        List with library ids to consider.
+    presearch_based_on: list, optional
+        What to select candidates on. Options are now: parentmass,
+        spec2vec-topX where X can be any number. Default = ("parentmass",
+        "spec2vec-top10")
+    intensity_weighting_power: float, optional
+        Spectrum vectors are a weighted sum of the word vectors. The given word
+        intensities will be raised to the given power. Default = 0.5.
+    allowed_missing_percentage: float, optional
+        Set the maximum allowed percentage of the document that may be missing
+        from the input model. This is measured as percentage of the weighted,
+        missing words compared to all word vectors of the document. Default = 0
+        which means no missing words are allowed.
+    """
+    if np.any(["spec2vec" in x for x in presearch_based_on]):
+        top_n = int(
+            [x.split("top")[1] for x in presearch_based_on if "spec2vec" in x][
+                0])
+        print("Pre-selection includes spec2vec top {}.".format(top_n))
+        spec2vec = Spec2Vec(
+            model=model, intensity_weighting_power=intensity_weighting_power,
+            allowed_missing_percentage=allowed_missing_percentage)
+        m_spec2vec_similarities = spec2vec.matrix(
+            [documents_library[i] for i in library_ids],
+            documents_query)
+
+        # Select top_n similarity values:
+        selection_spec2vec = np.argpartition(m_spec2vec_similarities, -top_n,
+                                             axis=0)[-top_n:, :]
+    else:
+        selection_spec2vec = np.empty((0, len(documents_query)), dtype="int")
+
+    return selection_spec2vec
+
+
 def library_matching(documents_query: List[SpectrumDocument],
                      documents_library: List[SpectrumDocument],
                      model,
@@ -197,23 +254,12 @@ def library_matching(documents_query: List[SpectrumDocument],
            np.any(["spec2vec" in x for x in presearch_based_on]), msg
 
     # 1. Search for top-n Spec2Vec matches ------------------------------------
-    if np.any(["spec2vec" in x for x in presearch_based_on]):
-        top_n = int(
-            [x.split("top")[1] for x in presearch_based_on if "spec2vec" in x][
-                0])
-        print("Pre-selection includes spec2vec top {}.".format(top_n))
-        spec2vec = Spec2Vec(
-            model=model, intensity_weighting_power=intensity_weighting_power,
-            allowed_missing_percentage=allowed_missing_percentage)
-        m_spec2vec_similarities = spec2vec.matrix(
-            [documents_library[i] for i in library_ids],
-            documents_query)
-
-        # Select top_n similarity values:
-        selection_spec2vec = np.argpartition(m_spec2vec_similarities, -top_n,
-                                             axis=0)[-top_n:, :]
-    else:
-        selection_spec2vec = np.empty((0, len(documents_query)), dtype="int")
+    selection_spec2vec = search_topn_s2v_matches(documents_query,
+                                                 documents_library, model,
+                                                 library_ids,
+                                                 presearch_based_on,
+                                                 intensity_weighting_power,
+                                                 allowed_missing_percentage)
 
     # 2. Search for parent mass based matches ---------------------------------
     if "parentmass" in presearch_based_on:
