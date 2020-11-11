@@ -111,6 +111,19 @@ def process_spectrums(spectrums, **settings):
     return documents
 
 
+def get_metadata(documents: List[SpectrumDocument]):
+    """Returns a list of smiles (str) from the input spectrum documents
+
+    Args:
+    --------
+    documents: list of SpectrumDocument
+    """
+    metadata = []
+    for doc in documents:
+        metadata.append(doc._obj.get("smiles"))
+    return metadata
+
+
 def library_matching(documents_query: List[SpectrumDocument],
                      documents_library: List[SpectrumDocument],
                      model,
@@ -167,12 +180,6 @@ def library_matching(documents_query: List[SpectrumDocument],
     found_matches = []
     m_mass_matches = None
     m_spec2vec_similarities = None
-
-    def get_metadata(documents):
-        metadata = []
-        for doc in documents:
-            metadata.append(doc._obj.get("smiles"))
-        return metadata
 
     library_spectra_metadata = get_metadata(documents_library)
     if ignore_non_annotated:
