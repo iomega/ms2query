@@ -75,8 +75,7 @@ def do_networking(query_id, matches, similarity_matrix):
 
 
 def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
-                 tan_cutoff=0.6, node_labels=False,
-                 save=False):
+                 tan_cutoff=0.6, node_labels=False, k=1, seed=42):
     """Plot network
 
     Args:
@@ -97,8 +96,10 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
         return
     network_sub = nx.Graph(library_edges + query_edges)
 
-    pos = graphviz_layout(network_sub, prog="neato")
-    #     pos = nx.spring_layout(G)
+    # init plot info
+    fig, ax = plt.subplots()
+    # pos = graphviz_layout(network_sub, prog="neato")
+    pos = nx.spring_layout(network_sub, k=k, iterations=1000, seed=seed)
 
     nx.draw_networkx_nodes(network_sub, pos)
     q_node = \
@@ -129,10 +130,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
             nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
                                    width=width / 2, style="dashed")
     if node_labels:
-        nx.draw_networkx_labels(network_sub, pos, font_size=5.5)
+        nx.draw_networkx_labels(network_sub, pos, font_size=5)
     plt.axis('off')
-    if save:
-        plt.savefig(save)
-    else:
-        plt.show()
-    plt.close()
+
+    return fig

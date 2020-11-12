@@ -132,3 +132,4 @@ st.write("## Networking")
 network = do_networking("query", test_found_matches, test_sim_matrix)
 st.write('Network nodes:', network.nodes)  # to test
 network_plot = plot_network(network)
+st.pyplot(network_plot)
