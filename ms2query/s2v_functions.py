@@ -28,7 +28,12 @@ def set_spec2vec_defaults(**settings):
                 "ratio_desired": 0.5,
                 "intensity_from": 0.001,
                 "loss_mz_from": 5.0,
-                "loss_mz_to": 200.0}
+                "loss_mz_to": 200.0,
+                "intensity_weighting_power": 0.5,
+                "allowed_missing_percentage": 0,
+                "cosine_tol": 0.005,
+                "mass_tolerance": 1.0,
+                "ignore_non_annotated": True}
 
     # Set default parameters or replace by **settings input
     for key in defaults:
@@ -420,13 +425,9 @@ def library_matching(documents_query: List[SpectrumDocument],
                      model,
                      presearch_based_on: List[str] = ("parentmass",
                                                       "spec2vec-top10"),
-                     ignore_non_annotated: bool = True,
                      include_scores: List[str] = ("spec2vec", "cosine",
                                                   "modcosine"),
-                     intensity_weighting_power: float = 0.5,
-                     allowed_missing_percentage: float = 0,
-                     cosine_tol: float = 0.005,
-                     mass_tolerance: float = 1.0):
+                     **settings):
     """Selecting potential spectra matches with spectra library.
 
     Suitable candidates will be selected by 1) top_n Spec2Vec similarity, and
@@ -447,12 +448,12 @@ def library_matching(documents_query: List[SpectrumDocument],
         What to select candidates on. Options are now: parentmass,
         spec2vec-topX where X can be any number. Default = ("parentmass",
         "spec2vec-top10")
-    ignore_non_annotated: bool, optional
-        If True, only annotated spectra will be considered for matching.
-        Default = True.
     include_scores: list, optional
         Scores to include in output. Default = ("spec2vec", "cosine",
         "modcosine")
+    ignore_non_annotated: bool, optional
+        If True, only annotated spectra will be considered for matching.
+        Default = True.
     intensity_weighting_power: float, optional
         Spectrum vectors are a weighted sum of the word vectors. The given word
         intensities will be raised to the given power. Default = 0.5.
@@ -469,8 +470,9 @@ def library_matching(documents_query: List[SpectrumDocument],
     # pylint: disable=too-many-arguments
 
     # Initialise, error message
+    settings = set_spec2vec_defaults(**settings)
     library_spectra_metadata = get_metadata(documents_library)
-    if ignore_non_annotated:
+    if settings["ignore_non_annotated"]:
         # Get array of all ids for spectra with smiles
         library_ids = np.asarray([i for i, x in enumerate(
             library_spectra_metadata) if x])
@@ -485,22 +487,18 @@ def library_matching(documents_query: List[SpectrumDocument],
     # 1. Search for top-n Spec2Vec matches ------------------------------------
     selection_spec2vec, m_spec2vec_similarities = search_topn_s2v_matches(
         documents_query, documents_library, model, library_ids,
-        presearch_based_on, intensity_weighting_power,
-        allowed_missing_percentage)
+        presearch_based_on, settings["intensity_weighting_power"],
+        settings["allowed_missing_percentage"])
 
     # 2. Search for parent mass based matches ---------------------------------
     selection_massmatch, m_mass_matches = search_parent_mass_matches(
         documents_query, documents_library, library_ids, presearch_based_on,
-        mass_tolerance)
+        settings["mass_tolerance"])
 
     # 3. Combine found matches ------------------------------------------------
-    found_matches = combine_found_matches(documents_query, documents_library,
-                                          model, library_ids,
-                                          selection_spec2vec,
-                                          m_spec2vec_similarities,
-                                          selection_massmatch, m_mass_matches,
-                                          include_scores,
-                                          intensity_weighting_power,
-                                          allowed_missing_percentage,
-                                          cosine_tol)
+    found_matches = combine_found_matches(
+        documents_query, documents_library, model, library_ids,
+        selection_spec2vec, m_spec2vec_similarities, selection_massmatch,
+        m_mass_matches, include_scores, settings["intensity_weighting_power"],
+        settings["allowed_missing_percentage"], settings["cosine_tol"])
     return found_matches
