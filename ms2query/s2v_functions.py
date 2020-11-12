@@ -240,19 +240,19 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
     return selection_massmatch, m_mass_matches
 
 
-def found_matches(document_query: SpectrumDocument,
-                  documents_library: List[SpectrumDocument],
-                  model,
-                  library_ids,
-                  all_match_ids,
-                  i,
-                  m_spec2vec_similarities,
-                  m_mass_matches,
-                  include_scores: List[str] = ("spec2vec", "cosine",
-                                               "modcosine"),
-                  intensity_weighting_power: float = 0.5,
-                  allowed_missing_percentage: float = 0,
-                  cosine_tol: float = 0.005):
+def find_matches(document_query: SpectrumDocument,
+                 documents_library: List[SpectrumDocument],
+                 model,
+                 library_ids,
+                 all_match_ids,
+                 i,
+                 m_spec2vec_similarities,
+                 m_mass_matches,
+                 include_scores: List[str] = ("spec2vec", "cosine",
+                                              "modcosine"),
+                 intensity_weighting_power: float = 0.5,
+                 allowed_missing_percentage: float = 0,
+                 cosine_tol: float = 0.005):
     """Finds library matches for one query document, returns pd.DataFrame
 
     Args:
@@ -406,13 +406,13 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
             np.concatenate((s2v_top_ids, mass_match_ids)))
 
         if len(all_match_ids) > 0:
-            matches_df = found_matches(document_query, documents_library,
-                                       model, library_ids, all_match_ids,
-                                       i, m_spec2vec_similarities,
-                                       m_mass_matches, include_scores,
-                                       intensity_weighting_power,
-                                       allowed_missing_percentage,
-                                       cosine_tol)
+            matches_df = find_matches(document_query, documents_library,
+                                      model, library_ids, all_match_ids,
+                                      i, m_spec2vec_similarities,
+                                      m_mass_matches, include_scores,
+                                      intensity_weighting_power,
+                                      allowed_missing_percentage,
+                                      cosine_tol)
             combined_matches.append(matches_df.fillna(0))
         else:
             combined_matches.append([])
