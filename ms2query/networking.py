@@ -80,7 +80,20 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
 
     Args:
     -------
-
+    network: nx.Graph
+        Network to plot
+    attribute_key: str, optional
+        Name of the attribute to restrict the network on. Default = 's2v_score'
+    cutoff: int/float, optional
+        Cutoff to restrict the attribute key on. Default = 0.4
+    tan_cutoff: float, optional
+        Cutoff to restrict tanimoto score on. Default = 0.6
+    node_labels: bool, optional
+        Show node_labels or not. Default = False
+    k: int, optional
+        Optimal node distance. Default = 1
+    seed: int, optional
+        Seed used for spring layout. Default = 42
     """
     width_default = 3
 
