@@ -96,7 +96,10 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     seed: int, optional
         Seed used for spring layout. Default = 42
     """
+    # suppress pylint for now
+    # pylint: disable=too-many-arguments,too-many-locals
     width_default = 3
+    f_size = 5.5
 
     # making selection based on attribute cutoffs
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
@@ -114,7 +117,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     darkest = cmap(1.0)
 
     # init plot
-    fig, ax = plt.subplots()
+    fig, _ = plt.subplots()
     plt.axis('off')
 
     # plot empty network if there are no connections to query
@@ -125,7 +128,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
         nx.draw_networkx_nodes(empty_network, pos=q_pos,
                                nodelist=[q_node], node_color=[darkest])
         if node_labels:
-            nx.draw_networkx_labels(empty_network, pos=q_pos, font_size=5)
+            nx.draw_networkx_labels(empty_network, pos=q_pos, font_size=f_size)
         print('No matches above cutoff.')
         return fig
 
@@ -157,6 +160,6 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
             nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
                                    width=width / 2, style="dashed")
     if node_labels:
-        nx.draw_networkx_labels(network_sub, pos, font_size=5)
+        nx.draw_networkx_labels(network_sub, pos, font_size=f_size)
 
     return fig
