@@ -6,6 +6,7 @@ from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.networking import do_networking
+from ms2query.networking import plot_network
 
 
 st.title("Ms2query")
@@ -130,3 +131,4 @@ test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 network = do_networking("query", test_found_matches, test_sim_matrix)
 st.write('Network nodes:', network.nodes)  # to test
+network_plot = plot_network(network)

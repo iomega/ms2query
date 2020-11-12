@@ -1,6 +1,8 @@
-import networkx as nx
-# from networkx.drawing.nx_pydot import graphviz_layout
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import networkx as nx
+from networkx.drawing.nx_pydot import graphviz_layout
 
 
 def matches2network(query_id, matches):
@@ -70,3 +72,67 @@ def do_networking(query_id, matches, similarity_matrix):
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
     return network
+
+
+def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
+                 tan_cutoff=0.6, node_labels=False,
+                 save=False):
+    """Plot network
+
+    Args:
+    -------
+
+    """
+    width_default = 3
+
+    # making selection based on attribute cutoffs
+    library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                     'tanimoto' in d]
+    library_edges = [(u, v, d) for u, v, d in library_edges if
+                     d['tanimoto'] >= tan_cutoff]
+    query_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                   'tanimoto' not in d and d[attribute_key] >= cutoff]
+    if not query_edges:
+        print('No matches above cutoff.')
+        return
+    network_sub = nx.Graph(library_edges + query_edges)
+
+    pos = graphviz_layout(network_sub, prog="neato")
+    #     pos = nx.spring_layout(G)
+
+    nx.draw_networkx_nodes(network_sub, pos)
+    q_node = \
+        [node for node in network_sub.nodes if
+         isinstance(node, str) and 'query' in node][
+            0]
+    cmap = cm.get_cmap('Reds', 100)
+    # give query node darkest colour
+    darkest = cmap(1.0)
+    nx.draw_networkx_nodes(network_sub, pos, nodelist=[q_node],
+                           node_color=[darkest])
+
+    attr_labels = nx.get_edge_attributes(network_sub, attribute_key)
+    for edge in attr_labels.keys():
+        # introduce cutoff and multiply with width multiplier
+        val = attr_labels[edge]
+        if val > cutoff:
+            width = val * width_default
+            nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
+                                   width=width, edge_color=cmap(val))
+
+    tan_labels = nx.get_edge_attributes(network_sub, 'tanimoto')
+    for edge in tan_labels.keys():
+        # introduce cutoff and multiply with width multiplier
+        val = tan_labels[edge]
+        if val > tan_cutoff:
+            width = val * width_default
+            nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
+                                   width=width / 2, style="dashed")
+    if node_labels:
+        nx.draw_networkx_labels(network_sub, pos, font_size=5.5)
+    plt.axis('off')
+    if save:
+        plt.savefig(save)
+    else:
+        plt.show()
+    plt.close()
