@@ -5,6 +5,7 @@ from gensim.models import Word2Vec
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
+from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 
 
@@ -74,6 +75,7 @@ if library_spectrums:
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
 model_file = st.sidebar.text_input("Enter filename of Spec2Vec model (with path):")
 st.write("#### Spec2Vec model")
+model = None
 if model_file:
     if model_file.endswith(".model"):
         st.write("Your selected model:", os.path.split(model_file)[-1])
@@ -118,9 +120,24 @@ test_found_matches_file = os.path.join(path_dir, "tests",
                                        "test_found_matches.csv")
 test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
 st.write("## Library matching")
-st.write("Library matches for test query:")
-st.dataframe(test_found_matches)
+with st.beta_expander("See an example"):
+    st.write("These are the test library matches for test query:")
+    st.dataframe(test_found_matches)
 
+# library matching function
+do_library_matching = st.button("Do library matching")
+if do_library_matching:
+    if model:
+        st.write("These are the library matches for your query")
+        found_matches_s2v = library_matching(
+            documents_query, documents_library, model, presearch_based_on=[
+                f"spec2vec-top{len(documents_library)}", "parentmass"],
+            **{"allowed_missing_percentage": 100})
+        if found_matches_s2v:
+            st.dataframe(found_matches_s2v[0])
+    else:
+        st.write("""<p><span style="color:red">Please specify input files.
+        </span></p>""", unsafe_allow_html=True)
 # do networking
 # for now load example similarity matrix
 path_dir = os.path.dirname(__file__)
