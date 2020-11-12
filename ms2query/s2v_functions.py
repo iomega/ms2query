@@ -12,7 +12,7 @@ from spec2vec import SpectrumDocument
 from spec2vec import Spec2Vec
 
 
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-locals
 
 def set_spec2vec_defaults(**settings):
     """Set spec2vec default argument values"(where no user input is given)".
