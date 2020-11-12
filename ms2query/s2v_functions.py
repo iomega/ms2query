@@ -467,7 +467,6 @@ def library_matching(documents_query: List[SpectrumDocument],
     mass_tolerance: float, optional
         Specify tolerance for a parentmass match. Default = 1.
     """
-    # pylint: disable=too-many-arguments
 
     # Initialise, error message
     settings = set_spec2vec_defaults(**settings)

@@ -10,6 +10,7 @@ from ms2query.s2v_functions import library_matching
 from ms2query.s2v_functions import get_metadata
 from ms2query.s2v_functions import search_topn_s2v_matches
 from ms2query.s2v_functions import search_parent_mass_matches
+from ms2query.s2v_functions import find_matches
 from ms2query.utils import json_loader
 from spec2vec import SpectrumDocument
 
@@ -140,3 +141,39 @@ def test_search_parent_mass_matches():
         "Expected len to be len(queries)"
     assert m_mass_matches.shape == (lib_length, len(documents_q)),\
         "Expected shape to be (len(library), len(queries))"
+
+
+def test_find_matches():
+    """Test find_matches"""
+    path_tests = os.path.dirname(__file__)
+    testfile_q = os.path.join(path_tests, "testspectrum_query.json")
+    spectrums_q = json_loader(open(testfile_q))
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_q = process_spectrums(spectrums_q)
+    documents_l = process_spectrums(spectrums_l)
+    test_model_file = os.path.join(path_tests,
+                                   "testspectrum_library_model.model")
+    test_model = Word2Vec.load(test_model_file)
+    lib_length = len(documents_l)
+    topn_s2v_matches, test_spec2vec_similarities = search_topn_s2v_matches(
+        documents_q, documents_l,
+        test_model,
+        np.asarray(range(lib_length)),
+        allowed_missing_percentage=100,
+        presearch_based_on=[
+            f"spec2vec-top{lib_length}"]
+    )
+    test_df = find_matches(
+        documents_q[0], documents_l,
+        test_model,
+        np.asarray(range(lib_length)),
+        np.asarray(range(lib_length)),
+        0,
+        test_spec2vec_similarities,
+        None,
+        allowed_missing_percentage=100)
+    assert isinstance(test_df, pd.DataFrame),\
+        "Expected output to be DataFrame"
+    assert test_df.shape == (lib_length, 5),\
+        "Expected shape to be (len(library), 5)"
