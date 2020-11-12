@@ -60,9 +60,10 @@ def test_library_matching():
     test_model = Word2Vec.load(test_model_file)
     lib_length = len(documents_l)
     test_found_matches = library_matching(documents_q, documents_l, test_model,
-                                          allowed_missing_percentage=100,
                                           presearch_based_on=[
-                                              f"spec2vec-top{lib_length}"])
+                                              f"spec2vec-top{lib_length}"],
+                                          **{"allowed_missing_percentage": 100}
+                                          )
     assert isinstance(test_found_matches, list), "Expected output to be list"
     assert len(test_found_matches) == len(documents_q),\
         "Expected output for amount of query"

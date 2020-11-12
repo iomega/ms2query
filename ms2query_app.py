@@ -127,9 +127,12 @@ st.write("## Testing library matching")
 test_model = Word2Vec.load(os.path.join(path_dir, "tests",
                                         "testspectrum_library_model.model"))
 found_matches_s2v = library_matching(documents_query, documents_library,
-                                 test_model, allowed_missing_percentage=100,
-                                 presearch_based_on=[
-                                     f"spec2vec-top{len(documents_library)}"])
+                                     test_model,
+                                     presearch_based_on=[
+                                        f"spec2vec-top{len(documents_library)}"
+                                     ],
+                                     **{"allowed_missing_percentage": 100},
+                                     )
 if found_matches_s2v:
     st.write(found_matches_s2v[0])
 
