@@ -4,6 +4,9 @@ from matplotlib import cm
 import networkx as nx
 
 
+# pylint: disable=too-many-arguments
+
+
 def matches2network(query_id, matches):
     """Return a networkx Graph connecting query_id to all matches
 
@@ -138,7 +141,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
         Default width for the edges. Default = 3
     """
     # suppress pylint for now
-    # pylint: disable=too-many-arguments,too-many-locals
+    # pylint: disable=too-many-locals
     f_size = 5.5
 
     # making selection based on attribute cutoffs
