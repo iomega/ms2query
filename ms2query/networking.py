@@ -75,8 +75,47 @@ def do_networking(query_id, matches, similarity_matrix):
     return network
 
 
+def draw_edges(network, pos, attribute, attr_cutoff, width_default,
+               style="solid", cmap=None):
+    """
+    Draw edges where width is determined by attribute score, if score > cutoff
+
+    Args:
+    -------
+    network: nx.Graph
+        Network for which to draw edges
+    pos: dict of {node: [x,y]}
+        Contains coordinates for each node
+    attribute: str
+        The attribute that should be looked at for the score
+    attr_cutoff: float
+        Cutoff for the attribute scores
+    width_default: int
+        The max width of an edge
+    style: str, optional
+        The style of the edges. Default = solid
+    cmap: matplotlib.colourmap, optional
+        If provided, a cmap to colour the edges by attribute score.
+        Default = none
+    """
+    labels = nx.get_edge_attributes(network, attribute)
+    for edge in labels.keys():
+        # introduce cutoff and multiply with width multiplier
+        val = labels[edge]
+        if val >= attr_cutoff:
+            width = val * width_default
+            if cmap:
+                nx.draw_networkx_edges(network, pos, edgelist=[edge],
+                                       width=width, style=style,
+                                       edge_color=cmap(val))
+            else:
+                nx.draw_networkx_edges(network, pos, edgelist=[edge],
+                                       width=width, style=style)
+
+
 def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
-                 tan_cutoff=0.6, node_labels=False, k=1, seed=42):
+                 tan_cutoff=0.6, node_labels=False, k=1, seed=42,
+                 width_default=3):
     """Plot network, Returns matplotlib.figure.Figure
 
     Args:
@@ -95,10 +134,11 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
         Optimal node distance. Default = 1
     seed: int, optional
         Seed used for spring layout. Default = 42
+    width_default: int/float, optional
+        Default width for the edges. Default = 3
     """
     # suppress pylint for now
     # pylint: disable=too-many-arguments,too-many-locals
-    width_default = 3
     f_size = 5.5
 
     # making selection based on attribute cutoffs
@@ -136,29 +176,18 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     network_sub = nx.Graph(library_edges + query_edges)
     # pos = graphviz_layout(network_sub, prog="neato")
     pos = nx.spring_layout(network_sub, k=k, iterations=1000, seed=seed)
+
+    # draw nodes
     nx.draw_networkx_nodes(network_sub, pos)
     nx.draw_networkx_nodes(network_sub, pos, nodelist=[q_node],
                            node_color=[darkest])  # give query different colour
-
     # draw attribute edges
-    attr_labels = nx.get_edge_attributes(network_sub, attribute_key)
-    for edge in attr_labels.keys():
-        # introduce cutoff and multiply with width multiplier
-        val = attr_labels[edge]
-        if val >= cutoff:
-            width = val * width_default
-            nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
-                                   width=width, edge_color=cmap(val))
-
+    draw_edges(network_sub, pos, attribute_key, cutoff, width_default,
+               cmap=cmap)
     # draw tanimoto edges
-    tan_labels = nx.get_edge_attributes(network_sub, 'tanimoto')
-    for edge in tan_labels.keys():
-        # introduce cutoff and multiply with width multiplier
-        val = tan_labels[edge]
-        if val >= tan_cutoff:
-            width = val * width_default
-            nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
-                                   width=width / 2, style="dashed")
+    draw_edges(network_sub, pos, 'tanimoto', tan_cutoff, width_default/2,
+               "dashed")
+
     if node_labels:
         nx.draw_networkx_labels(network_sub, pos, font_size=f_size)
 

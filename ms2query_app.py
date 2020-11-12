@@ -156,6 +156,6 @@ if plot_true:
     # make the actual plot
     network_plot = plot_network(network, attribute_key=attr_key,
                                 cutoff=attr_cutoff, tan_cutoff=taninomoto_cutoff,
-                                node_labels=True)
+                                node_labels=True, k=0.5)
     if network_plot:
         plot_placeholder.pyplot(network_plot)
