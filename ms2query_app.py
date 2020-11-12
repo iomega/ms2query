@@ -129,7 +129,8 @@ test_sim_matrix_file = os.path.join(path_dir, "tests", "test_found_matches_" +
                                     "similarity_matrix.csv")
 test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
-if st.button("Plot network of found matches"):
+plot_true = st.checkbox("Plot network of found matches")
+if plot_true:
     network = do_networking("query", test_found_matches, test_sim_matrix)
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
