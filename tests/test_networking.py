@@ -1,9 +1,11 @@
+import os
+from matplotlib.figure import Figure
+from networkx import Graph
+import pandas as pd
 from ms2query.networking import matches2network
 from ms2query.networking import add_library_connections
 from ms2query.networking import do_networking
-from networkx import Graph
-import pandas as pd
-import os
+from ms2query.networking import plot_network
 
 
 def test_matches2network():
@@ -54,3 +56,17 @@ def test_do_networking():
     assert isinstance(test_network[test_matches.iloc[0].name][
                           test_matches.iloc[1].name]["tanimoto"], float), \
         "Expected an edge with tanimoto score between these library hits"
+
+
+def test_plot_network():
+    """Test plot_network"""
+    path_tests = os.path.dirname(__file__)
+    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
+    test_matches = pd.read_csv(test_matches_file, index_col=0)
+    test_matches_sim_matrix_file = os.path.join(
+        path_tests, "test_found_matches_similarity_matrix.csv")
+    test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
+    query_name = "query"
+    test_network = do_networking(query_name, test_matches, test_sim_matrix)
+    test_fig = plot_network(test_network)
+    assert isinstance(test_fig, Figure), "Expected output to be Figure"

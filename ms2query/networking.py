@@ -77,7 +77,7 @@ def do_networking(query_id, matches, similarity_matrix):
 
 def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
                  tan_cutoff=0.6, node_labels=False, k=1, seed=42):
-    """Plot network
+    """Plot network, Returns matplotlib.figure.Figure
 
     Args:
     -------
