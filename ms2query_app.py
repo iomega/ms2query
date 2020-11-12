@@ -151,4 +151,5 @@ with col2:
 network_plot = plot_network(network, attribute_key=attr_key,
                             cutoff=attr_cutoff, tan_cutoff=taninomoto_cutoff,
                             node_labels=True)
-st.pyplot(network_plot)
+if network_plot:
+    st.pyplot(network_plot)

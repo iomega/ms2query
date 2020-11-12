@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import networkx as nx
-from networkx.drawing.nx_pydot import graphviz_layout
 
 
 def matches2network(query_id, matches):
@@ -18,6 +17,8 @@ def matches2network(query_id, matches):
 
     All data from matches is added as an edge attribute
     """
+    if 'query' not in query_id:
+        query_id = "query_" + query_id
     graph = nx.Graph()  # initialise undrected graph
     lib_ids = matches.index
     # add all columns from matches to edge attributes
@@ -104,46 +105,58 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
                      d['tanimoto'] >= tan_cutoff]
     query_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
                    'tanimoto' not in d and d[attribute_key] >= cutoff]
-    if not query_edges:
-        print('No matches above cutoff.')
-        return
-    network_sub = nx.Graph(library_edges + query_edges)
+    q_node = [node for node in network.nodes if isinstance(node, str)
+              and 'query' in node][0]
 
-    # init plot info
-    fig, ax = plt.subplots()
-    # pos = graphviz_layout(network_sub, prog="neato")
-    pos = nx.spring_layout(network_sub, k=k, iterations=1000, seed=seed)
-
-    nx.draw_networkx_nodes(network_sub, pos)
-    q_node = \
-        [node for node in network_sub.nodes if
-         isinstance(node, str) and 'query' in node][
-            0]
+    # make colours for query info
     cmap = cm.get_cmap('Reds', 100)
     # give query node darkest colour
     darkest = cmap(1.0)
-    nx.draw_networkx_nodes(network_sub, pos, nodelist=[q_node],
-                           node_color=[darkest])
 
+    # init plot
+    fig, ax = plt.subplots()
+    plt.axis('off')
+
+    # plot empty network if there are no connections to query
+    if not query_edges:
+        empty_network = nx.Graph()
+        empty_network.add_node(q_node)
+        q_pos = {q_node: [0, 0]}
+        nx.draw_networkx_nodes(empty_network, pos=q_pos,
+                               nodelist=[q_node], node_color=[darkest])
+        if node_labels:
+            nx.draw_networkx_labels(empty_network, pos=q_pos, font_size=5)
+        print('No matches above cutoff.')
+        return fig
+
+    # init plot info
+    network_sub = nx.Graph(library_edges + query_edges)
+    # pos = graphviz_layout(network_sub, prog="neato")
+    pos = nx.spring_layout(network_sub, k=k, iterations=1000, seed=seed)
+    nx.draw_networkx_nodes(network_sub, pos)
+    nx.draw_networkx_nodes(network_sub, pos, nodelist=[q_node],
+                           node_color=[darkest])  # give query different colour
+
+    # draw attribute edges
     attr_labels = nx.get_edge_attributes(network_sub, attribute_key)
     for edge in attr_labels.keys():
         # introduce cutoff and multiply with width multiplier
         val = attr_labels[edge]
-        if val > cutoff:
+        if val >= cutoff:
             width = val * width_default
             nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
                                    width=width, edge_color=cmap(val))
 
+    # draw tanimoto edges
     tan_labels = nx.get_edge_attributes(network_sub, 'tanimoto')
     for edge in tan_labels.keys():
         # introduce cutoff and multiply with width multiplier
         val = tan_labels[edge]
-        if val > tan_cutoff:
+        if val >= tan_cutoff:
             width = val * width_default
             nx.draw_networkx_edges(network_sub, pos, edgelist=[edge],
                                    width=width / 2, style="dashed")
     if node_labels:
         nx.draw_networkx_labels(network_sub, pos, font_size=5)
-    plt.axis('off')
 
     return fig
