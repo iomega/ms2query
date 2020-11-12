@@ -1,6 +1,8 @@
 from typing import List
+from typing import Union
 import numpy as np
 import pandas as pd
+from gensim.models.basemodel import BaseTopicModel
 from matchms.filtering import normalize_intensities
 from matchms.filtering import require_minimum_number_of_peaks
 from matchms.filtering import select_by_mz
@@ -133,8 +135,8 @@ def get_metadata(documents: List[SpectrumDocument]):
 
 def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
                             documents_library: List[SpectrumDocument],
-                            model,
-                            library_ids,
+                            model: BaseTopicModel,
+                            library_ids: Union(List[int], np.ndarray),
                             presearch_based_on: List[str] = ("parentmass",
                                                              "spec2vec-top10"),
                             intensity_weighting_power: float = 0.5,
@@ -195,7 +197,7 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
 
 def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                documents_library: List[SpectrumDocument],
-                               library_ids,
+                               library_ids: Union(List[int], np.ndarray),
                                presearch_based_on: List[str] = (
                                        "parentmass", "spec2vec-top10"),
                                mass_tolerance: float = 1.0):
@@ -242,12 +244,12 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
 
 def find_matches(document_query: SpectrumDocument,
                  documents_library: List[SpectrumDocument],
-                 model,
-                 library_ids,
-                 all_match_ids,
-                 i,
-                 m_spec2vec_similarities,
-                 m_mass_matches,
+                 model: BaseTopicModel,
+                 library_ids: Union(List[int], np.ndarray),
+                 all_match_ids: Union(List[int], np.ndarray),
+                 i: int,
+                 m_spec2vec_similarities: Union(np.ndarray, float),
+                 m_mass_matches: Union(np.ndarray, float),
                  include_scores: List[str] = ("spec2vec", "cosine",
                                               "modcosine"),
                  intensity_weighting_power: float = 0.5,
@@ -268,30 +270,28 @@ def find_matches(document_query: SpectrumDocument,
         List with library ids to consider for spec2vec matching.
     all_match_ids: list-like of int
         List with all library ids to consider (also parentmass match).
-    i: int
+    i:
         Keeps track of current query number
-    selection_spec2vec: ndarray of int
+    selection_spec2vec:
         The topn library IDs for each query. It has shape(topn, len(queries)).
     m_spec2vec_similarities: ndarray of float
         The second ndarray are the s2v scores against all library documents per
         query. It has shape (len(library), len(queries)).
-    selection_massmatch: list of int
-        List of all parent mass matching library IDs for each query.
     m_mass_matches: ndarray of float
         The mass match scores against all library documents per query. It has
         shape (len(library), len(queries)).
-    include_scores: list, optional
+    include_scores:
         Scores to include in output. Default = ("spec2vec", "cosine",
         "modcosine")
-    intensity_weighting_power: float, optional
+    intensity_weighting_power:
         Spectrum vectors are a weighted sum of the word vectors. The given word
         intensities will be raised to the given power. Default = 0.5.
-    allowed_missing_percentage: float, optional
+    allowed_missing_percentage:
         Set the maximum allowed percentage of the document that may be missing
         from the input model. This is measured as percentage of the weighted,
         missing words compared to all word vectors of the document. Default = 0
         which means no missing words are allowed.
-    cosine_tol: float, optional
+    cosine_tol:
         Set tolerance for the cosine and modified cosine score. Default = 0.005
     """
     if "cosine" in include_scores:
@@ -347,12 +347,12 @@ def find_matches(document_query: SpectrumDocument,
 
 def combine_found_matches(documents_query: List[SpectrumDocument],
                           documents_library: List[SpectrumDocument],
-                          model,
-                          library_ids,
+                          model: BaseTopicModel,
+                          library_ids: Union(List[int], np.ndarray),
                           selection_spec2vec,
-                          m_spec2vec_similarities,
-                          selection_massmatch,
-                          m_mass_matches,
+                          m_spec2vec_similarities: Union(np.ndarray, float),
+                          selection_massmatch: List[int],
+                          m_mass_matches: Union(np.ndarray, float),
                           include_scores: List[str] = ("spec2vec", "cosine",
                                                        "modcosine"),
                           intensity_weighting_power: float = 0.5,
@@ -374,12 +374,12 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
         List with library ids to consider for spec2vec matching.
     selection_spec2vec: ndarray of int
         The topn library IDs for each query. It has shape(topn, len(queries)).
-    m_spec2vec_similarities: ndarray of float
+    m_spec2vec_similarities:
         The second ndarray are the s2v scores against all library documents per
         query. It has shape (len(library), len(queries)).
-    selection_massmatch: list of int
+    selection_massmatch:
         List of all parent mass matching library IDs for each query.
-    m_mass_matches: ndarray of float
+    m_mass_matches:
         The mass match scores against all library documents per query. It has
         shape (len(library), len(queries)).
     include_scores: list, optional
@@ -422,7 +422,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
 
 def library_matching(documents_query: List[SpectrumDocument],
                      documents_library: List[SpectrumDocument],
-                     model,
+                     model: BaseTopicModel,
                      presearch_based_on: List[str] = ("parentmass",
                                                       "spec2vec-top10"),
                      include_scores: List[str] = ("spec2vec", "cosine",
