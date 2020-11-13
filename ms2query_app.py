@@ -163,7 +163,7 @@ if plot_true and do_library_matching:
         if isinstance(attr_data.iloc[0], float):
             # true for s2v, cosine etc
             min_v, max_v, step, val = (0., 1., 0.05, 0.4)
-        elif max(attr_data) > 1:
+        elif max(attr_data) >= 1:
             # true for parentmass, cosine matches etc
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
         attr_cutoff = st.slider(attr_key+" cutoff", min_value=min_v,
