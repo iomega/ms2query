@@ -148,6 +148,7 @@ if plot_true:
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
         attr_cutoff = st.slider(attr_key+" cutoff", min_value=min_v,
                                 max_value=max_v, step=step, value=val)
+        draw_edge_labels = st.checkbox("Show values")
     with col2:
         st.write("Restrict library connections")
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
@@ -156,6 +157,7 @@ if plot_true:
     # make the actual plot
     network_plot = plot_network(network, attribute_key=attr_key,
                                 cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
-                                node_labels=True, k=0.5)
+                                node_labels=True, k=0.5,
+                                edge_labels=draw_edge_labels)
     if network_plot:
         plot_placeholder.pyplot(network_plot)

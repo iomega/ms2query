@@ -79,7 +79,7 @@ def do_networking(query_id, matches, similarity_matrix):
 
 
 def draw_edges(network, pos, attribute, attr_cutoff, width_default,
-               style="solid", cmap=None):
+               style="solid", cmap=None, edge_labels=True):
     """
     Draw edges where width is determined by attribute score, if score > cutoff
 
@@ -100,6 +100,8 @@ def draw_edges(network, pos, attribute, attr_cutoff, width_default,
     cmap: matplotlib.colourmap, optional
         If provided, a cmap to colour the edges by attribute score.
         Default = none
+    edge_labels: bool, optional
+        Plot edge labels
     """
     labels = nx.get_edge_attributes(network, attribute)
     max_val = max(labels.values())
@@ -118,11 +120,17 @@ def draw_edges(network, pos, attribute, attr_cutoff, width_default,
             else:
                 nx.draw_networkx_edges(network, pos, edgelist=[edge],
                                        width=width, style=style)
+            if edge_labels:
+                if isinstance(val, float):
+                    val = f"{val:.2f}"
+                nx.draw_networkx_edge_labels(network, pos,
+                                             edge_labels={edge: val},
+                                             font_size=4.5)
 
 
 def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
                  tan_cutoff=0.6, node_labels=False, k=1, seed=42,
-                 width_default=3):
+                 width_default=3, edge_labels=False):
     """Plot network, Returns matplotlib.figure.Figure
 
     Args:
@@ -143,6 +151,8 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
         Seed used for spring layout. Default = 42
     width_default: int/float, optional
         Default width for the edges. Default = 3
+    edge_labels: bool, optional
+        Plot edge labels
     """
     # suppress pylint for now
     # pylint: disable=too-many-locals
@@ -190,10 +200,10 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
                            node_color=[darkest])  # give query different colour
     # draw attribute edges
     draw_edges(network_sub, pos, attribute_key, cutoff, width_default,
-               cmap=cmap)
+               cmap=cmap, edge_labels=edge_labels)
     # draw tanimoto edges
     draw_edges(network_sub, pos, 'tanimoto', tan_cutoff, width_default/2,
-               "dashed")
+               "dashed", edge_labels=edge_labels)
 
     if node_labels:
         nx.draw_networkx_labels(network_sub, pos, font_size=f_size)
