@@ -126,19 +126,22 @@ with st.beta_expander("See an example"):
     st.dataframe(test_found_matches)
 
 # library matching function
-do_library_matching = st.button("Do library matching")
+do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
-    if model:
+    if all([model, documents_query, documents_library]):
         st.write("These are the library matches for your query")
         found_matches_s2v = library_matching(
             documents_query, documents_library, model, presearch_based_on=[
                 f"spec2vec-top{len(documents_library)}", "parentmass"],
             **{"allowed_missing_percentage": 100})
         if found_matches_s2v:
-            st.dataframe(found_matches_s2v[0])
+            found_match = found_matches_s2v[0]
+            st.dataframe(found_match)
     else:
+        do_library_matching = False
         st.write("""<p><span style="color:red">Please specify input files.
         </span></p>""", unsafe_allow_html=True)
+
 # do networking
 # for now load example similarity matrix
 path_dir = os.path.dirname(__file__)
@@ -147,20 +150,20 @@ test_sim_matrix_file = os.path.join(path_dir, "tests", "test_found_matches_" +
 test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
-if plot_true:
-    network = do_networking("query", test_found_matches, test_sim_matrix)
+if plot_true and do_library_matching:
+    network = do_networking("query", found_match, test_sim_matrix)
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)
     with col1:
         st.write("Restrict library matches")
-        attr_key = st.selectbox("Choose parameter", test_found_matches.columns,
-                                index=len(test_found_matches.columns)-1)
-        attr_data = test_found_matches[attr_key]
+        attr_key = st.selectbox("Choose parameter", found_match.columns,
+                                index=len(found_match.columns)-1)
+        attr_data = found_match[attr_key]
         if isinstance(attr_data.iloc[0], float):
             # true for s2v, cosine etc
             min_v, max_v, step, val = (0., 1., 0.05, 0.4)
-        elif max(attr_data) > 1:
+        elif max(attr_data) >= 1:
             # true for parentmass, cosine matches etc
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
         attr_cutoff = st.slider(attr_key+" cutoff", min_value=min_v,
@@ -178,3 +181,6 @@ if plot_true:
                                 edge_labels=draw_edge_labels)
     if network_plot:
         plot_placeholder.pyplot(network_plot)
+elif plot_true:  # library matching is not done yet, but plot button is clicked
+    st.write("""<p><span style="color:red">Please specify input files and do
+            library matching.</span></p>""", unsafe_allow_html=True)
