@@ -139,6 +139,7 @@ if do_library_matching:
     else:
         st.write("""<p><span style="color:red">Please specify input files.
         </span></p>""", unsafe_allow_html=True)
+
 # do networking
 # for now load example similarity matrix
 path_dir = os.path.dirname(__file__)
@@ -147,16 +148,16 @@ test_sim_matrix_file = os.path.join(path_dir, "tests", "test_found_matches_" +
 test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
-if plot_true:
-    network = do_networking("query", test_found_matches, test_sim_matrix)
+if plot_true and do_library_matching:
+    network = do_networking("query", found_matches_s2v, test_sim_matrix)
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)
     with col1:
         st.write("Restrict library matches")
-        attr_key = st.selectbox("Choose parameter", test_found_matches.columns,
-                                index=len(test_found_matches.columns)-1)
-        attr_data = test_found_matches[attr_key]
+        attr_key = st.selectbox("Choose parameter", found_matches_s2v.columns,
+                                index=len(found_matches_s2v.columns)-1)
+        attr_data = found_matches_s2v[attr_key]
         if isinstance(attr_data.iloc[0], float):
             # true for s2v, cosine etc
             min_v, max_v, step, val = (0., 1., 0.05, 0.4)
@@ -178,3 +179,6 @@ if plot_true:
                                 edge_labels=draw_edge_labels)
     if network_plot:
         plot_placeholder.pyplot(network_plot)
+elif plot_true:  # library matching is not done yet, but plot button is clicked
+    st.write("""<p><span style="color:red">Please specify input files and do
+            library matching.</span></p>""", unsafe_allow_html=True)
