@@ -102,16 +102,19 @@ def draw_edges(network, pos, attribute, attr_cutoff, width_default,
         Default = none
     """
     labels = nx.get_edge_attributes(network, attribute)
-    max_val = max(labels.values)
+    max_val = max(labels.values())
+    if max_val < 1:
+        max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
     for edge in labels.keys():
         # introduce cutoff and multiply with width multiplier
         val = labels[edge]
         if val >= attr_cutoff:
-            width = val / max_val * width_default
+            cor_val = val / max_val
+            width = cor_val * width_default
             if cmap:
                 nx.draw_networkx_edges(network, pos, edgelist=[edge],
                                        width=width, style=style,
-                                       edge_color=cmap(val))
+                                       edge_color=cmap(cor_val))
             else:
                 nx.draw_networkx_edges(network, pos, edgelist=[edge],
                                        width=width, style=style)
