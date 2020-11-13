@@ -11,6 +11,7 @@ pip install matchms
 pip install streamlit
 pip install spec2vec
 pip install networkx
+pip install plotly
 ```
   
 ## Run app locally
