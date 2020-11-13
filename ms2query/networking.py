@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import networkx as nx
+import plotly.graph_objects as go
 
 
 # pylint: disable=too-many-arguments
@@ -208,4 +209,97 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     if node_labels:
         nx.draw_networkx_labels(network_sub, pos, font_size=f_size)
 
+    return fig
+
+
+def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
+                   tan_cutoff=0.6, k=1, seed=42):
+    """
+
+    Args:
+    -------
+
+    """
+    # pylint: disable=too-many-locals
+    library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                     'tanimoto' in d]
+    library_edges = [(u, v, d) for u, v, d in library_edges if
+                     d['tanimoto'] >= tan_cutoff]
+    query_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                   'tanimoto' not in d and d[attribute_key] >= cutoff]
+    q_node = [node for node in network.nodes if isinstance(node, str)
+              and 'query' in node][0]
+    network = nx.Graph(library_edges + query_edges)
+
+    pos = nx.spring_layout(network, k=k, iterations=500, seed=seed)
+
+    edge_x = []
+    edge_y = []
+    edge_style = []
+    for edge in network.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=4.0, color='#888'),
+        hoverinfo='text',
+        mode='lines')
+
+    node_x = []
+    node_y = []
+    node_type = []
+    for node in network.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+        node_type.append(node == "query")
+
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        marker=dict(
+            size=40,
+            color=np.array(node_type).astype(int),
+            colorscale='Bluered',
+            line_color="white",
+            line_width=2))
+
+    node_adjacencies = []
+    node_label = []
+    for node, adjacencies in enumerate(network.adjacency()):
+        # node_adjacencies.append(len(adjacencies[1]))
+        node_label.append(list(network.nodes)[node])
+
+    node_trace.text = node_label
+
+    layout = go.Layout(
+        autosize=True,
+        width=700,
+        height=600,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+
+        xaxis=go.layout.XAxis({'showgrid': False,
+                               'visible': False, }),
+        yaxis=go.layout.YAxis({'showgrid': False,
+                               'visible': False, }),
+        margin=go.layout.Margin(
+            l=50,
+            r=50,
+            b=50,
+            t=50,
+            pad=4,
+        )
+    )
+
+    fig = go.Figure(data=[edge_trace, node_trace],
+                    layout=layout)
     return fig

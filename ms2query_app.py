@@ -7,7 +7,7 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
-from ms2query.networking import plot_network
+from ms2query.networking import plotly_network
 
 
 st.title("Ms2query")
@@ -175,12 +175,13 @@ if plot_true and do_library_matching:
                                     max_value=1., step=0.05, value=0.6)
 
     # make the actual plot
-    network_plot = plot_network(network, attribute_key=attr_key,
-                                cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
-                                node_labels=True, k=0.5,
-                                edge_labels=draw_edge_labels)
+    # network_plot = plot_network(network, attribute_key=attr_key,
+    #                             cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
+    #                             node_labels=True, k=0.5,
+    #                             edge_labels=draw_edge_labels)
+    network_plot = plotly_network(network)
     if network_plot:
-        plot_placeholder.pyplot(network_plot)
+        plot_placeholder.plotly_chart(network_plot)
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)
