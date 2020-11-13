@@ -32,6 +32,7 @@ setup(
         "streamlit",
         "numpy",
         "spec2vec",
+        "pydot",
         "networkx",
     ],
     extras_require={"dev": ["bump2version",
