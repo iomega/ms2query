@@ -150,12 +150,12 @@ if plot_true:
                                 max_value=max_v, step=step, value=val)
     with col2:
         st.write("Restrict library connections")
-        taninomoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
-                                      max_value=1., step=0.05, value=0.6)
+        tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
+                                    max_value=1., step=0.05, value=0.6)
 
     # make the actual plot
     network_plot = plot_network(network, attribute_key=attr_key,
-                                cutoff=attr_cutoff, tan_cutoff=taninomoto_cutoff,
+                                cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
                                 node_labels=True, k=0.5)
     if network_plot:
         plot_placeholder.pyplot(network_plot)
