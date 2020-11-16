@@ -204,7 +204,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     draw_edges(network_sub, pos, attribute_key, cutoff, width_default,
                cmap=cmap, edge_labels=edge_labels)
     # draw tanimoto edges
-    draw_edges(network_sub, pos, 'tanimoto', tan_cutoff, width_default/2,
+    draw_edges(network_sub, pos, 'tanimoto', tan_cutoff, width_default / 2,
                "dashed", edge_labels=edge_labels)
 
     if node_labels:
@@ -237,15 +237,17 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
 
     edge_trace = []
     for u, v, d in library_edges:
-        edge = make_plotly_edge(u, v, d, pos, 'tanimoto', tan_cutoff,
-                                width_default*0.8, "dash")
+        edge, edge_text = make_plotly_edge(u, v, d, pos, 'tanimoto',
+                                width_default * 0.8, "dash")
         edge_trace.append(edge)
+        edge_trace.append(edge_text)
 
     red_cmap = cm.get_cmap('Reds', 100)
     for u, v, d in query_edges:
-        edge = make_plotly_edge(u, v, d, pos, attribute_key, cutoff,
-                                width_default, "solid", red_cmap)
+        edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
+                                           width_default, "solid", red_cmap)
         edge_trace.append(edge)
+        edge_trace.append(edge_text)
 
     node_x = []
     node_y = []
@@ -336,6 +338,9 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
     x1, y1 = pos[v]
     xs = (x0, x1, None)
     ys = (y0, y1, None)
+    # text coordinates
+    x_txt = [(x0 + x1) / 2]
+    y_txt = [(y0 + y1) / 2]
     # default is the library connection parameters
     val = d[attribute]
     e_width = width_default * val
@@ -347,8 +352,16 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
         x=xs,
         y=ys,
         line=dict(width=e_width, color=e_colour, dash=style),
-        hoverinfo='none',
-        mode='lines',
+        mode='lines')
+    # edge_text = ["{}: {}".format(attribute, str(d[attribute]))]
+    # edge_trace.text = edge_text
+
+    txt_trace = go.Scatter(
+        x=x_txt,
+        y=y_txt,
+        customdata=["{}: {:.3f}".format(attribute, val)],
+        mode='text',
+        hovertemplate="%{customdata}<extra></extra>",
         showlegend=False)
 
-    return edge_trace
+    return edge_trace, txt_trace
