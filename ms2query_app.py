@@ -151,7 +151,6 @@ test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    network = do_networking("query", found_match, test_sim_matrix)
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)
@@ -174,11 +173,7 @@ if plot_true and do_library_matching:
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
                                     max_value=1., step=0.05, value=0.6)
 
-    # make the actual plot
-    # network_plot = plot_network(network, attribute_key=attr_key,
-    #                             cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
-    #                             node_labels=True, k=0.5,
-    #                             edge_labels=draw_edge_labels)
+    network = do_networking("query", found_match, test_sim_matrix)
     network_plot = plotly_network(network, attribute_key=attr_key,
                                   cutoff=attr_cutoff,
                                   tan_cutoff=tanimoto_cutoff)
