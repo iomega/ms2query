@@ -254,7 +254,11 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        node_type.append(node == "query")
+        type_val = 0
+        if isinstance(node, str):
+            if "query" in node:
+                type_val = 1
+        node_type.append(type_val)
 
     node_trace = go.Scatter(
         x=node_x, y=node_y,
@@ -263,7 +267,7 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
         marker=dict(
             size=40,
             color=np.array(node_type).astype(int),
-            colorscale='Bluered',
+            colorscale='portland',
             line_color="white",
             line_width=2))
 
