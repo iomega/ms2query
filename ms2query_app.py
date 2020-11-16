@@ -179,7 +179,9 @@ if plot_true and do_library_matching:
     #                             cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
     #                             node_labels=True, k=0.5,
     #                             edge_labels=draw_edge_labels)
-    network_plot = plotly_network(network)
+    network_plot = plotly_network(network, attribute_key=attr_key,
+                                  cutoff=attr_cutoff,
+                                  tan_cutoff=tanimoto_cutoff)
     if network_plot:
         plot_placeholder.plotly_chart(network_plot)
 elif plot_true:  # library matching is not done yet, but plot button is clicked

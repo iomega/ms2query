@@ -1,6 +1,7 @@
+from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
+from matplotlib import cm, colors
 import networkx as nx
 import plotly.graph_objects as go
 
@@ -213,7 +214,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
 
 
 def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
-                   tan_cutoff=0.6, k=1, seed=42):
+                   tan_cutoff=0.6, k=1, seed=42, width_default=3):
     """
 
     Args:
@@ -230,33 +231,21 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
     q_node = [node for node in network.nodes if isinstance(node, str)
               and 'query' in node][0]
     network = nx.Graph(library_edges + query_edges)
+    network.add_node(q_node)  # make sure query is always in the plot
 
     pos = nx.spring_layout(network, k=k, iterations=500, seed=seed)
 
-    edge_x = []
-    edge_y = []
-    edge_style = []
     edge_trace = []
-    for edge in network.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        xs = (x0, x1, None)
-        ys = (y0, y1, None)
-        edge = make_plotly_edge(xs, ys, 1.)
+    for u, v, d in library_edges:
+        edge = make_plotly_edge(u, v, d, pos, 'tanimoto', tan_cutoff,
+                                width_default*0.8, "dash")
         edge_trace.append(edge)
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
 
-    # edge_trace = go.Scatter(
-    #     x=edge_x, y=edge_y,
-    #     line=dict(width=2, color='#888'),
-    #     hoverinfo='text',
-    #     mode='lines',
-    #     name='edges')
+    red_cmap = cm.get_cmap('Reds', 100)
+    for u, v, d in query_edges:
+        edge = make_plotly_edge(u, v, d, pos, attribute_key, cutoff,
+                                width_default, "solid", red_cmap)
+        edge_trace.append(edge)
 
     node_x = []
     node_y = []
@@ -278,7 +267,7 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
             line_color="white",
             line_width=2))
 
-    node_adjacencies = []
+    # node_adjacencies = []
     node_label = []
     for node, adjacencies in enumerate(network.adjacency()):
         # node_adjacencies.append(len(adjacencies[1]))
@@ -311,23 +300,51 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
     return fig
 
 
-def make_plotly_edge(x: tuple, y: tuple, width: float):
+def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
+                     pos: dict, attribute: str, attr_cutoff: float,
+                     width_default: float, style: str = "solid",
+                     cmap: Union[None, colors.Colormap] = None):
     """Return go.Scatter for the edge object
 
     Args:
     -------
-    x
-         From and to x-coordinates of edge as (from, to, None)
-    y
-        From and to y-coordinates of edge as (from, to, None)
-    width
-        Numeric value of edge width
+    u:
+        Starting node of edge.
+    v:
+        End node of edge.
+    d:
+        Attribute data of node
+    pos: dict of {node: [x,y]}
+        Contains coordinates for each node
+    attribute: str
+        The attribute that should be looked at for the score
+    attr_cutoff: float
+        Cutoff for the attribute scores
+    width_default: int
+        The max width of an edge
+    style: str, optional
+        The style of the edges. Default = solid
+    cmap: matplotlib.colors.colourmap, optional
+        If provided, a cmap to colour the edges by attribute score.
+        Default = none
     """
+    x0, y0 = pos[u]
+    x1, y1 = pos[v]
+    xs = (x0, x1, None)
+    ys = (y0, y1, None)
+    # default is the library connection parameters
+    val = d[attribute]
+    e_width = width_default * val
+    if cmap:
+        e_colour = colors.to_hex(cmap(d[attribute]))
+    else:
+        e_colour = "#888"
     edge_trace = go.Scatter(
-        x=x,
-        y=y,
-        line=dict(width=width, color='#888'),
+        x=xs,
+        y=ys,
+        line=dict(width=e_width, color=e_colour, dash=style),
         hoverinfo='none',
         mode='lines',
-        name='edges')
+        showlegend=False)
+
     return edge_trace
