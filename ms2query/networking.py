@@ -238,14 +238,19 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
     edge_trace = []
     for u, v, d in library_edges:
         edge, edge_text = make_plotly_edge(u, v, d, pos, 'tanimoto',
-                                width_default * 0.8, "dash")
+                                           width_default * 0.8, "dash",
+                                           max_val=1)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
-    red_cmap = cm.get_cmap('Reds', 100)
+    max_val = max([e[2][attribute_key] for e in query_edges])
+    if max_val < 1:
+        max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
+    red_cmap = cm.get_cmap('Reds', max_val)
     for u, v, d in query_edges:
         edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
-                                           width_default, "solid", red_cmap)
+                                           width_default, "solid", max_val,
+                                           red_cmap)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
@@ -308,7 +313,7 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
 
 def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
                      pos: dict, attribute: str, width_default: float,
-                     style: str = "solid",
+                     style: str = "solid", max_val: Union[float, int] = 1,
                      cmap: Union[None, colors.Colormap] = None):
     """Return go.Scatter for the edge object
 
@@ -330,6 +335,8 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
         The max width of an edge
     style: str, optional
         The style of the edges. Default = solid
+    max_val:
+        Maximum value of edge attribute.
     cmap: matplotlib.colors.colourmap, optional
         If provided, a cmap to colour the edges by attribute score.
         Default = none
@@ -343,9 +350,11 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
     y_txt = [(y0 + y1) / 2]
     # default is the library connection parameters
     val = d[attribute]
-    e_width = width_default * val
+    if isinstance(val, bool):
+        val = int(val)
+    e_width = width_default * (val / max_val)
     if cmap:
-        e_colour = colors.to_hex(cmap(d[attribute]))
+        e_colour = colors.to_hex(cmap(val))
     else:
         e_colour = "#888"
     edge_trace = go.Scatter(
