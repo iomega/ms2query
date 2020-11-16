@@ -236,9 +236,14 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
     edge_x = []
     edge_y = []
     edge_style = []
+    edge_trace = []
     for edge in network.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
+        xs = (x0, x1, None)
+        ys = (y0, y1, None)
+        edge = make_plotly_edge(xs, ys, 1.)
+        edge_trace.append(edge)
         edge_x.append(x0)
         edge_x.append(x1)
         edge_x.append(None)
@@ -246,11 +251,12 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
         edge_y.append(y1)
         edge_y.append(None)
 
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=4.0, color='#888'),
-        hoverinfo='text',
-        mode='lines')
+    # edge_trace = go.Scatter(
+    #     x=edge_x, y=edge_y,
+    #     line=dict(width=2, color='#888'),
+    #     hoverinfo='text',
+    #     mode='lines',
+    #     name='edges')
 
     node_x = []
     node_y = []
@@ -300,6 +306,28 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
         )
     )
 
-    fig = go.Figure(data=[edge_trace, node_trace],
+    fig = go.Figure(data=edge_trace + [node_trace],
                     layout=layout)
     return fig
+
+
+def make_plotly_edge(x: tuple, y: tuple, width: float):
+    """Return go.Scatter for the edge object
+
+    Args:
+    -------
+    x
+         From and to x-coordinates of edge as (from, to, None)
+    y
+        From and to y-coordinates of edge as (from, to, None)
+    width
+        Numeric value of edge width
+    """
+    edge_trace = go.Scatter(
+        x=x,
+        y=y,
+        line=dict(width=width, color='#888'),
+        hoverinfo='none',
+        mode='lines',
+        name='edges')
+    return edge_trace
