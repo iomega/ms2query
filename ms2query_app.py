@@ -129,10 +129,17 @@ with st.beta_expander("See an example"):
 do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
     if all([model, documents_query, documents_library]):
+        if len(documents_library) < 20:
+            def_topn = len(documents_library)
+        else:
+            def_topn = 20
+        cols = st.beta_columns([1, 4])
+        with cols[0]:
+            topn = st.text_input("Show top n matches", value=def_topn)
         st.write("These are the library matches for your query")
         found_matches_s2v = library_matching(
             documents_query, documents_library, model, presearch_based_on=[
-                f"spec2vec-top{len(documents_library)}", "parentmass"],
+                f"spec2vec-top{topn}", "parentmass"],
             **{"allowed_missing_percentage": 100})
         if found_matches_s2v:
             found_match = found_matches_s2v[0]
