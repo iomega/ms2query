@@ -246,7 +246,7 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
     max_val = max([e[2][attribute_key] for e in query_edges])
     if max_val < 1:
         max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
-    red_cmap = cm.get_cmap('Reds', max_val)
+    red_cmap = cm.get_cmap('Reds')
     for u, v, d in query_edges:
         edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
                                            width_default, "solid", max_val,
@@ -350,11 +350,12 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
     y_txt = [(y0 + y1) / 2]
     # default is the library connection parameters
     val = d[attribute]
+    cor_val = val / max_val
     if isinstance(val, bool):
         val = int(val)
-    e_width = width_default * (val / max_val)
+    e_width = width_default * (cor_val)
     if cmap:
-        e_colour = colors.to_hex(cmap(val))
+        e_colour = colors.to_hex(cmap(cor_val))
     else:
         e_colour = "#888"
     edge_trace = go.Scatter(
