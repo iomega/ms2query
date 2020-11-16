@@ -305,8 +305,8 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
 
 
 def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
-                     pos: dict, attribute: str, attr_cutoff: float,
-                     width_default: float, style: str = "solid",
+                     pos: dict, attribute: str, width_default: float,
+                     style: str = "solid",
                      cmap: Union[None, colors.Colormap] = None):
     """Return go.Scatter for the edge object
 
