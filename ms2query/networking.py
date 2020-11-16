@@ -6,7 +6,7 @@ import networkx as nx
 import plotly.graph_objects as go
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-locals
 
 
 def matches2network(query_id, matches):
@@ -280,7 +280,7 @@ def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
 
     # node_adjacencies = []
     node_label = []
-    for node, adjacencies in enumerate(network.adjacency()):
+    for node, _ in enumerate(network.adjacency()):
         # node_adjacencies.append(len(adjacencies[1]))
         node_label.append(list(network.nodes)[node])
 
