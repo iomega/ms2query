@@ -1,7 +1,6 @@
 from typing import Union, List
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib import cm, colors
 import networkx as nx
 import plotly.graph_objects as go
