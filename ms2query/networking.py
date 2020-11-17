@@ -213,9 +213,12 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     return fig
 
 
-def plotly_network(network, attribute_key='s2v_score', cutoff=0.4,
-                   tan_cutoff=0.6, k=1, seed=42, width_default=3):
-    """
+def plotly_network(network: nx.Graph, attribute_key: str = 's2v_score',
+                   cutoff: Union[int, float] = 0.4,
+                   tan_cutoff: Union[int, float] = 0.6,
+                   k: Union[int, float] = 1, seed: int = 42,
+                   width_default: Union[int, float] = 3) -> go.Figure:
+    """Make a plotly plot of the network, Returns go.Figure
 
     Args:
     -------
