@@ -172,40 +172,59 @@ def plotly_network(network: nx.Graph,
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
-    node_x = []
-    node_y = []
-    node_type = []
+    nodes_x = []
+    nodes_y = []
+    nodes_type = []
     for node in network.nodes():
         x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        type_val = 0
-        if isinstance(node, str):
-            if "query" in node:
-                type_val = 1
-        node_type.append(type_val)
+        nodes_x.append(x)
+        nodes_y.append(y)
+        if isinstance(node, str) and "query" in node:
+            nodes_type.append("query")
+        else:
+            nodes_type.append("candidate")
 
-    node_label = []
+    nodes_label = []
     custom_lab = []
     for node, _ in enumerate(network.adjacency()):
         # node_adjacencies.append(len(adjacencies[1]))
         # append(node_lab_dict[node]
         lab_name = list(network.nodes)[node]
-        node_label.append(lab_name)
+        nodes_label.append(lab_name)
         custom_lab.append(node_lab_dict[lab_name])
     custom_str = ''.join([f"<br>%{{customdata[{i}]}}" for i in
                           range(len(custom_lab[0]))])
 
+    nodes = pd.DataFrame({"x": nodes_x,
+                          "y": nodes_y,
+                          "type": nodes_type,
+                          "hover": custom_str})
+
     node_trace = go.Scatter(
-        x=node_x, y=node_y,
+        x = nodes[nodes["type"] == "candidate"]["x"],
+        y = nodes[nodes["type"] == "candidate"]["y"],
         mode='markers',
-        text=node_label,
+        text=nodes_label,
         customdata=custom_lab,
-        hovertemplate="%{text}"+custom_str+"<extra></extra>",
+        hovertemplate="%{text}"+nodes[nodes["type"] == "candidate"]["hover"]+"<extra></extra>",
+        name="found candidates",
         marker=dict(
             size=40,
-            color=np.array(node_type).astype(int),
-            colorscale='portland',
+            color='dodgerblue',
+            line_color="white",
+            line_width=2))
+
+    node_trace_query = go.Scatter(
+        x = nodes[nodes["type"] == "query"]["x"],
+        y = nodes[nodes["type"] == "query"]["y"],
+        mode='markers',
+        text=nodes_label,
+        customdata=custom_lab,
+        hovertemplate="%{text}"+nodes[nodes["type"] == "query"]["hover"]+"<extra></extra>",
+        name="query spectrum",
+        marker=dict(
+            size=40,
+            color='crimson',
             line_color="white",
             line_width=2))
 
@@ -229,7 +248,7 @@ def plotly_network(network: nx.Graph,
         )
     )
 
-    fig = go.Figure(data=edge_trace + [node_trace],
+    fig = go.Figure(data=edge_trace + [node_trace, node_trace_query],
                     layout=layout)
     return fig
 
@@ -290,7 +309,8 @@ def make_plotly_edge(u: Union[str, int],
         x=xs,
         y=ys,
         line=dict(width=e_width, color=e_colour, dash=style),
-        mode='lines')
+        mode='lines',
+        showlegend=False)
     # edge_text = ["{}: {}".format(attribute, str(d[attribute]))]
     # edge_trace.text = edge_text
 
