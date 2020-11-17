@@ -81,10 +81,12 @@ def do_networking(query_id, matches, similarity_matrix, library_documents):
     # make sure to change this with how the similarity matrix gets passed
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
-    # for now only get spectrumid as node info
-    node_labs = {"query": ""}  # for query node which is always first in .nodes
-    node_labs.update({lib_id: library_documents[lib_id]._obj.get("spectrumid")
-                      for lib_id in list(network.nodes)[1:]})
+    # for now only get spectrumid, compound_name as node info
+    node_labs = {"query": ["", ""]}  # for query node - always first in .nodes
+    for lib_id in list(network.nodes)[1:]:
+        node_labs[lib_id] = [
+            library_documents[lib_id]._obj.get("spectrumid"),
+            library_documents[lib_id]._obj.get("compound_name")]
     return network, node_labs
 
 
@@ -221,7 +223,7 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     return fig
 
 
-def plotly_network(network: nx.Graph, node_lab_dict: dict = {},
+def plotly_network(network: nx.Graph, node_lab_dict: dict,
                    attribute_key: str = 's2v_score',
                    cutoff: Union[int, float] = 0.4,
                    tan_cutoff: Union[int, float] = 0.6,
@@ -231,7 +233,9 @@ def plotly_network(network: nx.Graph, node_lab_dict: dict = {},
 
     Args:
     -------
-
+    node_lab_dict:
+        Dict of {node: [info]}, where info are strings and all info lists are
+        equal in size
     """
     # pylint: disable=too-many-locals
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
@@ -287,13 +291,15 @@ def plotly_network(network: nx.Graph, node_lab_dict: dict = {},
         lab_name = list(network.nodes)[node]
         node_label.append(lab_name)
         custom_lab.append(node_lab_dict[lab_name])
+    custom_str = ''.join([f"<br>%{{customdata[{i}]}}" for i in
+                          range(len(custom_lab[0]))])
 
     node_trace = go.Scatter(
         x=node_x, y=node_y,
         mode='markers',
         text=node_label,
         customdata=custom_lab,
-        hovertemplate="%{text}: %{customdata}<extra></extra>",
+        hovertemplate="%{text}"+custom_str+"<extra></extra>",
         marker=dict(
             size=40,
             color=np.array(node_type).astype(int),
