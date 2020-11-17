@@ -143,7 +143,7 @@ if do_library_matching:
             **{"allowed_missing_percentage": 100})
         if found_matches_s2v:
             found_match = found_matches_s2v[0]
-            st.dataframe(found_match)
+            st.dataframe(found_match.sort_values("s2v_score", ascending=False))
     else:
         do_library_matching = False
         st.write("""<p><span style="color:red">Please specify input files.
