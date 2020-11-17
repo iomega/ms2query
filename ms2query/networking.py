@@ -218,8 +218,8 @@ def plotly_network(network: nx.Graph,
             line_width=2))
 
     node_trace_query = go.Scatter(
-        x = nodes[nodes["type"] == "query"]["x"],
-        y = nodes[nodes["type"] == "query"]["y"],
+        x=nodes[nodes["type"] == "query"]["x"],
+        y=nodes[nodes["type"] == "query"]["y"],
         mode='markers',
         text=nodes[nodes["type"] == "query"]["label"],
         customdata=nodes[nodes["type"] == "query"]["custom_label"],
