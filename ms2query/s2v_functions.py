@@ -342,6 +342,12 @@ def find_matches(document_query: SpectrumDocument,
                                          document_query))
         matches_df["s2v_score"] = spec2vec_scores
 
+    cols = matches_df.columns.to_list()
+    if "s2v_score" in cols:
+        # if s2v_score is included make it the first column
+        new_cols = cols[-1:] + cols[:-1]
+        matches_df = matches_df.reindex(columns=new_cols)
+
     return matches_df
 
 

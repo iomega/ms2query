@@ -7,8 +7,6 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
-from ms2query.networking import plot_network
-
 
 st.title("Ms2query")
 st.write("""
@@ -74,7 +72,8 @@ if library_spectrums:
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
-model_file = st.sidebar.text_input("Enter filename of Spec2Vec model (with path):")
+model_file = st.sidebar.text_input(
+    "Enter filename of Spec2Vec model (with path):")
 st.write("#### Spec2Vec model")
 model = None
 if model_file:
@@ -129,14 +128,21 @@ with st.beta_expander("See an example"):
 do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
     if all([model, documents_query, documents_library]):
+        if len(documents_library) < 20:
+            def_topn = len(documents_library)
+        else:
+            def_topn = 20
+        cols = st.beta_columns([1, 4])
+        with cols[0]:
+            topn = st.text_input("Show top n matches", value=def_topn)
         st.write("These are the library matches for your query")
         found_matches_s2v = library_matching(
             documents_query, documents_library, model, presearch_based_on=[
-                f"spec2vec-top{len(documents_library)}", "parentmass"],
+                f"spec2vec-top{topn}", "parentmass"],
             **{"allowed_missing_percentage": 100})
         if found_matches_s2v:
             found_match = found_matches_s2v[0]
-            st.dataframe(found_match)
+            st.dataframe(found_match.sort_values("s2v_score", ascending=False))
     else:
         do_library_matching = False
         st.write("""<p><span style="color:red">Please specify input files.
@@ -151,14 +157,13 @@ test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    network = do_networking("query", found_match, test_sim_matrix)
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)
     with col1:
         st.write("Restrict library matches")
         attr_key = st.selectbox("Choose parameter", found_match.columns,
-                                index=len(found_match.columns)-1)
+                                index=0)
         attr_data = found_match[attr_key]
         if isinstance(attr_data.iloc[0], float):
             # true for s2v, cosine etc
@@ -166,21 +171,19 @@ if plot_true and do_library_matching:
         elif max(attr_data) >= 1:
             # true for parentmass, cosine matches etc
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
-        attr_cutoff = st.slider(attr_key+" cutoff", min_value=min_v,
+        attr_cutoff = st.slider(attr_key + " cutoff", min_value=min_v,
                                 max_value=max_v, step=step, value=val)
-        draw_edge_labels = st.checkbox("Show values")
     with col2:
         st.write("Restrict library connections")
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
                                     max_value=1., step=0.05, value=0.6)
 
-    # make the actual plot
-    network_plot = plot_network(network, attribute_key=attr_key,
-                                cutoff=attr_cutoff, tan_cutoff=tanimoto_cutoff,
-                                node_labels=True, k=0.5,
-                                edge_labels=draw_edge_labels)
+    network_plot = do_networking("query", found_match, test_sim_matrix,
+                                 documents_library, attribute_key=attr_key,
+                                 cutoff=attr_cutoff,
+                                 tan_cutoff=tanimoto_cutoff)
     if network_plot:
-        plot_placeholder.pyplot(network_plot)
+        plot_placeholder.plotly_chart(network_plot)
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)

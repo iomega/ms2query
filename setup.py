@@ -34,6 +34,7 @@ setup(
         "spec2vec",
         "pydot",
         "networkx",
+        "plotly",
     ],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",
