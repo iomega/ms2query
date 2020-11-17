@@ -156,10 +156,7 @@ def plotly_network(network: nx.Graph,
     edge_trace = []
     name = "tanimoto score"
     for i, (u, v, d) in enumerate(library_edges):
-        if i == 0:
-            show_lab = True
-        else:
-            show_lab = False
+        show_lab = bool(i == 0)
         edge, edge_text = make_plotly_edge(u, v, d, pos, 'tanimoto',
                                            width_default * 0.8, "dash",
                                            max_val=1, name=name, group=True,
@@ -172,10 +169,7 @@ def plotly_network(network: nx.Graph,
         max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
     red_cmap = cm.get_cmap('Reds')
     for i, (u, v, d) in enumerate(query_edges):
-        if i == 0:
-            show_lab = True
-        else:
-            show_lab = False
+        show_lab = bool(i == 0)
         edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
                                            width_default, "solid", max_val,
                                            red_cmap, attribute_key, True,
