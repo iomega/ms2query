@@ -106,19 +106,35 @@ def do_networking(query_id: str,
     return fig
 
 
-def plotly_network(network: nx.Graph, node_lab_dict: dict,
+def plotly_network(network: nx.Graph,
+                   node_lab_dict: dict,
                    attribute_key: str = 's2v_score',
                    cutoff: Union[int, float] = 0.4,
                    tan_cutoff: Union[int, float] = 0.6,
-                   k: Union[int, float] = 1, seed: int = 42,
+                   k: Union[int, float] = 1,
+                   seed: int = 42,
                    width_default: Union[int, float] = 3) -> go.Figure:
     """Make a plotly plot of the network, Returns go.Figure
 
     Args:
     -------
+    network:
+        Network to plot, based on the cutoffs you provide a subset will be plot
     node_lab_dict:
         Dict of {node: [info]}, where info are strings and all info lists are
         equal in size
+    attribute_key:
+        One of the columns in the matches dataframe
+    cutoff:
+        Cutoff for the attribute_key column values
+    tan_cutoff:
+        Cutoff for tanimoto score
+    k:
+        Optimal node distance for nx.spring_layout
+    seed:
+        Seed used by nx.spring_layout
+    width_default:
+        The max width of the edges
     """
     # pylint: disable=too-many-locals
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
@@ -215,11 +231,16 @@ def plotly_network(network: nx.Graph, node_lab_dict: dict,
     return fig
 
 
-def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
-                     pos: dict, attribute: str, width_default: float,
-                     style: str = "solid", max_val: Union[float, int] = 1,
+def make_plotly_edge(u: Union[str, int],
+                     v: Union[str, int],
+                     d: dict,
+                     pos: dict,
+                     attribute: str,
+                     width_default: float,
+                     style: str = "solid",
+                     max_val: Union[float, int] = 1,
                      cmap: Union[None, colors.Colormap] = None):
-    """Return go.Scatter for the edge object
+    """Returns go.Scatter for the edge object
 
     Args:
     -------
@@ -233,17 +254,15 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
         Contains coordinates for each node
     attribute: str
         The attribute that should be looked at for the score
-    attr_cutoff: float
-        Cutoff for the attribute scores
-    width_default: int
+    width_default:
         The max width of an edge
-    style: str, optional
+    style:
         The style of the edges. Default = solid
     max_val:
         Maximum value of edge attribute.
-    cmap: matplotlib.colors.colourmap, optional
+    cmap:
         If provided, a cmap to colour the edges by attribute score.
-        Default = none
+        Default = none, meaning #888 will be used as a colour
     """
     x0, y0 = pos[u]
     x1, y1 = pos[v]
