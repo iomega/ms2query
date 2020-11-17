@@ -58,17 +58,3 @@ def test_do_networking():
     test_network = do_networking(query_name, test_matches, test_sim_matrix,
                                  documents_l)
     assert isinstance(test_network, go.Figure), "Expected output to be Figure"
-
-
-def test_plot_network():
-    """Test plot_network"""
-    path_tests = os.path.dirname(__file__)
-    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
-    test_matches = pd.read_csv(test_matches_file, index_col=0)
-    test_matches_sim_matrix_file = os.path.join(
-        path_tests, "test_found_matches_similarity_matrix.csv")
-    test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
-    query_name = "query"
-    test_network = do_networking(query_name, test_matches, test_sim_matrix)
-    test_fig = plot_network(test_network)
-    assert isinstance(test_fig, Figure), "Expected output to be Figure"
