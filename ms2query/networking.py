@@ -390,7 +390,9 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
     cor_val = val / max_val
     if isinstance(val, bool):
         val = int(val)
-    e_width = width_default * (cor_val)
+    e_width = width_default * cor_val
+    if e_width == 0.0:
+        e_width = 0.8  # for mass_match==0
     if cmap:
         e_colour = colors.to_hex(cmap(cor_val))
     else:
