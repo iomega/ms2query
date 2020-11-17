@@ -76,14 +76,16 @@ def do_networking(query_id, matches, similarity_matrix, library_documents):
         The library spectra as documents, indices correspond to matches index
         names.
     """
+    # pylint: disable=protected-access
     init_network = matches2network(query_id, matches)
     # make sure to change this with how the similarity matrix gets passed
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
-    match_documents = [doc for i, doc in enumerate(library_documents) if i in
-                       lib_ids]
-
-    return network
+    # for now only get spectrumid as node info
+    node_labs = {"query": ""}  # for query node which is always first in .nodes
+    node_labs.update({lib_id: library_documents[lib_id]._obj.get("spectrumid")
+                      for lib_id in list(network.nodes)[1:]})
+    return network, node_labs
 
 
 def draw_edges(network, pos, attribute, attr_cutoff, width_default,
@@ -219,7 +221,8 @@ def plot_network(network, attribute_key='s2v_score', cutoff=0.4,
     return fig
 
 
-def plotly_network(network: nx.Graph, attribute_key: str = 's2v_score',
+def plotly_network(network: nx.Graph, node_lab_dict: dict = {},
+                   attribute_key: str = 's2v_score',
                    cutoff: Union[int, float] = 0.4,
                    tan_cutoff: Union[int, float] = 0.6,
                    k: Union[int, float] = 1, seed: int = 42,
@@ -276,24 +279,27 @@ def plotly_network(network: nx.Graph, attribute_key: str = 's2v_score',
                 type_val = 1
         node_type.append(type_val)
 
+    node_label = []
+    custom_lab = []
+    for node, _ in enumerate(network.adjacency()):
+        # node_adjacencies.append(len(adjacencies[1]))
+        # append(node_lab_dict[node]
+        lab_name = list(network.nodes)[node]
+        node_label.append(lab_name)
+        custom_lab.append(node_lab_dict[lab_name])
+
     node_trace = go.Scatter(
         x=node_x, y=node_y,
         mode='markers',
-        hoverinfo='text',
+        text=node_label,
+        customdata=custom_lab,
+        hovertemplate="%{text}: %{customdata}<extra></extra>",
         marker=dict(
             size=40,
             color=np.array(node_type).astype(int),
             colorscale='portland',
             line_color="white",
             line_width=2))
-
-    # node_adjacencies = []
-    node_label = []
-    for node, _ in enumerate(network.adjacency()):
-        # node_adjacencies.append(len(adjacencies[1]))
-        node_label.append(list(network.nodes)[node])
-
-    node_trace.text = node_label
 
     layout = go.Layout(
         autosize=True,
@@ -378,9 +384,9 @@ def make_plotly_edge(u: Union[str, int], v: Union[str, int], d: dict,
     txt_trace = go.Scatter(
         x=x_txt,
         y=y_txt,
-        customdata=["{}: {:.3f}".format(attribute, val)],
+        customdata=[["{}: {:.3f}".format(attribute, val)]],
         mode='text',
-        hovertemplate="%{customdata}<extra></extra>",
+        hovertemplate="%{customdata[0]}<extra></extra>",
         showlegend=False)
 
     return edge_trace, txt_trace

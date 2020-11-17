@@ -9,7 +9,6 @@ from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 from ms2query.networking import plotly_network
 
-
 st.title("Ms2query")
 st.write("""
 Upload your query and library spectra files in json format in the sidebar.
@@ -74,7 +73,8 @@ if library_spectrums:
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
-model_file = st.sidebar.text_input("Enter filename of Spec2Vec model (with path):")
+model_file = st.sidebar.text_input(
+    "Enter filename of Spec2Vec model (with path):")
 st.write("#### Spec2Vec model")
 model = None
 if model_file:
@@ -172,7 +172,7 @@ if plot_true and do_library_matching:
         elif max(attr_data) >= 1:
             # true for parentmass, cosine matches etc
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
-        attr_cutoff = st.slider(attr_key+" cutoff", min_value=min_v,
+        attr_cutoff = st.slider(attr_key + " cutoff", min_value=min_v,
                                 max_value=max_v, step=step, value=val)
         draw_edge_labels = st.checkbox("Show values")
     with col2:
@@ -180,9 +180,9 @@ if plot_true and do_library_matching:
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
                                     max_value=1., step=0.05, value=0.6)
 
-    network = do_networking("query", found_match, test_sim_matrix,
-                            documents_library)
-    network_plot = plotly_network(network, attribute_key=attr_key,
+    network, node_labels = do_networking("query", found_match, test_sim_matrix,
+                                         documents_library)
+    network_plot = plotly_network(network, node_labels, attribute_key=attr_key,
                                   cutoff=attr_cutoff,
                                   tan_cutoff=tanimoto_cutoff)
     if network_plot:

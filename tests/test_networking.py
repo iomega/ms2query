@@ -54,7 +54,7 @@ def test_do_networking():
         path_tests, "test_found_matches_similarity_matrix.csv")
     test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
     query_name = "query"
-    test_network = do_networking(query_name, test_matches, test_sim_matrix,
+    test_network, _ = do_networking(query_name, test_matches, test_sim_matrix,
                                  documents_l)
     assert isinstance(test_network, Graph), "Expected output to be nx.Graph"
     assert query_name in test_network.nodes, \
