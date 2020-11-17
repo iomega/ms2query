@@ -1,6 +1,6 @@
 # YAML 1.2
 ---
-abstract: "Python library for fuzzy comparison of mass spectrum data and other Python objects."
+abstract: "Machine learning assisted library querying of MS/MS spectra."
 authors:
   -
     affiliation: "Wageningen University and Research"
