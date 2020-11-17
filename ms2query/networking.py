@@ -60,7 +60,7 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
     return graph
 
 
-def do_networking(query_id, matches, similarity_matrix):
+def do_networking(query_id, matches, similarity_matrix, library_documents):
     """Wrapper function to make and use the network, returns network (nx.Graph)
 
     Args:
@@ -72,11 +72,17 @@ def do_networking(query_id, matches, similarity_matrix):
         the features of the match.
     similarity_matrix: pd.DataFrame
         All vs all matrix of Tanimoto similarity between library matches
+    library_documents: list of SpectrumDocument
+        The library spectra as documents, indices correspond to matches index
+        names.
     """
     init_network = matches2network(query_id, matches)
     # make sure to change this with how the similarity matrix gets passed
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
+    match_documents = [doc for i, doc in enumerate(library_documents) if i in
+                       lib_ids]
+
     return network
 
 

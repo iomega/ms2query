@@ -164,7 +164,7 @@ if plot_true and do_library_matching:
     with col1:
         st.write("Restrict library matches")
         attr_key = st.selectbox("Choose parameter", found_match.columns,
-                                index=len(found_match.columns)-1)
+                                index=0)
         attr_data = found_match[attr_key]
         if isinstance(attr_data.iloc[0], float):
             # true for s2v, cosine etc
@@ -180,7 +180,8 @@ if plot_true and do_library_matching:
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
                                     max_value=1., step=0.05, value=0.6)
 
-    network = do_networking("query", found_match, test_sim_matrix)
+    network = do_networking("query", found_match, test_sim_matrix,
+                            documents_library)
     network_plot = plotly_network(network, attribute_key=attr_key,
                                   cutoff=attr_cutoff,
                                   tan_cutoff=tanimoto_cutoff)

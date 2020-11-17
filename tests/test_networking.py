@@ -6,6 +6,8 @@ from ms2query.networking import matches2network
 from ms2query.networking import add_library_connections
 from ms2query.networking import do_networking
 from ms2query.networking import plot_network
+from ms2query.utils import json_loader
+from ms2query.s2v_functions import process_spectrums
 
 
 def test_matches2network():
@@ -43,13 +45,17 @@ def test_add_library_connections():
 def test_do_networking():
     """Test do_networking"""
     path_tests = os.path.dirname(__file__)
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_l = process_spectrums(spectrums_l)
     test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
     test_matches = pd.read_csv(test_matches_file, index_col=0)
     test_matches_sim_matrix_file = os.path.join(
         path_tests, "test_found_matches_similarity_matrix.csv")
     test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
     query_name = "query"
-    test_network = do_networking(query_name, test_matches, test_sim_matrix)
+    test_network = do_networking(query_name, test_matches, test_sim_matrix,
+                                 documents_l)
     assert isinstance(test_network, Graph), "Expected output to be nx.Graph"
     assert query_name in test_network.nodes, \
         "Expected query_id to be in the Graph"
