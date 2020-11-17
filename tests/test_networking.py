@@ -2,6 +2,7 @@ import os
 from matplotlib.figure import Figure
 from networkx import Graph
 import pandas as pd
+import plotly.graph_objects as go
 from ms2query.networking import matches2network
 from ms2query.networking import add_library_connections
 from ms2query.networking import do_networking
@@ -54,14 +55,9 @@ def test_do_networking():
         path_tests, "test_found_matches_similarity_matrix.csv")
     test_sim_matrix = pd.read_csv(test_matches_sim_matrix_file, index_col=0)
     query_name = "query"
-    test_network, _ = do_networking(query_name, test_matches, test_sim_matrix,
+    test_network = do_networking(query_name, test_matches, test_sim_matrix,
                                  documents_l)
-    assert isinstance(test_network, Graph), "Expected output to be nx.Graph"
-    assert query_name in test_network.nodes, \
-        "Expected query_id to be in the Graph"
-    assert isinstance(test_network[test_matches.iloc[0].name][
-                          test_matches.iloc[1].name]["tanimoto"], float), \
-        "Expected an edge with tanimoto score between these library hits"
+    assert isinstance(test_network, go.Figure), "Expected output to be Figure"
 
 
 def test_plot_network():
