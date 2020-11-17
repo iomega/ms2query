@@ -98,9 +98,12 @@ def do_networking(query_id: str,
     # for now only get spectrumid, compound_name as node info
     node_labs = {"query": ["", ""]}  # for query node - always first in .nodes
     for lib_id in list(network.nodes)[1:]:
+        lib_doc = library_documents[lib_id]
         node_labs[lib_id] = [
-            library_documents[lib_id]._obj.get("spectrumid"),
-            library_documents[lib_id]._obj.get("compound_name")]
+            lib_doc._obj.get("spectrumid"),
+            lib_doc._obj.get("compound_name"),
+            f'm/z {lib_doc._obj.get("parent_mass"):.3f}'
+        ]
     # make network plot
     fig = plotly_network(network, node_labs, attribute_key, cutoff, tan_cutoff)
     return fig
