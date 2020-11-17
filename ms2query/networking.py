@@ -1,9 +1,11 @@
-from typing import Union
+from typing import Union, List
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
 import networkx as nx
 import plotly.graph_objects as go
+from spec2vec import SpectrumDocument
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -60,24 +62,33 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
     return graph
 
 
-def do_networking(query_id, matches, similarity_matrix, library_documents,
+def do_networking(query_id: str,
+                  matches: pd.DataFrame,
+                  similarity_matrix: pd.DataFrame,
+                  library_documents: List[SpectrumDocument],
                   attribute_key: str = 's2v_score',
                   cutoff: Union[int, float] = 0.4,
-                  tan_cutoff: Union[int, float] = 0.6,):
-    """Wrapper function to make and use the network, returns network (nx.Graph)
+                  tan_cutoff: Union[int, float] = 0.6) -> go.Figure:
+    """Wrapper function to make and use the network, returns go.Figure
 
     Args:
     ----------
-    query_id: str
+    query_id:
         ID/name of the query, will appear in the network plot
-    matches: pd.DataFrame
+    matches:
         Library matches to the query where rows are the matches and columns are
         the features of the match.
-    similarity_matrix: pd.DataFrame
+    similarity_matrix:
         All vs all matrix of Tanimoto similarity between library matches
-    library_documents: list of SpectrumDocument
+    library_documents:
         The library spectra as documents, indices correspond to matches index
         names.
+    attribute_key:
+        One of the columns in the matches dataframe
+    cutoff:
+        Cutoff for the attribute_key column values
+    tan_cutoff:
+        Cutoff for tanimoto score
     """
     # pylint: disable=protected-access
     init_network = matches2network(query_id, matches)
