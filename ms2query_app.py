@@ -7,7 +7,6 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
-from ms2query.networking import plotly_network
 
 st.title("Ms2query")
 st.write("""
