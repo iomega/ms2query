@@ -1,4 +1,4 @@
-![GitHub](https://img.shields.io/github/license/iomega/ms2query)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/iomega/ms2query/CI%20Build) ![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 # ms2query
 MS2Query - machine learning assisted library querying of MS/MS spectra.
 
