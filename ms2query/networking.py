@@ -95,8 +95,8 @@ def do_networking(query_id: str,
     # make sure to change this with how the similarity matrix gets passed
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
-    # for now only get spectrumid, compound_name as node info
-    node_labs = {"query": ["", ""]}  # for query node - always first in .nodes
+    # for query node - always first in .nodes
+    node_labs = {"query": ["", "", ""]}
     for lib_id in list(network.nodes)[1:]:
         lib_doc = library_documents[lib_id]
         node_labs[lib_id] = [
@@ -154,10 +154,13 @@ def plotly_network(network: nx.Graph,
     pos = nx.spring_layout(network, k=k, iterations=500, seed=seed)
 
     edge_trace = []
-    for u, v, d in library_edges:
+    name = "tanimoto score"
+    for i, (u, v, d) in enumerate(library_edges):
+        show_lab = bool(i == 0)
         edge, edge_text = make_plotly_edge(u, v, d, pos, 'tanimoto',
                                            width_default * 0.8, "dash",
-                                           max_val=1)
+                                           max_val=1, name=name, group=True,
+                                           show_lab=show_lab)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
@@ -165,47 +168,71 @@ def plotly_network(network: nx.Graph,
     if max_val < 1:
         max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
     red_cmap = cm.get_cmap('Reds')
-    for u, v, d in query_edges:
+    for i, (u, v, d) in enumerate(query_edges):
+        show_lab = bool(i == 0)
         edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
                                            width_default, "solid", max_val,
-                                           red_cmap)
+                                           red_cmap, attribute_key, True,
+                                           show_lab)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
-    node_x = []
-    node_y = []
-    node_type = []
+    nodes_x = []
+    nodes_y = []
+    nodes_type = []
     for node in network.nodes():
         x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        type_val = 0
-        if isinstance(node, str):
-            if "query" in node:
-                type_val = 1
-        node_type.append(type_val)
+        nodes_x.append(x)
+        nodes_y.append(y)
+        if isinstance(node, str) and "query" in node:
+            nodes_type.append("query")
+        else:
+            nodes_type.append("candidate")
 
-    node_label = []
+    nodes_label = []
     custom_lab = []
     for node, _ in enumerate(network.adjacency()):
         # node_adjacencies.append(len(adjacencies[1]))
         # append(node_lab_dict[node]
         lab_name = list(network.nodes)[node]
-        node_label.append(lab_name)
-        custom_lab.append(node_lab_dict[lab_name])
+        nodes_label.append(lab_name)
+        custom_lab.append(node_lab_dict[lab_name])  # read the dict for labels
+    # gather info in a df
+    nodes = pd.DataFrame({"x": nodes_x,
+                          "y": nodes_y,
+                          "type": nodes_type,
+                          "label": nodes_label,
+                          "custom_label": custom_lab})
+
+    # make string for including all node label info from dict in hovertemplate
     custom_str = ''.join([f"<br>%{{customdata[{i}]}}" for i in
                           range(len(custom_lab[0]))])
 
     node_trace = go.Scatter(
-        x=node_x, y=node_y,
+        x=nodes[nodes["type"] == "candidate"]["x"],
+        y=nodes[nodes["type"] == "candidate"]["y"],
         mode='markers',
-        text=node_label,
-        customdata=custom_lab,
+        text=nodes[nodes["type"] == "candidate"]["label"],
+        customdata=nodes[nodes["type"] == "candidate"]["custom_label"],
         hovertemplate="%{text}"+custom_str+"<extra></extra>",
+        name="found candidates",
         marker=dict(
             size=40,
-            color=np.array(node_type).astype(int),
-            colorscale='portland',
+            color='dodgerblue',
+            line_color="white",
+            line_width=2))
+
+    node_trace_query = go.Scatter(
+        x=nodes[nodes["type"] == "query"]["x"],
+        y=nodes[nodes["type"] == "query"]["y"],
+        mode='markers',
+        text=nodes[nodes["type"] == "query"]["label"],
+        customdata=nodes[nodes["type"] == "query"]["custom_label"],
+        hovertemplate="%{text}"+custom_str+"<extra></extra>",
+        name="query spectrum",
+        marker=dict(
+            size=40,
+            color='crimson',
             line_color="white",
             line_width=2))
 
@@ -229,7 +256,7 @@ def plotly_network(network: nx.Graph,
         )
     )
 
-    fig = go.Figure(data=edge_trace + [node_trace],
+    fig = go.Figure(data=edge_trace + [node_trace, node_trace_query],
                     layout=layout)
     return fig
 
@@ -242,7 +269,10 @@ def make_plotly_edge(u: Union[str, int],
                      width_default: float,
                      style: str = "solid",
                      max_val: Union[float, int] = 1,
-                     cmap: Union[None, colors.Colormap] = None):
+                     cmap: Union[None, colors.Colormap] = None,
+                     name: str = None,
+                     group: bool = None,
+                     show_lab: bool = False):
     """Returns go.Scatter for the edge object
 
     Args:
@@ -266,6 +296,12 @@ def make_plotly_edge(u: Union[str, int],
     cmap:
         If provided, a cmap to colour the edges by attribute score.
         Default = none, meaning #888 will be used as a colour
+    name:
+        If provided, give edge a name in the legend
+    group:
+        Assign edge to a legendgroup - will be the attribute
+    show_lab:
+        Show edge in the legend
     """
     x0, y0 = pos[u]
     x1, y1 = pos[v]
@@ -286,13 +322,16 @@ def make_plotly_edge(u: Union[str, int],
         e_colour = colors.to_hex(cmap(cor_val))
     else:
         e_colour = "#888"
+    if group:
+        group = attribute
     edge_trace = go.Scatter(
         x=xs,
         y=ys,
         line=dict(width=e_width, color=e_colour, dash=style),
-        mode='lines')
-    # edge_text = ["{}: {}".format(attribute, str(d[attribute]))]
-    # edge_trace.text = edge_text
+        mode='lines',
+        name=name,
+        showlegend=show_lab,
+        legendgroup=group)
 
     txt_trace = go.Scatter(
         x=x_txt,
