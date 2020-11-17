@@ -95,8 +95,8 @@ def do_networking(query_id: str,
     # make sure to change this with how the similarity matrix gets passed
     lib_ids = matches.index.tolist()
     network = add_library_connections(init_network, similarity_matrix, lib_ids)
-    # for now only get spectrumid, compound_name as node info
-    node_labs = {"query": ["", ""]}  # for query node - always first in .nodes
+    # for query node - always first in .nodes
+    node_labs = {"query": ["", "", ""]}
     for lib_id in list(network.nodes)[1:]:
         lib_doc = library_documents[lib_id]
         node_labs[lib_id] = [
@@ -191,22 +191,25 @@ def plotly_network(network: nx.Graph,
         # append(node_lab_dict[node]
         lab_name = list(network.nodes)[node]
         nodes_label.append(lab_name)
-        custom_lab.append(node_lab_dict[lab_name])
-    custom_str = ''.join([f"<br>%{{customdata[{i}]}}" for i in
-                          range(len(custom_lab[0]))])
-
+        custom_lab.append(node_lab_dict[lab_name])  # read the dict for labels
+    # gather info in a df
     nodes = pd.DataFrame({"x": nodes_x,
                           "y": nodes_y,
                           "type": nodes_type,
-                          "hover": custom_str})
+                          "label": nodes_label,
+                          "custom_label": custom_lab})
+
+    # make string for including all node label info from dict in hovertemplate
+    custom_str = ''.join([f"<br>%{{customdata[{i}]}}" for i in
+                          range(len(custom_lab[0]))])
 
     node_trace = go.Scatter(
-        x = nodes[nodes["type"] == "candidate"]["x"],
-        y = nodes[nodes["type"] == "candidate"]["y"],
+        x=nodes[nodes["type"] == "candidate"]["x"],
+        y=nodes[nodes["type"] == "candidate"]["y"],
         mode='markers',
-        text=nodes_label,
-        customdata=custom_lab,
-        hovertemplate="%{text}"+nodes[nodes["type"] == "candidate"]["hover"]+"<extra></extra>",
+        text=nodes[nodes["type"] == "candidate"]["label"],
+        customdata=nodes[nodes["type"] == "candidate"]["custom_label"],
+        hovertemplate="%{text}"+custom_str+"<extra></extra>",
         name="found candidates",
         marker=dict(
             size=40,
@@ -218,9 +221,9 @@ def plotly_network(network: nx.Graph,
         x = nodes[nodes["type"] == "query"]["x"],
         y = nodes[nodes["type"] == "query"]["y"],
         mode='markers',
-        text=nodes_label,
-        customdata=custom_lab,
-        hovertemplate="%{text}"+nodes[nodes["type"] == "query"]["hover"]+"<extra></extra>",
+        text=nodes[nodes["type"] == "query"]["label"],
+        customdata=nodes[nodes["type"] == "query"]["custom_label"],
+        hovertemplate="%{text}"+custom_str+"<extra></extra>",
         name="query spectrum",
         marker=dict(
             size=40,
@@ -311,8 +314,6 @@ def make_plotly_edge(u: Union[str, int],
         line=dict(width=e_width, color=e_colour, dash=style),
         mode='lines',
         showlegend=False)
-    # edge_text = ["{}: {}".format(attribute, str(d[attribute]))]
-    # edge_trace.text = edge_text
 
     txt_trace = go.Scatter(
         x=x_txt,
