@@ -1,3 +1,4 @@
+![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 # ms2query
 MS2Query - machine learning assisted library querying of MS/MS spectra.
 
