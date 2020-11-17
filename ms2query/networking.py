@@ -154,10 +154,16 @@ def plotly_network(network: nx.Graph,
     pos = nx.spring_layout(network, k=k, iterations=500, seed=seed)
 
     edge_trace = []
-    for u, v, d in library_edges:
+    name = "tanimoto score"
+    for i, (u, v, d) in enumerate(library_edges):
+        if i == 0:
+            show_lab = True
+        else:
+            show_lab = False
         edge, edge_text = make_plotly_edge(u, v, d, pos, 'tanimoto',
                                            width_default * 0.8, "dash",
-                                           max_val=1)
+                                           max_val=1, name=name, group=True,
+                                           show_lab=show_lab)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
@@ -165,10 +171,15 @@ def plotly_network(network: nx.Graph,
     if max_val < 1:
         max_val = 1  # to keep 1 always the max value for scores: s2v, cosine..
     red_cmap = cm.get_cmap('Reds')
-    for u, v, d in query_edges:
+    for i, (u, v, d) in enumerate(query_edges):
+        if i == 0:
+            show_lab = True
+        else:
+            show_lab = False
         edge, edge_text = make_plotly_edge(u, v, d, pos, attribute_key,
                                            width_default, "solid", max_val,
-                                           red_cmap)
+                                           red_cmap, attribute_key, True,
+                                           show_lab)
         edge_trace.append(edge)
         edge_trace.append(edge_text)
 
@@ -264,7 +275,10 @@ def make_plotly_edge(u: Union[str, int],
                      width_default: float,
                      style: str = "solid",
                      max_val: Union[float, int] = 1,
-                     cmap: Union[None, colors.Colormap] = None):
+                     cmap: Union[None, colors.Colormap] = None,
+                     name: str = None,
+                     group: bool = None,
+                     show_lab: bool = False):
     """Returns go.Scatter for the edge object
 
     Args:
@@ -288,6 +302,12 @@ def make_plotly_edge(u: Union[str, int],
     cmap:
         If provided, a cmap to colour the edges by attribute score.
         Default = none, meaning #888 will be used as a colour
+    name:
+        If provided, give edge a name in the legend
+    group:
+        Assign edge to a legendgroup - will be the attribute
+    show_lab:
+        Show edge in the legend
     """
     x0, y0 = pos[u]
     x1, y1 = pos[v]
@@ -308,12 +328,16 @@ def make_plotly_edge(u: Union[str, int],
         e_colour = colors.to_hex(cmap(cor_val))
     else:
         e_colour = "#888"
+    if group:
+        group = attribute
     edge_trace = go.Scatter(
         x=xs,
         y=ys,
         line=dict(width=e_width, color=e_colour, dash=style),
         mode='lines',
-        showlegend=False)
+        name=name,
+        showlegend=show_lab,
+        legendgroup=group)
 
     txt_trace = go.Scatter(
         x=x_txt,
