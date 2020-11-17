@@ -1,12 +1,10 @@
 import os
-from matplotlib.figure import Figure
 from networkx import Graph
 import pandas as pd
 import plotly.graph_objects as go
 from ms2query.networking import matches2network
 from ms2query.networking import add_library_connections
 from ms2query.networking import do_networking
-from ms2query.networking import plot_network
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 
