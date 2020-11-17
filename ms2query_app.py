@@ -174,17 +174,15 @@ if plot_true and do_library_matching:
             min_v, max_v, step, val = (0, max(attr_data), 1, 1)
         attr_cutoff = st.slider(attr_key + " cutoff", min_value=min_v,
                                 max_value=max_v, step=step, value=val)
-        draw_edge_labels = st.checkbox("Show values")
     with col2:
         st.write("Restrict library connections")
         tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
                                     max_value=1., step=0.05, value=0.6)
 
-    network, node_labels = do_networking("query", found_match, test_sim_matrix,
-                                         documents_library)
-    network_plot = plotly_network(network, node_labels, attribute_key=attr_key,
-                                  cutoff=attr_cutoff,
-                                  tan_cutoff=tanimoto_cutoff)
+    network_plot = do_networking("query", found_match, test_sim_matrix,
+                                 documents_library, attribute_key=attr_key,
+                                 cutoff=attr_cutoff,
+                                 tan_cutoff=tanimoto_cutoff)
     if network_plot:
         plot_placeholder.plotly_chart(network_plot)
 elif plot_true:  # library matching is not done yet, but plot button is clicked

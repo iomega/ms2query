@@ -60,7 +60,10 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
     return graph
 
 
-def do_networking(query_id, matches, similarity_matrix, library_documents):
+def do_networking(query_id, matches, similarity_matrix, library_documents,
+                  attribute_key: str = 's2v_score',
+                  cutoff: Union[int, float] = 0.4,
+                  tan_cutoff: Union[int, float] = 0.6,):
     """Wrapper function to make and use the network, returns network (nx.Graph)
 
     Args:
@@ -87,7 +90,9 @@ def do_networking(query_id, matches, similarity_matrix, library_documents):
         node_labs[lib_id] = [
             library_documents[lib_id]._obj.get("spectrumid"),
             library_documents[lib_id]._obj.get("compound_name")]
-    return network, node_labs
+    # make network plot
+    fig = plotly_network(network, node_labs, attribute_key, cutoff, tan_cutoff)
+    return fig
 
 
 def draw_edges(network, pos, attribute, attr_cutoff, width_default,
