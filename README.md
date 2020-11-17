@@ -7,10 +7,10 @@ We recommend to create an Anaconda environment with
 ```
 conda create --name ms2query python=3.7
 conda activate ms2query
-pip install matchms
-pip install streamlit
-pip install spec2vec
-pip install networkx
+```
+And then install the required dependencies, e.g. by running the following from the cloned directory
+```
+pip install -e
 ```
   
 ## Run app locally
