@@ -1,6 +1,8 @@
 import os
-from typing import Tuple
+from typing import Tuple, List
 import streamlit as st
+from spec2vec import SpectrumDocument
+from matchms.Spectrum import Spectrum
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -23,8 +25,9 @@ def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
     return test_dict, test_list
 
 
-def get_query():
-    """Gather all relevant query information and print info for query spectrum
+def get_query() -> List[Spectrum]:
+    """
+    Return query spectra as [Spectrum] from user input and print query info
     """
     # load query file in sidebar
     query_spectrums = []  # default so later code doesn't crash
@@ -40,7 +43,8 @@ def get_query():
     st.write("#### Query spectrum")
     if query_example and not query_file:
         st.write('You have selected an example query:', query_example)
-        query_spectrums = json_loader(open(example_queries_dict[query_example]))
+        query_spectrums = json_loader(
+            open(example_queries_dict[query_example]))
     elif query_file is not None:
         if query_file.name.endswith("json"):
             query_file.seek(0)  # fix for streamlit issue #2235
@@ -57,7 +61,10 @@ def get_query():
     return query_spectrums
 
 
-def get_library():
+def get_library() -> List[Spectrum]:
+    """
+    Return library spectra as [Spectrum] from user input and print library info
+    """
     library_spectrums = []  # default so later code doesn't crash
     library_file = st.sidebar.file_uploader("Choose a spectra library file...",
                                             type=['json', 'txt'])
@@ -83,7 +90,18 @@ def get_library():
     return library_spectrums
 
 
-def do_spectrum_processing(query_spectrums, library_spectrums):
+def do_spectrum_processing(query_spectrums: List[Spectrum],
+                           library_spectrums: List[Spectrum]) -> Tuple[
+                           List[SpectrumDocument], List[SpectrumDocument]]:
+    """Process query, library into SpectrumDocuments and write processing info
+
+    Args:
+    -------
+    query_spectrums:
+        Query spectra in matchms.Spectrum format
+    library_spectrums:
+        Library spectra in matchms.Spectrum format
+    """
     st.write("""## Post-process spectra
     Spec2Vec similarity scores rely on creating a document vector for each
     spectrum. For the underlying word2vec model we want the documents
@@ -95,7 +113,8 @@ def do_spectrum_processing(query_spectrums, library_spectrums):
     # todo: we could add some buttons later to make this adjustable
     settings = set_spec2vec_defaults()
     with st.beta_expander("View processing defaults"):
-        st.markdown(f"""* normalize peaks (maximum intensity to 1)\n* remove peaks 
+        st.markdown(
+            f"""* normalize peaks (maximum intensity to 1)\n* remove peaks 
         outside [{settings["mz_from"]}, {settings["mz_to"]}] m/z window\n* remove
         spectra with < {settings["n_required"]} peaks\n* reduce number of peaks to
         maximum of {settings["ratio_desired"]} * parent mass\n* remove peaks with
