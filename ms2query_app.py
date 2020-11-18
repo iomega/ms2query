@@ -30,10 +30,12 @@ model_file = st.sidebar.text_input(
     "Enter filename of Spec2Vec model (with path):")
 st.write("#### Spec2Vec model")
 model = None
+model_num = None
 if model_file:
     if model_file.endswith(".model"):
         st.write("Your selected model:", os.path.split(model_file)[-1])
         model = Word2Vec.load(model_file)
+        model_num = 0  # change this when multiple models are added for caching
     else:
         st.write("""<p><span style="color:red">Model file extension should be
         .model, please try again.</span></p>""", unsafe_allow_html=True)
@@ -58,7 +60,7 @@ do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
     if all([documents_query, documents_library, model]):
         found_match = get_library_matches(documents_query, documents_library,
-                                          model)
+                                          model, model_num)
     else:
         do_library_matching = False
         st.write("""<p><span style="color:red">Please specify input files.

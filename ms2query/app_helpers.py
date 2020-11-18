@@ -147,7 +147,8 @@ def get_example_library_matches():
 
 def get_library_matches(documents_query: List[SpectrumDocument],
                         documents_library: List[SpectrumDocument],
-                        model: BaseTopicModel) -> pd.DataFrame:
+                        model: BaseTopicModel,
+                        model_num: int) -> pd.DataFrame:
     """Returns DataFrame of library matches for first query in documents_query
 
     Args:
@@ -158,6 +159,11 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         Library spectra in SpectrumDocument format
     model
         A trained Spec2Vec model
+    model_num
+        The model number used for library matching. This is a workaround for
+        the caching of the library matches as the model is expensive to hash,
+        it is not hashed and with model_num it is kept into account if the
+        model changes.
     """
     topn = 100  # assume that user will never want to see more than 100 matches
     if len(documents_library) < topn:
@@ -173,7 +179,7 @@ def get_library_matches(documents_query: List[SpectrumDocument],
 
     st.write("These are the library matches for your query")
     found_matches_s2v = cached_library_matching(
-        documents_query, documents_library, model, topn)
+        documents_query, documents_library, model, topn, model_num)
 
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
@@ -186,7 +192,8 @@ def get_library_matches(documents_query: List[SpectrumDocument],
 def cached_library_matching(documents_query: List[SpectrumDocument],
                             documents_library: List[SpectrumDocument],
                             model: BaseTopicModel,
-                            topn: int) -> List[pd.DataFrame]:
+                            topn: int,
+                            model_num: int) -> List[pd.DataFrame]:
     """Run library matching for the app and cache the result with st.cache
 
     Returns the usual list of library matches as DataFrames
@@ -201,6 +208,11 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         A trained Spec2Vec model
     topn:
         The amount of Spec2Vec top candidates to retrieve
+    model_num
+        The model number used for library matching. This is a workaround for
+        the caching of the library matches as the model is expensive to hash,
+        it is not hashed and with model_num it is kept into account if the
+        model changes.
     """
     found_matches_s2v = library_matching(
         documents_query, documents_library, model,
