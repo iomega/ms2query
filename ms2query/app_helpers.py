@@ -140,12 +140,13 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     with st.beta_expander("View processing defaults"):
         st.markdown(
             f"""* normalize peaks (maximum intensity to 1)\n* remove peaks 
-        outside [{settings["mz_from"]}, {settings["mz_to"]}] m/z window\n* remove
-        spectra with < {settings["n_required"]} peaks\n* reduce number of peaks to
-        maximum of {settings["ratio_desired"]} * parent mass\n* remove peaks with
-        intensities < {settings["intensity_from"]} of maximum intensity (unless
-        this brings number of peaks to less than 10)\n* add losses between m/z
-        value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
+            outside [{settings["mz_from"]}, {settings["mz_to"]}] m/z window
+            \n* remove spectra with < {settings["n_required"]} peaks\n* reduce
+            number of peaks to maximum of {settings["ratio_desired"]} * parent
+            mass\n* remove peaks with intensities <
+            {settings["intensity_from"]} of maximum intensity (unless this
+            brings number of peaks to less than 10)\n* add losses between m/z
+            value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
     documents_query = process_spectrums(query_spectrums, **settings)
     documents_library = process_spectrums(library_spectrums, **settings)
