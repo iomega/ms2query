@@ -7,6 +7,7 @@ from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library
 from ms2query.app_helpers import do_spectrum_processing
+from ms2query.app_helpers import get_example_library_matches
 
 st.title("Ms2query")
 st.write("""
@@ -42,21 +43,14 @@ if not query_spectrums or not library_spectrums or not model_file:
     upload a query, library and model file in the sidebar.</span></p>""",
                                        unsafe_allow_html=True)
 
-
 # processing of query and library spectra into SpectrumDocuments
 documents_query, documents_library = do_spectrum_processing(query_spectrums,
                                                             library_spectrums)
 
 # do library matching
-# for now load example as library matching function isn't there yet
-path_dir = os.path.dirname(__file__)
-test_found_matches_file = os.path.join(path_dir, "tests",
-                                       "test_found_matches.csv")
-test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
 st.write("## Library matching")
-with st.beta_expander("See an example"):
-    st.write("These are the test library matches for test query:")
-    st.dataframe(test_found_matches)
+# load example library matching (test query on test library)
+get_example_library_matches()
 
 # library matching function
 do_library_matching = st.checkbox("Do library matching")

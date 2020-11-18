@@ -1,5 +1,6 @@
 import os
 from typing import Tuple, List
+import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
 from matchms.Spectrum import Spectrum
@@ -126,3 +127,16 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     documents_library = process_spectrums(library_spectrums, **settings)
 
     return documents_query, documents_library
+
+
+def get_example_library_matches():
+    """
+    Get test_found_matches from test dir, display it as an example in the app
+    """
+    base_dir = os.path.split(os.path.dirname(__file__))[0]
+    test_found_matches_file = os.path.join(base_dir, "tests",
+                                           "test_found_matches.csv")
+    test_found_matches = pd.read_csv(test_found_matches_file, index_col=0)
+    with st.beta_expander("See an example"):
+        st.write("These are the test library matches for test query:")
+        st.dataframe(test_found_matches)
