@@ -94,6 +94,26 @@ def get_library() -> List[Spectrum]:
     return library_spectrums
 
 
+def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
+    """Return (Word2Vec model, model number) and print some info in the app
+    """
+    model_file = st.sidebar.text_input(
+        "Enter filename of Spec2Vec model (with path):")
+    st.write("#### Spec2Vec model")
+    model = None
+    model_num = None
+    if model_file:
+        if model_file.endswith(".model"):
+            st.write("Your selected model:", os.path.split(model_file)[-1])
+            model = Word2Vec.load(model_file)
+            # todo: change this when multiple models are added for caching
+            model_num = 0
+        else:
+            st.write("""<p><span style="color:red">Model file extension should
+            be .model, please try again.</span></p>""", unsafe_allow_html=True)
+    return model, model_num
+
+
 def do_spectrum_processing(query_spectrums: List[Spectrum],
                            library_spectrums: List[Spectrum]) -> Tuple[
                            List[SpectrumDocument], List[SpectrumDocument]]:

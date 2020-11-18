@@ -1,10 +1,10 @@
 import os
 import pandas as pd
 import streamlit as st
-from gensim.models import Word2Vec
 from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library
+from ms2query.app_helpers import get_model
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
 from ms2query.app_helpers import get_library_matches
@@ -26,22 +26,10 @@ library_spectrums = get_library()
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
 # for quick testing C:\Users\joris\Documents\eScience_data\data\trained_models\spec2vec_library_testing_4000removed_2dec.model
-model_file = st.sidebar.text_input(
-    "Enter filename of Spec2Vec model (with path):")
-st.write("#### Spec2Vec model")
-model = None
-model_num = None
-if model_file:
-    if model_file.endswith(".model"):
-        st.write("Your selected model:", os.path.split(model_file)[-1])
-        model = Word2Vec.load(model_file)
-        model_num = 0  # change this when multiple models are added for caching
-    else:
-        st.write("""<p><span style="color:red">Model file extension should be
-        .model, please try again.</span></p>""", unsafe_allow_html=True)
+model, model_num = get_model()
 
 # write an input warning
-if not query_spectrums or not library_spectrums or not model_file:
+if not query_spectrums or not library_spectrums or not model:
     input_warning_placeholder.markdown("""<p><span style="color:red">Please
     upload a query, library and model file in the sidebar.</span></p>""",
                                        unsafe_allow_html=True)
