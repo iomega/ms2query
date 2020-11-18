@@ -4,9 +4,11 @@ import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
 from matchms.Spectrum import Spectrum
+from gensim.models.basemodel import BaseTopicModel
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
+from ms2query.s2v_functions import library_matching
 
 
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
@@ -140,3 +142,36 @@ def get_example_library_matches():
     with st.beta_expander("See an example"):
         st.write("These are the test library matches for test query:")
         st.dataframe(test_found_matches)
+
+
+def get_library_matches(documents_query: List[SpectrumDocument],
+                        documents_library: List[SpectrumDocument],
+                        model: BaseTopicModel) -> pd.DataFrame:
+    """Returns DataFrame of library matches for first query in documents_query
+
+    Args:
+    -------
+    documents_query:
+        Query spectra in SpectrumDocument format
+    documents_library
+        Library spectra in SpectrumDocument format
+    model
+        A trained Spec2Vec model
+    """
+    def_topn = 20
+    if len(documents_library) < def_topn:
+        def_topn = len(documents_library)
+
+    cols = st.beta_columns([1, 4])
+    with cols[0]:
+        topn = st.text_input("Show top n matches", value=def_topn)
+    st.write("These are the library matches for your query")
+    found_matches_s2v = library_matching(
+        documents_query, documents_library, model, presearch_based_on=[
+            f"spec2vec-top{topn}", "parentmass"],
+        **{"allowed_missing_percentage": 100})
+    if found_matches_s2v:
+        first_found_match = found_matches_s2v[0]
+        st.dataframe(first_found_match.sort_values("s2v_score",
+                                                   ascending=False))
+        return first_found_match

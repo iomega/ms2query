@@ -2,12 +2,12 @@ import os
 import pandas as pd
 import streamlit as st
 from gensim.models import Word2Vec
-from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
+from ms2query.app_helpers import get_library_matches
 
 st.title("Ms2query")
 st.write("""
@@ -55,22 +55,9 @@ get_example_library_matches()
 # library matching function
 do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
-    if all([model, documents_query, documents_library]):
-        if len(documents_library) < 20:
-            def_topn = len(documents_library)
-        else:
-            def_topn = 20
-        cols = st.beta_columns([1, 4])
-        with cols[0]:
-            topn = st.text_input("Show top n matches", value=def_topn)
-        st.write("These are the library matches for your query")
-        found_matches_s2v = library_matching(
-            documents_query, documents_library, model, presearch_based_on=[
-                f"spec2vec-top{topn}", "parentmass"],
-            **{"allowed_missing_percentage": 100})
-        if found_matches_s2v:
-            found_match = found_matches_s2v[0]
-            st.dataframe(found_match.sort_values("s2v_score", ascending=False))
+    if all([documents_query, documents_library, model]):
+        found_match = get_library_matches(documents_query, documents_library,
+                                          model)
     else:
         do_library_matching = False
         st.write("""<p><span style="color:red">Please specify input files.
