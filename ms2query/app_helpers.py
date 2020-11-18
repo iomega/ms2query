@@ -158,20 +158,26 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     model
         A trained Spec2Vec model
     """
-    def_topn = 20
-    if len(documents_library) < def_topn:
-        def_topn = len(documents_library)
+    topn = 100  # assume that user will never want to see more than 100 matches
+    if len(documents_library) < topn:
+        topn = len(documents_library)  # so it doesn't crash with small libs
 
+    def_show_topn = 20  # default for topn results to show
+    if len(documents_library) < def_show_topn:
+        def_show_topn = len(documents_library)
     cols = st.beta_columns([1, 4])
     with cols[0]:
-        topn = st.text_input("Show top n matches", value=def_topn)
+        show_topn = int(st.text_input("Show top n matches",
+                                      value=def_show_topn))
+
     st.write("These are the library matches for your query")
     found_matches_s2v = library_matching(
         documents_query, documents_library, model, presearch_based_on=[
             f"spec2vec-top{topn}", "parentmass"],
         **{"allowed_missing_percentage": 100})
+
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
-        st.dataframe(first_found_match.sort_values("s2v_score",
-                                                   ascending=False))
+        st.dataframe(first_found_match.sort_values(
+            "s2v_score", ascending=False).iloc[:show_topn])
         return first_found_match
