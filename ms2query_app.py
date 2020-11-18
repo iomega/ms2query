@@ -7,44 +7,18 @@ from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
+from ms2query.app_helpers import get_query
 
 st.title("Ms2query")
 st.write("""
 Upload your query and library spectra files in json format in the sidebar.
 Query the library using a Spec2Vec model and inspect the results! 
 """)
-
-# load query file in sidebar
-query_spectrums = []  # default so later code doesn't crash
-query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
-                                      type=['json', 'txt'])
-# gather default queries
-test_query_file = os.path.join(os.path.dirname(__file__), 'tests',
-                               'testspectrum_query.json')
-example_queries_dict = {'testspectrum_query.json': test_query_file}
-example_queries_list = [''] + list(example_queries_dict.keys())
-query_example = st.sidebar.selectbox("Load a query spectrum example",
-                                     example_queries_list)
-
 st.write("## Input information")
 input_warning_placeholder = st.empty()  # input warning for later
-st.write("#### Query spectrum")
-if query_example:
-    st.write('You have selected an example query:', query_example)
-    query_spectrums = json_loader(open(example_queries_dict[query_example]))
-elif query_file is not None:
-    if query_file.name.endswith("json"):
-        query_file.seek(0)  # fix for streamlit issue #2235
-        query_spectrums = json_loader(query_file)
 
-# write query info
-if query_example or query_file:
-    st.write("Your query spectrum id: {}".format(
-        query_spectrums[0].metadata.get("spectrum_id")))
-    with st.beta_expander("View additional query information"):
-        fig = query_spectrums[0].plot()
-        st.pyplot(fig)
-
+# load query spectrum
+query_spectrums = get_query()
 # load library file in sidebar
 library_spectrums = []  # default so later code doesn't crash
 library_file = st.sidebar.file_uploader("Choose a spectra library file...",
