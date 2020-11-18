@@ -1,7 +1,7 @@
 import os
 from typing import Tuple
 import streamlit as st
-from .utils import json_loader
+from ms2query.utils import json_loader
 
 
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
@@ -28,6 +28,7 @@ def get_query():
     query_spectrums = []  # default so later code doesn't crash
     query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
                                           type=['json', 'txt'])
+
     # gather default queries
     example_queries_dict, example_queries_list = gather_test_json(
         'testspectrum_query.json')
@@ -35,7 +36,7 @@ def get_query():
                                          example_queries_list)
 
     st.write("#### Query spectrum")
-    if query_example:
+    if query_example and not query_file:
         st.write('You have selected an example query:', query_example)
         query_spectrums = json_loader(open(example_queries_dict[query_example]))
     elif query_file is not None:
