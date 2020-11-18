@@ -148,7 +148,7 @@ def get_example_library_matches():
 def get_library_matches(documents_query: List[SpectrumDocument],
                         documents_library: List[SpectrumDocument],
                         model: BaseTopicModel,
-                        model_num: int) -> pd.DataFrame:
+                        model_num: int) -> Union[pd.DataFrame, None]:
     """Returns DataFrame of library matches for first query in documents_query
 
     Args:
@@ -186,6 +186,7 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         st.dataframe(first_found_match.sort_values(
             "s2v_score", ascending=False).iloc[:show_topn])
         return first_found_match
+    return None
 
 
 @st.cache(hash_funcs={Word2Vec: lambda _: None})
