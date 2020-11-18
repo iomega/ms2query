@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
 from matchms.Spectrum import Spectrum
+from gensim.models import Word2Vec
 from gensim.models.basemodel import BaseTopicModel
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
@@ -171,13 +172,38 @@ def get_library_matches(documents_query: List[SpectrumDocument],
                                       value=def_show_topn))
 
     st.write("These are the library matches for your query")
-    found_matches_s2v = library_matching(
-        documents_query, documents_library, model, presearch_based_on=[
-            f"spec2vec-top{topn}", "parentmass"],
-        **{"allowed_missing_percentage": 100})
+    found_matches_s2v = cached_library_matching(
+        documents_query, documents_library, model, topn)
 
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
         st.dataframe(first_found_match.sort_values(
             "s2v_score", ascending=False).iloc[:show_topn])
         return first_found_match
+
+
+@st.cache(hash_funcs={Word2Vec: lambda _: None})
+def cached_library_matching(documents_query: List[SpectrumDocument],
+                            documents_library: List[SpectrumDocument],
+                            model: BaseTopicModel,
+                            topn: int) -> List[pd.DataFrame]:
+    """Run library matching for the app and cache the result with st.cache
+
+    Returns the usual list of library matches as DataFrames
+
+    Args:
+    -------
+    documents_query:
+        Query spectra in SpectrumDocument format
+    documents_library:
+        Library spectra in SpectrumDocument format
+    model:
+        A trained Spec2Vec model
+    topn:
+        The amount of Spec2Vec top candidates to retrieve
+    """
+    found_matches_s2v = library_matching(
+        documents_query, documents_library, model,
+        presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
+        **{"allowed_missing_percentage": 100})
+    return found_matches_s2v
