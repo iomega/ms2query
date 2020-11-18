@@ -1,6 +1,24 @@
 import os
+from typing import Tuple
 import streamlit as st
 from .utils import json_loader
+
+
+def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
+    """Return tuple of {test_file_name: full_path}, ['', test_file_name]
+
+    test_file_name has to be in 'tests' folder
+
+    Args:
+    -------
+    test_file_name:
+        Name of the test file.
+    """
+    test_path = os.path.join(os.path.split(os.path.dirname(__file__))[0],
+                             'tests', test_file_name)
+    test_dict = {test_file_name: test_path}
+    test_list = [''] + list(test_dict.keys())
+    return test_dict, test_list
 
 
 def get_query():
@@ -11,10 +29,8 @@ def get_query():
     query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
                                           type=['json', 'txt'])
     # gather default queries
-    test_query_file = os.path.join(os.path.split(os.path.dirname(__file__))[0],
-                                   'tests', 'testspectrum_query.json')
-    example_queries_dict = {'testspectrum_query.json': test_query_file}
-    example_queries_list = [''] + list(example_queries_dict.keys())
+    example_queries_dict, example_queries_list = gather_test_json(
+        'testspectrum_query.json')
     query_example = st.sidebar.selectbox("Load a query spectrum example",
                                          example_queries_list)
 
