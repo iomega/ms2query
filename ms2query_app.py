@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import streamlit as st
 from ms2query.app_helpers import get_query
-from ms2query.app_helpers import get_library
+from ms2query.app_helpers import get_library_data
 from ms2query.app_helpers import get_model
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
@@ -21,7 +21,7 @@ input_warning_placeholder = st.empty()  # input warning for later
 # load query spectrum
 query_spectrums = get_query()
 # load library file in sidebar
-library_spectrums = get_library()
+library_spectrums, sim_matrix = get_library_data()
 
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
@@ -55,15 +55,14 @@ if do_library_matching:
         </span></p>""", unsafe_allow_html=True)
 
 # do networking
-# for now load example similarity matrix
-path_dir = os.path.dirname(__file__)
-test_sim_matrix_file = os.path.join(path_dir, "tests", "test_found_matches_" +
-                                    "similarity_matrix.csv")
-test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    make_network_plot(found_match, documents_library, test_sim_matrix)
+    if sim_matrix is None:
+        st.write("""<p><span style="color:red">Does not work yet for custom
+            libraries.</span></p>""", unsafe_allow_html=True)
+    else:
+        make_network_plot(found_match, documents_library, sim_matrix)
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)

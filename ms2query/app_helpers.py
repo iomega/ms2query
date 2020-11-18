@@ -66,9 +66,9 @@ def get_query() -> List[Spectrum]:
     return query_spectrums
 
 
-def get_library() -> List[Spectrum]:
+def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
     """
-    Return library spectra as [Spectrum] from user input and print library info
+    Return library, library_similarities as ([Spectrum], df) from user input
     """
     library_spectrums = []  # default so later code doesn't crash
     library_file = st.sidebar.file_uploader("Choose a spectra library file...",
@@ -92,7 +92,19 @@ def get_library() -> List[Spectrum]:
     if library_spectrums:
         st.write(f"Your library contains {len(library_spectrums)} spectra.")
 
-    return library_spectrums
+    # load similarity matrix, not implemented yet apart from test sim matrix
+    if library_example == 'testspectrum_library.json' and not library_file:
+        test_sim_matrix_file = os.path.join(
+            os.path.split(os.path.dirname(__file__))[0], "tests",
+            "test_found_matches_similarity_matrix.csv")
+        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+    else:
+        test_sim_matrix = None
+        st.write("""<p><span style="color:red">Libraries other than the example
+            testspectrum are not implemented yet, so network plotting will not
+            work for this library.</span></p>""", unsafe_allow_html=True)
+
+    return library_spectrums, test_sim_matrix
 
 
 def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
