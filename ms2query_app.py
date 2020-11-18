@@ -2,12 +2,11 @@ import os
 import pandas as pd
 import streamlit as st
 from gensim.models import Word2Vec
-from ms2query.s2v_functions import set_spec2vec_defaults
-from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library
+from ms2query.app_helpers import do_spectrum_processing
 
 st.title("Ms2query")
 st.write("""
@@ -43,28 +42,10 @@ if not query_spectrums or not library_spectrums or not model_file:
     upload a query, library and model file in the sidebar.</span></p>""",
                                        unsafe_allow_html=True)
 
-# processing of query and library spectra into SpectrumDocuments
-st.write("""## Post-process spectra
-Spec2Vec similarity scores rely on creating a document vector for each
-spectrum. For the underlying word2vec model we want the documents (=spectra) to
-be more homogeneous in their number of unique words. Assuming that larger
-compounds will on average break down into a higher number of meaningful
-fragment peaks we reduce the document size of each spectrum according to its
-parent mass.
-""")
-# todo: we could add some buttons later to make this adjustable
-settings = set_spec2vec_defaults()
-with st.beta_expander("View processing defaults"):
-    st.markdown(f"""* normalize peaks (maximum intensity to 1)\n* remove peaks 
-    outside [{settings["mz_from"]}, {settings["mz_to"]}] m/z window\n* remove
-    spectra with < {settings["n_required"]} peaks\n* reduce number of peaks to
-    maximum of {settings["ratio_desired"]} * parent mass\n* remove peaks with
-    intensities < {settings["intensity_from"]} of maximum intensity (unless
-    this brings number of peaks to less than 10)\n* add losses between m/z
-    value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-documents_query = process_spectrums(query_spectrums, **settings)
-documents_library = process_spectrums(library_spectrums, **settings)
+# processing of query and library spectra into SpectrumDocuments
+documents_query, documents_library = do_spectrum_processing(query_spectrums,
+                                                            library_spectrums)
 
 # do library matching
 # for now load example as library matching function isn't there yet
