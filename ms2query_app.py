@@ -8,6 +8,7 @@ from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
+from ms2query.app_helpers import get_library
 
 st.title("Ms2query")
 st.write("""
@@ -20,28 +21,7 @@ input_warning_placeholder = st.empty()  # input warning for later
 # load query spectrum
 query_spectrums = get_query()
 # load library file in sidebar
-library_spectrums = []  # default so later code doesn't crash
-library_file = st.sidebar.file_uploader("Choose a spectra library file...",
-                                        type=['json', 'txt'])
-# gather default libraries
-test_library_file = os.path.join(os.path.dirname(__file__), 'tests',
-                                 'testspectrum_library.json')
-example_libs_dict = {'testspectrum_library.json': test_library_file}
-example_libs_list = [''] + list(example_libs_dict.keys())  # '' as default
-library_example = st.sidebar.selectbox("Load a library spectrum example",
-                                       example_libs_list)
-st.write("#### Library spectra")
-if library_example:
-    st.write('You have selected an example library:', library_example)
-    library_spectrums = json_loader(open(example_libs_dict[library_example]))
-elif library_file is not None:
-    if library_file.name.endswith("json"):
-        library_file.seek(0)  # fix for streamlit issue #2235
-        library_spectrums = json_loader(library_file)
-
-# write library info
-if library_spectrums:
-    st.write(f"Your library contains {len(library_spectrums)} spectra.")
+library_spectrums = get_library()
 
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this

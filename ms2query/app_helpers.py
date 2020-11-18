@@ -53,3 +53,29 @@ def get_query():
             st.pyplot(fig)
 
     return query_spectrums
+
+
+def get_library():
+    library_spectrums = []  # default so later code doesn't crash
+    library_file = st.sidebar.file_uploader("Choose a spectra library file...",
+                                            type=['json', 'txt'])
+    # gather default libraries
+    example_libs_dict, example_libs_list = gather_test_json(
+        'testspectrum_library.json')
+    library_example = st.sidebar.selectbox("Load a library spectrum example",
+                                           example_libs_list)
+    st.write("#### Library spectra")
+    if library_example:
+        st.write('You have selected an example library:', library_example)
+        library_spectrums = json_loader(
+            open(example_libs_dict[library_example]))
+    elif library_file is not None:
+        if library_file.name.endswith("json"):
+            library_file.seek(0)  # fix for streamlit issue #2235
+            library_spectrums = json_loader(library_file)
+
+    # write library info
+    if library_spectrums:
+        st.write(f"Your library contains {len(library_spectrums)} spectra.")
+
+    return library_spectrums
