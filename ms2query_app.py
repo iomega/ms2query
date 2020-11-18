@@ -1,5 +1,3 @@
-import os
-import pandas as pd
 import streamlit as st
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library_data
@@ -43,7 +41,6 @@ st.write("## Library matching")
 # load example library matching (test query on test library)
 get_example_library_matches()
 
-# library matching function
 do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
     if all([documents_query, documents_library, model]):
