@@ -33,10 +33,12 @@ def main():
 
 def display_state_values(state):
     st.write("Inputs and set parameters")
-    if state.query_spectrums:
-        st.write("query spectra", len(state.query_spectrums))
-    if state.library_spectrums:
-        st.write("library spectra", len(state.library_spectrums))
+    #if state.query_spectrums:
+    st.write("query spectra", len(state.query_spectrums))
+    #if state.library_spectrums:
+    st.write("library spectra", len(state.library_spectrums))
+    if state.model:
+        st.write("model size", len(state.model.vocabulary))
     
     # for i in range(3):
     #     st.write(f"Value {i}:", state[f"State value {i}"])
@@ -118,6 +120,7 @@ class _SessionState:
             "hasher": _CodeHasher(hash_funcs),
             "is_rerun": False,
             "session": session,
+            "initialized": False,
         }
 
     def __call__(self, **kwargs):

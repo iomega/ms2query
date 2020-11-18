@@ -15,6 +15,7 @@ from ms2query.networking import do_networking
 
 def initalize_state(state):
     if not state.initiatlized:
+    # if "query_spectrums" not in state:
         state.query_spectrums = []
         state.query_file = None
         state.query_example = None
@@ -24,6 +25,8 @@ def initalize_state(state):
         state.model_file = None
         state.model = None
         state.model_num = None
+        
+        state.initialized = True
         
         
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
