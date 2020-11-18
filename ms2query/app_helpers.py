@@ -65,7 +65,7 @@ def get_library():
     library_example = st.sidebar.selectbox("Load a library spectrum example",
                                            example_libs_list)
     st.write("#### Library spectra")
-    if library_example:
+    if library_example and not library_file:
         st.write('You have selected an example library:', library_example)
         library_spectrums = json_loader(
             open(example_libs_dict[library_example]))
