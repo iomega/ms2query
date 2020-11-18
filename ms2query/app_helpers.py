@@ -10,6 +10,7 @@ from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import library_matching
+from ms2query.networking import do_networking
 
 
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
@@ -242,3 +243,48 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
         **{"allowed_missing_percentage": 100})
     return found_matches_s2v
+
+
+def make_network_plot(found_match: pd.DataFrame,
+                      documents_library: List[SpectrumDocument],
+                      sim_matrix: pd.DataFrame):
+    """Plots the network in the app
+
+    Args:
+    -------
+    found_match
+        Dataframe containing the scores of the library matches, index names
+        should correspond to indices in documents_library
+    documents_library
+        Library spectra in SpectrumDocument format
+    sim_matrix
+        Dataframe containing the tanimoto similarities of the library spectra
+        amongst each other
+    """
+    plot_placeholder = st.empty()  # add a place for the plot
+    # add sliders to adjust network plot
+    col1, col2 = st.beta_columns(2)
+    with col1:
+        st.write("Restrict library matches")
+        attr_key = st.selectbox("Choose parameter", found_match.columns,
+                                index=0)
+        attr_data = found_match[attr_key]
+        if isinstance(attr_data.iloc[0], float):
+            # true for s2v, cosine etc
+            min_v, max_v, step, val = (0., 1., 0.05, 0.4)
+        elif max(attr_data) >= 1:
+            # true for parentmass, cosine matches etc
+            min_v, max_v, step, val = (0, max(attr_data), 1, 1)
+        attr_cutoff = st.slider(attr_key + " cutoff", min_value=min_v,
+                                max_value=max_v, step=step, value=val)
+    with col2:
+        st.write("Restrict library connections")
+        tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
+                                    max_value=1., step=0.05, value=0.6)
+
+    network_plot = do_networking("query", found_match, sim_matrix,
+                                 documents_library, attribute_key=attr_key,
+                                 cutoff=attr_cutoff,
+                                 tan_cutoff=tanimoto_cutoff)
+    if network_plot:
+        plot_placeholder.plotly_chart(network_plot)

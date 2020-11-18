@@ -1,13 +1,13 @@
 import os
 import pandas as pd
 import streamlit as st
-from ms2query.networking import do_networking
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import get_library
 from ms2query.app_helpers import get_model
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
 from ms2query.app_helpers import get_library_matches
+from ms2query.app_helpers import make_network_plot
 
 
 st.title("Ms2query")
@@ -63,33 +63,7 @@ test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    plot_placeholder = st.empty()  # add a place for the plot
-    # add sliders to adjust network plot
-    col1, col2 = st.beta_columns(2)
-    with col1:
-        st.write("Restrict library matches")
-        attr_key = st.selectbox("Choose parameter", found_match.columns,
-                                index=0)
-        attr_data = found_match[attr_key]
-        if isinstance(attr_data.iloc[0], float):
-            # true for s2v, cosine etc
-            min_v, max_v, step, val = (0., 1., 0.05, 0.4)
-        elif max(attr_data) >= 1:
-            # true for parentmass, cosine matches etc
-            min_v, max_v, step, val = (0, max(attr_data), 1, 1)
-        attr_cutoff = st.slider(attr_key + " cutoff", min_value=min_v,
-                                max_value=max_v, step=step, value=val)
-    with col2:
-        st.write("Restrict library connections")
-        tanimoto_cutoff = st.slider("Tanimoto cutoff", min_value=0.,
-                                    max_value=1., step=0.05, value=0.6)
-
-    network_plot = do_networking("query", found_match, test_sim_matrix,
-                                 documents_library, attribute_key=attr_key,
-                                 cutoff=attr_cutoff,
-                                 tan_cutoff=tanimoto_cutoff)
-    if network_plot:
-        plot_placeholder.plotly_chart(network_plot)
+    make_network_plot(found_match, documents_library, test_sim_matrix)
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)
