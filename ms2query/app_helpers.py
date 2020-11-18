@@ -214,6 +214,8 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         it is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    if model_num:  # variable for the hash function
+        pass
     found_matches_s2v = library_matching(
         documents_query, documents_library, model,
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
