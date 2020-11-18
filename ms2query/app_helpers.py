@@ -13,6 +13,19 @@ from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
 
 
+def initalize_state(state):
+    if not state.initiatlized:
+        state.query_spectrums = []
+        state.query_file = None
+        state.query_example = None
+        state.library_spectrums = []
+        state.library_file = None
+        state.library_example = None
+        state.model_file = None
+        state.model = None
+        state.model_num = None
+        
+        
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
     """Return tuple of {test_file_name: full_path}, ['', test_file_name]
 
@@ -30,70 +43,66 @@ def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
     return test_dict, test_list
 
 
-def get_query() -> List[Spectrum]:
+def get_query(state) -> List[Spectrum]:
     """
     Return query spectra as [Spectrum] from user input and print query info
     """
     # load query file in sidebar
-    query_spectrums = []  # default so later code doesn't crash
-    query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
-                                          type=['json', 'txt'])
+    state.query_file = st.sidebar.file_uploader("Choose a query spectrum file...",
+                                                type=['json', 'txt'])
 
     # gather default queries
     example_queries_dict, example_queries_list = gather_test_json(
         'testspectrum_query.json')
-    query_example = st.sidebar.selectbox("Load a query spectrum example",
-                                         example_queries_list)
+    state.query_example = st.sidebar.selectbox("Load a query spectrum example",
+                                               example_queries_list)
 
     st.write("#### Query spectrum")
-    if query_example and not query_file:
-        st.write('You have selected an example query:', query_example)
-        query_spectrums = json_loader(
-            open(example_queries_dict[query_example]))
-    elif query_file is not None:
-        if query_file.name.endswith("json"):
-            query_file.seek(0)  # fix for streamlit issue #2235
-            query_spectrums = json_loader(query_file)
+    if state.query_example and not state.query_file:
+        st.write('You have selected an example query:', state.query_example)
+        state.query_spectrums = json_loader(
+            open(example_queries_dict[state.query_example]))
+    elif state.query_file is not None:
+        if state.query_file.name.endswith("json"):
+            state.query_file.seek(0)  # fix for streamlit issue #2235
+            state.query_spectrums = json_loader(state.query_file)
 
     # write query info
-    if query_example or query_file:
+    if state.query_example or state.query_file:
         st.write("Your query spectrum id: {}".format(
-            query_spectrums[0].metadata.get("spectrum_id")))
+            state.query_spectrums[0].metadata.get("spectrum_id")))
         with st.beta_expander("View additional query information"):
-            fig = query_spectrums[0].plot()
+            fig = state.query_spectrums[0].plot()
             st.pyplot(fig)
 
-    return query_spectrums
 
-
-def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
+def get_library_data(state) -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
     """
     Return library, library_similarities as ([Spectrum], df) from user input
     """
-    library_spectrums = []  # default so later code doesn't crash
-    library_file = st.sidebar.file_uploader("Choose a spectra library file...",
-                                            type=['json', 'txt'])
+    state.library_file = st.sidebar.file_uploader("Choose a spectra library file...",
+                                                  type=['json', 'txt'])
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
         'testspectrum_library.json')
-    library_example = st.sidebar.selectbox("Load a library spectrum example",
-                                           example_libs_list)
+    state.library_example = st.sidebar.selectbox("Load a library spectrum example",
+                                                 example_libs_list)
     st.write("#### Library spectra")
-    if library_example and not library_file:
-        st.write('You have selected an example library:', library_example)
-        library_spectrums = json_loader(
-            open(example_libs_dict[library_example]))
-    elif library_file is not None:
-        if library_file.name.endswith("json"):
-            library_file.seek(0)  # fix for streamlit issue #2235
-            library_spectrums = json_loader(library_file)
+    if state.library_example and not state.library_file:
+        st.write('You have selected an example library:', state.library_example)
+        state.library_spectrums = json_loader(
+            open(example_libs_dict[state.library_example]))
+    elif state.library_file is not None:
+        if state.library_file.name.endswith("json"):
+            state.library_file.seek(0)  # fix for streamlit issue #2235
+            state.library_spectrums = json_loader(state.library_file)
 
     # write library info
-    if library_spectrums:
-        st.write(f"Your library contains {len(library_spectrums)} spectra.")
+    if state.library_spectrums:
+        st.write(f"Your library contains {len(state.library_spectrums)} spectra.")
 
     # load similarity matrix, not implemented yet apart from test sim matrix
-    if library_example == 'testspectrum_library.json' and not library_file:
+    if state.library_example == 'testspectrum_library.json' and not state.library_file:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
@@ -104,27 +113,23 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
             testspectrum are not implemented yet, so network plotting will not
             work for this library.</span></p>""", unsafe_allow_html=True)
 
-    return library_spectrums, test_sim_matrix
-
-
-def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
+        
+    
+def get_model(state) -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
     """
-    model_file = st.sidebar.text_input(
+    state.model_file = st.sidebar.text_input(
         "Enter filename of Spec2Vec model (with path):")
     st.write("#### Spec2Vec model")
-    model = None
-    model_num = None
-    if model_file:
-        if model_file.endswith(".model"):
-            st.write("Your selected model:", os.path.split(model_file)[-1])
-            model = Word2Vec.load(model_file)
+    if state.model_file and not state.model:
+        if state.model_file.endswith(".model"):
+            st.write("Your selected model:", os.path.split(state.model_file)[-1])
+            state.model = Word2Vec.load(state.model_file)
             # todo: change this when multiple models are added for caching
-            model_num = 0
+            state.model_num = 0
         else:
             st.write("""<p><span style="color:red">Model file extension should
             be .model, please try again.</span></p>""", unsafe_allow_html=True)
-    return model, model_num
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
