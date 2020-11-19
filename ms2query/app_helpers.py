@@ -67,6 +67,18 @@ def get_query() -> List[Spectrum]:
     return query_spectrums
 
 
+def make_downloads_folder():
+    """Return user adjustable download folder, default is ms2query/downloads
+    """
+    base_dir = os.path.split(os.path.dirname(__file__))[0]
+    out_folder = os.path.join(base_dir, "downloads")
+    different_out_folder = st.sidebar.text_input(
+        "Change the download folder location. Default is: ms2query/downloads")
+    if different_out_folder:
+        out_folder = different_out_folder
+    return out_folder
+
+
 def get_library_data() -> Tuple[List[Spectrum], bool,
                                 Union[pd.DataFrame, None]]:
     """
@@ -114,19 +126,14 @@ def get_library_data() -> Tuple[List[Spectrum], bool,
     return library_spectrums, processed, test_sim_matrix
 
 
-def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
+def get_model(out_folder: str) -> Tuple[Union[Word2Vec, None],
+                                        Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
 
     Models will be downloaded from zenodo to ../ms2query/downloads
     """
     st.write("#### Spec2Vec model")
     # get all data from zenodo
-    base_dir = os.path.split(os.path.dirname(__file__))[0]
-    out_folder = os.path.join(base_dir, "downloads")
-    different_out_folder = st.sidebar.text_input(
-        "Change the download folder location. Default is: ms2query/downloads")
-    if different_out_folder:
-        out_folder = different_out_folder
     model_name, model_file, model_num = get_zenodo_models(out_folder)
     model = None
     if model_name:
