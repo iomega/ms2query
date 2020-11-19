@@ -117,6 +117,24 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     # get all data from zenodo
     base_dir = os.path.split(os.path.dirname(__file__))[0]
     downloads = os.path.join(base_dir, "downloads")
+    model_name, model_file, model_num = get_zenodo_models(downloads)
+    model = None
+    if model_name:
+        st.write("Your selected model:", model_name)
+        model = Word2Vec.load(model_file)
+    return model, model_num
+
+
+def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
+                                                                 int]:
+    """Returns list of file_paths to the downloaded files in order of input
+
+    Args:
+    -------
+    output_folder:
+        Folder to download to
+    """
+    # configure all model link/name info
     all_pos_urls = ["https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
                     "itive_ratio05_filtered_201101_iter_15.model?download=1",
                     "https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
@@ -124,47 +142,44 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
                     "syn1neg.npy?download=1", "https://zenodo.org/record/417" +
                     "3596/files/spec2vec_AllPositive_ratio05_filtered_201101" +
                     "_iter_15.model.wv.vectors.npy?download=1"]
-    all_pos_files = get_zenodo_files(all_pos_urls, downloads)
-    all_pos_model = all_pos_files[0]  # as it is first element in all_pos_urls
-    model_dict = {"AllPositive model": (all_pos_model, 0)}
+    all_pos_files = []
+    for url_name in all_pos_urls:
+        url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
+        out_path = os.path.join(output_folder, url_out_name)
+        all_pos_files.append(out_path)
+    model_dict = {"AllPositive model": (all_pos_urls, all_pos_files, 0)}
     model_list = [""] + list(model_dict.keys())
     model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
                                       options=model_list)
-    model = None
+    model_file = None
     model_num = None
     if model_name:
-        model_file, model_num = model_dict[model_name]
-        st.write("Your selected model:", model_name)
-        model = Word2Vec.load(model_file)
-    return model, model_num
+        make_folder(output_folder)
+        urls, files, model_num = model_dict[model_name]
+        model_file = files[0]  # as it is first element in e.g. all_pos_urls
+        for url_name, file_name in zip(urls, files):
+            place_holder = st.empty()
+            if not os.path.isfile(file_name):
+                file_base = os.path.split(file_name)[-1]
+                place_holder.write(f"Downloading {file_base} from zenodo..")
+                urlretrieve(url_name, file_name)
+                place_holder.write("Download successful.")
+            place_holder.empty()
+    return model_name, model_file, model_num
 
 
-def get_zenodo_files(url_list: List[str],
-                     output_folder: str = "downloads") -> List[str]:
-    """Returns list of file_paths to the downloaded files in order of input
+def make_folder(output_folder):
+    """Create output_folder if it doesn't exist yet
 
-    Args:
-    -------
-    url_list:
-        List of urls to download
-    output_folder:
-        Folder to download to
+    Args
+    -------:
+    output_folder
+        Folder to create
     """
     if not os.path.isdir(output_folder):
-        st.write("Created downloads directory")
+        extend = os.path.split(output_folder)[-1]
+        st.write(f"Writing downloaded files to {extend} directory")
         os.mkdir(output_folder)  # make output_folder if it doesn't exist
-    file_paths = []
-    for url_name in url_list:
-        url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
-        out_path = os.path.join(output_folder, url_out_name)
-        place_holder = st.empty()
-        if not os.path.isfile(out_path):
-            place_holder.write(f"Downloading {url_out_name} from zenodo..")
-            urlretrieve(url_name, out_path)
-            place_holder.write("Download successful.")
-        place_holder.empty()
-        file_paths.append(out_path)
-    return file_paths
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
