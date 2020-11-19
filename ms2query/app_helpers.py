@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List, Union, Dict
+from typing import Tuple, List, Union
 import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
