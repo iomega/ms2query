@@ -14,8 +14,9 @@ from ms2query.networking import do_networking
 
 
 def initalize_state(state):
-    if not state.initiatlized:
-    # if "query_spectrums" not in state:
+    #if not state.initiatlized:
+    #if "query_spectrums" not in state:
+    if state.initialized < 1:
         state.query_spectrums = []
         state.query_file = None
         state.query_example = None
@@ -25,8 +26,12 @@ def initalize_state(state):
         state.model_file = None
         state.model = None
         state.model_num = None
+        state.sim_matrix = None
+        state.found_match = None
         
-        state.initialized = True
+        state.initialized += 1
+    
+    #state.initialized = True
         
         
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
@@ -109,15 +114,13 @@ def get_library_data(state) -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
-        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+        state.sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
     else:
-        test_sim_matrix = None
         st.write("""<p><span style="color:red">Libraries other than the example
             testspectrum are not implemented yet, so network plotting will not
             work for this library.</span></p>""", unsafe_allow_html=True)
 
         
-    
 def get_model(state) -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
     """
@@ -127,7 +130,7 @@ def get_model(state) -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     if state.model_file and not state.model:
         if state.model_file.endswith(".model"):
             st.write("Your selected model:", os.path.split(state.model_file)[-1])
-            state.model = Word2Vec.load(state.model_file)
+            w2v_model_loader(state)
             # todo: change this when multiple models are added for caching
             state.model_num = 0
         else:
@@ -309,3 +312,10 @@ def make_network_plot(found_match: pd.DataFrame,
                                  tan_cutoff=tanimoto_cutoff)
     if network_plot:
         plot_placeholder.plotly_chart(network_plot)
+
+
+def w2v_model_loader(state):
+    """Load gensim model"""
+    model = Word2Vec.load(state.model_file)
+    if model:
+        state.model = model

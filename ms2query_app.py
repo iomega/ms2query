@@ -38,7 +38,7 @@ def display_state_values(state):
     #if state.library_spectrums:
     st.write("library spectra", len(state.library_spectrums))
     if state.model:
-        st.write("model size", len(state.model.vocabulary))
+        st.write("model size", len(state.model.wv.vocab))
     
     # for i in range(3):
     #     st.write(f"Value {i}:", state[f"State value {i}"])
@@ -74,8 +74,9 @@ def ms2query_data_entry(state):
                                            unsafe_allow_html=True)
     
     # processing of query and library spectra into SpectrumDocuments
-    state.documents_query, state.documents_library = do_spectrum_processing(state.query_spectrums,
-                                                                state.library_spectrums)
+    if len(state.query_spectrums) > 0 and len(state.library_spectrums) > 0:
+        state.documents_query, state.documents_library = do_spectrum_processing(state.query_spectrums,
+                                                                                state.library_spectrums)
 
 
 
@@ -122,6 +123,7 @@ class _SessionState:
             "session": session,
             "initialized": False,
         }
+        self.initialized = 0
 
     def __call__(self, **kwargs):
         """Initialize state data once."""
