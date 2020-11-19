@@ -19,7 +19,7 @@ input_warning_placeholder = st.empty()  # input warning for later
 # load query spectrum
 query_spectrums = get_query()
 # load library file in sidebar
-library_spectrums, sim_matrix = get_library_data()
+library_spectrums, lib_is_processed, sim_matrix = get_library_data()
 
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this
@@ -34,7 +34,8 @@ if not query_spectrums or not library_spectrums or not model:
 
 # processing of query and library spectra into SpectrumDocuments
 documents_query, documents_library = do_spectrum_processing(query_spectrums,
-                                                            library_spectrums)
+                                                            library_spectrums,
+                                                            lib_is_processed)
 
 # do library matching
 st.write("## Library matching")

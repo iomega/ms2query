@@ -227,8 +227,9 @@ def make_folder(output_folder):
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
-                           library_spectrums: List[Spectrum]) -> Tuple[
-    List[SpectrumDocument], List[SpectrumDocument]]:
+                           library_spectrums: List[Spectrum],
+                           library_is_processed: bool) -> Tuple[
+        List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
@@ -260,7 +261,10 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
             value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
     documents_query = process_spectrums(query_spectrums, **settings)
-    documents_library = process_spectrums(library_spectrums, **settings)
+    if library_is_processed:
+        documents_library = library_spectrums
+    else:
+        documents_library = process_spectrums(library_spectrums, **settings)
 
     return documents_query, documents_library
 
