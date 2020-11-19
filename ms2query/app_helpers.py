@@ -145,7 +145,7 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
     return library_spectrums, processed, test_sim_matrix
 
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_pickled_file(file_name: str):
     """Returns contents from the pickle file
 
