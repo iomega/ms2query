@@ -116,8 +116,12 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     st.write("#### Spec2Vec model")
     # get all data from zenodo
     base_dir = os.path.split(os.path.dirname(__file__))[0]
-    downloads = os.path.join(base_dir, "downloads")
-    model_name, model_file, model_num = get_zenodo_models(downloads)
+    out_folder = os.path.join(base_dir, "downloads")
+    different_out_folder = st.sidebar.text_input(
+        "Change the download folder location. Default is: ms2query/downloads")
+    if different_out_folder:
+        out_folder = different_out_folder
+    model_name, model_file, model_num = get_zenodo_models(out_folder)
     model = None
     if model_name:
         st.write("Your selected model:", model_name)
