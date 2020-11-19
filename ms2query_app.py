@@ -15,14 +15,15 @@ from ms2query.app_helpers import make_network_plot
 
 
 def main():
+    st.sidebar.title("Ms2query")
     state = _get_state()
     initalize_state(state)
     pages = {
-        "MS2Query data entry": ms2query_data_entry,
-        "MS2Query analysis": ms2query_analysis,
+        "1) MS2Query data entry": ms2query_data_entry,
+        "2) MS2Query analysis": ms2query_analysis,
     }
 
-    st.sidebar.title("Page states")
+    st.sidebar.markdown("## MS2Query steps")
     page = st.sidebar.radio("Select your page", tuple(pages.keys()))
 
     # Display the selected page with the session state
@@ -32,24 +33,20 @@ def main():
     state.sync()
 
 def display_state_values(state):
-    st.write("Inputs and set parameters")
-    #if state.query_spectrums:
-    st.write("query spectra", len(state.query_spectrums))
-    #if state.library_spectrums:
-    st.write("library spectra", len(state.library_spectrums))
+    st.sidebar.markdown("### Inputs and set parameters")
+    st.sidebar.write(f"no. of query spectra: {len(state.query_spectrums)}")
+    st.sidebar.write(f"no. of library spectra: {len(state.library_spectrums)}")
     if state.model:
-        st.write("model size", len(state.model.wv.vocab))
-    
-    # for i in range(3):
-    #     st.write(f"Value {i}:", state[f"State value {i}"])
+        st.sidebar.write("Word2Vec vocabulary size", len(state.model.wv.vocab))
 
-    if st.button("Clear state"):
+    if st.sidebar.button("Clear state"):
         state.clear()
 
 
 def ms2query_data_entry(state):
+    """Data entry page"""
     display_state_values(state)
-    st.title("Ms2query")
+    st.markdown("## 1) MS2Query - Data entry")
     st.write("""
     Upload your query and library spectra files in json format in the sidebar.
     Query the library using a Spec2Vec model and inspect the results! 
@@ -81,6 +78,8 @@ def ms2query_data_entry(state):
 
 
 def ms2query_analysis(state):
+    """Data analysis page"""
+    st.markdown("##  2) MS2Query - analysis: candidate search & inspection")
     display_state_values(state)
     # do library matching
     st.write("## Library matching")
