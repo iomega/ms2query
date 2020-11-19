@@ -72,8 +72,7 @@ def ms2query_data_entry(state):
     
     # processing of query and library spectra into SpectrumDocuments
     if len(state.query_spectrums) > 0 and len(state.library_spectrums) > 0:
-        state.documents_query, state.documents_library = do_spectrum_processing(state.query_spectrums,
-                                                                                state.library_spectrums)
+        do_spectrum_processing(state, state.query_spectrums, state.library_spectrums)  # TODO: only pass state
 
 
 

@@ -138,7 +138,7 @@ def get_model(state) -> Tuple[Union[Word2Vec, None], Union[int, None]]:
             be .model, please try again.</span></p>""", unsafe_allow_html=True)
 
 
-def do_spectrum_processing(query_spectrums: List[Spectrum],
+def do_spectrum_processing(state, query_spectrums: List[Spectrum],
                            library_spectrums: List[Spectrum]) -> Tuple[
                            List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
@@ -171,10 +171,8 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
             brings number of peaks to less than 10)\n* add losses between m/z
             value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
-    documents_query = process_spectrums(query_spectrums, **settings)
-    documents_library = process_spectrums(library_spectrums, **settings)
-
-    return documents_query, documents_library
+    state.documents_query = process_spectrums(query_spectrums, **settings)
+    state.documents_library = process_spectrums(library_spectrums, **settings)
 
 
 def get_example_library_matches():
