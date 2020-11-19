@@ -34,6 +34,7 @@ computed_results/
 notebooks/.ipynb_checkpoints/
 __pycache__/
 debug.log
+downloads/
 
 # conda build directory
 /_build
