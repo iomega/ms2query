@@ -110,6 +110,8 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
 
 def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
+
+    Models will be downloaded from zenodo to ../ms2query/downloads
     """
     st.write("#### Spec2Vec model")
     # get all data from zenodo
@@ -124,10 +126,8 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
                     "_iter_15.model.wv.vectors.npy?download=1"]
     all_pos_files = get_zenodo_files(all_pos_urls, downloads)
     all_pos_model = all_pos_files[0]  # as it is first element in all_pos_urls
-    # model_dict = {all_pos_model: ("AllPositive model", 0)}
     model_dict = {"AllPositive model": (all_pos_model, 0)}
     model_list = [""] + list(model_dict.keys())
-    # model_list = [" ", all_pos_model]
     model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
                                       options=model_list)
     model = None
