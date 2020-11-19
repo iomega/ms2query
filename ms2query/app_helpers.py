@@ -6,6 +6,7 @@ from spec2vec import SpectrumDocument
 from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
 from gensim.models.basemodel import BaseTopicModel
+from urllib.request import urlretrieve
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -112,6 +113,10 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """
     model_file = st.sidebar.text_input(
         "Enter filename of Spec2Vec model (with path):")
+    model_urls = ["https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
+                  "itive_ratio05_filtered_201101_iter_15.model?download=1"]
+    st.write(model_urls)
+    get_zenodo_files(model_urls, "C:\\Users\\joris\\Downloads")
     st.write("#### Spec2Vec model")
     model = None
     model_num = None
@@ -127,9 +132,36 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     return model, model_num
 
 
+def get_zenodo_files(url_list: List[str],
+                     output_folder: str = "downloads") -> List[str]:
+    """Returns list of file_paths to the downloaded files in order of input
+
+    Args:
+    -------
+    url_list:
+        List of urls to download
+    output_folder:
+        Folder to download to
+    """
+    file_paths = []
+    for url_name in url_list:
+        url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
+        out_path = os.path.join(output_folder, url_out_name)
+        place_holder = st.empty()
+        if not os.path.isfile(out_path):
+            place_holder.write("Downloading file from zenodo..")
+            urlretrieve(url_name, out_path)
+            place_holder.write("Download successful.")
+        else:
+            place_holder.write(
+                "Files from zenodo already exist. Read files from disk.")
+        file_paths.append(out_path)
+    return file_paths
+
+
 def do_spectrum_processing(query_spectrums: List[Spectrum],
                            library_spectrums: List[Spectrum]) -> Tuple[
-                           List[SpectrumDocument], List[SpectrumDocument]]:
+    List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
