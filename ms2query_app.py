@@ -22,7 +22,8 @@ query_spectrums = get_query()
 # get the download folder which is user adjustable
 downloads_folder = make_downloads_folder()
 # load library file in sidebar
-library_spectrums, lib_is_processed, sim_matrix = get_library_data()
+library_spectrums, lib_is_processed, sim_matrix = get_library_data(
+    downloads_folder)
 
 # load a s2v model in sidebar
 # todo: make more user friendly, currently there is no standard func to do this

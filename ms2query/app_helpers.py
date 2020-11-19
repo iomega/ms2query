@@ -79,51 +79,70 @@ def make_downloads_folder():
     return out_folder
 
 
-def get_library_data() -> Tuple[List[Spectrum], bool,
+def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
                                 Union[pd.DataFrame, None]]:
     """
     Return library, library_similarities as ([Spectrum], df) from user input
+
+    Args:
+    ------
+    output_dir:
+        Folder to download zenodo libraries to
     """
     library_spectrums = []  # default so later code doesn't crash
-    library_file = st.sidebar.file_uploader("Choose a spectra library file...",
-                                            type=['json', 'txt'])
+    test_sim_matrix = None
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
         'testspectrum_library.json')
-    # zenodo_dict = gather_zenodo_library(outdir)
-    # example_libs_dict.update(zenodo_dict)
-    # example_libs_list.append(list(zenodo_dict.keys()))
-    library_example = st.sidebar.selectbox("Load a library spectrum example",
+    zenodo_dict = gather_zenodo_library(output_dir)
+    example_libs_dict.update(zenodo_dict)
+    example_libs_list.append(list(zenodo_dict.keys()))
+    library_example = st.sidebar.selectbox("Choose a spectrum library",
                                            example_libs_list)
-    processed = False
-    # processed = bool(library_example in example_libs_dict.keys())
+
+    processed = bool(library_example in zenodo_dict.keys())
     st.write("#### Library spectra")
-    if library_example and not library_file:
-        st.write('You have selected an example library:', library_example)
-        library_spectrums = json_loader(
-            open(example_libs_dict[library_example]))
-    elif library_file is not None:
-        if library_file.name.endswith("json"):
-            library_file.seek(0)  # fix for streamlit issue #2235
-            library_spectrums = json_loader(library_file)
+    if library_example:
+        if processed:
+            pass  # download from zenodo
+        else:
+            st.write('You have selected the small test library:',
+                     library_example)
+            library_spectrums = json_loader(
+                open(example_libs_dict[library_example]))
 
     # write library info
     if library_spectrums:
         st.write(f"Your library contains {len(library_spectrums)} spectra.")
 
-    # load similarity matrix, not implemented yet apart from test sim matrix
-    if library_example == 'testspectrum_library.json' and not library_file:
-        test_sim_matrix_file = os.path.join(
-            os.path.split(os.path.dirname(__file__))[0], "tests",
-            "test_found_matches_similarity_matrix.csv")
-        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-    else:
-        test_sim_matrix = None
-        st.write("""<p><span style="color:red">Libraries other than the example
-            testspectrum are not implemented yet, so network plotting will not
-            work for this library.</span></p>""", unsafe_allow_html=True)
+        # load similarity matrix, not implemented apart from test sim matrix
+        if library_example == 'testspectrum_library.json':
+            test_sim_matrix_file = os.path.join(
+                os.path.split(os.path.dirname(__file__))[0], "tests",
+                "test_found_matches_similarity_matrix.csv")
+            test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+        else:
+            st.write("""<p><span style="color:red">Libraries other than the example
+                testspectrum are not implemented yet, so network plotting will not
+                work for this library.</span></p>""", unsafe_allow_html=True)
 
     return library_spectrums, processed, test_sim_matrix
+
+
+def gather_zenodo_library(output_folder):
+    """Gather file and url info for zenodo libraries
+
+    Args:
+    ------
+    output_folder
+        Folder to download the libraries to.
+    """
+    test_set_all_pos = ("https://zenodo.org/record/4281172/files/testing_que" +
+                        "ry_library_s2v_2dec.pickle?download=1")
+    test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)
+    library_dict = {"Case study AllPositive subset": (test_set_all_pos,
+                                                      test_set_all_pos_file)}
+    return library_dict
 
 
 def get_model(out_folder: str) -> Tuple[Union[Word2Vec, None],
@@ -241,7 +260,7 @@ def make_folder(output_folder):
 def do_spectrum_processing(query_spectrums: List[Spectrum],
                            library_spectrums: List[Spectrum],
                            library_is_processed: bool) -> Tuple[
-        List[SpectrumDocument], List[SpectrumDocument]]:
+    List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
