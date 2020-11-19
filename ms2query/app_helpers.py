@@ -67,7 +67,8 @@ def get_query() -> List[Spectrum]:
     return query_spectrums
 
 
-def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
+def get_library_data() -> Tuple[List[Spectrum], bool,
+                                Union[pd.DataFrame, None]]:
     """
     Return library, library_similarities as ([Spectrum], df) from user input
     """
@@ -77,8 +78,13 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
         'testspectrum_library.json')
+    # zenodo_dict = gather_zenodo_library(outdir)
+    # example_libs_dict.update(zenodo_dict)
+    # example_libs_list.append(list(zenodo_dict.keys()))
     library_example = st.sidebar.selectbox("Load a library spectrum example",
                                            example_libs_list)
+    processed = False
+    # processed = bool(library_example in example_libs_dict.keys())
     st.write("#### Library spectra")
     if library_example and not library_file:
         st.write('You have selected an example library:', library_example)
@@ -105,7 +111,7 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
             testspectrum are not implemented yet, so network plotting will not
             work for this library.</span></p>""", unsafe_allow_html=True)
 
-    return library_spectrums, test_sim_matrix
+    return library_spectrums, processed, test_sim_matrix
 
 
 def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
