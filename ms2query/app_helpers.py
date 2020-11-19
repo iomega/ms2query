@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
@@ -125,9 +125,8 @@ def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     return model, model_num
 
 
-def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
-                                                                 int]:
-    """Returns list of file_paths to the downloaded files in order of input
+def get_zenodo_models_dict(output_folder: str):
+    """Get all urls and file locations for the downloadable models in the app
 
     Args:
     -------
@@ -142,12 +141,48 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
         "r_15.model.trainables.syn1neg.npy?download=1", "https://zenodo.org/" +
         "record/4173596/files/spec2vec_AllPositive_ratio05_filtered_201101_i" +
         "ter_15.model.wv.vectors.npy?download=1"]
-    all_pos_files = []
-    for url_name in all_pos_urls:
+    removed_4000_urls = [
+        "https://zenodo.org/record/4277395/files/spec2vec_library_testing_40" +
+        "00removed_2dec.model?download=1", "https://zenodo.org/record/427739" +
+        "5/files/spec2vec_library_testing_4000removed_2dec.model.trainables." +
+        "syn1neg.npy?download=1", "https://zenodo.org/record/4277395/files/s" +
+        "pec2vec_library_testing_4000removed_2dec.model.wv.vectors.npy?downl" +
+        "oad=1"]
+    all_pos_files = url_to_file(all_pos_urls, output_folder)
+    removed_4000_files = url_to_file(removed_4000_urls, output_folder)
+    model_dict = {"AllPositive model": (all_pos_urls, all_pos_files, 0),
+                  "Case study 4000 removed spectra": (removed_4000_urls,
+                                                      removed_4000_files, 1)}
+    return model_dict
+
+
+def url_to_file(all_urls: List[str], output_folder: str) -> List[str]:
+    """Turn list of urls into list of files in output_folder
+
+    Args:
+    -------
+    all_urls:
+        The zenodo urls to transform the files in output_folder
+    output_folder
+    """
+    all_files = []
+    for url_name in all_urls:
         url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
         out_path = os.path.join(output_folder, url_out_name)
-        all_pos_files.append(out_path)
-    model_dict = {"AllPositive model": (all_pos_urls, all_pos_files, 0)}
+        all_files.append(out_path)
+    return all_files
+
+
+def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
+                                                                 int]:
+    """Returns list of file_paths to the downloaded files in order of input
+
+    Args:
+    -------
+    output_folder:
+        Folder to download to
+    """
+    model_dict = get_zenodo_models_dict(output_folder)
     model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
                                       options=[""] + list(model_dict.keys()))
     model_file = None
