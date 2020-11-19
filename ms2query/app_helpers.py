@@ -151,7 +151,7 @@ def get_zenodo_files(url_list: List[str],
         Folder to download to
     """
     if not os.path.isdir(output_folder):
-        st.write("creating directory")
+        st.write("Created downloads directory")
         os.mkdir(output_folder)  # make output_folder if it doesn't exist
     file_paths = []
     for url_name in url_list:
