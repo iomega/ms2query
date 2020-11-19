@@ -6,6 +6,7 @@ from spec2vec import SpectrumDocument
 from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
 from gensim.models.basemodel import BaseTopicModel
+from urllib.request import urlretrieve
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
@@ -109,27 +110,119 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
 
 def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
+
+    Models will be downloaded from zenodo to ../ms2query/downloads
     """
-    model_file = st.sidebar.text_input(
-        "Enter filename of Spec2Vec model (with path):")
     st.write("#### Spec2Vec model")
+    # get all data from zenodo
+    base_dir = os.path.split(os.path.dirname(__file__))[0]
+    out_folder = os.path.join(base_dir, "downloads")
+    different_out_folder = st.sidebar.text_input(
+        "Change the download folder location. Default is: ms2query/downloads")
+    if different_out_folder:
+        out_folder = different_out_folder
+    model_name, model_file, model_num = get_zenodo_models(out_folder)
     model = None
-    model_num = None
-    if model_file:
-        if model_file.endswith(".model"):
-            st.write("Your selected model:", os.path.split(model_file)[-1])
-            model = Word2Vec.load(model_file)
-            # todo: change this when multiple models are added for caching
-            model_num = 0
-        else:
-            st.write("""<p><span style="color:red">Model file extension should
-            be .model, please try again.</span></p>""", unsafe_allow_html=True)
+    if model_name:
+        st.write("Your selected model:", model_name)
+        model = Word2Vec.load(model_file)
     return model, model_num
+
+
+def get_zenodo_models_dict(output_folder: str):
+    """Get all urls and file locations for the downloadable models in the app
+
+    Args:
+    -------
+    output_folder:
+        Folder to download to
+    """
+    # configure all model link/name info
+    all_pos_urls = [
+        "https://zenodo.org/record/4173596/files/spec2vec_AllPositive_ratio0" +
+        "5_filtered_201101_iter_15.model?download=1", "https://zenodo.org/re" +
+        "cord/4173596/files/spec2vec_AllPositive_ratio05_filtered_201101_ite" +
+        "r_15.model.trainables.syn1neg.npy?download=1", "https://zenodo.org/" +
+        "record/4173596/files/spec2vec_AllPositive_ratio05_filtered_201101_i" +
+        "ter_15.model.wv.vectors.npy?download=1"]
+    removed_4000_urls = [
+        "https://zenodo.org/record/4277395/files/spec2vec_library_testing_40" +
+        "00removed_2dec.model?download=1", "https://zenodo.org/record/427739" +
+        "5/files/spec2vec_library_testing_4000removed_2dec.model.trainables." +
+        "syn1neg.npy?download=1", "https://zenodo.org/record/4277395/files/s" +
+        "pec2vec_library_testing_4000removed_2dec.model.wv.vectors.npy?downl" +
+        "oad=1"]
+    all_pos_files = url_to_file(all_pos_urls, output_folder)
+    removed_4000_files = url_to_file(removed_4000_urls, output_folder)
+    model_dict = {"AllPositive model": (all_pos_urls, all_pos_files, 0),
+                  "Case study 4000 removed spectra": (removed_4000_urls,
+                                                      removed_4000_files, 1)}
+    return model_dict
+
+
+def url_to_file(all_urls: List[str], output_folder: str) -> List[str]:
+    """Turn list of urls into list of files in output_folder
+
+    Args:
+    -------
+    all_urls:
+        The zenodo urls to transform the files in output_folder
+    output_folder
+    """
+    all_files = []
+    for url_name in all_urls:
+        url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
+        out_path = os.path.join(output_folder, url_out_name)
+        all_files.append(out_path)
+    return all_files
+
+
+def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
+                                                                 int]:
+    """Returns list of file_paths to the downloaded files in order of input
+
+    Args:
+    -------
+    output_folder:
+        Folder to download to
+    """
+    model_dict = get_zenodo_models_dict(output_folder)
+    model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
+                                      options=[""] + list(model_dict.keys()))
+    model_file = None
+    model_num = None
+    if model_name:
+        make_folder(output_folder)
+        urls, files, model_num = model_dict[model_name]
+        model_file = files[0]  # as it is first element in e.g. all_pos_urls
+        for url_name, file_name in zip(urls, files):
+            place_holder = st.empty()
+            if not os.path.isfile(file_name):
+                file_base = os.path.split(file_name)[-1]
+                place_holder.write(f"Downloading {file_base} from zenodo...")
+                urlretrieve(url_name, file_name)
+                place_holder.write("Download successful.")
+            place_holder.empty()
+    return model_name, model_file, model_num
+
+
+def make_folder(output_folder):
+    """Create output_folder if it doesn't exist yet
+
+    Args:
+    -------
+    output_folder
+        Folder to create
+    """
+    if not os.path.isdir(output_folder):
+        extend = os.path.split(output_folder)[-1]
+        st.write(f"Writing downloaded files to {extend} directory")
+        os.mkdir(output_folder)  # make output_folder if it doesn't exist
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
                            library_spectrums: List[Spectrum]) -> Tuple[
-                           List[SpectrumDocument], List[SpectrumDocument]]:
+    List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
