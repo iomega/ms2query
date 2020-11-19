@@ -160,7 +160,7 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
             place_holder = st.empty()
             if not os.path.isfile(file_name):
                 file_base = os.path.split(file_name)[-1]
-                place_holder.write(f"Downloading {file_base} from zenodo..")
+                place_holder.write(f"Downloading {file_base} from zenodo...")
                 urlretrieve(url_name, file_name)
                 place_holder.write("Download successful.")
             place_holder.empty()
@@ -170,8 +170,8 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
 def make_folder(output_folder):
     """Create output_folder if it doesn't exist yet
 
-    Args
-    -------:
+    Args:
+    -------
     output_folder
         Folder to create
     """
