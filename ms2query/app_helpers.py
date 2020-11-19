@@ -135,22 +135,21 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
         Folder to download to
     """
     # configure all model link/name info
-    all_pos_urls = ["https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
-                    "itive_ratio05_filtered_201101_iter_15.model?download=1",
-                    "https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
-                    "itive_ratio05_filtered_201101_iter_15.model.trainables." +
-                    "syn1neg.npy?download=1", "https://zenodo.org/record/417" +
-                    "3596/files/spec2vec_AllPositive_ratio05_filtered_201101" +
-                    "_iter_15.model.wv.vectors.npy?download=1"]
+    all_pos_urls = [
+        "https://zenodo.org/record/4173596/files/spec2vec_AllPositive_ratio0" +
+        "5_filtered_201101_iter_15.model?download=1", "https://zenodo.org/re" +
+        "cord/4173596/files/spec2vec_AllPositive_ratio05_filtered_201101_ite" +
+        "r_15.model.trainables.syn1neg.npy?download=1", "https://zenodo.org/" +
+        "record/4173596/files/spec2vec_AllPositive_ratio05_filtered_201101_i" +
+        "ter_15.model.wv.vectors.npy?download=1"]
     all_pos_files = []
     for url_name in all_pos_urls:
         url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
         out_path = os.path.join(output_folder, url_out_name)
         all_pos_files.append(out_path)
     model_dict = {"AllPositive model": (all_pos_urls, all_pos_files, 0)}
-    model_list = [""] + list(model_dict.keys())
     model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
-                                      options=model_list)
+                                      options=[""] + list(model_dict.keys()))
     model_file = None
     model_num = None
     if model_name:
