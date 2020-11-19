@@ -1,4 +1,5 @@
 import os
+import pickle
 from typing import Tuple, List, Union
 import pandas as pd
 import streamlit as st
@@ -96,15 +97,30 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
         'testspectrum_library.json')
     zenodo_dict = gather_zenodo_library(output_dir)
     example_libs_dict.update(zenodo_dict)
-    example_libs_list.append(list(zenodo_dict.keys()))
+    example_libs_list.extend(list(zenodo_dict.keys()))
     library_example = st.sidebar.selectbox("Choose a spectrum library",
                                            example_libs_list)
-
     processed = bool(library_example in zenodo_dict.keys())
+
     st.write("#### Library spectra")
     if library_example:
         if processed:
-            pass  # download from zenodo
+            # download from zenodo
+            make_folder(output_dir)
+            url_name, file_name = example_libs_dict[library_example]
+            place_holder = st.empty()
+            if not os.path.isfile(file_name):
+                file_base = os.path.split(file_name)[-1]
+                place_holder.write(
+                    f"Downloading {file_base} from zenodo...")
+                urlretrieve(url_name, file_name)
+                place_holder.write("Download successful.")
+            place_holder.empty()
+            library_spectrums = load_pickled_file(file_name)
+            if isinstance(library_spectrums, tuple):
+                # in the case of the case study set that is tuple(query, lib)
+                library_spectrums = library_spectrums[1]
+            st.write(f"Your selected library: {library_example}")
         else:
             st.write('You have selected the small test library:',
                      library_example)
@@ -129,6 +145,20 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
     return library_spectrums, processed, test_sim_matrix
 
 
+@st.cache
+def load_pickled_file(file_name: str):
+    """Returns contents from the pickle file
+
+    Args:
+    -------
+    file_name:
+        Path of the pickle file to read
+    """
+    with open(file_name, "rb") as inf:
+        contents = pickle.load(inf)
+    return contents
+
+
 def gather_zenodo_library(output_folder):
     """Gather file and url info for zenodo libraries
 
@@ -139,7 +169,7 @@ def gather_zenodo_library(output_folder):
     """
     test_set_all_pos = ("https://zenodo.org/record/4281172/files/testing_que" +
                         "ry_library_s2v_2dec.pickle?download=1")
-    test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)
+    test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)[0]
     library_dict = {"Case study AllPositive subset": (test_set_all_pos,
                                                       test_set_all_pos_file)}
     return library_dict
