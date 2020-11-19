@@ -111,24 +111,31 @@ def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
 def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
     """Return (Word2Vec model, model number) and print some info in the app
     """
-    model_file = st.sidebar.text_input(
-        "Enter filename of Spec2Vec model (with path):")
-    model_urls = ["https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
-                  "itive_ratio05_filtered_201101_iter_15.model?download=1"]
-    st.write(model_urls)
-    get_zenodo_files(model_urls, "C:\\Users\\joris\\Downloads")
     st.write("#### Spec2Vec model")
+    # get all data from zenodo
+    base_dir = os.path.split(os.path.dirname(__file__))[0]
+    downloads = os.path.join(base_dir, "downloads")
+    all_pos_urls = ["https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
+                    "itive_ratio05_filtered_201101_iter_15.model?download=1",
+                    "https://zenodo.org/record/4173596/files/spec2vec_AllPos" +
+                    "itive_ratio05_filtered_201101_iter_15.model.trainables." +
+                    "syn1neg.npy?download=1", "https://zenodo.org/record/417" +
+                    "3596/files/spec2vec_AllPositive_ratio05_filtered_201101" +
+                    "_iter_15.model.wv.vectors.npy?download=1"]
+    all_pos_files = get_zenodo_files(all_pos_urls, downloads)
+    all_pos_model = all_pos_files[0]  # as it is first element in all_pos_urls
+    # model_dict = {all_pos_model: ("AllPositive model", 0)}
+    model_dict = {"AllPositive model": (all_pos_model, 0)}
+    model_list = [""] + list(model_dict.keys())
+    # model_list = [" ", all_pos_model]
+    model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
+                                      options=model_list)
     model = None
     model_num = None
-    if model_file:
-        if model_file.endswith(".model"):
-            st.write("Your selected model:", os.path.split(model_file)[-1])
-            model = Word2Vec.load(model_file)
-            # todo: change this when multiple models are added for caching
-            model_num = 0
-        else:
-            st.write("""<p><span style="color:red">Model file extension should
-            be .model, please try again.</span></p>""", unsafe_allow_html=True)
+    if model_name:
+        model_file, model_num = model_dict[model_name]
+        st.write("Your selected model:", model_name)
+        model = Word2Vec.load(model_file)
     return model, model_num
 
 
@@ -143,18 +150,19 @@ def get_zenodo_files(url_list: List[str],
     output_folder:
         Folder to download to
     """
+    if not os.path.isdir(output_folder):
+        st.write("creating directory")
+        os.mkdir(output_folder)  # make output_folder if it doesn't exist
     file_paths = []
     for url_name in url_list:
         url_out_name = os.path.split(url_name)[-1].rpartition("?download")[0]
         out_path = os.path.join(output_folder, url_out_name)
         place_holder = st.empty()
         if not os.path.isfile(out_path):
-            place_holder.write("Downloading file from zenodo..")
+            place_holder.write(f"Downloading {url_out_name} from zenodo..")
             urlretrieve(url_name, out_path)
             place_holder.write("Download successful.")
-        else:
-            place_holder.write(
-                "Files from zenodo already exist. Read files from disk.")
+        place_holder.empty()
         file_paths.append(out_path)
     return file_paths
 
