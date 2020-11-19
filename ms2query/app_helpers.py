@@ -131,6 +131,11 @@ def get_model(out_folder: str) -> Tuple[Union[Word2Vec, None],
     """Return (Word2Vec model, model number) and print some info in the app
 
     Models will be downloaded from zenodo to ../ms2query/downloads
+
+    Args:
+    -------
+    out_folder:
+        Folder of where to download the models
     """
     st.write("#### Spec2Vec model")
     # get all data from zenodo
