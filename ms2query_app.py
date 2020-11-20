@@ -7,6 +7,7 @@ from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
 from ms2query.app_helpers import get_library_matches
 from ms2query.app_helpers import make_network_plot
+from ms2query.app_helpers import get_library_similarities
 
 
 st.title("Ms2query")
@@ -22,7 +23,7 @@ query_spectrums = get_query()
 # get the download folder which is user adjustable
 downloads_folder = make_downloads_folder()
 # load library file in sidebar
-library_spectrums, lib_is_processed, lib_num, sim_matrix = get_library_data(
+library_spectrums, lib_is_processed, lib_num = get_library_data(
     downloads_folder)
 
 # load a s2v model in sidebar
@@ -60,10 +61,8 @@ if do_library_matching:
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    if sim_matrix is None:
-        st.write("""<p><span style="color:red">Does not work yet for custom
-            libraries.</span></p>""", unsafe_allow_html=True)
-    else:
+    sim_matrix = get_library_similarities(lib_num)
+    if sim_matrix is not None:
         make_network_plot(found_match, documents_library, sim_matrix)
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do

@@ -80,8 +80,7 @@ def make_downloads_folder():
     return out_folder
 
 
-def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
-                                               Union[pd.DataFrame, None]]:
+def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int]:
     """
     Return library, library_similarities as ([Spectrum], df) from user input
 
@@ -91,7 +90,6 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
         Folder to download zenodo libraries to
     """
     library_spectrums = []  # default so later code doesn't crash
-    test_sim_matrix = None
     lib_num = None
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
@@ -129,20 +127,7 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
     # write library info
     if library_spectrums:
         st.write(f"Your library contains {len(library_spectrums)} spectra.")
-
-        # load similarity matrix, not implemented apart from test sim matrix
-        if library_example == 'testspectrum_library.json':
-            test_sim_matrix_file = os.path.join(
-                os.path.split(os.path.dirname(__file__))[0], "tests",
-                "test_found_matches_similarity_matrix.csv")
-            test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-        else:
-            st.write("""<p><span style="color:red">Libraries other than the
-            example testspectrum are not implemented yet, so network plotting
-            will not work for this library.</span></p>""",
-                     unsafe_allow_html=True)
-
-    return library_spectrums, processed, lib_num, test_sim_matrix
+    return library_spectrums, processed, lib_num
 
 
 def download_zenodo_library(example_libs_dict: dict, library_example: str,
@@ -473,6 +458,30 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
         **{"allowed_missing_percentage": 100})
     return found_matches_s2v
+
+
+def get_library_similarities(library_num: int):
+    """
+
+    Args:
+    ------
+    library_num:
+        The library number, 0 means the example library, 1 and 2 (subset of)
+        AllPositive library
+    """
+    # load similarity matrix, not implemented apart from test sim matrix
+    test_sim_matrix = None
+    if library_num == 0:
+        test_sim_matrix_file = os.path.join(
+            os.path.split(os.path.dirname(__file__))[0], "tests",
+            "test_found_matches_similarity_matrix.csv")
+        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+    else:
+        st.write("""<p><span style="color:red">Libraries other than the
+                example testspectrum are not implemented yet, so network plotting
+                will not work for this library.</span></p>""",
+                 unsafe_allow_html=True)
+    return test_sim_matrix
 
 
 def make_network_plot(found_match: pd.DataFrame,
