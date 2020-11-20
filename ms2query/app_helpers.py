@@ -394,8 +394,9 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     st.write("These are the library matches for your query")
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
-        st.dataframe(first_found_match.sort_values(
-            "s2v_score", ascending=False).iloc[:show_topn])
+        first_found_match = first_found_match.sort_values(
+            "s2v_score", ascending=False)
+        st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
     return None
 
@@ -483,8 +484,8 @@ def get_library_similarities(found_match: pd.DataFrame,
         sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
     elif library_num in (1, 2):
         # construct the slice of the similarity matrix in order of matches ind
-        match_inds = found_match.sort_values("s2v_score", ascending=False)\
-            .iloc[:100].index.to_list()  # take 100 as a max value
+        # take 100 as a max value, same as in library_matching
+        match_inds = found_match.iloc[:100].index.to_list()
         match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
                          for ind in match_inds]
         sim_slice_inds = get_sim_matrix_lookup(match_inchi14)
@@ -518,7 +519,7 @@ def get_sim_matrix_lookup(match_inchi14: List[str]):
     return indices
 
 
-def subset_sim_matrix(indices):
+def subset_sim_matrix(indices: List[str]) -> np.array:
     sim_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Similarit" +
                 "y_matrix_AllPositive\\similarities_AllInchikeys14_daylight2" +
                 "048_jaccard.npy")
@@ -548,6 +549,15 @@ def make_network_plot(found_match: pd.DataFrame,
         Dataframe containing the tanimoto similarities of the library spectra
         amongst each other
     """
+    def_show_topn = 10  # default for topn results to show
+    if len(documents_library) < def_show_topn:
+        def_show_topn = len(documents_library)
+    cols = st.beta_columns([1, 3])
+    with cols[0]:
+        show_topn = int(st.text_input("Show top n matches (1-100)",
+                                      value=def_show_topn))
+    found_match = found_match.iloc[:show_topn]
+
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)
