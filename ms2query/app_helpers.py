@@ -346,6 +346,7 @@ def get_example_library_matches():
 def get_library_matches(documents_query: List[SpectrumDocument],
                         documents_library: List[SpectrumDocument],
                         model: BaseTopicModel,
+                        lib_num: int,
                         model_num: int) -> Union[pd.DataFrame, None]:
     """Returns DataFrame of library matches for first query in documents_query
 
@@ -374,11 +375,12 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     with cols[0]:
         show_topn = int(st.text_input("Show top n matches",
                                       value=def_show_topn))
+    documents_library_class = DocumentsLibrary(documents_library)
+    found_matches_s2v = cached_library_matching(
+        documents_query, documents_library_class, model, topn, lib_num,
+        model_num)
 
     st.write("These are the library matches for your query")
-    found_matches_s2v = cached_library_matching(
-        documents_query, documents_library, model, topn, model_num)
-
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
         st.dataframe(first_found_match.sort_values(
@@ -387,11 +389,27 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     return None
 
 
-@st.cache(hash_funcs={Word2Vec: lambda _: None})
+class DocumentsLibrary:
+    """Dummy class used to circumvent hashing the library for library matching
+    """
+    def __init__(self, documents: List[SpectrumDocument]):
+        """
+
+        Args:
+        -------
+        documents:
+            Library spectra as SpectrumDocuments
+        """
+        self.documents = documents
+
+
+@st.cache(hash_funcs={DocumentsLibrary: lambda _: None,
+                      Word2Vec: lambda _: None})
 def cached_library_matching(documents_query: List[SpectrumDocument],
-                            documents_library: List[SpectrumDocument],
+                            documents_library: DocumentsLibrary,
                             model: BaseTopicModel,
                             topn: int,
+                            lib_num: int,
                             model_num: int) -> List[pd.DataFrame]:
     """Run library matching for the app and cache the result with st.cache
 
@@ -402,7 +420,7 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     documents_query:
         Query spectra in SpectrumDocument format
     documents_library:
-        Library spectra in SpectrumDocument format
+        Library spectra in SpectrumDocument format # todo
     model:
         A trained Spec2Vec model
     topn:
@@ -413,8 +431,11 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         it is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    if lib_num:  # variable for the hash function
+        pass
     if model_num:  # variable for the hash function
         pass
+    documents_library = documents_library.documents
     found_matches_s2v = library_matching(
         documents_query, documents_library, model,
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
