@@ -1,4 +1,5 @@
 import os
+import pickle
 from typing import Tuple, List, Union
 import pandas as pd
 import streamlit as st
@@ -67,60 +68,151 @@ def get_query() -> List[Spectrum]:
     return query_spectrums
 
 
-def get_library_data() -> Tuple[List[Spectrum], Union[pd.DataFrame, None]]:
+def make_downloads_folder():
+    """Return user adjustable download folder, default is ms2query/downloads
     """
-    Return library, library_similarities as ([Spectrum], df) from user input
-    """
-    library_spectrums = []  # default so later code doesn't crash
-    library_file = st.sidebar.file_uploader("Choose a spectra library file...",
-                                            type=['json', 'txt'])
-    # gather default libraries
-    example_libs_dict, example_libs_list = gather_test_json(
-        'testspectrum_library.json')
-    library_example = st.sidebar.selectbox("Load a library spectrum example",
-                                           example_libs_list)
-    st.write("#### Library spectra")
-    if library_example and not library_file:
-        st.write('You have selected an example library:', library_example)
-        library_spectrums = json_loader(
-            open(example_libs_dict[library_example]))
-    elif library_file is not None:
-        if library_file.name.endswith("json"):
-            library_file.seek(0)  # fix for streamlit issue #2235
-            library_spectrums = json_loader(library_file)
-
-    # write library info
-    if library_spectrums:
-        st.write(f"Your library contains {len(library_spectrums)} spectra.")
-
-    # load similarity matrix, not implemented yet apart from test sim matrix
-    if library_example == 'testspectrum_library.json' and not library_file:
-        test_sim_matrix_file = os.path.join(
-            os.path.split(os.path.dirname(__file__))[0], "tests",
-            "test_found_matches_similarity_matrix.csv")
-        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-    else:
-        test_sim_matrix = None
-        st.write("""<p><span style="color:red">Libraries other than the example
-            testspectrum are not implemented yet, so network plotting will not
-            work for this library.</span></p>""", unsafe_allow_html=True)
-
-    return library_spectrums, test_sim_matrix
-
-
-def get_model() -> Tuple[Union[Word2Vec, None], Union[int, None]]:
-    """Return (Word2Vec model, model number) and print some info in the app
-
-    Models will be downloaded from zenodo to ../ms2query/downloads
-    """
-    st.write("#### Spec2Vec model")
-    # get all data from zenodo
     base_dir = os.path.split(os.path.dirname(__file__))[0]
     out_folder = os.path.join(base_dir, "downloads")
     different_out_folder = st.sidebar.text_input(
         "Change the download folder location. Default is: ms2query/downloads")
     if different_out_folder:
         out_folder = different_out_folder
+    return out_folder
+
+
+def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
+                                               Union[pd.DataFrame, None]]:
+    """
+    Return library, library_similarities as ([Spectrum], df) from user input
+
+    Args:
+    ------
+    output_dir:
+        Folder to download zenodo libraries to
+    """
+    library_spectrums = []  # default so later code doesn't crash
+    test_sim_matrix = None
+    lib_num = None
+    # gather default libraries
+    example_libs_dict, example_libs_list = gather_test_json(
+        'testspectrum_library.json')
+    zenodo_dict = gather_zenodo_library(output_dir)
+    example_libs_dict.update(zenodo_dict)
+    example_libs_list.extend(list(zenodo_dict.keys()))
+    library_example = st.sidebar.selectbox("Choose a spectrum library",
+                                           example_libs_list)
+    processed = bool(library_example in zenodo_dict.keys())
+
+    st.write("#### Library spectra")
+    if library_example:
+        if processed:
+            # download from zenodo
+            file_name, lib_num = download_zenodo_library(
+                example_libs_dict, library_example, output_dir)
+            library_spectrums = load_pickled_file(file_name)
+            if isinstance(library_spectrums, tuple):
+                # in the case of the case study set that is tuple(query, lib)
+                if lib_num == 1:  # the case study library
+                    library_spectrums = library_spectrums[1]
+                if lib_num == 2:
+                    # add query and lib from case study: get AllPositive back
+                    library_spectrums = library_spectrums[0] + \
+                                        library_spectrums[1]
+            st.write(f"Your selected library: {library_example}")
+        else:
+            st.write('You have selected the small test library:',
+                     library_example)
+            lib_num = 0
+            library_spectrums = json_loader(
+                open(example_libs_dict[library_example]))
+
+    # write library info
+    if library_spectrums:
+        st.write(f"Your library contains {len(library_spectrums)} spectra.")
+
+        # load similarity matrix, not implemented apart from test sim matrix
+        if library_example == 'testspectrum_library.json':
+            test_sim_matrix_file = os.path.join(
+                os.path.split(os.path.dirname(__file__))[0], "tests",
+                "test_found_matches_similarity_matrix.csv")
+            test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+        else:
+            st.write("""<p><span style="color:red">Libraries other than the
+            example testspectrum are not implemented yet, so network plotting
+            will not work for this library.</span></p>""",
+                     unsafe_allow_html=True)
+
+    return library_spectrums, processed, lib_num, test_sim_matrix
+
+
+def download_zenodo_library(example_libs_dict: dict, library_example: str,
+                            output_dir: str) -> Tuple[str, int]:
+    """Downloads the library from zenodo and returns the file_path and lib_num
+
+    Args:
+    -------
+    example_libs_dict
+    library_example
+    output_dir
+    """
+    make_folder(output_dir)
+    url_name, file_name, lib_num = example_libs_dict[library_example]
+    place_holder = st.empty()
+    if not os.path.isfile(file_name):
+        file_base = os.path.split(file_name)[-1]
+        place_holder.write(
+            f"Downloading {file_base} from zenodo...")
+        urlretrieve(url_name, file_name)
+        place_holder.write("Download successful.")
+    place_holder.empty()
+    return file_name, lib_num
+
+
+@st.cache(allow_output_mutation=True)
+def load_pickled_file(file_name: str):
+    """Returns contents from the pickle file
+
+    Args:
+    -------
+    file_name:
+        Path of the pickle file to read
+    """
+    with open(file_name, "rb") as inf:
+        contents = pickle.load(inf)
+    return contents
+
+
+def gather_zenodo_library(output_folder):
+    """Gather file and url info for zenodo libraries
+
+    Args:
+    ------
+    output_folder
+        Folder to download the libraries to.
+    """
+    test_set_all_pos = ("https://zenodo.org/record/4281172/files/testing_que" +
+                        "ry_library_s2v_2dec.pickle?download=1")
+    test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)[0]
+    library_dict = {
+        "AllPositive dataset": (test_set_all_pos, test_set_all_pos_file, 2),
+        "Case study AllPositive subset":
+            (test_set_all_pos, test_set_all_pos_file, 1)}
+    return library_dict
+
+
+def get_model(out_folder: str) -> Tuple[Union[Word2Vec, None],
+                                        Union[int, None]]:
+    """Return (Word2Vec model, model number) and print some info in the app
+
+    Models will be downloaded from zenodo to ../ms2query/downloads
+
+    Args:
+    -------
+    out_folder:
+        Folder of where to download the models
+    """
+    st.write("#### Spec2Vec model")
+    # get all data from zenodo
     model_name, model_file, model_num = get_zenodo_models(out_folder)
     model = None
     if model_name:
@@ -221,7 +313,8 @@ def make_folder(output_folder):
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
-                           library_spectrums: List[Spectrum]) -> Tuple[
+                           library_spectrums: List[Spectrum],
+                           library_is_processed: bool) -> Tuple[
     List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
@@ -254,7 +347,10 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
             value of [{settings["loss_mz_from"]}, {settings["loss_mz_to"]}]""")
 
     documents_query = process_spectrums(query_spectrums, **settings)
-    documents_library = process_spectrums(library_spectrums, **settings)
+    if library_is_processed:
+        documents_library = library_spectrums
+    else:
+        documents_library = process_spectrums(library_spectrums, **settings)
 
     return documents_query, documents_library
 
@@ -275,6 +371,7 @@ def get_example_library_matches():
 def get_library_matches(documents_query: List[SpectrumDocument],
                         documents_library: List[SpectrumDocument],
                         model: BaseTopicModel,
+                        lib_num: int,
                         model_num: int) -> Union[pd.DataFrame, None]:
     """Returns DataFrame of library matches for first query in documents_query
 
@@ -303,11 +400,12 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     with cols[0]:
         show_topn = int(st.text_input("Show top n matches",
                                       value=def_show_topn))
+    documents_library_class = DocumentsLibrary(documents_library)
+    found_matches_s2v = cached_library_matching(
+        documents_query, documents_library_class, model, topn, lib_num,
+        model_num)
 
     st.write("These are the library matches for your query")
-    found_matches_s2v = cached_library_matching(
-        documents_query, documents_library, model, topn, model_num)
-
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
         st.dataframe(first_found_match.sort_values(
@@ -316,11 +414,28 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     return None
 
 
-@st.cache(hash_funcs={Word2Vec: lambda _: None})
+class DocumentsLibrary:
+    """Dummy class used to circumvent hashing the library for library matching
+    """
+
+    def __init__(self, documents: List[SpectrumDocument]):
+        """
+
+        Args:
+        -------
+        documents:
+            Library spectra as SpectrumDocuments
+        """
+        self.documents = documents
+
+
+@st.cache(hash_funcs={DocumentsLibrary: lambda _: None,
+                      Word2Vec: lambda _: None})
 def cached_library_matching(documents_query: List[SpectrumDocument],
-                            documents_library: List[SpectrumDocument],
+                            documents_library: DocumentsLibrary,
                             model: BaseTopicModel,
                             topn: int,
+                            lib_num: int,
                             model_num: int) -> List[pd.DataFrame]:
     """Run library matching for the app and cache the result with st.cache
 
@@ -331,19 +446,28 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     documents_query:
         Query spectra in SpectrumDocument format
     documents_library:
-        Library spectra in SpectrumDocument format
+        Library spectra in DocumentsLibrary format
     model:
         A trained Spec2Vec model
     topn:
         The amount of Spec2Vec top candidates to retrieve
-    model_num
+    lib_num:
+        The library number used for library matching. This is a workaround for
+        the caching of the library matches as the library is expensive to hash.
+        Library is not hashed and with model_num it is kept into account if the
+        library changes.
+    model_num:
         The model number used for library matching. This is a workaround for
-        the caching of the library matches as the model is expensive to hash,
-        it is not hashed and with model_num it is kept into account if the
+        the caching of the library matches as the model is expensive to hash.
+        Model is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    # pylint: disable=too-many-arguments
+    if lib_num:  # variable for the hash function
+        pass
     if model_num:  # variable for the hash function
         pass
+    documents_library = documents_library.documents
     found_matches_s2v = library_matching(
         documents_query, documents_library, model,
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
