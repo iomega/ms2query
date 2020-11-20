@@ -61,7 +61,8 @@ if do_library_matching:
 st.write("## Networking")
 plot_true = st.checkbox("Plot network of found matches")
 if plot_true and do_library_matching:
-    sim_matrix = get_library_similarities(lib_num)
+    sim_matrix = get_library_similarities(
+        found_match, documents_library, lib_num)
     if sim_matrix is not None:
         make_network_plot(found_match, documents_library, sim_matrix)
 elif plot_true:  # library matching is not done yet, but plot button is clicked

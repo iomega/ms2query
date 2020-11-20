@@ -460,28 +460,60 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     return found_matches_s2v
 
 
-def get_library_similarities(library_num: int):
+def get_library_similarities(found_match: pd.DataFrame,
+                             documents_library: List[SpectrumDocument],
+                             library_num: int):
     """
 
     Args:
     ------
+    found_match:
+        Dataframe containing the scores of the library matches
     library_num:
         The library number, 0 means the example library, 1 and 2 (subset of)
         AllPositive library
     """
-    # load similarity matrix, not implemented apart from test sim matrix
+    # pylint: disable=protected-access
     test_sim_matrix = None
     if library_num == 0:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
         test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-    else:
-        st.write("""<p><span style="color:red">Libraries other than the
-                example testspectrum are not implemented yet, so network plotting
-                will not work for this library.</span></p>""",
-                 unsafe_allow_html=True)
+    elif library_num in (1, 2):
+        # construct the slice of the similarity matrix in order of matches ind
+        match_inds = found_match.sort_values("s2v_score", ascending=False)\
+            .iloc[:100].index.to_list()  # take 100 as a max value
+        match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
+                         for ind in match_inds]
+        sim_slice_inds = get_sim_matrix_lookup(match_inchi14)
+        st.write(sim_slice_inds)
     return test_sim_matrix
+
+
+def get_sim_matrix_lookup(match_inchi14: List[str]):
+    """
+
+    Args:
+    ------
+    match_inchi14
+
+    """
+    # todo: download from zenodo
+    metadata_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Simi" +
+                     "larity_matrix_AllPositive\metadata_AllInchikeys14.csv")
+    user_input = st.text_input("Give path to metadata of similarity matrix")
+    if user_input:
+        metadata_file = user_input
+    with open(metadata_file, 'r') as inf:
+        inf.readline()
+        inchi_dict = {}
+        for line in inf:
+            line = line.strip().split(',')
+            inchi_dict[line[1]] = line[0]  # dict{inchi: index_lookup}
+
+    indices = [inchi_dict[inchi] for inchi in match_inchi14]
+    return indices
 
 
 def make_network_plot(found_match: pd.DataFrame,
