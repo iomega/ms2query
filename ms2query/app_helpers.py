@@ -1,6 +1,7 @@
 import os
 import pickle
 from typing import Tuple, List, Union
+import numpy as np
 import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
@@ -474,12 +475,12 @@ def get_library_similarities(found_match: pd.DataFrame,
         AllPositive library
     """
     # pylint: disable=protected-access
-    test_sim_matrix = None
+    sim_matrix = None
     if library_num == 0:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
-        test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
+        sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
     elif library_num in (1, 2):
         # construct the slice of the similarity matrix in order of matches ind
         match_inds = found_match.sort_values("s2v_score", ascending=False)\
@@ -487,8 +488,9 @@ def get_library_similarities(found_match: pd.DataFrame,
         match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
                          for ind in match_inds]
         sim_slice_inds = get_sim_matrix_lookup(match_inchi14)
-        st.write(sim_slice_inds)
-    return test_sim_matrix
+        sim_matrix = subset_sim_matrix(sim_slice_inds)
+        print(sim_matrix.shape)
+    return sim_matrix
 
 
 def get_sim_matrix_lookup(match_inchi14: List[str]):
@@ -514,6 +516,20 @@ def get_sim_matrix_lookup(match_inchi14: List[str]):
 
     indices = [inchi_dict[inchi] for inchi in match_inchi14]
     return indices
+
+
+def subset_sim_matrix(indices):
+    sim_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Similarit" +
+                "y_matrix_AllPositive\\similarities_AllInchikeys14_daylight2" +
+                "048_jaccard.npy")
+    user_input = st.text_input("Give path to similarity matrix")
+    if user_input:
+        sim_file = user_input
+    sim_map = np.lib.format.open_memmap(sim_file, dtype="float64", mode="r")
+    row_slice = np.take(sim_map, indices, 0)
+    final_slice = np.take(row_slice, indices, 1)
+
+    return np.array(final_slice)
 
 
 def make_network_plot(found_match: pd.DataFrame,
