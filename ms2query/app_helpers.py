@@ -424,17 +424,23 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     documents_query:
         Query spectra in SpectrumDocument format
     documents_library:
-        Library spectra in SpectrumDocument format # todo
+        Library spectra in DocumentsLibrary format
     model:
         A trained Spec2Vec model
     topn:
         The amount of Spec2Vec top candidates to retrieve
-    model_num
+    lib_num:
+        The library number used for library matching. This is a workaround for
+        the caching of the library matches as the library is expensive to hash.
+        Library is not hashed and with model_num it is kept into account if the
+        library changes.
+    model_num:
         The model number used for library matching. This is a workaround for
-        the caching of the library matches as the model is expensive to hash,
-        it is not hashed and with model_num it is kept into account if the
+        the caching of the library matches as the model is expensive to hash.
+        Model is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    # pylint: disable=too-many-arguments
     if lib_num:  # variable for the hash function
         pass
     if model_num:  # variable for the hash function
