@@ -107,16 +107,8 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
     if library_example:
         if processed:
             # download from zenodo
-            make_folder(output_dir)
-            url_name, file_name, lib_num = example_libs_dict[library_example]
-            place_holder = st.empty()
-            if not os.path.isfile(file_name):
-                file_base = os.path.split(file_name)[-1]
-                place_holder.write(
-                    f"Downloading {file_base} from zenodo...")
-                urlretrieve(url_name, file_name)
-                place_holder.write("Download successful.")
-            place_holder.empty()
+            file_name, lib_num = download_zenodo_library(
+                example_libs_dict, library_example, output_dir)
             library_spectrums = load_pickled_file(file_name)
             if isinstance(library_spectrums, tuple):
                 # in the case of the case study set that is tuple(query, lib)
@@ -146,6 +138,29 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
                      unsafe_allow_html=True)
 
     return library_spectrums, processed, lib_num, test_sim_matrix
+
+
+def download_zenodo_library(example_libs_dict: dict, library_example: str,
+                            output_dir: str) -> Tuple[str, int]:
+    """Downloads the library from zenodo and returns the file_path and lib_num
+
+    Args:
+    -------
+    example_libs_dict
+    library_example
+    output_dir
+    """
+    make_folder(output_dir)
+    url_name, file_name, lib_num = example_libs_dict[library_example]
+    place_holder = st.empty()
+    if not os.path.isfile(file_name):
+        file_base = os.path.split(file_name)[-1]
+        place_holder.write(
+            f"Downloading {file_base} from zenodo...")
+        urlretrieve(url_name, file_name)
+        place_holder.write("Download successful.")
+    place_holder.empty()
+    return file_name, lib_num
 
 
 @st.cache(allow_output_mutation=True)
