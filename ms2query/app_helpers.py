@@ -112,7 +112,12 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
             library_spectrums = load_pickled_file(file_name)
             if isinstance(library_spectrums, tuple):
                 # in the case of the case study set that is tuple(query, lib)
-                library_spectrums = library_spectrums[1]
+                if lib_num == 1:  # the case study library
+                    library_spectrums = library_spectrums[1]
+                if lib_num == 2:
+                    # add query and lib from case study: get AllPositive back
+                    library_spectrums = library_spectrums[0] + \
+                                        library_spectrums[1]
             st.write(f"Your selected library: {library_example}")
         else:
             st.write('You have selected the small test library:',
@@ -188,8 +193,10 @@ def gather_zenodo_library(output_folder):
     test_set_all_pos = ("https://zenodo.org/record/4281172/files/testing_que" +
                         "ry_library_s2v_2dec.pickle?download=1")
     test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)[0]
-    library_dict = {"Case study AllPositive subset":
-                        (test_set_all_pos, test_set_all_pos_file, 1)}
+    library_dict = {
+        "AllPositive dataset": (test_set_all_pos, test_set_all_pos_file, 2),
+        "Case study AllPositive subset":
+            (test_set_all_pos, test_set_all_pos_file, 1)}
     return library_dict
 
 
