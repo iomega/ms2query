@@ -22,7 +22,7 @@ query_spectrums = get_query()
 # get the download folder which is user adjustable
 downloads_folder = make_downloads_folder()
 # load library file in sidebar
-library_spectrums, lib_is_processed, sim_matrix = get_library_data(
+library_spectrums, lib_is_processed, lib_num, sim_matrix = get_library_data(
     downloads_folder)
 
 # load a s2v model in sidebar
@@ -49,10 +49,6 @@ get_example_library_matches()
 do_library_matching = st.checkbox("Do library matching")
 if do_library_matching:
     if all([documents_query, documents_library, model]):
-        if lib_is_processed:  # todo: change this in get_lib func
-            lib_num = 1
-        else:
-            lib_num = 0
         found_match = get_library_matches(documents_query, documents_library,
                                           model, lib_num, model_num)
     else:

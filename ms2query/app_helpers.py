@@ -80,8 +80,8 @@ def make_downloads_folder():
     return out_folder
 
 
-def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
-                                Union[pd.DataFrame, None]]:
+def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
+                                               Union[pd.DataFrame, None]]:
     """
     Return library, library_similarities as ([Spectrum], df) from user input
 
@@ -92,6 +92,7 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
     """
     library_spectrums = []  # default so later code doesn't crash
     test_sim_matrix = None
+    lib_num = None
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
         'testspectrum_library.json')
@@ -107,7 +108,7 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
         if processed:
             # download from zenodo
             make_folder(output_dir)
-            url_name, file_name = example_libs_dict[library_example]
+            url_name, file_name, lib_num = example_libs_dict[library_example]
             place_holder = st.empty()
             if not os.path.isfile(file_name):
                 file_base = os.path.split(file_name)[-1]
@@ -124,6 +125,7 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
         else:
             st.write('You have selected the small test library:',
                      library_example)
+            lib_num = 0
             library_spectrums = json_loader(
                 open(example_libs_dict[library_example]))
 
@@ -138,11 +140,12 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool,
                 "test_found_matches_similarity_matrix.csv")
             test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
         else:
-            st.write("""<p><span style="color:red">Libraries other than the example
-                testspectrum are not implemented yet, so network plotting will not
-                work for this library.</span></p>""", unsafe_allow_html=True)
+            st.write("""<p><span style="color:red">Libraries other than the
+            example testspectrum are not implemented yet, so network plotting
+            will not work for this library.</span></p>""",
+                     unsafe_allow_html=True)
 
-    return library_spectrums, processed, test_sim_matrix
+    return library_spectrums, processed, lib_num, test_sim_matrix
 
 
 @st.cache(allow_output_mutation=True)
@@ -170,8 +173,8 @@ def gather_zenodo_library(output_folder):
     test_set_all_pos = ("https://zenodo.org/record/4281172/files/testing_que" +
                         "ry_library_s2v_2dec.pickle?download=1")
     test_set_all_pos_file = url_to_file([test_set_all_pos], output_folder)[0]
-    library_dict = {"Case study AllPositive subset": (test_set_all_pos,
-                                                      test_set_all_pos_file)}
+    library_dict = {"Case study AllPositive subset":
+                        (test_set_all_pos, test_set_all_pos_file, 1)}
     return library_dict
 
 
@@ -392,6 +395,7 @@ def get_library_matches(documents_query: List[SpectrumDocument],
 class DocumentsLibrary:
     """Dummy class used to circumvent hashing the library for library matching
     """
+
     def __init__(self, documents: List[SpectrumDocument]):
         """
 
