@@ -549,6 +549,7 @@ def make_network_plot(found_match: pd.DataFrame,
         Dataframe containing the tanimoto similarities of the library spectra
         amongst each other
     """
+    # pylint: disable=too-many-locals
     def_show_topn = 10  # default for topn results to show
     if len(documents_library) < def_show_topn:
         def_show_topn = len(documents_library)
