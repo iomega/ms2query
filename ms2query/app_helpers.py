@@ -553,10 +553,16 @@ def subset_sim_matrix(indices: List[int],
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
+    sim_url = "https://zenodo.org/record/4286949/files/similarities_AllInch" +\
+        "ikeys14_daylight2048_jaccard.npy?download=1"
     sim_name = "similarities_AllInchikeys14_daylight2048_jaccard.npy"
     sim_file = os.path.join(output_folder, sim_name)
     if not os.path.exists(sim_file):
-        st.write(f"Similarity matrix data is not present in {output_folder}")
+        place_holder = st.empty()
+        place_holder.write(f"Downloading {sim_name} from zenodo...")
+        urlretrieve(sim_url, sim_file)
+        place_holder.empty()
+
     sim_map = np.lib.format.open_memmap(sim_file, dtype="float64", mode="r")
     row_slice = np.take(sim_map, indices, 0)
     final_slice = np.take(row_slice, indices, 1)
