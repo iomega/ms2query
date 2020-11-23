@@ -63,7 +63,7 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
 
 def do_networking(query_id: str,
                   matches: pd.DataFrame,
-                  similarity_matrix: pd.DataFrame,
+                  similarity_matrix: Union[np.array, pd.DataFrame],
                   library_documents: List[SpectrumDocument],
                   attribute_key: str = 's2v_score',
                   cutoff: Union[int, float] = 0.4,

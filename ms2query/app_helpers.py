@@ -83,7 +83,7 @@ def make_downloads_folder():
 
 def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int]:
     """
-    Return library, library_similarities as ([Spectrum], df) from user input
+    Return library, 'is lib processed', lib number as ([Spectrum], bool, int)
 
     Args:
     ------
@@ -154,7 +154,7 @@ def download_zenodo_library(example_libs_dict: dict, library_example: str,
     return file_name, lib_num
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True)  # for speedup, e.a. lib is not mutated
 def load_pickled_file(file_name: str):
     """Returns contents from the pickle file
 
@@ -299,9 +299,10 @@ def make_folder(output_folder):
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
-                           library_spectrums: List[Spectrum],
+                           library_spectrums: List[Union[Spectrum,
+                                                         SpectrumDocument]],
                            library_is_processed: bool) -> Tuple[
-    List[SpectrumDocument], List[SpectrumDocument]]:
+        List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
@@ -309,7 +310,10 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     query_spectrums:
         Query spectra in matchms.Spectrum format
     library_spectrums:
-        Library spectra in matchms.Spectrum format
+        Library spectra in matchms.Spectrum or SpectrumDocument format
+    library_is_processed:
+        Bool for telling if the library is already processed -> don't process
+        it again. In this case the output equals input for library
     """
     st.write("## Post-process spectra")
     st.write("""Spec2Vec similarity scores rely on creating a document vector
@@ -464,13 +468,15 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
 
 def get_library_similarities(found_match: pd.DataFrame,
                              documents_library: List[SpectrumDocument],
-                             library_num: int):
-    """
+                             library_num: int) -> np.array:
+    """Returns sim matrix as np.array, index order corresponds to found_match
 
     Args:
     ------
     found_match:
         Dataframe containing the scores of the library matches
+    documents_library:
+        Library spectra in DocumentsLibrary format
     library_num:
         The library number, 0 means the example library, 1 and 2 (subset of)
         AllPositive library
@@ -491,16 +497,22 @@ def get_library_similarities(found_match: pd.DataFrame,
         sim_slice_inds = get_sim_matrix_lookup(match_inchi14)
         sim_matrix = subset_sim_matrix(sim_slice_inds)
         print(sim_matrix.shape)
+    else:
+        st.write("Similarity matrix not yet implemented for this library.")
     return sim_matrix
 
 
-def get_sim_matrix_lookup(match_inchi14: List[str]):
-    """
+def get_sim_matrix_lookup(match_inchi14: List[str]) -> List[int]:
+    """Return list of indices pointing to a row/col in the similarity matrix
+
+    The metadata file is opened and the indices are extracted in order of the
+    input inchi14s
 
     Args:
     ------
     match_inchi14
-
+        List of the first 14 chars of inchikeys for the library matches in
+        order of occurrence in the match df
     """
     # todo: download from zenodo
     metadata_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Simi" +
@@ -513,13 +525,22 @@ def get_sim_matrix_lookup(match_inchi14: List[str]):
         inchi_dict = {}
         for line in inf:
             line = line.strip().split(',')
-            inchi_dict[line[1]] = line[0]  # dict{inchi: index_lookup}
+            inchi_dict[line[1]] = int(line[0])  # dict{inchi: index_lookup}
 
     indices = [inchi_dict[inchi] for inchi in match_inchi14]
     return indices
 
 
-def subset_sim_matrix(indices: List[str]) -> np.array:
+def subset_sim_matrix(indices: List[int]) -> np.array:
+    """Returns sim matrix subset of indices vs indices in order
+
+    Accesses sim matrix from disk
+
+    Args:
+    -------
+    indices:
+        In order, the indices for creating the subset of the sim matrix
+    """
     sim_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Similarit" +
                 "y_matrix_AllPositive\\similarities_AllInchikeys14_daylight2" +
                 "048_jaccard.npy")
@@ -535,7 +556,7 @@ def subset_sim_matrix(indices: List[str]) -> np.array:
 
 def make_network_plot(found_match: pd.DataFrame,
                       documents_library: List[SpectrumDocument],
-                      sim_matrix: pd.DataFrame):
+                      sim_matrix: Union[np.array, pd.DataFrame]):
     """Plots the network in the app
 
     Args:
