@@ -504,7 +504,7 @@ def get_sim_matrix_lookup(match_inchi14: List[str]):
     """
     # todo: download from zenodo
     metadata_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Simi" +
-                     "larity_matrix_AllPositive\metadata_AllInchikeys14.csv")
+                     "larity_matrix_AllPositive\\metadata_AllInchikeys14.csv")
     user_input = st.text_input("Give path to metadata of similarity matrix")
     if user_input:
         metadata_file = user_input
