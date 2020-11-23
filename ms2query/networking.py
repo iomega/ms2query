@@ -157,7 +157,7 @@ def plotly_network(network: nx.Graph,
             nodes_detached.append(node)
 
     # Update network
-    network = network.subgraph([node for node in network.nodes if not node in nodes_detached])
+    network = network.subgraph([node for node in network.nodes if node not in nodes_detached])
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
                       'tanimoto' in d]
     library_edges = [(u, v, d) for u, v, d in library_edges if
