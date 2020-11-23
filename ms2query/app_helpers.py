@@ -519,11 +519,16 @@ def get_sim_matrix_lookup(match_inchi14: List[str],
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
-    # todo: download from zenodo
+    metadata_link = "https://zenodo.org/record/4286949/files/metadata_AllIn" +\
+        "chikeys14.csv?download=1"
     metadata_name = "metadata_AllInchikeys14.csv"
     metadata_file = os.path.join(output_folder, metadata_name)
     if not os.path.exists(metadata_file):
-        st.write(f"Similarity matrix data is not present in {output_folder}")
+        place_holder = st.empty()
+        place_holder.write("Downloading {metadata_name} from zenodo...")
+        urlretrieve(metadata_link, metadata_file)
+        place_holder.empty()
+
     with open(metadata_file, 'r') as inf:
         inf.readline()
         inchi_dict = {}
