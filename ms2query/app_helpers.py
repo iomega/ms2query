@@ -499,7 +499,6 @@ def get_library_similarities(found_match: pd.DataFrame,
                          for ind in match_inds]
         sim_slice_inds = get_sim_matrix_lookup(match_inchi14, output_folder)
         sim_matrix = subset_sim_matrix(sim_slice_inds, output_folder)
-        print(sim_matrix.shape)
     else:
         st.write("Similarity matrix not yet implemented for this library.")
     return sim_matrix
