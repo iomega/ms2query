@@ -525,7 +525,7 @@ def get_sim_matrix_lookup(match_inchi14: List[str],
     metadata_file = os.path.join(output_folder, metadata_name)
     if not os.path.exists(metadata_file):
         place_holder = st.empty()
-        place_holder.write("Downloading {metadata_name} from zenodo...")
+        place_holder.write(f"Downloading {metadata_name} from zenodo...")
         urlretrieve(metadata_link, metadata_file)
         place_holder.empty()
 
