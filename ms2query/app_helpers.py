@@ -468,7 +468,8 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
 
 def get_library_similarities(found_match: pd.DataFrame,
                              documents_library: List[SpectrumDocument],
-                             library_num: int) -> np.array:
+                             library_num: int,
+                             output_folder: str = "downloads") -> np.array:
     """Returns sim matrix as np.array, index order corresponds to found_match
 
     Args:
@@ -480,6 +481,8 @@ def get_library_similarities(found_match: pd.DataFrame,
     library_num:
         The library number, 0 means the example library, 1 and 2 (subset of)
         AllPositive library
+    output_folder:
+        Location to download/get similarity matrix and metadata from
     """
     # pylint: disable=protected-access
     sim_matrix = None
@@ -494,15 +497,16 @@ def get_library_similarities(found_match: pd.DataFrame,
         match_inds = found_match.iloc[:100].index.to_list()
         match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
                          for ind in match_inds]
-        sim_slice_inds = get_sim_matrix_lookup(match_inchi14)
-        sim_matrix = subset_sim_matrix(sim_slice_inds)
+        sim_slice_inds = get_sim_matrix_lookup(match_inchi14, output_folder)
+        sim_matrix = subset_sim_matrix(sim_slice_inds, output_folder)
         print(sim_matrix.shape)
     else:
         st.write("Similarity matrix not yet implemented for this library.")
     return sim_matrix
 
 
-def get_sim_matrix_lookup(match_inchi14: List[str]) -> List[int]:
+def get_sim_matrix_lookup(match_inchi14: List[str],
+                          output_folder: str = "downloads") -> List[int]:
     """Return list of indices pointing to a row/col in the similarity matrix
 
     The metadata file is opened and the indices are extracted in order of the
@@ -513,13 +517,14 @@ def get_sim_matrix_lookup(match_inchi14: List[str]) -> List[int]:
     match_inchi14
         List of the first 14 chars of inchikeys for the library matches in
         order of occurrence in the match df
+    output_folder:
+        Location to download/get similarity matrix and metadata from
     """
     # todo: download from zenodo
-    metadata_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Simi" +
-                     "larity_matrix_AllPositive\\metadata_AllInchikeys14.csv")
-    user_input = st.text_input("Give path to metadata of similarity matrix")
-    if user_input:
-        metadata_file = user_input
+    metadata_name = "metadata_AllInchikeys14.csv"
+    metadata_file = os.path.join(output_folder, metadata_name)
+    if not os.path.exists(metadata_file):
+        st.write(f"Similarity matrix data is not present in {output_folder}")
     with open(metadata_file, 'r') as inf:
         inf.readline()
         inchi_dict = {}
@@ -531,7 +536,8 @@ def get_sim_matrix_lookup(match_inchi14: List[str]) -> List[int]:
     return indices
 
 
-def subset_sim_matrix(indices: List[int]) -> np.array:
+def subset_sim_matrix(indices: List[int],
+                      output_folder: str = "downloads") -> np.array:
     """Returns sim matrix subset of indices vs indices in order
 
     Accesses sim matrix from disk
@@ -540,13 +546,13 @@ def subset_sim_matrix(indices: List[int]) -> np.array:
     -------
     indices:
         In order, the indices for creating the subset of the sim matrix
+    output_folder:
+        Location to download/get similarity matrix and metadata from
     """
-    sim_file = ("C:\\users\\joris\\Documents\\eScience_data\\data\\Similarit" +
-                "y_matrix_AllPositive\\similarities_AllInchikeys14_daylight2" +
-                "048_jaccard.npy")
-    user_input = st.text_input("Give path to similarity matrix")
-    if user_input:
-        sim_file = user_input
+    sim_name = "similarities_AllInchikeys14_daylight2048_jaccard.npy"
+    sim_file = os.path.join(output_folder, sim_name)
+    if not os.path.exists(sim_file):
+        st.write(f"Similarity matrix data is not present in {output_folder}")
     sim_map = np.lib.format.open_memmap(sim_file, dtype="float64", mode="r")
     row_slice = np.take(sim_map, indices, 0)
     final_slice = np.take(row_slice, indices, 1)
