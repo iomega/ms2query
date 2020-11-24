@@ -19,7 +19,8 @@ def test_gather_test_json():
 
 def test_gather_zenodo_library():
     """Test gather_zenodo_library"""
-    lib_dict = gather_zenodo_library("downloads")
+    download = "downloads"
+    lib_dict = gather_zenodo_library(download)
     lib_dict_keys = list(lib_dict.keys())
     first_record = lib_dict[lib_dict_keys[0]]
     assert isinstance(lib_dict, dict), "Expected output to be dict"
@@ -29,11 +30,14 @@ def test_gather_zenodo_library():
     assert all(isinstance(first_record[i], str) for i in range(2)),\
         "Expected first two elements to be str"
     assert isinstance(first_record[2], int), "Expected third element to be int"
+    assert download in first_record[1], \
+        "Expected download to be added to file path"
 
 
 def test_get_zenodo_models_dict():
     """Test get_zenodo_models_dict"""
-    model_dict = get_zenodo_models_dict("downloads")
+    download = "downloads"
+    model_dict = get_zenodo_models_dict(download)
     model_dict_keys = list(model_dict.keys())
     first_record = model_dict[model_dict_keys[0]]
     assert isinstance(model_dict, dict), "Expected output to be dict"
@@ -46,3 +50,5 @@ def test_get_zenodo_models_dict():
                for first_record_elem in first_record[0]), \
         "Expected first two elements to be str"
     assert isinstance(first_record[2], int), "Expected third element to be int"
+    assert download in first_record[1][0],\
+        "Expected download to be added to file path"
