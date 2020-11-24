@@ -65,6 +65,8 @@ if plot_true and do_library_matching:
         found_match, documents_library, lib_num, downloads_folder)
     if sim_matrix is not None:
         make_network_plot(found_match, documents_library, sim_matrix)
+    else:
+        st.write("Similarity matrix not yet implemented for this library.")
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)
