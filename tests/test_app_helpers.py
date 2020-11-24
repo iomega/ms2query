@@ -42,7 +42,7 @@ def test_get_zenodo_models_dict():
     assert isinstance(first_record, tuple), "Expected output to be tuple"
     assert all(isinstance(first_record[i], list) for i in range(2)),\
         "Expected first two elements to be list"
-    assert all(isinstance(first_record_elem, list)
+    assert all(isinstance(first_record_elem, str)
                for first_record_elem in first_record[0]), \
-        "Expected first two elements to be list"
+        "Expected first two elements to be str"
     assert isinstance(first_record[2], int), "Expected third element to be int"
