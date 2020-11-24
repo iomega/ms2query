@@ -1,5 +1,6 @@
 import pandas as pd
 from ms2query.app_helpers import gather_test_json
+from ms2query.app_helpers import get_query
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
 from ms2query.app_helpers import url_to_file
@@ -18,6 +19,13 @@ def test_gather_test_json():
     assert test_name in testlib_dict, "Expected test_name in testlib_dict"
     assert test_name in testlib_list, "Expected test_name in testlib_list"
     assert isinstance(out_path, str), "Expected output to be str"
+
+
+def test_get_query():
+    """Test get_query"""
+    res = get_query()
+    assert isinstance(res, list), "Expected output to be list"
+    assert len(res) == 0, "Expected default output from get_query to be empty"
 
 
 def test_gather_zenodo_library():
