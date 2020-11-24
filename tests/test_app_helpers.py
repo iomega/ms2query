@@ -14,6 +14,7 @@ from ms2query.app_helpers import url_to_file
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
 from ms2query.app_helpers import get_library_similarities
+from ms2query.app_helpers import make_network_plot
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 
@@ -169,3 +170,15 @@ def test_get_library_similarities():
     assert isinstance(test_sim_matrix, np.ndarray),\
         "Expected output to be ndarray"
     assert test_sim_matrix.shape[0] == 5, "Expected 5 rows"
+
+
+def test_make_network_plot():
+    """Test make_network_plot"""
+    path_tests = os.path.dirname(__file__)
+    testfile = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums = json_loader(open(testfile))
+    documents = process_spectrums(spectrums)
+    test_matches = get_example_library_matches()
+    test_sim_matrix = get_library_similarities(test_matches, documents, 0)
+    res = make_network_plot(test_matches, documents, test_sim_matrix)
+    assert res is None, "Expected default output to be None"
