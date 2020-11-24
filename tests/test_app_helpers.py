@@ -5,6 +5,7 @@ from ms2query.app_helpers import make_downloads_folder
 from ms2query.app_helpers import get_library_data
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
+from ms2query.app_helpers import get_zenodo_models
 from ms2query.app_helpers import url_to_file
 from ms2query.app_helpers import get_example_library_matches
 
@@ -64,6 +65,15 @@ def test_gather_zenodo_library():
     assert isinstance(first_record[2], int), "Expected third element to be int"
     assert download in first_record[1], \
         "Expected download to be added to file path"
+
+
+def test_get_zenodo_models():
+    """Test get_zenodo_models"""
+    model_name, model_file, model_num = get_zenodo_models()
+    assert isinstance(model_name, str), "Expected output to be str"
+    assert len(model_name) == 0, "Expected default output to be empty"
+    assert model_file is None, "Expected default output to be empty"
+    assert model_num is None, "Expected default output to be empty"
 
 
 def test_get_zenodo_models_dict():
