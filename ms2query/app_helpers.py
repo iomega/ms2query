@@ -352,7 +352,7 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     return documents_query, documents_library
 
 
-def get_example_library_matches():
+def get_example_library_matches() -> pd.DataFrame:
     """
     Get test_found_matches from test dir, display it as an example in the app
     """
@@ -363,6 +363,8 @@ def get_example_library_matches():
     with st.beta_expander("See an example"):
         st.write("These are the test library matches for test query:")
         st.dataframe(test_found_matches)
+
+    return test_found_matches
 
 
 def get_library_matches(documents_query: List[SpectrumDocument],
