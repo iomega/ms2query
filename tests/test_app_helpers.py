@@ -39,7 +39,7 @@ def test_get_query():
 def test_make_downloads_folder():
     """Test make_downloads_folder"""
     downloads_folder = make_downloads_folder()
-    assert downloads_folder.endswith("downloads"),\
+    assert downloads_folder.endswith("downloads"), \
         "Expected default output to end in 'downloads'"
     assert isinstance(downloads_folder, str)
 
@@ -65,7 +65,7 @@ def test_gather_zenodo_library():
     assert all(isinstance(lib_dict_key, str)
                for lib_dict_key in lib_dict_keys), "Expected keys to be str"
     assert isinstance(first_record, tuple), "Expected output to be tuple"
-    assert all(isinstance(first_record[i], str) for i in range(2)),\
+    assert all(isinstance(first_record[i], str) for i in range(2)), \
         "Expected first two elements to be str"
     assert isinstance(first_record[2], int), "Expected third element to be int"
     assert download in first_record[1], \
@@ -98,13 +98,13 @@ def test_get_zenodo_models_dict():
     assert all(isinstance(model_dict_key, str) for model_dict_key
                in model_dict_keys), "Expected keys to be str"
     assert isinstance(first_record, tuple), "Expected output to be tuple"
-    assert all(isinstance(first_record[i], list) for i in range(2)),\
+    assert all(isinstance(first_record[i], list) for i in range(2)), \
         "Expected first two elements to be list"
     assert all(isinstance(first_record_elem, str)
                for first_record_elem in first_record[0]), \
         "Expected first two elements to be str"
     assert isinstance(first_record[2], int), "Expected third element to be int"
-    assert download in first_record[1][0],\
+    assert download in first_record[1][0], \
         "Expected download to be added to file path"
 
 
@@ -117,9 +117,9 @@ def test_url_to_file():
     mock_file = mock_files[0]
     assert isinstance(mock_files, list), "Expected output to be list"
     assert isinstance(mock_file, str), "Expected output to be str"
-    assert mock_file.endswith(file_name),\
+    assert mock_file.endswith(file_name), \
         "Expected mock_file to end with file_name if path is made correctly"
-    assert mock_file.startswith(download),\
+    assert mock_file.startswith(download), \
         "Expected mock_file to start with downloads if path is made correctly"
 
 
@@ -133,9 +133,9 @@ def test_do_spectrum_processing():
     q_documents, l_documents = do_spectrum_processing(
         q_spectrums, l_spectrums, False)
     assert isinstance(q_documents, list), "Expected output to be list."
-    assert isinstance(q_documents[0], SpectrumDocument),\
+    assert isinstance(q_documents[0], SpectrumDocument), \
         "Expected output to be SpectrumDocument."
-    assert q_documents[0]._obj.get("spectrum_id") == q_spectrums[0]\
+    assert q_documents[0]._obj.get("spectrum_id") == q_spectrums[0] \
         .metadata["spectrum_id"]
     assert isinstance(l_documents, list), "Expected output to be list."
     assert isinstance(l_documents[0], SpectrumDocument), \
@@ -144,8 +144,9 @@ def test_do_spectrum_processing():
         .metadata["spectrum_id"]
     q_documents_2, l_documents_2 = do_spectrum_processing(
         q_spectrums, l_documents, True)
-    assert q_documents_2[0] == q_documents[0], "Expected output to be the same"
-    assert l_documents_2[0] == l_documents[0], "Expected output to be the same"
+    assert all([isinstance(l_documents_2[0], SpectrumDocument),
+                isinstance(l_documents[0], SpectrumDocument)]), \
+        "Expected output to be the same type: SpectrumDocument"
 
 
 def test_get_example_library_matches():
