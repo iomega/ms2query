@@ -98,7 +98,8 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int]:
     zenodo_dict = gather_zenodo_library(output_dir)
     example_libs_dict.update(zenodo_dict)
     example_libs_list.extend(list(zenodo_dict.keys()))
-    library_example = st.sidebar.selectbox("Choose a spectrum library",
+    library_example = st.sidebar.selectbox("""Choose a spectrum library (will 
+    trigger large download if library not present in download folder)""",
                                            example_libs_list)
     processed = bool(library_example in zenodo_dict.keys())
 
@@ -265,7 +266,8 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
         Folder to download to
     """
     model_dict = get_zenodo_models_dict(output_folder)
-    model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
+    model_name = st.sidebar.selectbox("""Choose a Spec2Vec model (will trigger
+    large download if model not present in download folder)""",
                                       options=[""] + list(model_dict.keys()))
     model_file = None
     model_num = None
@@ -302,7 +304,7 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
                            library_spectrums: List[Union[Spectrum,
                                                          SpectrumDocument]],
                            library_is_processed: bool) -> Tuple[
-        List[SpectrumDocument], List[SpectrumDocument]]:
+    List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
 
     Args:
@@ -519,8 +521,8 @@ def get_sim_matrix_lookup(match_inchi14: List[str],
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
-    metadata_url = "https://zenodo.org/record/4286949/files/metadata_AllIn" +\
-        "chikeys14.csv?download=1"
+    metadata_url = "https://zenodo.org/record/4286949/files/metadata_AllIn" + \
+                   "chikeys14.csv?download=1"
     metadata_name = "metadata_AllInchikeys14.csv"
     metadata_file = os.path.join(output_folder, metadata_name)
     if not os.path.exists(metadata_file):
@@ -553,8 +555,8 @@ def subset_sim_matrix(indices: List[int],
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
-    sim_url = "https://zenodo.org/record/4286949/files/similarities_AllInch" +\
-        "ikeys14_daylight2048_jaccard.npy?download=1"
+    sim_url = "https://zenodo.org/record/4286949/files/similarities_AllInch" + \
+              "ikeys14_daylight2048_jaccard.npy?download=1"
     sim_name = "similarities_AllInchikeys14_daylight2048_jaccard.npy"
     sim_file = os.path.join(output_folder, sim_name)
     if not os.path.exists(sim_file):
