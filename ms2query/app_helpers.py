@@ -492,7 +492,6 @@ def get_library_similarities(found_match: pd.DataFrame,
         Location to download/get similarity matrix and metadata from
     """
     # pylint: disable=protected-access
-    sim_matrix = None
     if library_num == 0:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
