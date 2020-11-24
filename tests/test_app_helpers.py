@@ -1,6 +1,7 @@
 from ms2query.app_helpers import gather_test_json
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
+from ms2query.app_helpers import url_to_file
 
 
 # only functions are tested that do not depend on any streamlit commands
@@ -52,3 +53,18 @@ def test_get_zenodo_models_dict():
     assert isinstance(first_record[2], int), "Expected third element to be int"
     assert download in first_record[1][0],\
         "Expected download to be added to file path"
+
+
+def test_url_to_file():
+    """Test url_to_file"""
+    download = "downloads"
+    file_name = "some_file"
+    mock_urls = [f"a_mock_url/{file_name}?download"]
+    mock_files = url_to_file(mock_urls, download)
+    mock_file = mock_files[0]
+    assert isinstance(mock_files, list), "Expected output to be list"
+    assert isinstance(mock_file, str), "Expected output to be str"
+    assert mock_file.endswith(file_name),\
+        "Expected mock_file to end with file_name if path is made correctly"
+    assert mock_file.startswith(download),\
+        "Expected mock_file to start with downloads if path is made correctly"
