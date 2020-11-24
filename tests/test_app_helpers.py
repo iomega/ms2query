@@ -1,5 +1,8 @@
 from ms2query.app_helpers import gather_test_json
+from ms2query.app_helpers import gather_zenodo_library
 
+
+# only functions are tested that do not depend on any streamlit commands
 
 def test_gather_test_json():
     """Test gather_test_json"""
@@ -11,3 +14,17 @@ def test_gather_test_json():
     assert test_name in testlib_dict, "Expected test_name in testlib_dict"
     assert test_name in testlib_list, "Expected test_name in testlib_list"
     assert isinstance(out_path, str), "Expected output to be str"
+
+
+def test_gather_zenodo_library():
+    """Test gather_zenodo_library"""
+    lib_dict = gather_zenodo_library("downloads")
+    lib_dict_keys = list(lib_dict.keys())
+    first_record = lib_dict[lib_dict_keys[0]]
+    assert isinstance(lib_dict, dict), "Expected output to be dict"
+    assert all(isinstance(lib_dict_key, str)
+               for lib_dict_key in lib_dict_keys), "Expected keys to be str"
+    assert isinstance(first_record, tuple), "Expected output to be tuple"
+    assert all(isinstance(first_record[i], str) for i in range(2)),\
+        "Expected first two elements to be str"
+    assert isinstance(first_record[2], int), "Expected third element to be int"
