@@ -1,6 +1,7 @@
 import pandas as pd
 from ms2query.app_helpers import gather_test_json
 from ms2query.app_helpers import get_query
+from ms2query.app_helpers import make_downloads_folder
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
 from ms2query.app_helpers import url_to_file
@@ -26,6 +27,14 @@ def test_get_query():
     res = get_query()
     assert isinstance(res, list), "Expected output to be list"
     assert len(res) == 0, "Expected default output from get_query to be empty"
+
+
+def test_make_downloads_folder():
+    """Test make_downloads_folder"""
+    downloads_folder = make_downloads_folder()
+    assert downloads_folder.endswith("downloads"),\
+        "Expected default output to end in 'downloads'"
+    assert isinstance(downloads_folder, str)
 
 
 def test_gather_zenodo_library():
