@@ -1,6 +1,7 @@
 import os
 import pickle
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
+import numpy as np
 import pandas as pd
 import streamlit as st
 from spec2vec import SpectrumDocument
@@ -80,10 +81,9 @@ def make_downloads_folder():
     return out_folder
 
 
-def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
-                                               Union[pd.DataFrame, None]]:
+def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int]:
     """
-    Return library, library_similarities as ([Spectrum], df) from user input
+    Return library, 'is lib processed', lib number as ([Spectrum], bool, int)
 
     Args:
     ------
@@ -91,7 +91,6 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
         Folder to download zenodo libraries to
     """
     library_spectrums = []  # default so later code doesn't crash
-    test_sim_matrix = None
     lib_num = None
     # gather default libraries
     example_libs_dict, example_libs_list = gather_test_json(
@@ -99,7 +98,8 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
     zenodo_dict = gather_zenodo_library(output_dir)
     example_libs_dict.update(zenodo_dict)
     example_libs_list.extend(list(zenodo_dict.keys()))
-    library_example = st.sidebar.selectbox("Choose a spectrum library",
+    library_example = st.sidebar.selectbox("""Choose a spectrum library (will 
+    trigger large download if library not present in download folder)""",
                                            example_libs_list)
     processed = bool(library_example in zenodo_dict.keys())
 
@@ -129,31 +129,23 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int,
     # write library info
     if library_spectrums:
         st.write(f"Your library contains {len(library_spectrums)} spectra.")
-
-        # load similarity matrix, not implemented apart from test sim matrix
-        if library_example == 'testspectrum_library.json':
-            test_sim_matrix_file = os.path.join(
-                os.path.split(os.path.dirname(__file__))[0], "tests",
-                "test_found_matches_similarity_matrix.csv")
-            test_sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-        else:
-            st.write("""<p><span style="color:red">Libraries other than the
-            example testspectrum are not implemented yet, so network plotting
-            will not work for this library.</span></p>""",
-                     unsafe_allow_html=True)
-
-    return library_spectrums, processed, lib_num, test_sim_matrix
+    return library_spectrums, processed, lib_num
 
 
-def download_zenodo_library(example_libs_dict: dict, library_example: str,
+def download_zenodo_library(example_libs_dict: Dict[str, Tuple[str, str, int]],
+                            library_example: str,
                             output_dir: str) -> Tuple[str, int]:
     """Downloads the library from zenodo and returns the file_path and lib_num
 
     Args:
     -------
-    example_libs_dict
+    example_libs_dict:
+        Dict linking the library name in the app to the zenodo url, the path
+        of where the library should be downloaded and the library number
     library_example
+        The library name in the app that is chosen from user input
     output_dir
+        Folder to download zenodo libraries to
     """
     make_folder(output_dir)
     url_name, file_name, lib_num = example_libs_dict[library_example]
@@ -168,7 +160,7 @@ def download_zenodo_library(example_libs_dict: dict, library_example: str,
     return file_name, lib_num
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True)  # for speedup, e.a. lib is not mutated
 def load_pickled_file(file_name: str):
     """Returns contents from the pickle file
 
@@ -182,7 +174,7 @@ def load_pickled_file(file_name: str):
     return contents
 
 
-def gather_zenodo_library(output_folder):
+def gather_zenodo_library(output_folder: str):
     """Gather file and url info for zenodo libraries
 
     Args:
@@ -279,7 +271,8 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
         Folder to download to
     """
     model_dict = get_zenodo_models_dict(output_folder)
-    model_name = st.sidebar.selectbox("Choose a Spec2Vec model",
+    model_name = st.sidebar.selectbox("""Choose a Spec2Vec model (will trigger
+    large download if model not present in download folder)""",
                                       options=[""] + list(model_dict.keys()))
     model_file = None
     model_num = None
@@ -313,7 +306,8 @@ def make_folder(output_folder):
 
 
 def do_spectrum_processing(query_spectrums: List[Spectrum],
-                           library_spectrums: List[Spectrum],
+                           library_spectrums: List[Union[Spectrum,
+                                                         SpectrumDocument]],
                            library_is_processed: bool) -> Tuple[
     List[SpectrumDocument], List[SpectrumDocument]]:
     """Process query, library into SpectrumDocuments and write processing info
@@ -323,7 +317,10 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     query_spectrums:
         Query spectra in matchms.Spectrum format
     library_spectrums:
-        Library spectra in matchms.Spectrum format
+        Library spectra in matchms.Spectrum or SpectrumDocument format
+    library_is_processed:
+        Bool for telling if the library is already processed -> don't process
+        it again. In this case the output equals input for library
     """
     st.write("## Post-process spectra")
     st.write("""Spec2Vec similarity scores rely on creating a document vector
@@ -408,8 +405,9 @@ def get_library_matches(documents_query: List[SpectrumDocument],
     st.write("These are the library matches for your query")
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
-        st.dataframe(first_found_match.sort_values(
-            "s2v_score", ascending=False).iloc[:show_topn])
+        first_found_match = first_found_match.sort_values(
+            "s2v_score", ascending=False)
+        st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
     return None
 
@@ -475,9 +473,111 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     return found_matches_s2v
 
 
+def get_library_similarities(found_match: pd.DataFrame,
+                             documents_library: List[SpectrumDocument],
+                             library_num: int,
+                             output_folder: str = "downloads") -> np.array:
+    """Returns sim matrix as np.array, index order corresponds to found_match
+
+    Args:
+    ------
+    found_match:
+        Dataframe containing the scores of the library matches
+    documents_library:
+        Library spectra in DocumentsLibrary format
+    library_num:
+        The library number, 0 means the example library, 1 and 2 (subset of)
+        AllPositive library
+    output_folder:
+        Location to download/get similarity matrix and metadata from
+    """
+    # pylint: disable=protected-access
+    if library_num == 0:
+        test_sim_matrix_file = os.path.join(
+            os.path.split(os.path.dirname(__file__))[0], "tests",
+            "test_found_matches_similarity_matrix.csv")
+        return pd.read_csv(test_sim_matrix_file, index_col=0)
+    if library_num in (1, 2):
+        # construct the slice of the similarity matrix in order of matches ind
+        # take 100 as a max value, same as in library_matching
+        match_inds = found_match.iloc[:100].index.to_list()
+        match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
+                         for ind in match_inds]
+        sim_slice_inds = get_sim_matrix_lookup(match_inchi14, output_folder)
+        return subset_sim_matrix(sim_slice_inds, output_folder)
+
+    return None
+
+
+def get_sim_matrix_lookup(match_inchi14: List[str],
+                          output_folder: str = "downloads") -> List[int]:
+    """Return list of indices pointing to a row/col in the similarity matrix
+
+    The metadata file is opened and the indices are extracted in order of the
+    input inchi14s
+
+    Args:
+    ------
+    match_inchi14
+        List of the first 14 chars of inchikeys for the library matches in
+        order of occurrence in the match df
+    output_folder:
+        Location to download/get similarity matrix and metadata from
+    """
+    metadata_url = "https://zenodo.org/record/4286949/files/metadata_AllIn" + \
+                   "chikeys14.csv?download=1"
+    metadata_name = "metadata_AllInchikeys14.csv"
+    metadata_file = os.path.join(output_folder, metadata_name)
+    if not os.path.exists(metadata_file):
+        place_holder = st.empty()
+        place_holder.write(f"Downloading {metadata_name} from zenodo...")
+        urlretrieve(metadata_url, metadata_file)
+        place_holder.empty()
+
+    with open(metadata_file, 'r') as inf:
+        inf.readline()
+        inchi_dict = {}
+        for line in inf:
+            line = line.strip().split(',')
+            inchi_dict[line[1]] = int(line[0])  # dict{inchi: index_lookup}
+
+    indices = [inchi_dict[inchi] for inchi in match_inchi14]
+    return indices
+
+
+def subset_sim_matrix(indices: List[int],
+                      output_folder: str = "downloads") -> np.array:
+    """Returns sim matrix subset of indices vs indices in order
+
+    Accesses sim matrix from disk
+
+    Args:
+    -------
+    indices:
+        In order, the indices for creating the subset of the sim matrix
+    output_folder:
+        Location to download/get similarity matrix and metadata from
+    """
+    sim_url = "https://zenodo.org/record/4286949/files/similarities_AllInch" + \
+              "ikeys14_daylight2048_jaccard.npy?download=1"
+    sim_name = "similarities_AllInchikeys14_daylight2048_jaccard.npy"
+    sim_file = os.path.join(output_folder, sim_name)
+    if not os.path.exists(sim_file):
+        place_holder = st.empty()
+        place_holder.write(f"Downloading {sim_name} from zenodo...")
+        urlretrieve(sim_url, sim_file)
+        place_holder.empty()
+
+    sim_map = np.lib.format.open_memmap(sim_file, dtype="float64", mode="r")
+    row_slice = np.take(sim_map, indices, 0)
+    final_slice = np.take(row_slice, indices, 1)
+
+    return np.array(final_slice)
+
+
 def make_network_plot(found_match: pd.DataFrame,
                       documents_library: List[SpectrumDocument],
-                      sim_matrix: pd.DataFrame):
+                      sim_matrix: Union[np.array, pd.DataFrame]):
     """Plots the network in the app
 
     Args:
@@ -491,6 +591,16 @@ def make_network_plot(found_match: pd.DataFrame,
         Dataframe containing the tanimoto similarities of the library spectra
         amongst each other
     """
+    # pylint: disable=too-many-locals
+    def_show_topn = 10  # default for topn results to show
+    if len(documents_library) < def_show_topn:
+        def_show_topn = len(documents_library)
+    cols = st.beta_columns([1, 3])
+    with cols[0]:
+        show_topn = int(st.text_input("Show top n matches (1-100)",
+                                      value=def_show_topn))
+    found_match = found_match.iloc[:show_topn]
+
     plot_placeholder = st.empty()  # add a place for the plot
     # add sliders to adjust network plot
     col1, col2 = st.beta_columns(2)

@@ -63,7 +63,7 @@ def add_library_connections(graph, similarity_matrix, lib_ids):
 
 def do_networking(query_id: str,
                   matches: pd.DataFrame,
-                  similarity_matrix: pd.DataFrame,
+                  similarity_matrix: Union[np.array, pd.DataFrame],
                   library_documents: List[SpectrumDocument],
                   attribute_key: str = 's2v_score',
                   cutoff: Union[int, float] = 0.4,
@@ -150,6 +150,22 @@ def plotly_network(network: nx.Graph,
     network = nx.Graph(library_edges + query_edges)
     network.add_node(q_node)  # make sure query is always in the plot
 
+    # Detect not attached nodes
+    nodes_detached = []
+    for node in network.nodes:
+        if not str(node).startswith("query") and not nx.has_path(network, q_node, node):
+            nodes_detached.append(node)
+
+    # Update network
+    network = network.subgraph([node for node in network.nodes if node not in nodes_detached])
+    library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                      'tanimoto' in d]
+    library_edges = [(u, v, d) for u, v, d in library_edges if
+                      d['tanimoto'] >= tan_cutoff]
+    query_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
+                    'tanimoto' not in d and d[attribute_key] >= cutoff]
+    
+    # Position nodes
     pos = nx.spring_layout(network, k=k, iterations=500, seed=seed)
 
     edge_trace = []
