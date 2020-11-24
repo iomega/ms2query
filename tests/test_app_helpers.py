@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from spec2vec import SpectrumDocument
 from ms2query.app_helpers import gather_test_json
@@ -12,7 +13,9 @@ from ms2query.app_helpers import get_zenodo_models_dict
 from ms2query.app_helpers import url_to_file
 from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
+from ms2query.app_helpers import get_library_similarities
 from ms2query.utils import json_loader
+from ms2query.s2v_functions import process_spectrums
 
 
 # only functions are tested that do not depend on any streamlit commands
@@ -153,3 +156,16 @@ def test_get_example_library_matches():
     """Test get_example_library_matches"""
     test_matches = get_example_library_matches()
     assert isinstance(test_matches, pd.DataFrame), "Expected output to be df"
+
+
+def test_get_library_similarities():
+    """Test get_library_similarities"""
+    path_tests = os.path.dirname(__file__)
+    testfile = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums = json_loader(open(testfile))
+    documents = process_spectrums(spectrums)
+    test_matches = get_example_library_matches()
+    test_sim_matrix = get_library_similarities(test_matches, documents, 0)
+    assert isinstance(test_sim_matrix, np.ndarray),\
+        "Expected output to be ndarray"
+    assert test_sim_matrix.shape[0] == 5, "Expected 5 rows"
