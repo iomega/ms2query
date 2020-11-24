@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -132,15 +132,20 @@ def get_library_data(output_dir: str) -> Tuple[List[Spectrum], bool, int]:
     return library_spectrums, processed, lib_num
 
 
-def download_zenodo_library(example_libs_dict: dict, library_example: str,
+def download_zenodo_library(example_libs_dict: Dict[str, Tuple[str, str, int]],
+                            library_example: str,
                             output_dir: str) -> Tuple[str, int]:
     """Downloads the library from zenodo and returns the file_path and lib_num
 
     Args:
     -------
-    example_libs_dict
+    example_libs_dict:
+        Dict linking the library name in the app to the zenodo url, the path
+        of where the library should be downloaded and the library number
     library_example
+        The library name in the app that is chosen from user input
     output_dir
+        Folder to download zenodo libraries to
     """
     make_folder(output_dir)
     url_name, file_name, lib_num = example_libs_dict[library_example]
@@ -169,7 +174,7 @@ def load_pickled_file(file_name: str):
     return contents
 
 
-def gather_zenodo_library(output_folder):
+def gather_zenodo_library(output_folder: str):
     """Gather file and url info for zenodo libraries
 
     Args:
