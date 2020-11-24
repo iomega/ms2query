@@ -505,10 +505,9 @@ def get_library_similarities(found_match: pd.DataFrame,
         match_inchi14 = [documents_library[ind]._obj.get("inchikey")[:14]
                          for ind in match_inds]
         sim_slice_inds = get_sim_matrix_lookup(match_inchi14, output_folder)
-        sim_matrix = subset_sim_matrix(sim_slice_inds, output_folder)
-    else:
-        st.write("Similarity matrix not yet implemented for this library.")
-    return sim_matrix
+        return subset_sim_matrix(sim_slice_inds, output_folder)
+
+    return None
 
 
 def get_sim_matrix_lookup(match_inchi14: List[str],
