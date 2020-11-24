@@ -497,8 +497,8 @@ def get_library_similarities(found_match: pd.DataFrame,
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
-        sim_matrix = pd.read_csv(test_sim_matrix_file, index_col=0)
-    elif library_num in (1, 2):
+        return pd.read_csv(test_sim_matrix_file, index_col=0)
+    if library_num in (1, 2):
         # construct the slice of the similarity matrix in order of matches ind
         # take 100 as a max value, same as in library_matching
         match_inds = found_match.iloc[:100].index.to_list()
