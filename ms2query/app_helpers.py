@@ -352,7 +352,7 @@ def do_spectrum_processing(query_spectrums: List[Spectrum],
     return documents_query, documents_library
 
 
-def get_example_library_matches():
+def get_example_library_matches() -> pd.DataFrame:
     """
     Get test_found_matches from test dir, display it as an example in the app
     """
@@ -363,6 +363,8 @@ def get_example_library_matches():
     with st.beta_expander("See an example"):
         st.write("These are the test library matches for test query:")
         st.dataframe(test_found_matches)
+
+    return test_found_matches
 
 
 def get_library_matches(documents_query: List[SpectrumDocument],
@@ -496,7 +498,7 @@ def get_library_similarities(found_match: pd.DataFrame,
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
             "test_found_matches_similarity_matrix.csv")
-        return pd.read_csv(test_sim_matrix_file, index_col=0)
+        return np.array(pd.read_csv(test_sim_matrix_file, index_col=0))
     if library_num in (1, 2):
         # construct the slice of the similarity matrix in order of matches ind
         # take 100 as a max value, same as in library_matching
@@ -577,7 +579,7 @@ def subset_sim_matrix(indices: List[int],
 
 def make_network_plot(found_match: pd.DataFrame,
                       documents_library: List[SpectrumDocument],
-                      sim_matrix: Union[np.array, pd.DataFrame]):
+                      sim_matrix: pd.DataFrame):
     """Plots the network in the app
 
     Args:
