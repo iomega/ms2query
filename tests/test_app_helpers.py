@@ -2,6 +2,7 @@ from ms2query.app_helpers import gather_test_json
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
 from ms2query.app_helpers import url_to_file
+from ms2query.app_helpers import get_example_library_matches
 
 
 # only functions are tested that do not depend on any streamlit commands
@@ -68,3 +69,9 @@ def test_url_to_file():
         "Expected mock_file to end with file_name if path is made correctly"
     assert mock_file.startswith(download),\
         "Expected mock_file to start with downloads if path is made correctly"
+
+
+def test_get_example_library_matches():
+    """Test get_example_library_matches"""
+    res = get_example_library_matches()
+    assert res is None, "Expected res to be None"
