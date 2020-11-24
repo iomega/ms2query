@@ -1,3 +1,4 @@
+import pandas as pd
 from ms2query.app_helpers import gather_test_json
 from ms2query.app_helpers import gather_zenodo_library
 from ms2query.app_helpers import get_zenodo_models_dict
@@ -73,5 +74,5 @@ def test_url_to_file():
 
 def test_get_example_library_matches():
     """Test get_example_library_matches"""
-    res = get_example_library_matches()
-    assert res is None, "Expected res to be None"
+    test_matches = get_example_library_matches()
+    assert isinstance(test_matches, pd.DataFrame), "Expected output to be df"
