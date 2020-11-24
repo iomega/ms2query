@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+from spec2vec import SpectrumDocument
 from ms2query.app_helpers import gather_test_json
 from ms2query.app_helpers import get_query
 from ms2query.app_helpers import make_downloads_folder
@@ -8,7 +10,9 @@ from ms2query.app_helpers import get_model
 from ms2query.app_helpers import get_zenodo_models
 from ms2query.app_helpers import get_zenodo_models_dict
 from ms2query.app_helpers import url_to_file
+from ms2query.app_helpers import do_spectrum_processing
 from ms2query.app_helpers import get_example_library_matches
+from ms2query.utils import json_loader
 
 
 # only functions are tested that do not depend on any streamlit commands
@@ -117,6 +121,31 @@ def test_url_to_file():
         "Expected mock_file to end with file_name if path is made correctly"
     assert mock_file.startswith(download),\
         "Expected mock_file to start with downloads if path is made correctly"
+
+
+def test_do_spectrum_processing():
+    """Test do_spectrum_processing"""
+    path_tests = os.path.dirname(__file__)
+    q_testfile = os.path.join(path_tests, "testspectrum_query.json")
+    q_spectrums = json_loader(open(q_testfile))
+    l_testfile = os.path.join(path_tests, "testspectrum_library.json")
+    l_spectrums = json_loader(open(l_testfile))
+    q_documents, l_documents = do_spectrum_processing(
+        q_spectrums, l_spectrums, False)
+    assert isinstance(q_documents, list), "Expected output to be list."
+    assert isinstance(q_documents[0], SpectrumDocument),\
+        "Expected output to be SpectrumDocument."
+    assert q_documents[0]._obj.get("spectrum_id") == q_spectrums[0]\
+        .metadata["spectrum_id"]
+    assert isinstance(l_documents, list), "Expected output to be list."
+    assert isinstance(l_documents[0], SpectrumDocument), \
+        "Expected output to be SpectrumDocument."
+    assert l_documents[0]._obj.get("spectrum_id") == l_spectrums[0] \
+        .metadata["spectrum_id"]
+    q_documents_2, l_documents_2 = do_spectrum_processing(
+        q_spectrums, l_documents, True)
+    assert q_documents_2 == q_documents, "Expected output to be the same"
+    assert l_documents_2 == l_documents, "Expected output to be the same"
 
 
 def test_get_example_library_matches():
