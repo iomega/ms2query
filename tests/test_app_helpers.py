@@ -144,8 +144,8 @@ def test_do_spectrum_processing():
         .metadata["spectrum_id"]
     q_documents_2, l_documents_2 = do_spectrum_processing(
         q_spectrums, l_documents, True)
-    assert q_documents_2 == q_documents, "Expected output to be the same"
-    assert l_documents_2 == l_documents, "Expected output to be the same"
+    assert q_documents_2[0] == q_documents[0], "Expected output to be the same"
+    assert l_documents_2[0] == l_documents[0], "Expected output to be the same"
 
 
 def test_get_example_library_matches():
