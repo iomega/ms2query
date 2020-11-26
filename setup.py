@@ -35,6 +35,8 @@ setup(
         "pydot",
         "networkx",
         "plotly",
+        "h5py<3.0.0",
+        "tensorflow==2.1.0",
     ],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",
