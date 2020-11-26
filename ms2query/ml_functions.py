@@ -47,7 +47,7 @@ def find_info_matches(matches: List[pd.DataFrame],
         print("""If you want to transform the masses, please provide a
         max_parent_mass""")
         return None
-    elif max_parent_mass:
+    if max_parent_mass:
         print('Max parent mass:', max_parent_mass)
 
     for query_id, document_query in enumerate(documents_query):
