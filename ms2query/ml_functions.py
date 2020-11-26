@@ -1,8 +1,9 @@
 import pandas as pd
-from typing import Union, List
+from typing import Union, List, Tuple
 from spec2vec import SpectrumDocument
 
 
+# pylint: disable=protected-access
 def find_info_matches(matches: List[pd.DataFrame],
                       documents_library: List[SpectrumDocument],
                       documents_query: List[SpectrumDocument],
@@ -38,7 +39,6 @@ def find_info_matches(matches: List[pd.DataFrame],
         where The similarity in dalton is calculated and transformed into a
         value 0-1 by doing 1 - base_num^diff_in_dalton
     """
-    # pylint: disable=protected-access
     matches_with_info = []
     if add_mass_transform and not max_parent_mass:
         print("""If you want to transform the masses, please provide a
@@ -70,76 +70,19 @@ def find_info_matches(matches: List[pd.DataFrame],
     return matches_with_info
 
 
-def find_inchikey_match(matches, documents_library, query_inchi):
-    '''To each match in the matches df, add label for matching inchikey (1) or non-matching (0)
-
-    matches: pandas DataFrame, library matching result of 1 query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    query_inchi: str, first 14 symbols of query inchikey
-    df: pandas DataFrame, library matching result of query on library with matching labels
-    '''
-    matches_with_labels = []
-    df = matches.copy()
-    library_ids = df.index.values
-    labels = []
-    for lib_id in library_ids:
-        lib_inchi = documents_library[lib_id]._obj.get("inchikey")[:14]
-        lab = 0
-        if query_inchi == lib_inchi:
-            lab = 1
-        labels.append(lab)
-    df['label'] = labels
-    return df
-
-
-def find_mass_matches(matches, documents_library, query_mass, bins=[2, 5],
-                      calc_change=False):
-    '''
-    To each match in matches df, add the mass change of query to match in bins or a percentage change
-
-    matches: pandas DataFrame, library matching result of 1 query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    query_mass: float, parent mass of query
-    bins: list of int/float, the cutoff for the mass change, will result in boolean columns,
-        i.e. if a cutoff is 2 there will be a column with 1 (true) or 0 (false) for if the mass change
-        is within 2
-    calc_change: bool, instead of bins add a percentage change of the parent mass difference
-    df: pandas DataFrame, library matching result of 1 query on library with mass matches
-    '''
-    range_bins = range(len(bins))  # calc once
-    df = matches.copy()
-    library_ids = df.index.values
-    masses = [[] for _ in range_bins]  # initialise
-    mass_changes = []
-    for lib_id in library_ids:
-        lib_mass = documents_library[lib_id]._obj.get("parent_mass")
-        if calc_change:  # calculate a percentage change in parent mass instead of discrete bins
-            perc_change = abs(lib_mass - query_mass) / query_mass * 100
-            mass_changes.append(perc_change)
-        else:
-            for bin_i in range_bins:
-                cutoff = bins[bin_i]
-                lab = 0
-                if abs(query_mass - lib_mass) < cutoff:
-                    lab = 1
-                masses[bin_i].append(lab)
-    # add to df
-    if calc_change:
-        df['perc_mass_change'] = mass_changes
-    else:
-        for bin_i in range_bins:
-            df['mass_match_' + str(bins[bin_i])] = masses[bin_i]
-    return df
-
-
-def find_basic_info(matches, documents_library, add_cols=['parent_mass']):
-    '''
+def find_basic_info(matches: pd.DataFrame,
+                    documents_library: List[SpectrumDocument],
+                    add_cols: Union[List[str], Tuple[str]] = ('parent_mass',)):
+    """
     To each match in matches df, add the info from add_cols entries
 
-    matches: pandas DataFrame, library matching result of 1 query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    df: pandas DataFrame, library matching result of 1 query on library with added info
-    '''
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    add_cols:
+        List of the metadata categories to add as columns
+    """
     df = matches.copy()
     library_ids = df.index.values
     if add_cols:
