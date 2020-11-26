@@ -9,7 +9,7 @@ from matchms.filtering import select_by_mz
 from matchms.filtering import select_by_relative_intensity
 from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
-from matchms.similarity import CosineGreedy, ModifiedCosine, ParentmassMatch
+from matchms.similarity import CosineGreedy, ModifiedCosine, ParentMassMatch
 from spec2vec import SpectrumDocument
 from spec2vec import Spec2Vec
 
@@ -200,7 +200,8 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                library_ids: Union[List[int], np.ndarray],
                                presearch_based_on: List[str] = (
                                        "parentmass", "spec2vec-top10"),
-                               mass_tolerance: float = 1.0):
+                               mass_tolerance: float = 1.0,
+                               mass_tolerance_type: str = "Dalton"):
     """
     Returns (list, ndarray) of parent mass matching library IDs, s2v scores
 
@@ -229,7 +230,7 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
     m_mass_matches = None
 
     if "parentmass" in presearch_based_on:
-        mass_matching = ParentmassMatch(mass_tolerance)
+        mass_matching = ParentMassMatch(mass_tolerance)
         m_mass_matches = mass_matching.matrix(
             [documents_library[i]._obj for i in library_ids],
             [x._obj for x in documents_query])
