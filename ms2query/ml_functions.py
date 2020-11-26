@@ -41,12 +41,13 @@ def find_info_matches(matches: List[pd.DataFrame],
         where The similarity in dalton is calculated and transformed into a
         value 0-1 by doing 1 - base_num^diff_in_dalton
     """
+    # pylint: disable=too-many-arguments
     matches_with_info = []
     if add_mass_transform and not max_parent_mass:
         print("""If you want to transform the masses, please provide a
         max_parent_mass""")
         return None
-    else:
+    elif max_parent_mass:
         print('Max parent mass:', max_parent_mass)
 
     for query_id, document_query in enumerate(documents_query):
