@@ -18,6 +18,8 @@ def find_info_matches(matches: List[pd.DataFrame],
     Existing values can be transformed between 0-1. List of matches is returned
     in the same order but with altered/new columns
 
+    Args:
+    -------
     matches:
         Library matching result of query on library
     documents_library:
@@ -76,6 +78,8 @@ def find_basic_info(matches: pd.DataFrame,
     """
     To each match in matches df, add the info from add_cols entries
 
+    Args:
+    -------
     matches:
         Library matching result of 1 query on library
     documents_library:
@@ -98,6 +102,8 @@ def find_basic_info(matches: pd.DataFrame,
 def transform_num_matches(matches: pd.DataFrame):
     """Transform the cosine_matches and mod_cosine_matches to between 0-1
 
+    Args:
+    -------
     matches:
         Library matching result of 1 query on library, must contain
         cosine_matches and mod_cosinge_matches columns
@@ -118,6 +124,8 @@ def find_mass_similarity(matches: pd.DataFrame,
     """
     Add scaled value 0-1 mass_sim of how similar match parent mass is to query
 
+    Args:
+    -------
     matches:
         Library matching result of 1 query on library
     documents_library:
