@@ -5,6 +5,7 @@ from ms2query.s2v_functions import process_spectrums
 from ms2query.ml_functions import find_basic_info
 from ms2query.ml_functions import transform_num_matches
 from ms2query.ml_functions import find_mass_similarity
+from ms2query.ml_functions import find_info_matches
 
 
 def test_find_basic_info():
@@ -51,3 +52,34 @@ def test_find_mass_similarity():
         "Expected mass_sim to be added as a column"
     assert isinstance(new_test_matches["mass_sim"].iloc[0], float), \
         "Expected mass_sim to contain floats"
+
+
+def test_find_info_matches():
+    """Test find_info_matches"""
+    path_tests = os.path.dirname(__file__)
+    testfile_q = os.path.join(path_tests, "testspectrum_query.json")
+    spectrums_q = json_loader(open(testfile_q))
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_q = process_spectrums(spectrums_q)
+    documents_l = process_spectrums(spectrums_l)
+    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
+    test_matches = pd.read_csv(test_matches_file, index_col=0)
+    new_test_matches = find_info_matches(
+        [test_matches], documents_q, documents_l, add_mass_transform=True,
+        max_parent_mass=1000.)
+    assert isinstance(new_test_matches, list), \
+        "Expected output to be list"
+    assert isinstance(new_test_matches[0], pd.DataFrame), \
+        "Expected output to be df"
+    assert "mass_sim" in new_test_matches[0].columns, \
+        "Expected mass_sim to be added as a column"
+    assert isinstance(new_test_matches[0]["mass_sim"].iloc[0], float), \
+        "Expected mass_sim to contain floats"
+    assert isinstance(new_test_matches[0]["cosine_matches"].iloc[0], float), \
+        "Expected cosine matches to contain floats now"
+    assert isinstance(
+        new_test_matches[0]["mod_cosine_matches"].iloc[0], float), \
+        "Expected mod cosine matches to contain floats now"
+    assert "parent_mass" in new_test_matches[0].columns, \
+        "Expected parent_mass to be added as a column"
