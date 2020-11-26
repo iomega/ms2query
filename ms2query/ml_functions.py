@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Union, List, Tuple
 from spec2vec import SpectrumDocument
+from tensorflow.keras.models import load_model
 
 
 # pylint: disable=protected-access
@@ -151,3 +152,32 @@ def find_mass_similarity(matches: pd.DataFrame,
     # add to df
     df['mass_sim'] = scaled_mass_sims
     return df
+
+
+def nn_predict_on_matches(matches: pd.DataFrame,
+                          documents_library: List[SpectrumDocument],
+                          documents_query: List[SpectrumDocument],
+                          model_path: str,
+                          max_parent_mass: float) -> List[float]:
+    """Returns predicted tanimoto scores from the model in order of lib matches
+
+    Args:
+    ------
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    documents_query:
+        Spectra in query set. Indices should correspond to indices of matches.
+    model_path:
+        Path to neural network
+    max_parent_mass:
+        The maximum parent mass used in the model, read from model_metadata
+        file
+    """
+    model = load_model(model_path)
+    prepped_matches = find_info_matches(
+        [matches], documents_library, documents_query, add_mass_transform=True,
+        max_parent_mass=max_parent_mass)
+    predictions = model.predict(prepped_matches)
+    return predictions
