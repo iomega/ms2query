@@ -1,57 +1,56 @@
-from rdkit import Chem, DataStructs
+import pandas as pd
+from typing import Union, List
+from spec2vec import SpectrumDocument
 
 
-def find_info_matches(matches, documents_library, documents_query,
-                      add_label=True, add_tanimoto_sim=True, add_cols=False,
-                      add_num_matches_transform=True, add_mass_transform=True,
-                      max_parent_mass=False, add_mass_similarity=True):
-    '''
-    To each df in matches, add more info like tanimoto scores vs query etc.
+def find_info_matches(matches: List[pd.DataFrame],
+                      documents_library: List[SpectrumDocument],
+                      documents_query: List[SpectrumDocument],
+                      add_cols: List[str] = None,
+                      add_num_matches_transform: bool = True,
+                      add_mass_transform: bool = False,
+                      max_parent_mass: float = None,
+                      add_mass_similarity=True):
+    """
+    To each df in matches, add/alter info like similarity of parent masses
 
-    A matching inchikey gets label 1 and non-matching 0.
+    Existing values can be transformed between 0-1. List of matches is returned
+    in the same order but with altered/new columns
 
-    matches: list of pandas DataFrames, library matching result of query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    documents_query: list of SpectrumDocuments, spectra in query set.
-        Indices should correspond to indices of matches.
-    bins: list of int/float, the cutoff for the mass change, will result in boolean columns,
-        i.e. if a cutoff is 2 there will be a column with 1 (true) or 0 (false) for if the mass change
-        is within 2
-    calc_change: bool, instead of bins add a percentage change of the parent mass difference
-    add_label: bool, add a label for inchikey match or not
-    add_tanimoto_sim: bool, add tanimoto similarity or not
-    add_cols: bool/list of str, add other info present in metadata such as parent_mass, adduct
-        default: False
-    add_num_matches_transform: bool, transform cosine and mod_cosine matches to a number 0-1.
-        both matches are transformed to between 0-1 by doing 1-0.93^num_matches
-    add_mass_transform: bool, add transform of the parent masses to a fraction of the maximal parent mass
-    max_parent_mass: int/float, the maximum parent mass in the dataset, default = False
-    add_mass_similarity: bool, add similarity of parent mass to the query as a scaled number from 0-1
-        where The similarity in dalton is calculated and transformed into a value 0 - 1 by doing
-        1 - base_num^diff_in_dalton
-
-    Output
-    matches_with_info: list of pandas DataFrames, library matching result of query
-        on library with matching labels
-    '''
+    matches:
+        Library matching result of query on library
+    documents_library:
+        Spectra in library
+    documents_query:
+        Spectra in query set. Indices should correspond to indices of matches.
+    add_cols:
+        Add other info present in metadata such as parent_mass, adduct
+    add_num_matches_transform:
+        Transform cosine and mod_cosine matches to a number 0-1. Both matches
+        are transformed to between 0-1 by doing 1-0.93^num_matches
+    add_mass_transform:
+        Add transform of the parent masses to a fraction of the maximal parent
+        mass
+    max_parent_mass:
+        The maximum parent mass in the dataset
+    add_mass_similarity:
+        Add similarity of parent mass to the query as a scaled number from 0-1
+        where The similarity in dalton is calculated and transformed into a
+        value 0-1 by doing 1 - base_num^diff_in_dalton
+    """
+    # pylint: disable=protected-access
     matches_with_info = []
     if add_mass_transform and not max_parent_mass:
-        print(
-            "If you want to transform the masses, please provide a max_parent_mass")
-        return
+        print("""If you want to transform the masses, please provide a
+        max_parent_mass""")
+        return None
     else:
         print('Max parent mass:', max_parent_mass)
 
-    for query_id in range(len(documents_query)):
+    for query_id, document_query in enumerate(documents_query):
         match = matches[query_id].copy()
-        if add_label:
-            query_inchi = documents_query[query_id]._obj.get("inchikey")[:14]
-            match = find_inchikey_match(match, documents_library, query_inchi)
         if add_cols:
             match = find_basic_info(match, documents_library, add_cols)
-        if add_tanimoto_sim:
-            query_smiles = documents_query[query_id]._obj.get("smiles")
-            match = find_tanimoto_sim(match, documents_library, query_smiles)
         if add_num_matches_transform:
             match = transform_num_matches(match)
         if add_mass_transform:
@@ -63,7 +62,7 @@ def find_info_matches(matches, documents_library, documents_query,
         if add_mass_similarity:
             if 'mass_match' in match:
                 match.drop(['mass_match'], axis=1, inplace=True)
-            q_mass = documents_query[query_id]._obj.get("parent_mass")
+            q_mass = document_query._obj.get("parent_mass")
             match = find_mass_similarity(match, documents_library, q_mass,
                                          base_num=0.8)
 
