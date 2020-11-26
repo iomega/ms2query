@@ -3,6 +3,7 @@ import pandas as pd
 from ms2query.utils import json_loader
 from ms2query.s2v_functions import process_spectrums
 from ms2query.ml_functions import find_basic_info
+from ms2query.ml_functions import transform_num_matches
 
 
 def test_find_basic_info():
@@ -18,3 +19,17 @@ def test_find_basic_info():
         "Expected output to be df"
     assert "parent_mass" in new_test_matches.columns,\
         "Expected parent_mass to be added as a column"
+
+
+def test_transform_num_matches():
+    """Test transform_num_matches"""
+    path_tests = os.path.dirname(__file__)
+    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
+    test_matches = pd.read_csv(test_matches_file, index_col=0)
+    new_test_matches = transform_num_matches(test_matches)
+    assert isinstance(new_test_matches, pd.DataFrame),\
+        "Expected output to be df"
+    assert isinstance(new_test_matches["cosine_matches"].iloc[0], float),\
+        "Expected cosine matches to contain floats now"
+    assert isinstance(new_test_matches["mod_cosine_matches"].iloc[0], float), \
+        "Expected mod cosine matches to contain floats now"
