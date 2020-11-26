@@ -200,8 +200,7 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                library_ids: Union[List[int], np.ndarray],
                                presearch_based_on: List[str] = (
                                        "parentmass", "spec2vec-top10"),
-                               mass_tolerance: float = 1.0,
-                               mass_tolerance_type: str = "Dalton"):
+                               mass_tolerance: float = 1.0):
     """
     Returns (list, ndarray) of parent mass matching library IDs, s2v scores
 
