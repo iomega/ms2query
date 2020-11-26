@@ -11,7 +11,7 @@ def find_info_matches(matches: List[pd.DataFrame],
                       add_num_matches_transform: bool = True,
                       add_mass_transform: bool = False,
                       max_parent_mass: float = None,
-                      add_mass_similarity=True):
+                      add_mass_similarity: bool = True):
     """
     To each df in matches, add/alter info like similarity of parent masses
 
