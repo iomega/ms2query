@@ -95,72 +95,41 @@ def find_basic_info(matches: pd.DataFrame,
     return df
 
 
-def find_tanimoto_sim(matches, documents_library, query_smiles):
-    '''To each match in matches df, add the tanimoto similarity between query and match
+def transform_num_matches(matches: pd.DataFrame):
+    """Transform the cosine_matches and mod_cosine_matches to between 0-1
 
-    matches: pandas DataFrame, library matching result of 1 query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    df: pandas DataFrame, library matching result of 1 query on library with tanimoto similarities
-    '''
-    df = matches.copy()
-    sims = []
-    library_ids = df.index.values
-
-    if not query_smiles or query_smiles == "None":  # check that query smiles exist
-        df['similarity'] = [0] * len(
-            library_ids)  # default to all 0 if it doesnt exist
-        return df
-    ms_q = Chem.MolFromSmiles(query_smiles)
-    if not ms_q:  # in case something is wrong with smiles
-        df['similarity'] = [0] * len(
-            library_ids)  # default to all 0 if it doesnt exist
-        return df
-
-    fp_q = Chem.RDKFingerprint(ms_q)
-    for lib_id in library_ids:
-        smiles_lib = documents_library[lib_id]._obj.get("smiles")
-        if smiles_lib and smiles_lib != "None":
-            ms_lib = Chem.MolFromSmiles(smiles_lib)
-            if ms_lib:
-                fp_lib = Chem.RDKFingerprint(ms_lib)
-                score = DataStructs.FingerprintSimilarity(fp_q, fp_lib)
-            else:  # in case something is wrong with smiles
-                score = 0
-        else:  # in case it doesnt have smiles
-            score = 0
-        sims.append(score)
-    df['similarity'] = sims
-    return df
-
-
-def transform_num_matches(input_df, exp=0.93):
-    '''Transform the cosine_matches and mod_cosine_matches to between 0-1
-
-    input_df: pandas DataFrame, spec2vec matches for one query
-    exp: int, the base for the exponential, default: 0.93
+    matches:
+        Library matching result of 1 query on library, must contain
+        cosine_matches and mod_cosinge_matches columns
 
     Both matches are transformed to between 0-1 by doing 1-0.93^num_matches
-    '''
-    df = input_df.copy()  # otherwise it edits the df outside the function
+    """
+    df = matches.copy()  # otherwise it edits the df outside the function
     df['cosine_matches'] = [(1 - 0.93 ** i) for i in df['cosine_matches']]
     df['mod_cosine_matches'] = [(1 - 0.93 ** i) for i in
                                 df['mod_cosine_matches']]
     return df
 
 
-def find_mass_similarity(matches, documents_library, query_mass, base_num=0.8):
-    '''
-    To each match in matches df, add a scaled value for how similar the parent_mass is to the query
+def find_mass_similarity(matches: pd.DataFrame,
+                         documents_library: List[SpectrumDocument],
+                         query_mass: float,
+                         base_num: float = 0.8):
+    """
+    Add scaled value 0-1 mass_sim of how similar match parent mass is to query
 
-    matches: pandas DataFrame, library matching result of 1 query on library
-    documents_library: list of SpectrumDocuments, spectra in library
-    query_mass: float, parent mass of query
-    base_num: float, the base for the exponent
-    df: pandas DataFrame, library matching result of 1 query on library with mass sims
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    query_mass:
+        Parent mass of query
+    base_num:
+        The base for the exponent
 
-    The similarity in dalton is calculated and transformed into a value 0 - 1 by doing
-    1 - base_num^diff_in_dalton
-    '''
+    The similarity in dalton is calculated and transformed into a value 0 - 1
+    by doing 1 - base_num^diff_in_dalton
+    """
     df = matches.copy()
     library_ids = df.index.values
     scaled_mass_sims = []
