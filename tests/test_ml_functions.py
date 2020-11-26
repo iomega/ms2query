@@ -66,7 +66,7 @@ def test_find_info_matches():
     test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
     test_matches = pd.read_csv(test_matches_file, index_col=0)
     new_test_matches = find_info_matches(
-        [test_matches], documents_q, documents_l, add_mass_transform=True,
+        [test_matches], documents_l, documents_q, add_mass_transform=True,
         max_parent_mass=1000.)
     assert isinstance(new_test_matches, list), \
         "Expected output to be list"
