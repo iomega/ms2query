@@ -502,7 +502,8 @@ def get_nn_predictions(matches: pd.DataFrame,
                        cutoff: float = 0.6):
     """Returns matches with certainty_score column with nn predictions
 
-    Rows below cutoff are coloured red
+    Another column is added called probable_match which has a 1 or 0 value
+    corresponding to the prediction being above or below the provided cutoff.
 
     Args:
     -------
@@ -512,6 +513,8 @@ def get_nn_predictions(matches: pd.DataFrame,
         Spectra in library
     documents_query:
         Spectra in query set. Indices should correspond to indices of matches.
+    cutoff:
+        Value which determines when a match is probable based on prediction
     """
     base_name = os.path.split(os.path.dirname(__file__))[0]
     csv_name = os.path.join(base_name, "model", "model_info.csv")
@@ -528,6 +531,7 @@ def get_nn_predictions(matches: pd.DataFrame,
 
 
 def highlight_probable_matches(s):
+    """Function for styling the rows of the matches df"""
     if s.probable_match == 0:
         return ['background-color: #ffdfdd'] * s.shape[0]
     return ['background-color: white'] * s.shape[0]

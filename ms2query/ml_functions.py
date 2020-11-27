@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from typing import Union, List, Tuple
 from spec2vec import SpectrumDocument
@@ -158,7 +159,7 @@ def nn_predict_on_matches(matches: pd.DataFrame,
                           documents_library: List[SpectrumDocument],
                           documents_query: List[SpectrumDocument],
                           model_path: str,
-                          max_parent_mass: float) -> List[float]:
+                          max_parent_mass: float) -> np.ndarray:
     """Returns predicted tanimoto scores from the model in order of lib matches
 
     Args:
