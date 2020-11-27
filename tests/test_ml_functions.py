@@ -101,9 +101,9 @@ def test_nn_predict_on_matches():
     base_name = os.path.split(path_tests)[0]
     csv_name = os.path.join(base_name, "model", "model_info.csv")
     csv_dict = csv2dict(csv_name)
-    max_pmass = int(csv_dict["max_parent_mass"][0])
-    model_name = os.path.join(base_name, "model",
-                                         "nn_2000_queries_trimming_simple_10")
+    max_pmass = float(csv_dict["max_parent_mass"][0])
+    model_name = os.path.join(
+        base_name, "model", "nn_2000_queries_trimming_simple_10.hdf5")
     predictions = nn_predict_on_matches(
         test_matches, documents_l, documents_q, model_name, max_pmass)
     assert isinstance(predictions, list), "Expected output to be list"

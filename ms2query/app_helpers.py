@@ -10,10 +10,12 @@ from gensim.models import Word2Vec
 from gensim.models.basemodel import BaseTopicModel
 from urllib.request import urlretrieve
 from ms2query.utils import json_loader
+from ms2query.utils import csv2dict
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
+from ms2query.ml_functions import nn_predict_on_matches
 
 
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
@@ -397,21 +399,28 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         def_show_topn = len(documents_library)
     cols = st.beta_columns([1, 4])
     with cols[0]:
-        show_topn = int(st.text_input("Show top n matches",
-                                      value=def_show_topn))
+        show_topn = int(
+            st.text_input("Show top n matches", value=def_show_topn))
+
     documents_library_class = DocumentsLibrary(documents_library)
     found_matches_s2v = cached_library_matching(
         documents_query, documents_library_class, model, topn, lib_num,
         model_num)
 
     if found_matches_s2v:
-        first_found_match = found_matches_s2v[0]
+        first_found_match = found_matches_s2v[0].copy()  # to maintain caching
+        do_nn_predictions = st.checkbox(
+            "Remove uncertain matches with deep learning")
+        if do_nn_predictions:
+            first_found_match = get_nn_predictions(
+                first_found_match, documents_library, documents_query)
         # make s2v_score first column
         df_cols = first_found_match.columns.to_list()
         new_cols = df_cols[-1:] + df_cols[:-1]
         first_found_match = first_found_match.reindex(columns=new_cols)
         first_found_match = first_found_match.sort_values(
             "s2v_score", ascending=False)
+        st.text("")  # white line
         st.write("These are the library matches for your query:")
         st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
@@ -477,6 +486,36 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
         presearch_based_on=[f"spec2vec-top{topn}", "parentmass"],
         **{"allowed_missing_percentage": 100})
     return found_matches_s2v
+
+
+def get_nn_predictions(matches: pd.DataFrame,
+                       documents_library: List[SpectrumDocument],
+                       documents_query: List[SpectrumDocument],
+                       cutoff: float = 0.6):
+    """Returns matches with certainty_score column with nn predictions
+
+    Rows below cutoff are coloured red
+
+    Args:
+    -------
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    documents_query:
+        Spectra in query set. Indices should correspond to indices of matches.
+    """
+    base_name = os.path.split(os.path.dirname(__file__))[0]
+    csv_name = os.path.join(base_name, "model", "model_info.csv")
+    csv_dict = csv2dict(csv_name)
+    max_pmass = float(csv_dict["max_parent_mass"][0])
+    model_file = os.path.join(base_name, "model",
+                              "nn_2000_queries_trimming_simple_10.hdf5")
+    predictions = nn_predict_on_matches(
+        matches, documents_library, documents_query, model_file, max_pmass)
+    matches["certainty_score"] = predictions
+
+    return matches
 
 
 def get_library_similarities(found_match: pd.DataFrame,
