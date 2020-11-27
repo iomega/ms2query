@@ -420,11 +420,17 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         s2v_sc = [df_cols.pop(s2v_i)]
         new_cols = s2v_sc + df_cols
         first_found_match = first_found_match.reindex(columns=new_cols)
-        first_found_match = first_found_match.sort_values(
-            "s2v_score", ascending=False)
         st.text("")  # white line
         st.write("These are the library matches for your query:")
-        st.dataframe(first_found_match.iloc[:show_topn])
+        if do_nn_predictions:
+            first_found_match = first_found_match.sort_values(
+                ["probable_match", "s2v_score"], ascending=False)
+            st.dataframe(first_found_match.iloc[:show_topn].style.apply(
+                highlight_probable_matches, axis=1))
+        else:
+            first_found_match = first_found_match.sort_values(
+                "s2v_score", ascending=False)
+            st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
     return None
 
@@ -516,8 +522,15 @@ def get_nn_predictions(matches: pd.DataFrame,
     predictions = nn_predict_on_matches(
         matches, documents_library, documents_query, model_file, max_pmass)
     matches["certainty_score"] = predictions
+    matches["probable_match"] = [int(pred >= cutoff) for pred in predictions]
 
     return matches
+
+
+def highlight_probable_matches(s):
+    if s.probable_match == 0:
+        return ['background-color: #ffdfdd'] * s.shape[0]
+    return ['background-color: white'] * s.shape[0]
 
 
 def get_library_similarities(found_match: pd.DataFrame,
