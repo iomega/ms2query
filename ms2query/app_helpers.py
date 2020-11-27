@@ -404,16 +404,15 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         documents_query, documents_library_class, model, topn, lib_num,
         model_num)
 
-    st.write("These are the library matches for your query")
     if found_matches_s2v:
         first_found_match = found_matches_s2v[0]
-
         # make s2v_score first column
-        cols = first_found_match.columns.to_list()
-        new_cols = cols[-1:] + cols[:-1]
+        df_cols = first_found_match.columns.to_list()
+        new_cols = df_cols[-1:] + df_cols[:-1]
         first_found_match = first_found_match.reindex(columns=new_cols)
         first_found_match = first_found_match.sort_values(
             "s2v_score", ascending=False)
+        st.write("These are the library matches for your query:")
         st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
     return None
