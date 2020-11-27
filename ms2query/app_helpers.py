@@ -673,7 +673,7 @@ def make_network_plot(found_match: pd.DataFrame,
         attr_key = st.selectbox("Choose parameter", found_match.columns,
                                 index=0)
         attr_data = found_match[attr_key]
-        if isinstance(attr_data.iloc[0], float):
+        if isinstance(attr_data.iloc[0], (float, np.float32)):
             # true for s2v, cosine etc
             min_v, max_v, step, val = (0., 1., 0.05, 0.4)
         elif max(attr_data) >= 1:
