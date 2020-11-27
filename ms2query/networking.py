@@ -153,11 +153,13 @@ def plotly_network(network: nx.Graph,
     # Detect not attached nodes
     nodes_detached = []
     for node in network.nodes:
-        if not str(node).startswith("query") and not nx.has_path(network, q_node, node):
+        if not str(node).startswith("query") and not nx.has_path(network,
+                                                                 q_node, node):
             nodes_detached.append(node)
 
     # Update network
-    network = network.subgraph([node for node in network.nodes if node not in nodes_detached])
+    network = network.subgraph([node for node in network.nodes if node not in
+                                nodes_detached])
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
                       'tanimoto' in d]
     library_edges = [(u, v, d) for u, v, d in library_edges if
@@ -195,6 +197,8 @@ def plotly_network(network: nx.Graph,
     nodes_x = []
     nodes_y = []
     nodes_type = []
+    do_non_cands = ("probable_match" in
+                    network[q_node][list(network[q_node])[0]])
     for node in network.nodes():
         x, y = pos[node]
         nodes_x.append(x)
@@ -202,13 +206,20 @@ def plotly_network(network: nx.Graph,
         if isinstance(node, str) and "query" in node:
             nodes_type.append("query")
         else:
-            nodes_type.append("candidate")
+            if not do_non_cands:
+                nodes_type.append("candidate")
+            else:
+                edge_w_query = network[node].get(q_node)
+                if edge_w_query:
+                    prob_match = network[node][q_node].get("probable_match")
+                    if prob_match == 1:
+                        nodes_type.append("candidate")
+                        continue
+                nodes_type.append("non-candidate")
 
     nodes_label = []
     custom_lab = []
     for node, _ in enumerate(network.adjacency()):
-        # node_adjacencies.append(len(adjacencies[1]))
-        # append(node_lab_dict[node]
         lab_name = list(network.nodes)[node]
         nodes_label.append(lab_name)
         custom_lab.append(node_lab_dict[lab_name])  # read the dict for labels
@@ -236,6 +247,21 @@ def plotly_network(network: nx.Graph,
             color='dodgerblue',
             line_color="white",
             line_width=2))
+
+    if do_non_cands:  # when nn is used to predict
+        node_trace2 = go.Scatter(
+            x=nodes[nodes["type"] == "non-candidate"]["x"],
+            y=nodes[nodes["type"] == "non-candidate"]["y"],
+            mode='markers',
+            text=nodes[nodes["type"] == "non-candidate"]["label"],
+            customdata=nodes[nodes["type"] == "non-candidate"]["custom_label"],
+            hovertemplate="%{text}" + custom_str + "<extra></extra>",
+            name="unlikely candidates",
+            marker=dict(
+                size=40,
+                color="#888",
+                line_color="white",
+                line_width=2))
 
     node_trace_query = go.Scatter(
         x=nodes[nodes["type"] == "query"]["x"],
@@ -270,9 +296,10 @@ def plotly_network(network: nx.Graph,
             pad=4,
         )
     )
-
-    fig = go.Figure(data=edge_trace + [node_trace, node_trace_query],
-                    layout=layout)
+    all_traces = edge_trace + [node_trace_query, node_trace]
+    if do_non_cands:
+        all_traces.append(node_trace2)
+    fig = go.Figure(data=all_traces, layout=layout)
     return fig
 
 
