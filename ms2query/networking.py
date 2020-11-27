@@ -138,7 +138,7 @@ def plotly_network(network: nx.Graph,
     width_default:
         The max width of the edges
     """
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-statements
     library_edges = [(u, v, d) for u, v, d in network.edges(data=True) if
                      'tanimoto' in d]
     library_edges = [(u, v, d) for u, v, d in library_edges if
