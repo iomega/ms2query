@@ -107,7 +107,6 @@ def test_nn_predict_on_matches():
         base_name, "model", "nn_2000_queries_trimming_simple_10.hdf5")
     predictions = nn_predict_on_matches(
         test_matches, documents_l, documents_q, model_name, max_pmass)
-    assert isinstance(predictions, np.ndarray), "Expected output to be list"
-    assert isinstance(predictions[0], float), "Expected output to be float"
+    assert isinstance(predictions, np.ndarray), "Expected output to be array"
     assert len(predictions) == test_matches.shape[0],\
         "Expected same number of predictions as number of rows"
