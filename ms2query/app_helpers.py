@@ -416,7 +416,9 @@ def get_library_matches(documents_query: List[SpectrumDocument],
                 first_found_match, documents_library, documents_query)
         # make s2v_score first column
         df_cols = first_found_match.columns.to_list()
-        new_cols = df_cols[-1:] + df_cols[:-1]
+        s2v_i = [i for i, col in enumerate(df_cols) if col == "s2v_score"][0]
+        s2v_sc = [df_cols.pop(s2v_i)]
+        new_cols = s2v_sc + df_cols
         first_found_match = first_found_match.reindex(columns=new_cols)
         first_found_match = first_found_match.sort_values(
             "s2v_score", ascending=False)
