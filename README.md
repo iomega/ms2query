@@ -2,17 +2,25 @@
 ![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
 
-# ms2query
-MS2Query - machine learning assisted library querying of MS/MS spectra.
+<img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="200">
 
-## Prepare environmnent
+### MS2Query - machine learning assisted library querying of MS/MS spectra.
+MS2Query is a tool for searching for chemically related compounds based on only MS/MS spectra information. 
+
+## Local installation of MS2Query
+### Prepare environmnent
 We recommend to create an Anaconda environment with
 
 ```
 conda create --name ms2query python=3.7
 conda activate ms2query
 ```
-And then install the required dependencies, e.g. by running the following from the cloned directory
+### Clone repository
+Clone the present repository, e.g. by running
+```
+git clone https://github.com/iomega/ms2query.git
+```
+And then install the required dependencies, e.g. by running the following from within the cloned directory
 ```
 pip install -e
 ```
