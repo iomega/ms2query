@@ -1,11 +1,13 @@
 import os
 import pandas as pd
 from ms2query.utils import json_loader
+from ms2query.utils import csv2dict
 from ms2query.s2v_functions import process_spectrums
 from ms2query.ml_functions import find_basic_info
 from ms2query.ml_functions import transform_num_matches
 from ms2query.ml_functions import find_mass_similarity
 from ms2query.ml_functions import find_info_matches
+from ms2query.ml_functions import nn_predict_on_matches
 
 
 def test_find_basic_info():
@@ -83,3 +85,28 @@ def test_find_info_matches():
         "Expected mod cosine matches to contain floats now"
     assert "parent_mass" in new_test_matches[0].columns, \
         "Expected parent_mass to be added as a column"
+
+
+def test_nn_predict_on_matches():
+    """Test nn_predict_on_matches"""
+    path_tests = os.path.dirname(__file__)
+    testfile_q = os.path.join(path_tests, "testspectrum_query.json")
+    spectrums_q = json_loader(open(testfile_q))
+    testfile_l = os.path.join(path_tests, "testspectrum_library.json")
+    spectrums_l = json_loader(open(testfile_l))
+    documents_q = process_spectrums(spectrums_q)
+    documents_l = process_spectrums(spectrums_l)
+    test_matches_file = os.path.join(path_tests, "test_found_matches.csv")
+    test_matches = pd.read_csv(test_matches_file, index_col=0)
+    base_name = os.path.split(path_tests)[0]
+    csv_name = os.path.join(base_name, "model", "model_info.csv")
+    csv_dict = csv2dict(csv_name)
+    max_pmass = int(csv_dict["max_parent_mass"][0])
+    model_name = os.path.join(base_name, "model",
+                                         "nn_2000_queries_trimming_simple_10")
+    predictions = nn_predict_on_matches(
+        test_matches, documents_l, documents_q, model_name, max_pmass)
+    assert isinstance(predictions, list), "Expected output to be list"
+    assert isinstance(predictions[0], float), "Expected output to be float"
+    assert len(predictions) == test_matches.shape[0],\
+        "Expected same number of predictions as number of rows"
