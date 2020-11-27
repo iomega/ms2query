@@ -390,6 +390,7 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         it is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    # pylint: disable=too-many-locals
     topn = 100  # assume that user will never want to see more than 100 matches
     if len(documents_library) < topn:
         topn = len(documents_library)  # so it doesn't crash with small libs
