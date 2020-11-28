@@ -77,12 +77,12 @@ elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)
 
+# Sidebar footer
 logo_html = '<img src="https://github.com/iomega/ms2query/raw/main/images/ms2query_logo.svg" width="200">'
 st.sidebar.markdown(
     logo_html, unsafe_allow_html=True,
 )
 
-# Sidebar footer
 sidebar_footer = """
 Code: [MS2Query on GitHub](https://github.com/iomega/ms2query)  
 Developed by Joris Louwen, Justin JJ van der Hooft, Florian Huber  
