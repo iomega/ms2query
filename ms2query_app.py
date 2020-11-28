@@ -86,6 +86,7 @@ st.sidebar.markdown(
 sidebar_footer = """
 Code: [MS2Query on GitHub](https://github.com/iomega/ms2query)  
 Developed by Joris Louwen, Justin JJ van der Hooft, Florian Huber  
+Liscence: [Apache 2.0](https://github.com/iomega/ms2query/raw/main/LICENSE)  
 References:
 [matchms](https://github.com/matchms/matchms)
 [Spec2Vec](https://github.com/iomega/spec2vec)
