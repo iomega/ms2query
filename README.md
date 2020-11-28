@@ -22,7 +22,7 @@ git clone https://github.com/iomega/ms2query.git
 ```
 And then install the required dependencies, e.g. by running the following from within the cloned directory
 ```
-pip install -e
+pip install -e .
 ```
   
 ## Run app locally
