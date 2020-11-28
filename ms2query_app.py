@@ -18,6 +18,12 @@ the sidebar. Query the library and inspect the results!
 st.write("## Input information")
 input_warning_placeholder = st.empty()  # input warning for later
 
+logo_html = '<img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.png" width="200">'
+
+st.sidebar.markdown(
+    logo_html, unsafe_allow_html=True,
+)
+
 # load query spectrum
 query_spectrums = get_query()
 # get the download folder which is user adjustable
