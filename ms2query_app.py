@@ -78,6 +78,7 @@ elif plot_true:  # library matching is not done yet, but plot button is clicked
             library matching.</span></p>""", unsafe_allow_html=True)
 
 # Sidebar footer
+st.sidebar.markdown("___")
 logo_html = '<img src="https://github.com/iomega/ms2query/raw/main/images/ms2query_logo.svg" width="200">'
 st.sidebar.markdown(
     logo_html, unsafe_allow_html=True,
