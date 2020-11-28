@@ -2,7 +2,7 @@
 ![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
 
-<img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="200">
+<img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="280">
 
 ### MS2Query - machine learning assisted library querying of MS/MS spectra.
 MS2Query is a tool for searching for chemically related compounds based on only MS/MS spectra information. 
