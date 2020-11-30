@@ -18,6 +18,7 @@ from ms2query.networking import do_networking
 from ms2query.ml_functions import nn_predict_on_matches
 
 
+# pylint: disable=protected-access
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
     """Return tuple of {test_file_name: full_path}, ['', test_file_name]
 
@@ -415,12 +416,9 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         if do_nn_predictions:
             first_found_match = get_nn_predictions(
                 first_found_match, documents_library, documents_query)
-        # make s2v_score first column
-        df_cols = first_found_match.columns.to_list()
-        s2v_i = [i for i, col in enumerate(df_cols) if col == "s2v_score"][0]
-        s2v_sc = [df_cols.pop(s2v_i)]
-        new_cols = s2v_sc + df_cols
-        first_found_match = first_found_match.reindex(columns=new_cols)
+        # adjust matches columns
+        first_found_match = col_reformatting(first_found_match,
+                                             documents_library)
         st.text("")  # white line
         st.write("These are the library matches for your query:")
         if do_nn_predictions:
@@ -538,6 +536,40 @@ def highlight_likely_related(s):
     return ['background-color: white'] * s.shape[0]
 
 
+def col_reformatting(matches, documents_library):
+    """Adds metadata info to matches and reorders the columns: s2v_score first
+
+    Metadata info is added as strings in the df.
+
+    Args:
+    -------
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    """
+    df_cols = matches.columns.to_list()
+    s2v_i = [i for i, col in enumerate(df_cols) if col == "s2v_score"][0]
+    s2v_sc = [df_cols.pop(s2v_i)]
+    new_cols = s2v_sc + df_cols
+    matches = matches.reindex(columns=new_cols)
+    # add more info in table, compound_name and parent_mass
+    lib_ids = matches.index.to_list()
+    ids = []
+    names = []
+    p_masses = []
+    for lib_id in lib_ids:
+        lib_doc = documents_library[lib_id]
+        ids.append(lib_doc._obj.get("spectrumid"))
+        names.append(lib_doc._obj.get("compound_name"))
+        p_masses.append(f'{lib_doc._obj.get("parent_mass"):.3f}')
+    matches.insert(loc=0, column='parent_mass', value=p_masses)
+    matches.insert(loc=0, column='name', value=names)
+    matches.insert(loc=0, column='spectrum_id', value=ids)
+
+    return matches
+
+
 def get_library_similarities(found_match: pd.DataFrame,
                              documents_library: List[SpectrumDocument],
                              library_num: int,
@@ -556,7 +588,6 @@ def get_library_similarities(found_match: pd.DataFrame,
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
-    # pylint: disable=protected-access
     if library_num == 0:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
