@@ -10,12 +10,15 @@ from gensim.models import Word2Vec
 from gensim.models.basemodel import BaseTopicModel
 from urllib.request import urlretrieve
 from ms2query.utils import json_loader
+from ms2query.utils import csv2dict
 from ms2query.s2v_functions import process_spectrums
 from ms2query.s2v_functions import set_spec2vec_defaults
 from ms2query.s2v_functions import library_matching
 from ms2query.networking import do_networking
+from ms2query.ml_functions import nn_predict_on_matches
 
 
+# pylint: disable=protected-access
 def gather_test_json(test_file_name: str) -> Tuple[dict, list]:
     """Return tuple of {test_file_name: full_path}, ['', test_file_name]
 
@@ -72,6 +75,7 @@ def get_query() -> List[Spectrum]:
 def make_downloads_folder():
     """Return user adjustable download folder, default is ms2query/downloads
     """
+    st.sidebar.text("")
     base_dir = os.path.split(os.path.dirname(__file__))[0]
     out_folder = os.path.join(base_dir, "downloads")
     different_out_folder = st.sidebar.text_input(
@@ -388,6 +392,7 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         it is not hashed and with model_num it is kept into account if the
         model changes.
     """
+    # pylint: disable=too-many-locals
     topn = 100  # assume that user will never want to see more than 100 matches
     if len(documents_library) < topn:
         topn = len(documents_library)  # so it doesn't crash with small libs
@@ -397,19 +402,35 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         def_show_topn = len(documents_library)
     cols = st.beta_columns([1, 4])
     with cols[0]:
-        show_topn = int(st.text_input("Show top n matches",
-                                      value=def_show_topn))
+        show_topn = int(
+            st.text_input("Show top n matches", value=def_show_topn))
+
     documents_library_class = DocumentsLibrary(documents_library)
     found_matches_s2v = cached_library_matching(
         documents_query, documents_library_class, model, topn, lib_num,
         model_num)
 
-    st.write("These are the library matches for your query")
     if found_matches_s2v:
-        first_found_match = found_matches_s2v[0]
-        first_found_match = first_found_match.sort_values(
-            "s2v_score", ascending=False)
-        st.dataframe(first_found_match.iloc[:show_topn])
+        first_found_match = found_matches_s2v[0].copy()  # to maintain caching
+        do_nn_predictions = st.checkbox(
+            "Remove uncertain matches with deep learning")
+        if do_nn_predictions:
+            first_found_match = get_nn_predictions(
+                first_found_match, documents_library, documents_query)
+        # adjust matches columns
+        first_found_match = col_reformatting(first_found_match,
+                                             documents_library)
+        st.text("")  # white line
+        st.write("These are the library matches for your query:")
+        if do_nn_predictions:
+            first_found_match = first_found_match.sort_values(
+                ["likely_related", "s2v_score"], ascending=False)
+            st.dataframe(first_found_match.iloc[:show_topn].style.apply(
+                highlight_likely_related, axis=1))
+        else:
+            first_found_match = first_found_match.sort_values(
+                "s2v_score", ascending=False)
+            st.dataframe(first_found_match.iloc[:show_topn])
         return first_found_match
     return None
 
@@ -475,6 +496,84 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
     return found_matches_s2v
 
 
+def get_nn_predictions(matches: pd.DataFrame,
+                       documents_library: List[SpectrumDocument],
+                       documents_query: List[SpectrumDocument],
+                       cutoff: float = 0.6):
+    """Returns matches with certainty_score column with nn predictions
+
+    Another column is added called likely_related which has a 1 or 0 value
+    corresponding to the prediction being above or below the provided cutoff.
+
+    Args:
+    -------
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    documents_query:
+        Spectra in query set. Indices should correspond to indices of matches.
+    cutoff:
+        Value which determines when a match is probable based on prediction
+    """
+    base_name = os.path.split(os.path.dirname(__file__))[0]
+    csv_name = os.path.join(base_name, "model", "model_info.csv")
+    csv_dict = csv2dict(csv_name)
+    max_pmass = float(csv_dict["max_parent_mass"][0])
+    model_file = os.path.join(base_name, "model",
+                              "nn_2000_queries_trimming_simple_10.hdf5")
+    predictions = nn_predict_on_matches(
+        matches, documents_library, documents_query, model_file, max_pmass)
+    matches["certainty_score"] = predictions
+    matches["likely_related"] = [int(pred >= cutoff) for pred in predictions]
+
+    return matches
+
+
+def highlight_likely_related(s):
+    """Function for styling the rows of the matches df"""
+    if s.likely_related == 0:
+        return ['background-color: #ffdfdd'] * s.shape[0]
+    return ['background-color: white'] * s.shape[0]
+
+
+def col_reformatting(matches, documents_library):
+    """Adds metadata info to matches and reorders the columns: s2v_score first
+
+    Metadata info is added as strings in the df.
+
+    Args:
+    -------
+    matches:
+        Library matching result of 1 query on library
+    documents_library:
+        Spectra in library
+    """
+    df_cols = matches.columns.to_list()
+    s2v_i = [i for i, col in enumerate(df_cols) if col == "s2v_score"][0]
+    s2v_sc = [df_cols.pop(s2v_i)]
+    new_cols = s2v_sc + df_cols
+    matches = matches.reindex(columns=new_cols)
+    # add more info in table, compound_name and parent_mass
+    lib_ids = matches.index.to_list()
+    ids = []
+    names = []
+    p_masses = []
+    smiles = []
+    for lib_id in lib_ids:
+        lib_doc = documents_library[lib_id]
+        ids.append(lib_doc._obj.get("spectrumid"))
+        names.append(lib_doc._obj.get("compound_name"))
+        p_masses.append(f'{lib_doc._obj.get("parent_mass"):.3f}')
+        smiles.append(lib_doc._obj.get("smiles"))
+    matches.insert(loc=0, column='parent_mass', value=p_masses)
+    matches.insert(loc=0, column='smiles', value=smiles)
+    matches.insert(loc=0, column='name', value=names)
+    matches.insert(loc=0, column='spectrum_id', value=ids)
+
+    return matches
+
+
 def get_library_similarities(found_match: pd.DataFrame,
                              documents_library: List[SpectrumDocument],
                              library_num: int,
@@ -493,7 +592,6 @@ def get_library_similarities(found_match: pd.DataFrame,
     output_folder:
         Location to download/get similarity matrix and metadata from
     """
-    # pylint: disable=protected-access
     if library_num == 0:
         test_sim_matrix_file = os.path.join(
             os.path.split(os.path.dirname(__file__))[0], "tests",
@@ -608,10 +706,12 @@ def make_network_plot(found_match: pd.DataFrame,
     col1, col2 = st.beta_columns(2)
     with col1:
         st.write("Restrict library matches")
-        attr_key = st.selectbox("Choose parameter", found_match.columns,
+        attr_keys = [col for col in found_match.columns
+                     if not found_match.dtypes[col] == "O"]
+        attr_key = st.selectbox("Choose parameter", attr_keys,
                                 index=0)
         attr_data = found_match[attr_key]
-        if isinstance(attr_data.iloc[0], float):
+        if isinstance(attr_data.iloc[0], (float, np.float32)):
             # true for s2v, cosine etc
             min_v, max_v, step, val = (0., 1., 0.05, 0.4)
         elif max(attr_data) >= 1:

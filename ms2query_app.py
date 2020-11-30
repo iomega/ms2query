@@ -10,10 +10,16 @@ from ms2query.app_helpers import make_network_plot
 from ms2query.app_helpers import get_library_similarities
 
 
-st.title("Ms2query")
+logo_html = '<img src="https://github.com/iomega/ms2query/raw/main/images/ms2query_logo.svg" width="300">'
+st.markdown(
+    logo_html, unsafe_allow_html=True,
+)
+
+st.sidebar.markdown("## Select data and model")
+
 st.write("""
 Upload your query spectrum, and choose a spectrum library and Spec2Vec model in
-the sidebar. Query the library and inspect the results!
+the sidebar. Query the library and inspect the proposed results!
 """)
 st.write("## Input information")
 input_warning_placeholder = st.empty()  # input warning for later
@@ -70,3 +76,20 @@ if plot_true and do_library_matching:
 elif plot_true:  # library matching is not done yet, but plot button is clicked
     st.write("""<p><span style="color:red">Please specify input files and do
             library matching.</span></p>""", unsafe_allow_html=True)
+
+# Sidebar footer
+st.sidebar.markdown("___")
+logo_html = '<img src="https://github.com/iomega/ms2query/raw/main/images/ms2query_logo.svg" width="200">'
+st.sidebar.markdown(
+    logo_html, unsafe_allow_html=True,
+)
+
+sidebar_footer = """
+Code: [MS2Query on GitHub](https://github.com/iomega/ms2query)  
+Developed by Joris Louwen, Justin JJ van der Hooft, Florian Huber  
+Liscence: [Apache 2.0](https://github.com/iomega/ms2query/raw/main/LICENSE)  
+References:
+[matchms](https://github.com/matchms/matchms)
+[Spec2Vec](https://github.com/iomega/spec2vec)
+"""
+st.sidebar.markdown(sidebar_footer)
