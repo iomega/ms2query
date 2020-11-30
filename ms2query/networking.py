@@ -197,7 +197,7 @@ def plotly_network(network: nx.Graph,
     nodes_x = []
     nodes_y = []
     nodes_type = []
-    do_non_cands = ("probable_match" in
+    do_non_cands = ("likely_related" in
                     network[q_node][list(network[q_node])[0]])
     for node in network.nodes():
         x, y = pos[node]
@@ -211,7 +211,7 @@ def plotly_network(network: nx.Graph,
             else:
                 edge_w_query = network[node].get(q_node)
                 if edge_w_query:
-                    prob_match = network[node][q_node].get("probable_match")
+                    prob_match = network[node][q_node].get("likely_related")
                     if prob_match == 1:
                         nodes_type.append("candidate")
                         continue

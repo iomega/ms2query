@@ -425,9 +425,9 @@ def get_library_matches(documents_query: List[SpectrumDocument],
         st.write("These are the library matches for your query:")
         if do_nn_predictions:
             first_found_match = first_found_match.sort_values(
-                ["probable_match", "s2v_score"], ascending=False)
+                ["likely_related", "s2v_score"], ascending=False)
             st.dataframe(first_found_match.iloc[:show_topn].style.apply(
-                highlight_probable_matches, axis=1))
+                highlight_likely_related, axis=1))
         else:
             first_found_match = first_found_match.sort_values(
                 "s2v_score", ascending=False)
@@ -503,7 +503,7 @@ def get_nn_predictions(matches: pd.DataFrame,
                        cutoff: float = 0.6):
     """Returns matches with certainty_score column with nn predictions
 
-    Another column is added called probable_match which has a 1 or 0 value
+    Another column is added called likely_related which has a 1 or 0 value
     corresponding to the prediction being above or below the provided cutoff.
 
     Args:
@@ -531,9 +531,9 @@ def get_nn_predictions(matches: pd.DataFrame,
     return matches
 
 
-def highlight_probable_matches(s):
+def highlight_likely_related(s):
     """Function for styling the rows of the matches df"""
-    if s.probable_match == 0:
+    if s.likely_related == 0:
         return ['background-color: #ffdfdd'] * s.shape[0]
     return ['background-color: white'] * s.shape[0]
 
