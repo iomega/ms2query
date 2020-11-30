@@ -706,7 +706,6 @@ def make_network_plot(found_match: pd.DataFrame,
     col1, col2 = st.beta_columns(2)
     with col1:
         st.write("Restrict library matches")
-        print(found_match.dtypes)
         attr_keys = [col for col in found_match.columns
                      if not found_match.dtypes[col] == "O"]
         attr_key = st.selectbox("Choose parameter", attr_keys,
