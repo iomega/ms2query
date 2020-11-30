@@ -559,12 +559,15 @@ def col_reformatting(matches, documents_library):
     ids = []
     names = []
     p_masses = []
+    smiles = []
     for lib_id in lib_ids:
         lib_doc = documents_library[lib_id]
         ids.append(lib_doc._obj.get("spectrumid"))
         names.append(lib_doc._obj.get("compound_name"))
         p_masses.append(f'{lib_doc._obj.get("parent_mass"):.3f}')
+        smiles.append(lib_doc._obj.get("smiles"))
     matches.insert(loc=0, column='parent_mass', value=p_masses)
+    matches.insert(loc=0, column='smiles', value=smiles)
     matches.insert(loc=0, column='name', value=names)
     matches.insert(loc=0, column='spectrum_id', value=ids)
 
