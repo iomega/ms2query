@@ -526,7 +526,7 @@ def get_nn_predictions(matches: pd.DataFrame,
     predictions = nn_predict_on_matches(
         matches, documents_library, documents_query, model_file, max_pmass)
     matches["certainty_score"] = predictions
-    matches["probable_match"] = [int(pred >= cutoff) for pred in predictions]
+    matches["likely_related"] = [int(pred >= cutoff) for pred in predictions]
 
     return matches
 
