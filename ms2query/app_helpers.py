@@ -75,6 +75,7 @@ def get_query() -> List[Spectrum]:
 def make_downloads_folder():
     """Return user adjustable download folder, default is ms2query/downloads
     """
+    st.sidebar.text("")
     base_dir = os.path.split(os.path.dirname(__file__))[0]
     out_folder = os.path.join(base_dir, "downloads")
     different_out_folder = st.sidebar.text_input(
