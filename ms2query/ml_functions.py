@@ -17,8 +17,9 @@ def find_info_matches(matches: List[pd.DataFrame],
     """
     To each df in matches, add/alter info like similarity of parent masses
 
-    Existing values can be transformed between 0-1. List of matches is returned
-    in the same order but with altered/new columns
+    Existing values can be transformed to values in the range [0-1]. The actual rescaling is
+    nonlinear to better emphasize the most important ranges. List of matches is returned
+    in the same order but with altered/new columns.
 
     Args:
     -------
