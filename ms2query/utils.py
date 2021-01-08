@@ -1,9 +1,10 @@
 import json
 from typing import Dict, List, TextIO
 from matchms.importing.load_from_json import as_spectrum
+from matchms.Spectrum import Spectrum
 
 
-def json_loader(file: TextIO):
+def json_loader(file: TextIO) -> List[Spectrum]:
     """Read open json file with spectra and return
 
     Args:

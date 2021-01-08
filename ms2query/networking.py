@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Hashable, Tuple
 import numpy as np
 import pandas as pd
 from matplotlib import cm, colors
@@ -10,14 +10,14 @@ from spec2vec import SpectrumDocument
 # pylint: disable=too-many-arguments,too-many-locals
 
 
-def matches2network(query_id, matches):
+def matches2network(query_id: str, matches: pd.DataFrame) -> nx.Graph:
     """Return a networkx Graph connecting query_id to all matches
 
     Args:
     ----------
-    query_id: str
+    query_id:
         ID/name of the query, will appear in the network plot
-    matches: pd.DataFrame
+    matches:
         Library matches to the query where rows are the matches and columns are
         the features of the match.
 
@@ -25,7 +25,7 @@ def matches2network(query_id, matches):
     """
     if 'query' not in query_id:
         query_id = "query_" + query_id
-    graph = nx.Graph()  # initialise undrected graph
+    graph = nx.Graph()  # initialise undirected graph
     lib_ids = matches.index
     # add all columns from matches to edge attributes
     att_dicts = matches.to_dict(orient='index')
@@ -37,16 +37,18 @@ def matches2network(query_id, matches):
     return graph
 
 
-def add_library_connections(graph, similarity_matrix, lib_ids):
+def add_library_connections(graph: nx.Graph,
+                            similarity_matrix: pd.DataFrame,
+                            lib_ids: List[Hashable]) -> nx.Graph:
     """Add Tanimoto similarity as edges between all library matches in graph
 
     Args:
     ----------
-    graph: networkx Graph
+    graph:
         Initialised graph which contains lib_ids as nodes
-    similarity_matrix: pd.DataFrame
+    similarity_matrix:
         All vs all matrix of Tanimoto similarity between library matches
-    lib_ids: list of hashable
+    lib_ids:
         IDs of the items in the matrix
 
     Assumes that lib_ids names correspond in order to similarity_matrix
@@ -314,7 +316,7 @@ def make_plotly_edge(u: Union[str, int],
                      cmap: Union[None, colors.Colormap] = None,
                      name: str = None,
                      group: bool = None,
-                     show_lab: bool = False):
+                     show_lab: bool = False) -> Tuple[go.Scatter,go.Scatter]:
     """Returns go.Scatter for the edge object
 
     Args:
