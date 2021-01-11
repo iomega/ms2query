@@ -13,7 +13,8 @@ def find_info_matches(matches: List[pd.DataFrame],
                       add_num_matches_transform: bool = True,
                       add_mass_transform: bool = False,
                       max_parent_mass: float = None,
-                      add_mass_similarity: bool = True):
+                      add_mass_similarity: bool = True) \
+        -> Union[List[pd.DataFrame], None]:
     """
     To each df in matches, add/alter info like similarity of parent masses
 
@@ -78,7 +79,8 @@ def find_info_matches(matches: List[pd.DataFrame],
 
 def find_basic_info(matches: pd.DataFrame,
                     documents_library: List[SpectrumDocument],
-                    add_cols: Union[List[str], Tuple[str]] = ('parent_mass',)):
+                    add_cols: Union[List[str], Tuple[str]] = ('parent_mass',))\
+        -> pd.DataFrame:
     """
     To each match in matches df, add the info from add_cols entries
 
@@ -103,7 +105,7 @@ def find_basic_info(matches: pd.DataFrame,
     return df
 
 
-def transform_num_matches(matches: pd.DataFrame):
+def transform_num_matches(matches: pd.DataFrame) -> pd.DataFrame:
     """Transform the cosine_matches and mod_cosine_matches to between 0-1
 
     Args:
@@ -124,7 +126,7 @@ def transform_num_matches(matches: pd.DataFrame):
 def find_mass_similarity(matches: pd.DataFrame,
                          documents_library: List[SpectrumDocument],
                          query_mass: float,
-                         base_num: float = 0.8):
+                         base_num: float = 0.8) -> pd.DataFrame:
     """
     Add scaled value 0-1 mass_sim of how similar match parent mass is to query
 

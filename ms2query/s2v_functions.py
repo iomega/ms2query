@@ -1,5 +1,4 @@
-from typing import List
-from typing import Union
+from typing import List, Union, Dict, Tuple
 import numpy as np
 import pandas as pd
 from gensim.models.basemodel import BaseTopicModel
@@ -10,18 +9,20 @@ from matchms.filtering import select_by_relative_intensity
 from matchms.filtering import reduce_to_number_of_peaks
 from matchms.filtering import add_losses
 from matchms.similarity import CosineGreedy, ModifiedCosine, ParentMassMatch
+from matchms.Spectrum import Spectrum
 from spec2vec import SpectrumDocument
 from spec2vec import Spec2Vec
 
 
 # pylint: disable=protected-access,too-many-arguments,too-many-locals
 
-def set_spec2vec_defaults(**settings):
+def set_spec2vec_defaults(**settings: Dict[str, Union[int, bool]]) \
+        -> Dict[str, Union[int, bool]]:
     """Set spec2vec default argument values"(where no user input is given)".
 
     Args
     ----------
-    **settings: optional dict
+    **settings:
         Change default settings
     """
     defaults = {"mz_from": 0,
@@ -44,12 +45,14 @@ def set_spec2vec_defaults(**settings):
     return settings
 
 
-def post_process_s2v(spectrum, **settings):
+def post_process_s2v(spectrum: Spectrum,
+                     **settings: Dict[str, Union[int, bool]]) \
+        -> Union[Spectrum, None]:
     """Returns a processed matchms.Spectrum.Spectrum
 
     Args:
     ----------
-    spectrum: matchms.Spectrum.Spectrum
+    spectrum:
         Spectrum to process
     mz_from
         Set lower threshold for m/z peak positions. Default is 0.0.
@@ -91,12 +94,14 @@ def post_process_s2v(spectrum, **settings):
     return spectrum
 
 
-def process_spectrums(spectrums, **settings):
+def process_spectrums(spectrums: List[Spectrum],
+                      **settings: Dict[str, Union[int, bool]]) \
+        -> List[SpectrumDocument]:
     """Returns list of post-processed SpectrumDocuments from input spectrums
 
     Args:
     ----------
-    spectrums: list of matchms.Spectrum.Spectrum
+    spectrums:
         Input spectra
     mz_from
         Set lower threshold for m/z peak positions. Default is 0.0.
@@ -120,12 +125,12 @@ def process_spectrums(spectrums, **settings):
     return documents
 
 
-def get_metadata(documents: List[SpectrumDocument]):
+def get_metadata(documents: List[SpectrumDocument]) -> List[str]:
     """Returns a list of smiles (str) from the input spectrum documents
 
     Args:
     --------
-    documents: list of SpectrumDocument
+    documents:
     """
     metadata = []
     for doc in documents:
@@ -140,9 +145,10 @@ def search_topn_s2v_matches(documents_query: List[SpectrumDocument],
                             presearch_based_on: List[str] = ("parentmass",
                                                              "spec2vec-top10"),
                             intensity_weighting_power: float = 0.5,
-                            allowed_missing_percentage: float = 0):
+                            allowed_missing_percentage: float = 0) \
+        -> Tuple[np.ndarray, np.ndarray]:
     """
-    Returns (ndarray, ndarray) recording topn library IDs, s2v scores per query
+    Returns recording topn library IDs, s2v scores per query
 
     First ndarray records topn library IDs for each query. It has
     shape(topn, len(queries)). The second ndarray are the s2v scores against
@@ -200,9 +206,10 @@ def search_parent_mass_matches(documents_query: List[SpectrumDocument],
                                library_ids: Union[List[int], np.ndarray],
                                presearch_based_on: List[str] = (
                                        "parentmass", "spec2vec-top10"),
-                               mass_tolerance: float = 1.0):
+                               mass_tolerance: float = 1.0) \
+        -> Tuple[Union[List[int], np.ndarray], np.ndarray]:
     """
-    Returns (list, ndarray) of parent mass matching library IDs, s2v scores
+    Returns of parent mass matching library IDs, s2v scores
 
     First list records all parent mass matching library IDs for each query.
     The second ndarray are the mass match scores against all library documents
@@ -254,8 +261,8 @@ def find_matches(document_query: SpectrumDocument,
                                               "modcosine"),
                  intensity_weighting_power: float = 0.5,
                  allowed_missing_percentage: float = 0,
-                 cosine_tol: float = 0.005):
-    """Finds library matches for one query document, returns pd.DataFrame
+                 cosine_tol: float = 0.005) -> pd.DataFrame:
+    """Finds library matches for one query document
 
     Args:
     -------
@@ -349,7 +356,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
                           documents_library: List[SpectrumDocument],
                           model: BaseTopicModel,
                           library_ids: Union[List[int], np.ndarray],
-                          selection_spec2vec,
+                          selection_spec2vec: np.ndarray,
                           m_spec2vec_similarities: Union[np.ndarray, float],
                           selection_massmatch: List[int],
                           m_mass_matches: Union[np.ndarray, float],
@@ -357,9 +364,9 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
                                                        "modcosine"),
                           intensity_weighting_power: float = 0.5,
                           allowed_missing_percentage: float = 0,
-                          cosine_tol: float = 0.005):
+                          cosine_tol: float = 0.005) -> List[pd.DataFrame]:
     """
-    Finds library matches for all query documents, returns list of pd.DataFrame
+    Finds library matches for all query documents
 
     Args:
     --------
@@ -427,7 +434,8 @@ def library_matching(documents_query: List[SpectrumDocument],
                                                       "spec2vec-top10"),
                      include_scores: List[str] = ("spec2vec", "cosine",
                                                   "modcosine"),
-                     **settings):
+                     **settings: Dict[str, Union[int, bool]])\
+        -> List[pd.DataFrame]:
     """Selecting potential spectra matches with spectra library.
 
     Suitable candidates will be selected by 1) top_n Spec2Vec similarity, and

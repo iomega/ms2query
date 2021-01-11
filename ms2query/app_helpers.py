@@ -72,7 +72,7 @@ def get_query() -> List[Spectrum]:
     return query_spectrums
 
 
-def make_downloads_folder():
+def make_downloads_folder() -> str:
     """Return user adjustable download folder, default is ms2query/downloads
     """
     st.sidebar.text("")
@@ -165,7 +165,7 @@ def download_zenodo_library(example_libs_dict: Dict[str, Tuple[str, str, int]],
 
 
 @st.cache(allow_output_mutation=True)  # for speedup, e.a. lib is not mutated
-def load_pickled_file(file_name: str):
+def load_pickled_file(file_name: str) -> List[Spectrum]:
     """Returns contents from the pickle file
 
     Args:
@@ -178,7 +178,8 @@ def load_pickled_file(file_name: str):
     return contents
 
 
-def gather_zenodo_library(output_folder: str):
+def gather_zenodo_library(output_folder: str) \
+        -> Dict[str, Tuple[str, str, int]]:
     """Gather file and url info for zenodo libraries
 
     Args:
@@ -217,7 +218,8 @@ def get_model(out_folder: str) -> Tuple[Union[Word2Vec, None],
     return model, model_num
 
 
-def get_zenodo_models_dict(output_folder: str):
+def get_zenodo_models_dict(output_folder: str) -> \
+        Dict[str, Tuple[str, List[str], int]]:
     """Get all urls and file locations for the downloadable models in the app
 
     Args:
@@ -295,7 +297,7 @@ def get_zenodo_models(output_folder: str = "downloads") -> Tuple[str, str,
     return model_name, model_file, model_num
 
 
-def make_folder(output_folder):
+def make_folder(output_folder: str):
     """Create output_folder if it doesn't exist yet
 
     Args:
@@ -499,7 +501,7 @@ def cached_library_matching(documents_query: List[SpectrumDocument],
 def get_nn_predictions(matches: pd.DataFrame,
                        documents_library: List[SpectrumDocument],
                        documents_query: List[SpectrumDocument],
-                       cutoff: float = 0.6):
+                       cutoff: float = 0.6) -> pd.DataFrame:
     """Returns matches with certainty_score column with nn predictions
 
     Another column is added called likely_related which has a 1 or 0 value
@@ -530,14 +532,15 @@ def get_nn_predictions(matches: pd.DataFrame,
     return matches
 
 
-def highlight_likely_related(s):
+def highlight_likely_related(s: pd.DataFrame) -> List[str]:
     """Function for styling the rows of the matches df"""
     if s.likely_related == 0:
         return ['background-color: #ffdfdd'] * s.shape[0]
     return ['background-color: white'] * s.shape[0]
 
 
-def col_reformatting(matches, documents_library):
+def col_reformatting(matches: pd.DataFrame,
+                     documents_library: List[SpectrumDocument]) -> pd.DataFrame:
     """Adds metadata info to matches and reorders the columns: s2v_score first
 
     Metadata info is added as strings in the df.
