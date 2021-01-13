@@ -9,6 +9,7 @@ import json
 from typing import Dict, List
 import ast
 
+
 def create_table_structure(sqlite_file_name: str,
                            columns_dict: Dict[str, str],
                            table_name: str = "spectra"):
@@ -84,12 +85,14 @@ def add_spectra_to_database(sqlite_file_name: str,
         if "full_json" in column_names:
             columns += ", full_json"
             values += f', "{spectrum}" '
-        add_spectrum_command = f"INSERT INTO {table_name} ({columns}) values ({values})"
+        add_spectrum_command = f"INSERT INTO {table_name} " \
+                               + f"({columns}) values ({values})"
 
         cur = conn.cursor()
         cur.execute(add_spectrum_command)
         conn.commit()
     conn.close()
+
 
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
@@ -111,9 +114,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
 
-
     sqlite_command = f"""SELECT full_json FROM {table_name} 
-                    WHERE spectrum_id IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+                    WHERE spectrum_id 
+                    IN ('{"', '".join(map(str, spectrum_id_list))}')"""
 
     cur = conn.cursor()
     cur.execute(sqlite_command)
@@ -129,18 +132,19 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
 
     return sqlite_spectra
 
+
 if __name__ == "__main__":
-    # column_type_dict = {"spectrum_id": "VARCHAR",
-    #                     "source_file": "VARCHAR",
-    #                     "ms_level": "INTEGER",
-    #                     }
-    sqlite_file_name = "test_spectra_database.sqlite"
-    # create_table_structure("test_spectra_database.sqlite",
-    #                        column_type_dict)
-    # add_spectra_to_database("test_spectra_database.sqlite",
-    #                         "../tests/testspectrum_library.json")
-    spectrum_list = get_spectra_from_sqlite(sqlite_file_name, ['CCMSLIB00000223876', 'CCMSLIB00003138082'])
-    # print(spectrum_list)
-    for spectrum in spectrum_list:
-        print(spectrum)
-        print(spectrum['spectrum_id'])
+    column_type_dict = {"spectrum_id": "VARCHAR",
+                        "source_file": "VARCHAR",
+                        "ms_level": "INTEGER",
+                        }
+    file_name = "test_spectra_database.sqlite"
+    create_table_structure(file_name,
+                           column_type_dict)
+    add_spectra_to_database(file_name,
+                            "../tests/testspectrum_library.json")
+    spectrum_list = get_spectra_from_sqlite(file_name, ['CCMSLIB00000223876',
+                                                        'CCMSLIB00003138082'])
+    for spectrum_data in spectrum_list:
+        print(spectrum_data)
+        print(spectrum_data['spectrum_id'])
