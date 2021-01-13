@@ -54,7 +54,7 @@ def add_spectra_to_database(sqlite_file_name: str,
     sqlite_file_name:
         Name of sqlite file to which the spectra should be added.
     json_spectrum_file_name:
-        File name of the json file that stores the spectra.
+        File location of the json file that stores the spectra.
     table_name:
         Name of the table in the database to which the spectra should be added,
         default = "spectra"
