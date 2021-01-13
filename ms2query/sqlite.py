@@ -1,13 +1,13 @@
 """
-Test file to implement sqlite database for Spectrum data
+Functions to create and retrieve information from sqlite files
 
 Author: Niek de Jonge
 """
 
 import sqlite3
 import json
-from typing import Dict
-
+from typing import Dict, List
+import ast
 
 def create_table_structure(sqlite_file_name: str,
                            columns_dict: Dict[str, str],
@@ -80,7 +80,7 @@ def add_spectra_to_database(sqlite_file_name: str,
                     values += ", "
                 columns += column
                 values += '"' + spectrum[column] + '"'
-
+        # Add the complete spectrum in json format to the column "full_json"
         if "full_json" in column_names:
             columns += ", full_json"
             values += f', "{spectrum}" '
@@ -91,13 +91,56 @@ def add_spectra_to_database(sqlite_file_name: str,
         conn.commit()
     conn.close()
 
+def get_spectra_from_sqlite(sqlite_file_name: str,
+                            spectrum_id_list: List[str],
+                            table_name: str = "spectra") -> List[dict]:
+    """Returns a list with all metadata of spectrum_ids in spectrum_id_list
+
+    Args:
+    -------
+    sqlite_file_name:
+        File name of the sqlite file that contains the spectrum information
+    spectrum_id_list:
+        List of spectrum_id's of which the metadata should be returned
+    table_name:
+        Name of the table in the sqlite file that stores the spectrum data
+
+    Returns:
+    -------
+    sqlite_spectra:
+    """
+    conn = sqlite3.connect(sqlite_file_name)
+
+
+    sqlite_command = f"""SELECT full_json FROM {table_name} 
+                    WHERE spectrum_id IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+
+    sqlite_spectra = []
+    for json_spectrum in cur:
+        # Remove the "()" around the spectrum
+        json_spectrum = json_spectrum[0]
+        # Convert string to dictionary
+        json_spectrum = ast.literal_eval(json_spectrum)
+        sqlite_spectra.append(json_spectrum)
+    conn.close()
+
+    return sqlite_spectra
 
 if __name__ == "__main__":
-    column_type_dict = {"spectrum_id": "VARCHAR",
-                        "source_file": "VARCHAR",
-                        "ms_level": "INTEGER",
-                        }
-    create_table_structure("test_spectra_database.sqlite",
-                           column_type_dict)
-    add_spectra_to_database("test_spectra_database.sqlite",
-                            "../tests/testspectrum_library.json")
+    # column_type_dict = {"spectrum_id": "VARCHAR",
+    #                     "source_file": "VARCHAR",
+    #                     "ms_level": "INTEGER",
+    #                     }
+    sqlite_file_name = "test_spectra_database.sqlite"
+    # create_table_structure("test_spectra_database.sqlite",
+    #                        column_type_dict)
+    # add_spectra_to_database("test_spectra_database.sqlite",
+    #                         "../tests/testspectrum_library.json")
+    spectrum_list = get_spectra_from_sqlite(sqlite_file_name, ['CCMSLIB00000223876', 'CCMSLIB00003138082'])
+    # print(spectrum_list)
+    for spectrum in spectrum_list:
+        print(spectrum)
+        print(spectrum['spectrum_id'])
