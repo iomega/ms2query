@@ -81,6 +81,9 @@ def add_spectra_to_database(sqlite_file_name: str,
                     values += ", "
                 columns += column
                 values += '"' + spectrum[column] + '"'
+            else:
+                print(f"No value found for column: {column} in "
+                      f"spectrum {spectrum['spectrum_id']}")
         # Add the complete spectrum in json format to the column "full_json"
         if "full_json" in column_names:
             columns += ", full_json"
@@ -131,20 +134,3 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     conn.close()
 
     return sqlite_spectra
-
-
-if __name__ == "__main__":
-    column_type_dict = {"spectrum_id": "VARCHAR",
-                        "source_file": "VARCHAR",
-                        "ms_level": "INTEGER",
-                        }
-    file_name = "test_spectra_database.sqlite"
-    create_table_structure(file_name,
-                           column_type_dict)
-    add_spectra_to_database(file_name,
-                            "../tests/testspectrum_library.json")
-    spectrum_list = get_spectra_from_sqlite(file_name, ['CCMSLIB00000223876',
-                                                        'CCMSLIB00003138082'])
-    for spectrum_data in spectrum_list:
-        print(spectrum_data)
-        print(spectrum_data['spectrum_id'])
