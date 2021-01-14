@@ -1,7 +1,5 @@
 """
 Functions to create and retrieve information from sqlite files
-
-Author: Niek de Jonge
 """
 
 import sqlite3
@@ -81,13 +79,17 @@ def add_spectra_to_database(sqlite_file_name: str,
                     values += ", "
                 columns += column
                 values += '"' + spectrum[column] + '"'
+
+            # Add the complete spectrum in json format to the column full_json
+            elif column == "full_json":
+                if len(columns) > 0:
+                    columns += ", "
+                    values += ", "
+                columns += "full_json"
+                values += f'"{spectrum}"'
             else:
                 print(f"No value found for column: {column} in "
                       f"spectrum {spectrum['spectrum_id']}")
-        # Add the complete spectrum in json format to the column "full_json"
-        if "full_json" in column_names:
-            columns += ", full_json"
-            values += f', "{spectrum}" '
         add_spectrum_command = f"INSERT INTO {table_name} " \
                                + f"({columns}) values ({values})"
 
