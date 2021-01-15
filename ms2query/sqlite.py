@@ -114,10 +114,6 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         List of spectrum_id's of which the metadata should be returned
     table_name:
         Name of the table in the sqlite file that stores the spectrum data
-
-    Returns:
-    -------
-    list_of_spectra_dict:
     """
     conn = sqlite3.connect(sqlite_file_name)
 

@@ -45,5 +45,3 @@ def test_sqlite_functions(tmp_path):
     for key in spectra_list[1].metadata:
         assert spectra_json[2][key] == spectra_list[1].metadata[key], \
             "Expected different metadata for this spectrum"
-
-
