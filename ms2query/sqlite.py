@@ -6,6 +6,8 @@ import sqlite3
 import json
 from typing import Dict, List
 import ast
+from matchms.importing.load_from_json import dict2spectrum
+from matchms.Spectrum import Spectrum
 
 
 def create_table_structure(sqlite_file_name: str,
@@ -101,7 +103,7 @@ def add_spectra_to_database(sqlite_file_name: str,
 
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
-                            table_name: str = "spectra") -> List[dict]:
+                            table_name: str = "spectra") -> List[Spectrum]:
     """Returns a list with all metadata of spectrum_ids in spectrum_id_list
 
     Args:
@@ -115,7 +117,7 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
 
     Returns:
     -------
-    sqlite_spectra:
+    list_of_spectra_dict:
     """
     conn = sqlite3.connect(sqlite_file_name)
 
@@ -126,13 +128,17 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     cur = conn.cursor()
     cur.execute(sqlite_command)
 
-    sqlite_spectra = []
+    list_of_spectra_dict = []
     for json_spectrum in cur:
         # Remove the "()" around the spectrum
         json_spectrum = json_spectrum[0]
         # Convert string to dictionary
         json_spectrum = ast.literal_eval(json_spectrum)
-        sqlite_spectra.append(json_spectrum)
+        list_of_spectra_dict.append(json_spectrum)
     conn.close()
 
-    return sqlite_spectra
+    # Convert to matchms.Spectrum.Spectrum object
+    spectra_list = []
+    for spectrum in list_of_spectra_dict:
+        spectra_list.append(dict2spectrum(spectrum))
+    return spectra_list
