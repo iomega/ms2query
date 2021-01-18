@@ -23,6 +23,11 @@ authors:
     name-particle: van der
     given-names: Justin J. J.
     orcid: "https://orcid.org/0000-0002-9340-5511"
+  -
+    affiliation: "Wageningen University and Research"
+    family-names: Jonge
+    name-particle: de
+    given-names: Niek N.F.
 
 cff-version: "1.1.0"
 license: "Apache-2.0"
