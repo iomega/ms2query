@@ -5,41 +5,44 @@ Functions to create and retrieve information from sqlite files
 import sqlite3
 import json
 from typing import Dict, List
-import ast
-from matchms.importing.load_from_json import dict2spectrum
-from matchms.Spectrum import Spectrum
-from pandas.io.sql import DataFrame
 import pandas as pd
 import numpy as np
-import os
 import time
 
 
+# todo test metadata maker, for full file, is in pickled format. Change
+#  function to take list of spectrums as input. Change test function with load
+#  from json, so this is still functional.
 def make_sqlfile_wrapper(sqlite_file_name: str,
                          columns_dict: Dict[str, str],
-                         json_spectrum_file_name: str
+                         json_spectrum_file_name: str,
+                         npy_file_location: str
                          ):
-    """Creates a new sqlite file, with columns defined in columns_dict
+    """Wrapper to create sqlite file with three tables.
 
     Args:
     -------
     sqlite_file_name:
         Name of sqlite_file that should be created, if it already exists the
-        table spectra is overwritten.
+        tables are added. If the tables in this sqlite file already exist, they
+        will be overwritten.
     columns_dict:
         Dictionary with as keys the column names and as values the sql datatype
     json_spectrum_file_name:
         File location of the json file that stores the spectra.
-    table_name:
-        Name of the table that is created in the sqlite file,
-        default = "spectra"
+
     """
+
     create_table_structure(sqlite_file_name, columns_dict)
     add_spectra_to_database(sqlite_file_name, json_spectrum_file_name)
+    create_inchikey_sqlite_table(sqlite_file_name)
+    initialize_tanimoto_score_table(sqlite_file_name)
+    add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
+
 
 def create_table_structure(sqlite_file_name: str,
                            columns_dict: Dict[str, str],
-                           table_name: str = "spectra"):
+                           table_name: str = "metadata"):
     """Creates a new sqlite file, with columns defined in columns_dict
 
     Args:
@@ -51,7 +54,7 @@ def create_table_structure(sqlite_file_name: str,
         Dictionary with as keys the column names and as values the sql datatype
     table_name:
         Name of the table that is created in the sqlite file,
-        default = "spectra"
+        default = "metadata"
     """
     create_table_command = f"""
     DROP TABLE IF EXISTS {table_name};
@@ -73,10 +76,10 @@ def create_table_structure(sqlite_file_name: str,
 
 def add_spectra_to_database(sqlite_file_name: str,
                             json_spectrum_file_name: str,
-                            table_name: str = "spectra"):
+                            table_name: str = "metadata"):
     """Creates a sqlite file containing the information from a json file.
 
-     Args:
+    Args:
     -------
     sqlite_file_name:
         Name of sqlite file to which the spectra should be added.
@@ -84,7 +87,7 @@ def add_spectra_to_database(sqlite_file_name: str,
         File location of the json file that stores the spectra.
     table_name:
         Name of the table in the database to which the spectra should be added,
-        default = "spectra"
+        default = "metadata"
     """
     spectra = json.load(open(json_spectrum_file_name))
     conn = sqlite3.connect(sqlite_file_name)
@@ -128,62 +131,62 @@ def add_spectra_to_database(sqlite_file_name: str,
     conn.close()
 
 
-def get_spectra_from_sqlite(sqlite_file_name: str,
-                            spectrum_id_list: List[str],
-                            table_name: str = "spectra") -> List[Spectrum]:
-    """Returns a list with all metadata of spectrum_ids in spectrum_id_list
+def create_inchikey_sqlite_table(file_name: str,
+                                 table_name: str = 'inchikeys',
+                                 col_name_inchikey: str = 'inchikeys',
+                                 col_name_identifier: str = 'identifier'):
+    """Creates a table storing the identifiers belonging to the inchikeys
+
+    Removes the table if it already exists and makes the col_name_inchikey
+    the primary key. The datatype of col_name_inchikey is set
+    to TEXT and the datatype of col_name_identifier is set to INTEGER. The
+    created table is used to look up identifiers used in the table created by
+    the function initialize_tanimoto_score_table.
 
     Args:
     -------
     sqlite_file_name:
-        File name of the sqlite file that contains the spectrum information
-    spectrum_id_list:
-        List of spectrum_id's of which the metadata should be returned
+        Name of sqlite file to which the table should be added.
     table_name:
-        Name of the table in the sqlite file that stores the spectrum data
+        Name of the table in the database that should store the tanimoto
+        scores. Default = inchikeys.
+    col_name_inchikey:
+        Name of the first column in the table containing the inchikeys.
+        Default = inchikeys
+    col_name_identifier:
+        Name of the second column in the table containing the identifiers.
+        Default = identifier.
+
     """
-    conn = sqlite3.connect(sqlite_file_name)
 
-    sqlite_command = f"""SELECT full_json FROM {table_name} 
-                    WHERE spectrum_id 
-                    IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+    conn = sqlite3.connect(file_name)
 
+    # Initialize table
+    create_table_command = f""";
+    DROP TABLE IF EXISTS {table_name};
+    CREATE TABLE {table_name} (
+        {col_name_inchikey} TEXT,
+        PRIMARY KEY ({col_name_inchikey})
+        );
+    """
     cur = conn.cursor()
-    cur.execute(sqlite_command)
+    cur.executescript(create_table_command)
+    conn.commit()
 
-    list_of_spectra_dict = []
-    for json_spectrum in cur:
-        # Remove the "()" around the spectrum
-        json_spectrum = json_spectrum[0]
-        # Convert string to dictionary
-        json_spectrum = ast.literal_eval(json_spectrum)
-        list_of_spectra_dict.append(json_spectrum)
+    # Fill table
+    ordered_inchikey_list = get_inchikey_order()
+
+    for inchikey in ordered_inchikey_list:
+        add_row_to_table_command = f"""INSERT INTO {table_name} 
+                                    values ('{inchikey}');"""
+        cur.execute(add_row_to_table_command)
+    conn.commit()
     conn.close()
-
-    # Convert to matchms.Spectrum.Spectrum object
-    spectra_list = []
-    for spectrum in list_of_spectra_dict:
-        spectra_list.append(dict2spectrum(spectrum))
-    return spectra_list
-
-
-def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
-                                file_name: str):
-    connection = sqlite3.connect(file_name)
-
-    # Optimal chuncksize: 20000 = 16.5 s, 30000 = 16,3 s
-    spectrum_dataframe.to_sql('tanimoto', connection,
-                              method='multi',
-                              chunksize=30000,
-                              if_exists="append",
-                              index=False)
-    connection.commit()
-    connection.close()
 
 
 def get_inchikey_order(metadata_file: str =
-                          "../downloads/metadata_AllInchikeys14.csv"
-                          ) -> List[str]:
+                       "../downloads/metadata_AllInchikeys14.csv"
+                       ) -> List[str]:
     """Return list of Inchi14s in same order as in metadata_file
 
     Args:
@@ -202,17 +205,43 @@ def get_inchikey_order(metadata_file: str =
     return inchi_list
 
 
-def create_sqlite_table_for_tanimoto_scores_without_duplicates(sqlite_file_name: str):
-    create_table_command = """;
-    DROP TABLE IF EXISTS tanimoto;
-    CREATE TABLE tanimoto (
-        inchikey1 INTEGER,
-        inchikey2 INTEGER,
-        tanimoto_score REAL,
-        PRIMARY KEY (inchikey1, inchikey2)
+def initialize_tanimoto_score_table(sqlite_file_name: str,
+                                    table_name: str = 'tanimoto_scores',
+                                    col_name_identifier1: str = 'identifier_1',
+                                    col_name_identifier2: str = 'identifier_2',
+                                    col_name_score: str = 'tanimoto_score'):
+    """Initializes a table for the tanimoto scores.
+
+    Removes the table if it already exists and makes the col_name_identifiers
+    together a composite key. The datatype of both col_name_identifiers is set
+    to INTEGER and datatype of col_name_score is set to REAL.
+
+    Args:
+    -------
+    sqlite_file_name:
+        Name of sqlite file to which the table should be added.
+    table_name:
+        Name of the table in the database that should store the tanimoto
+        scores. Default = tanimoto_scores.
+    col_name_identifier1:
+        Name of the first column of the table, this column will store numbers
+        that are the identifier of inchikeys. Default = 'identifier_1'
+    col_name_identifier2:
+        Name of the second column of the table, this column will store numbers
+        that are the identifier of inchikeys. Default = 'identifier_2'
+    col_name_score:
+        Name of the third column of the table, this column will store the
+        tanimoto scores. Default = 'tanimoto_score'
+    """
+    create_table_command = f""";
+    DROP TABLE IF EXISTS {table_name};
+    CREATE TABLE {table_name} (
+        {col_name_identifier1} INTEGER,
+        {col_name_identifier2} INTEGER,
+        {col_name_score} REAL,
+        PRIMARY KEY ({col_name_identifier1}, {col_name_identifier2})
         );
     """
-
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
     cur.executescript(create_table_command)
@@ -220,158 +249,102 @@ def create_sqlite_table_for_tanimoto_scores_without_duplicates(sqlite_file_name:
     conn.close()
 
 
+def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
+                                        npy_file_path: str,
+                                        col_name_identifier1: str =
+                                        'identifier_1',
+                                        col_name_identifier2: str =
+                                        'identifier_2',
+                                        col_name_score: str = 'tanimoto_score'
+                                        ):
+    """Adds tanimoto scores to sqlite table
+
+    The tanimoto scores are added to a sqlite file with in the first and
+    second column the identifiers that correspond to the index of the rows and
+    columns in the .npy file. The third row contains the tanimoto score. All
+    duplicates are removed, before adding to the sqlite table.
+
+    Args:
+    -------
+    sqlite_file_name:
+        Name of sqlite file to which the table should be added.
+    npy_file_path:
+        Path to the numpy file containing the tanimoto scores. The numpy file
+        is expected to contain a matrix filled with floats with nr of columns =
+        nr of rows.
+    col_name_identifier1:
+        Name of the first column of the table, this column will store numbers
+        that are the identifier of inchikeys. Default = 'identifier_1'
+    col_name_identifier2:
+        Name of the second column of the table, this column will store numbers
+        that are the identifier of inchikeys. Default = 'identifier_2'
+    col_name_score:
+        Name of the third column of the table, this column will store the
+        tanimoto scores. Default = 'tanimoto_score'
+    """
     tanimoto_score_matrix = np.load(
-        "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", mmap_mode='r')
+        npy_file_path,
+        mmap_mode='r')
+
+    # Create a list of consecutive numbers, later used as identifiers for the
+    # inchikeys
     list_of_numbers = []
     for i in range(len(tanimoto_score_matrix[0])):
         list_of_numbers.append(i)
 
     start_time = time.time()
+    # Create a dataframe and add to sqlite table row by row
     for row_nr, row in enumerate(tanimoto_score_matrix):
         # Remove duplicates
         row = row[:row_nr+1]
+        # Transform to pd.Dataframe
         df = pd.DataFrame(row)
+        # Add columns with identifiers (they correspond to the indexes of the
+        # rows and columns in the npy file
+        df[col_name_identifier1] = np.array(len(row) * [row_nr])
+        df[col_name_identifier2] = np.array(list_of_numbers[:len(row)])
 
-        # Add
-        df['inchikey1'] = np.array(len(row) * [row_nr])
-        df['inchikey2'] = np.array(list_of_numbers[:len(row)])
-        df.rename(columns={0 :'tanimoto_score'}, inplace=True)
-        # add table with dataframe to sqlite file
+        df.rename(columns={0: col_name_score}, inplace=True)
+        # Add dataframe to table in sqlite file
         convert_dataframe_to_sqlite(df, sqlite_file_name)
+
         if row_nr % 100 == 0:
             print(row_nr)
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
+def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
+                                file_name: str,
+                                table_name: str = 'tanimoto_scores'):
+    """Adds the content of a dataframe to an sqlite table.
 
-def create_sqlite_table_for_tanimoto_scores(sqlite_file_name: str):
-    create_table_command = """;
-    DROP TABLE IF EXISTS tanimoto;
-    CREATE TABLE tanimoto (
-        inchikey1 INTEGER,
-        inchikey2 INTEGER,
-        tanimoto_score REAL,
-        PRIMARY KEY (inchikey1, inchikey2)
-        );
-    """
+    Args:
+    -------
+    spectrum_dataframe:
+        The dataframe that has to be added to the sqlite table.
+    file_name:
+        Name of sqlite file to which the table should be added.
+    table_name:
+        Name of the table in the database that should store the tanimoto
+        scores. Default = tanimoto_scores."""
 
-    conn = sqlite3.connect(sqlite_file_name)
-    cur = conn.cursor()
-    cur.executescript(create_table_command)
-    conn.commit()
-    conn.close()
-
-    #Running for matrix of length 12000 takes about 4 minutes
-    inchikey_order = get_inchikey_order()
-    list_of_numbers = []
-    for i in range(len(inchikey_order)):
-        list_of_numbers.append(i)
-    inchikey_order = list_of_numbers
-    tanimoto_score_matrix = np.load(
-        "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", mmap_mode='r')
-    # for row in tanimoto_score_matrix
-
-
-    start_time = time.time()
-    for i in range(0, len(inchikey_order), 20000):
-        part_of_tanimoto_score_matrix = tanimoto_score_matrix[i:i+200]
-        tanimoto_score_matrix = ""
-        print('1')
-        df = pd.DataFrame(part_of_tanimoto_score_matrix,
-                          columns=inchikey_order)
-        part_of_tanimoto_score_matrix = ""
-        print('2')
-        df['inchikey1'] = inchikey_order[i:i+200]
-        print('3')
-        df = df.melt(id_vars='inchikey1', var_name='inchikey2', value_name='tanimoto_score', ignore_index=True)
-        print('4')
-        # df['inchikey2'] = df['inchikey2'].astype('int64')
-        print('5')
-        # df.set_index(['inchikey1', 'inchikey2'], inplace=True)
-
-        # df.drop_duplicates(subset=['inchikey1', ])
-        # add table with dataframe to sqlite file
-        convert_dataframe_to_sqlite(df, sqlite_file_name)
-        print("--- %s seconds ---" % (time.time() - start_time))
-    return df
-
-
-    # new_np_array = np.array([["","",""]])
-    # for index1, tanimoto_score_array in enumerate(tanimoto_score_matrix):
-    #     for index2 in range(len(tanimoto_score_array)):
-    #         to_add = np.array([[inchikey_order[index1], inchikey_order[index2], tanimoto_score_matrix[index1][index2]]])
-    #         new_np_array = np.append(new_np_array, to_add, axis=0)
-    #     print(index1)
-
-
-def get_tanimoto_from_sqlite(sqlite_file_name: str):
-    start_time = time.time()
-
-    conn = sqlite3.connect(sqlite_file_name)
-
-    sqlite_command = """SELECT inchikey1, inchikey2, tanimoto_score FROM tanimoto 
-                    WHERE inchikey1 in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,200) and inchikey2 in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,200);
-                    """
-
-    cur = conn.cursor()
-    cur.execute(sqlite_command)
-    for score in cur:
-        print(score)
-    conn.close()
-    print("--- %s seconds ---" % (time.time() - start_time))
-
-    # return tanimoto_score
-
-def make_inchikeys_composite_key(sqlite_file_name: str):
-    create_table_command = """ALTER TABLE tanimoto 
-    ADD PRIMARY KEY(inchikey1, inchikey2);
-    
-    """
-
-    conn = sqlite3.connect(sqlite_file_name)
-    cur = conn.cursor()
-    cur.execute(create_table_command)
-    conn.commit()
-    conn.close()
-
-def remove_duplicates_from_csv(tanimoto_score_file_location, new_file_name):
-    tanimoto_scores = np.load(tanimoto_score_file_location, mmap_mode='r')
-    start_time = time.time()
-
-    with open(new_file_name + ".txt", 'w') as txt_file:
-        for row_nr, row in enumerate(tanimoto_scores):
-            kept_part = row[:row_nr+1]
-            new_row = np.concatenate((kept_part, np.array([None]*(len(row)-row_nr-1))))
-            for entry in new_row:
-                txt_file.write(str(entry) + ",")
-            if row_nr % 100 == 0:
-                print(row_nr)
-    #
-    # print("--- %s seconds ---" % (time.time() - start_time))
-    with open(new_file_name + ".txt", 'r') as txt_file:
-        no_duplicate_scores = txt_file.read()
-    no_duplicate_scores = no_duplicate_scores.split(',')
-    no_duplicate_scores.pop()
-    no_duplicate_scores = np.array(no_duplicate_scores).reshape(len(row), len(row))
-    np.save(new_file_name + ".npy", no_duplicate_scores)
-    print(no_duplicate_scores)
+    connection = sqlite3.connect(file_name)
+    spectrum_dataframe.to_sql(table_name, connection,
+                              method='multi',
+                              chunksize=30000,
+                              if_exists="append",
+                              index=False)
+    connection.commit()
+    connection.close()
 
 
 if __name__ == "__main__":
-    # spectrum_dataframe = pd.DataFrame({'name': ['User 1', 'User 2', 'User 3']})
-    # convert_dataframe_to_sqlite(spectrum_dataframe)
-    # data = np.load("../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
-    # my_array = np.array([[1, 2, 3], [2, 1, 4], [3, 4, 1]])
-    # remove_duplicates_from_csv("../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", "tanimoto_without_duplicates")
-    # create_sqlite_table_for_tanimoto_scores_without_duplicates("dataframe_test_file.sqlite")
-    # print(df)
-    # print(len(df))
-    # print(df.dtypes)
-    # print(df.memory_usage(deep= True))
-    # make_inchikeys_composite_key("dataframe_test_file_without_index.sqlite")
+    column_type_dict = {"spectrum_id": "VARCHAR",
+                        "source_file": "VARCHAR",
+                        "ms_level": "INTEGER",
+                        }
 
-    get_tanimoto_from_sqlite("dataframe_test_file.sqlite")
-    """
-    PERFORMANCE SCORES:
-    run 4000 rows in 40 minutes, when created with two primary keys
-    run 12000 rows in 10 minutes, when created with integers instead of inchikeys"""
+    make_sqlfile_wrapper("test_file_3_tables.sqlite",
+                         column_type_dict,
+                         "../tests/testspectrum_library.json",
+                         "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
