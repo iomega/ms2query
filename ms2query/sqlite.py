@@ -167,8 +167,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     return spectra_list
 
 
-def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame):
-    connection = sqlite3.connect("dataframe_test_file_without_index.sqlite")
+def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
+                                file_name: str):
+    connection = sqlite3.connect(file_name)
 
     # Optimal chuncksize: 20000 = 16.5 s, 30000 = 16,3 s
     spectrum_dataframe.to_sql('tanimoto', connection,
@@ -201,25 +202,97 @@ def get_inchikey_order(metadata_file: str =
     return inchi_list
 
 
-def create_sqlite_table_for_tanimoto_scores():
+def create_sqlite_table_for_tanimoto_scores_without_duplicates(sqlite_file_name: str):
+    create_table_command = """;
+    DROP TABLE IF EXISTS tanimoto;
+    CREATE TABLE tanimoto (
+        inchikey1 INTEGER,
+        inchikey2 INTEGER,
+        tanimoto_score REAL,
+        PRIMARY KEY (inchikey1, inchikey2)
+        );
+    """
 
-    #Running for matrix of length 12000
-    inchikey_order = get_inchikey_order()
+    conn = sqlite3.connect(sqlite_file_name)
+    cur = conn.cursor()
+    cur.executescript(create_table_command)
+    conn.commit()
+    conn.close()
+
+
     tanimoto_score_matrix = np.load(
         "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", mmap_mode='r')
-    start_time = time.time()
-    for i in range(0, len(inchikey_order), 2000):
-        part_of_tanimoto_score_matrix = tanimoto_score_matrix[i:i+2000]
+    list_of_numbers = []
+    for i in range(len(tanimoto_score_matrix[0])):
+        list_of_numbers.append(i)
 
+    start_time = time.time()
+    for row_nr, row in enumerate(tanimoto_score_matrix):
+        # Remove duplicates
+        row = row[:row_nr+1]
+        df = pd.DataFrame(row)
+
+        # Add
+        df['inchikey1'] = np.array(len(row) * [row_nr])
+        df['inchikey2'] = np.array(list_of_numbers[:len(row)])
+        df.rename(columns={0 :'tanimoto_score'}, inplace=True)
+        # add table with dataframe to sqlite file
+        convert_dataframe_to_sqlite(df, sqlite_file_name)
+        if row_nr % 100 == 0:
+            print(row_nr)
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+
+
+def create_sqlite_table_for_tanimoto_scores(sqlite_file_name: str):
+    create_table_command = """;
+    DROP TABLE IF EXISTS tanimoto;
+    CREATE TABLE tanimoto (
+        inchikey1 INTEGER,
+        inchikey2 INTEGER,
+        tanimoto_score REAL,
+        PRIMARY KEY (inchikey1, inchikey2)
+        );
+    """
+
+    conn = sqlite3.connect(sqlite_file_name)
+    cur = conn.cursor()
+    cur.executescript(create_table_command)
+    conn.commit()
+    conn.close()
+
+    #Running for matrix of length 12000 takes about 4 minutes
+    inchikey_order = get_inchikey_order()
+    list_of_numbers = []
+    for i in range(len(inchikey_order)):
+        list_of_numbers.append(i)
+    inchikey_order = list_of_numbers
+    tanimoto_score_matrix = np.load(
+        "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", mmap_mode='r')
+    # for row in tanimoto_score_matrix
+
+
+    start_time = time.time()
+    for i in range(0, len(inchikey_order), 20000):
+        part_of_tanimoto_score_matrix = tanimoto_score_matrix[i:i+200]
+        tanimoto_score_matrix = ""
+        print('1')
         df = pd.DataFrame(part_of_tanimoto_score_matrix,
                           columns=inchikey_order)
-        df['inchikey1'] = inchikey_order[i:i+2000]
+        part_of_tanimoto_score_matrix = ""
+        print('2')
+        df['inchikey1'] = inchikey_order[i:i+200]
+        print('3')
         df = df.melt(id_vars='inchikey1', var_name='inchikey2', value_name='tanimoto_score', ignore_index=True)
+        print('4')
+        # df['inchikey2'] = df['inchikey2'].astype('int64')
+        print('5')
+        # df.set_index(['inchikey1', 'inchikey2'], inplace=True)
 
+        # df.drop_duplicates(subset=['inchikey1', ])
         # add table with dataframe to sqlite file
-        convert_dataframe_to_sqlite(df)
+        convert_dataframe_to_sqlite(df, sqlite_file_name)
         print("--- %s seconds ---" % (time.time() - start_time))
-    # df.to_csv("test_tanimoto_scores.csv", index=True, chunksize=100000)
     return df
 
 
@@ -230,14 +303,75 @@ def create_sqlite_table_for_tanimoto_scores():
     #         new_np_array = np.append(new_np_array, to_add, axis=0)
     #     print(index1)
 
+
+def get_tanimoto_from_sqlite(sqlite_file_name: str):
+    start_time = time.time()
+
+    conn = sqlite3.connect(sqlite_file_name)
+
+    sqlite_command = """SELECT inchikey1, inchikey2, tanimoto_score FROM tanimoto 
+                    WHERE inchikey1 in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,200) and inchikey2 in (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,200);
+                    """
+
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    for score in cur:
+        print(score)
+    conn.close()
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    # return tanimoto_score
+
+def make_inchikeys_composite_key(sqlite_file_name: str):
+    create_table_command = """ALTER TABLE tanimoto 
+    ADD PRIMARY KEY(inchikey1, inchikey2);
+    
+    """
+
+    conn = sqlite3.connect(sqlite_file_name)
+    cur = conn.cursor()
+    cur.execute(create_table_command)
+    conn.commit()
+    conn.close()
+
+def remove_duplicates_from_csv(tanimoto_score_file_location, new_file_name):
+    tanimoto_scores = np.load(tanimoto_score_file_location, mmap_mode='r')
+    start_time = time.time()
+
+    with open(new_file_name + ".txt", 'w') as txt_file:
+        for row_nr, row in enumerate(tanimoto_scores):
+            kept_part = row[:row_nr+1]
+            new_row = np.concatenate((kept_part, np.array([None]*(len(row)-row_nr-1))))
+            for entry in new_row:
+                txt_file.write(str(entry) + ",")
+            if row_nr % 100 == 0:
+                print(row_nr)
+    #
+    # print("--- %s seconds ---" % (time.time() - start_time))
+    with open(new_file_name + ".txt", 'r') as txt_file:
+        no_duplicate_scores = txt_file.read()
+    no_duplicate_scores = no_duplicate_scores.split(',')
+    no_duplicate_scores.pop()
+    no_duplicate_scores = np.array(no_duplicate_scores).reshape(len(row), len(row))
+    np.save(new_file_name + ".npy", no_duplicate_scores)
+    print(no_duplicate_scores)
+
+
 if __name__ == "__main__":
     # spectrum_dataframe = pd.DataFrame({'name': ['User 1', 'User 2', 'User 3']})
     # convert_dataframe_to_sqlite(spectrum_dataframe)
     # data = np.load("../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
     # my_array = np.array([[1, 2, 3], [2, 1, 4], [3, 4, 1]])
-
-    df = create_sqlite_table_for_tanimoto_scores()
+    # remove_duplicates_from_csv("../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy", "tanimoto_without_duplicates")
+    # create_sqlite_table_for_tanimoto_scores_without_duplicates("dataframe_test_file.sqlite")
     # print(df)
     # print(len(df))
     # print(df.dtypes)
     # print(df.memory_usage(deep= True))
+    # make_inchikeys_composite_key("dataframe_test_file_without_index.sqlite")
+
+    get_tanimoto_from_sqlite("dataframe_test_file.sqlite")
+    """
+    PERFORMANCE SCORES:
+    run 4000 rows in 40 minutes, when created with two primary keys
+    run 12000 rows in 10 minutes, when created with integers instead of inchikeys"""
