@@ -8,7 +8,7 @@ from typing import Dict, List
 import pandas as pd
 import numpy as np
 import time
-
+from ms2query.app_helpers import load_pickled_file
 
 # todo test metadata maker, for full file, is in pickled format. Change
 #  function to take list of spectrums as input. Change test function with load
@@ -35,9 +35,9 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
 
     create_table_structure(sqlite_file_name, columns_dict)
     add_spectra_to_database(sqlite_file_name, json_spectrum_file_name)
-    create_inchikey_sqlite_table(sqlite_file_name)
-    initialize_tanimoto_score_table(sqlite_file_name)
-    add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
+    # create_inchikey_sqlite_table(sqlite_file_name)
+    # initialize_tanimoto_score_table(sqlite_file_name)
+    # add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
 
 
 def create_table_structure(sqlite_file_name: str,
@@ -56,6 +56,10 @@ def create_table_structure(sqlite_file_name: str,
         Name of the table that is created in the sqlite file,
         default = "metadata"
     """
+    # Add default columns:
+    columns_dict["peaks"] = "TEXT"
+    columns_dict["intensities"] = "TEXT"
+    columns_dict["metadata"] = "TEXT"
     create_table_command = f"""
     DROP TABLE IF EXISTS {table_name};
     CREATE TABLE {table_name} (
@@ -64,12 +68,52 @@ def create_table_structure(sqlite_file_name: str,
     for column_header in columns_dict:
         create_table_command += column_header + " " \
                                 + columns_dict[column_header] + ",\n"
-    create_table_command += "full_json VARCHAR,\n"
     create_table_command += "PRIMARY KEY (spectrum_id));"
 
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
     cur.executescript(create_table_command)
+    conn.commit()
+    conn.close()
+
+
+def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
+                                  pickled_file_name: str,
+                                  table_name: str = "metadata"):
+
+    list_of_spectra = load_pickled_file(pickled_file_name)
+
+    conn = sqlite3.connect(sqlite_file_name)
+    # Get the column names in the sqlite file
+    cur = conn.execute(f'select * from {table_name}')
+    column_names = list(map(lambda x: x[0], cur.description))
+
+    value_placeholders = ""
+    for column in column_names:
+        value_placeholders += ':' + column + ", "
+
+    add_spectrum_command = f"""INSERT INTO {table_name}
+                           values ({value_placeholders[:-2]})"""
+
+    for nr, spectrum in enumerate(list_of_spectra):
+        peaks = spectrum.peaks.mz
+        intensities = spectrum.peaks.intensities
+        metadata = spectrum.metadata
+
+        value_dict = {'peaks': str(peaks),
+                      "intensities": str(intensities),
+                      "metadata": str(metadata)}
+        for column in column_names:
+            if column not in ['peaks', 'intensities', 'metadata']:
+                if column in metadata:
+                    value_dict[column] = str(metadata[column])
+                else:
+                    value_dict[column] = ""
+
+        cur = conn.cursor()
+        cur.execute(add_spectrum_command, value_dict)
+        if nr % 100 == 0:
+            print(nr)
     conn.commit()
     conn.close()
 
@@ -97,7 +141,7 @@ def add_spectra_to_database(sqlite_file_name: str,
     column_names = list(map(lambda x: x[0], cur.description))
 
     # Add the information of each spectrum to the sqlite file
-    for spectrum in spectra:
+    for spectrum_nr, spectrum in enumerate(spectra):
         columns = ""
         values = ""
         # Check if there is a key for the spectrum that is the same as the
@@ -127,7 +171,9 @@ def add_spectra_to_database(sqlite_file_name: str,
 
         cur = conn.cursor()
         cur.execute(add_spectrum_command)
-        conn.commit()
+        if spectrum_nr % 100 == 0:
+            print(spectrum_nr)
+    conn.commit()
     conn.close()
 
 
@@ -343,8 +389,10 @@ if __name__ == "__main__":
                         "source_file": "VARCHAR",
                         "ms_level": "INTEGER",
                         }
-
-    make_sqlfile_wrapper("test_file_3_tables.sqlite",
-                         column_type_dict,
-                         "../tests/testspectrum_library.json",
-                         "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
+    #
+    # make_sqlfile_wrapper("test_file_3_tables.sqlite",
+    #                      column_type_dict,
+    #                      "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.json",
+    #                      "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
+    create_table_structure("test_file_3_tables.sqlite", column_type_dict)
+    add_list_of_spectra_to_sqlite("test_file_3_tables.sqlite", "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle")
