@@ -6,7 +6,6 @@ from ms2query.query_from_sqlite_database import \
 import pandas as pd
 from ms2query.app_helpers import load_pickled_file
 
-
 def test_sqlite_functions(tmp_path):
     """Tests create_sqlite_database.py and query_from_sqlite_database.py
     """
@@ -35,6 +34,10 @@ def test_sqlite_functions(tmp_path):
          'CXVGEDCSTKKODG'],
         sqlite_file_name)
 
+    # The matrix in the testfile: [[1.0, 0.068, 0.106],
+    #                              [0.068, 1.0, 0.045],
+    #                              [0.106, 0.045, 1.0]])
+
     assert isinstance(tanimoto_score_dataframe, pd.DataFrame)
     assert tanimoto_score_dataframe['MYHSVHWQEVDFQT']['MYHSVHWQEVDFQT'] == \
            1.0, "Expected different value in dataframe"
@@ -62,18 +65,45 @@ def test_sqlite_functions(tmp_path):
 
     # Test if the correct spectra are loaded
     pickled_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                      "first_10_spectra.pickle")
+                                     "first_10_spectra.pickle")
     original_spectra = load_pickled_file(pickled_file_name)
     assert original_spectra[0].__eq__(spectra_list[0]), \
         "expected different spectrum"
     assert original_spectra[2].__eq__(spectra_list[1]), \
         "expected different spectrum"
 
+    print(tanimoto_score_dataframe)
+    print(spectra_list)
+
 
 if __name__ == "__main__":
     test_sqlite_functions("")
 
-    # test_array = np.array([[1.0, 0.068, 0.106],
-    #                        [0.068, 1.0, 0.045],
-    #                        [0.106, 0.045, 1.0]])
-    # np.save("test_files_sqlite/test_tanimoto_scores.npy", test_array)
+    # # To test large file:
+    #
+    # # Create new sql file with all the large datasets
+    # new_sqlite_file_name = "../downloads/data_all_inchikeys_and_all_tanimoto_scores.sqlite"
+    # # make_sqlfile_wrapper(new_sqlite_file_name,
+    # #                      "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy",
+    # #                      "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle",
+    # #                      "../downloads/metadata_AllInchikeys14.csv")
+    #
+    # # Loading tanimoto scores took 770 s (12800 inchikeys)
+    # # Loading spectrum data took less than a minute
+    #
+    # spectra = get_spectra_from_sqlite(new_sqlite_file_name,
+    #                                   ["CCMSLIB00000001547", "CCMSLIB00000001548"])
+    # # Takes 0.0025 s
+    #
+    # print(spectra[0].metadata)
+    # print(spectra)
+    #
+    # print(get_tanimoto_score_for_inchikeys(['MYHSVHWQEVDFQT',
+    #                                         'HYTGGNIMZXFORS',
+    #                                         'JAMSDVDUWQNQFZ',
+    #                                         'QASOACWKTAXFSE',
+    #                                         'MZWQZYDNVSKPPF',
+    #                                         'abc'],
+    #                                        new_sqlite_file_name))
+    # # Takes 0.025 seconds
+    pass

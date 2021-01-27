@@ -1,39 +1,45 @@
+"""
+Functions to obtain data from sqlite files.
+"""
+
 import sqlite3
 from typing import Dict, List
 from matchms.Spectrum import Spectrum
 import ast
-from matchms.importing.load_from_json import dict2spectrum
-import time
 import pandas as pd
 import numpy as np
 import io
 
+
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
-                            table_name: str = "spectrum_data") -> List[Spectrum]:
-    """Returns a list with all metadata of spectrum_ids in spectrum_id_list
+                            table_name: str = "spectrum_data"
+                            ) -> List[Spectrum]:
+    """Returns a list with all spectra specified in spectrum_id_list
 
     Args:
     -------
     sqlite_file_name:
         File name of the sqlite file that contains the spectrum information
     spectrum_id_list:
-        List of spectrum_id's of which the metadata should be returned
+        List of spectrum_id's of which the spectra objects should be returned
     table_name:
         Name of the table in the sqlite file that stores the spectrum data
     """
-    # Converts TEXT to np.array when selecting
+    # Converts TEXT to np.array when querying
     sqlite3.register_converter("array", convert_array)
 
     conn = sqlite3.connect(sqlite_file_name,
                            detect_types=sqlite3.PARSE_DECLTYPES)
 
+    # Get all relevant data.
     sqlite_command = f"""SELECT peaks, intensities, metadata FROM {table_name} 
                     WHERE spectrum_id 
                     IN ('{"', '".join(map(str, spectrum_id_list))}')"""
-
     cur = conn.cursor()
     cur.execute(sqlite_command)
+
+    # Convert to list of matchms.Spectrum
     list_of_spectra = []
     for result in cur:
         peaks = result[0]
@@ -41,13 +47,26 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         metadata = ast.literal_eval(result[2])
 
         list_of_spectra.append(Spectrum(mz=peaks,
-                            intensities=intensities,
-                            metadata=metadata))
+                                        intensities=intensities,
+                                        metadata=metadata))
     conn.close()
     return list_of_spectra
 
 
 def convert_array(text):
+    """Converts np.ndarray stored in binary format back to an np.ndarray
+
+    By running this command:
+    sqlite3.register_converter("array", convert_array)
+    This function will be called everytime something with the datatype array is
+    loaded from a sqlite file.
+    Found at: http://stackoverflow.com/a/31312102/190597 (SoulNibbler)
+
+    Args:
+    -------
+    text:
+        A numpy array stored in a binary format.
+    """
     out = io.BytesIO(text)
     out.seek(0)
     return np.load(out)
@@ -65,18 +84,66 @@ def get_tanimoto_score_for_inchikeys(list_of_inchikeys: List[str],
     sqlite_file_name:
         The sqlite file in which the tanimoto scores are stored.
     """
+    # Gets the identifiers from the inchikeys
     inchikey_dict = get_index_of_inchikeys(list_of_inchikeys, sqlite_file_name)
     identifier_list = []
     for inchikey in inchikey_dict:
         identifier_list.append(inchikey_dict[inchikey])
 
+    # Get the tanimoto scores between the inchikeys in list_of_inchikeys
     tanimoto_score_matrix = get_tanimoto_from_sqlite(sqlite_file_name,
                                                      identifier_list)
-    # Change the column names and indexes from identifiers to inchikeys
+    # Reverse the dictionary value becomes key and key becomes value
     reversed_inchikey_dict = {v: k for k, v in inchikey_dict.items()}
+    # Change the column names and indexes from identifiers to inchikeys
     tanimoto_score_matrix.rename(columns=reversed_inchikey_dict,
                                  index=reversed_inchikey_dict, inplace=True)
     return tanimoto_score_matrix
+
+
+def get_index_of_inchikeys(list_of_inchikeys: List[str],
+                           sqlite_file_name: str,
+                           table_name: str = "inchikeys") -> Dict[str, int]:
+    """Look up the identifiers for each inchikey in a sqlite file.
+
+    Args:
+    -------
+    list_of_inchikeys:
+        A list of 14 letter inchikeys
+    sqlite_file_name:
+        The file name of a sqlite file in which the identifiers of the inchikey
+        are stored
+    table_name:
+        The table name in which the identifiers or the inchikey are stored.
+        Default = "inchikeys"
+    """
+
+    conn = sqlite3.connect(sqlite_file_name)
+
+    # Create string with placeholders for sqlite command
+    question_marks = ''
+    for i in range(len(list_of_inchikeys)):
+        question_marks += '?,'
+    # Remove the last comma
+    question_marks = question_marks[:-1]
+
+    sqlite_command = f"""SELECT inchikey, rowid FROM {table_name}
+                        WHERE inchikey in ({question_marks})"""
+
+    cur = conn.cursor()
+    cur.execute(sqlite_command, list_of_inchikeys)
+    # Convert result to dictionary
+    identifier_dict = {}
+    for result in cur:
+        identifier_dict[result[0]] = result[1]-1
+
+    conn.close()
+
+    # Check if all inchikeys are found
+    for inchikey in list_of_inchikeys:
+        if inchikey not in identifier_dict:
+            print(inchikey + " is not found")
+    return identifier_dict
 
 
 def get_tanimoto_from_sqlite(sqlite_file_name: str,
@@ -113,69 +180,10 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                                     columns=["identifier_1",
                                              "identifier_2",
                                              "tanimoto_score"])
+    # Changes the structure of the database from a melt structure to a matrix
     result_dataframe = pd.pivot_table(result_dataframe,
                                       columns="identifier_1",
                                       index="identifier_2",
                                       values="tanimoto_score")
     conn.close()
     return result_dataframe
-
-
-def get_index_of_inchikeys(list_of_inchikeys: List[str],
-                           sqlite_file_name: str,
-                           table_name: str = "inchikeys") -> Dict[str, int]:
-    """Look up the identifiers for each inchikey in a sqlite file.
-
-    Args:
-    -------
-    list_of_inchikeys:
-        A list of 14 letter inchikeys
-    sqlite_file_name:
-        The file name of a sqlite file in which the identifiers of the inchikey
-        are stored
-    table_name:
-        The table name in which the identifiers or the inchikey are stored
-    """
-
-    conn = sqlite3.connect(sqlite_file_name)
-
-    # Create string with placeholders for sqlite command
-    question_marks = ''
-    for i in range(len(list_of_inchikeys)):
-        question_marks += '?,'
-    # Remove the last comma
-    question_marks = question_marks[:-1]
-
-    sqlite_command = f"""SELECT inchikey, rowid FROM {table_name}
-                        WHERE inchikey in ({question_marks})"""
-
-    cur = conn.cursor()
-    cur.execute(sqlite_command, list_of_inchikeys)
-    # Conver result to dictionary
-    identifier_dict = {}
-    for result in cur:
-        identifier_dict[result[0]] = result[1]-1
-
-    conn.close()
-
-    # Check if all inchikeys are found
-    for inchikey in list_of_inchikeys:
-        if inchikey not in identifier_dict:
-            print(inchikey + " is not found")
-    return identifier_dict
-
-
-# get_spectra_from_sqlite("../downloads/data_all_inchikeys.sqlite", ["CCMSLIB00000001547", "CCMSLIB00000001548"])
-# get_tanimoto_from_sqlite("../downloads/data_all_inchikeys.sqlite",[])
-# print(get_tanimoto_score_for_inchikeys(['MYHSVHWQEVDFQT',
-#                                         'HYTGGNIMZXFORS',
-#                                         'JAMSDVDUWQNQFZ',
-#                                         'QASOACWKTAXFSE',
-#                                         'MZWQZYDNVSKPPF',
-#                                         'abc'],
-#                                        "../downloads/data_all_inchikeys.sqlite"))
-# result = get_spectra_from_sqlite("../tests/test_spectra_database.sqlite", ['CCMSLIB00000001547',
-#                                       'CCMSLIB00000001548',
-#                                       'CCMSLIB00000001554'])
-# my_array = np.array([1.2, 15.6, 12.3])
-
