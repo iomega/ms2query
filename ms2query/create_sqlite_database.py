@@ -1,22 +1,27 @@
 """
-Functions to create and retrieve information from sqlite files
+Functions to create sqlite file that contains 3 tables
+
+The 3 tables are spectrum_data, inchikeys and tanimoto_scores.
+Spectrum_data contains the peaks, intensities and metadata from all spectra.
+Tanimoto_scores contains all tanimoto scores.
+Inchikeys contains the order of inchikeys, that can be used to find
+corresponding indexes in the tanimoto_scores table.
 """
 
 import sqlite3
-import json
 from typing import Dict, List
 import pandas as pd
 import numpy as np
 import time
 from ms2query.app_helpers import load_pickled_file
+from matchms.Spectrum import Spectrum
+import io
 
-# todo test metadata maker, for full file, is in pickled format. Change
-#  function to take list of spectrums as input. Change test function with load
-#  from json, so this is still functional.
+
 def make_sqlfile_wrapper(sqlite_file_name: str,
-                         columns_dict: Dict[str, str],
-                         json_spectrum_file_name: str,
-                         npy_file_location: str
+                         npy_file_location: str,
+                         pickled_file_name: str,
+                         csv_file_with_inchikey_order:str
                          ):
     """Wrapper to create sqlite file with three tables.
 
@@ -26,23 +31,32 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         Name of sqlite_file that should be created, if it already exists the
         tables are added. If the tables in this sqlite file already exist, they
         will be overwritten.
-    columns_dict:
-        Dictionary with as keys the column names and as values the sql datatype
     json_spectrum_file_name:
         File location of the json file that stores the spectra.
+    columns_dict:
+        Dictionary with as keys columns that need to be added in addition to
+        the default columns (peaks, intensities, metadata and spectrum_id) and
+        as values the datatype. The column names should correspond to keys in
+        the metadata.
 
     """
 
-    create_table_structure(sqlite_file_name, columns_dict)
-    add_spectra_to_database(sqlite_file_name, json_spectrum_file_name)
-    # create_inchikey_sqlite_table(sqlite_file_name)
-    # initialize_tanimoto_score_table(sqlite_file_name)
-    # add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
+    # Creates a sqlite table containing all tanimoto scores
+    initialize_tanimoto_score_table(sqlite_file_name)
+    add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
+
+    # Creates a table containing the identifiers belonging to each inchikey
+    create_inchikey_sqlite_table(sqlite_file_name, csv_file_with_inchikey_order)
+
+    # Creates a sqlite table with the metadata, peaks and intensities
+    list_of_spectra = load_pickled_file(pickled_file_name)
+    create_table_structure(sqlite_file_name)
+    add_list_of_spectra_to_sqlite(sqlite_file_name, list_of_spectra)
 
 
 def create_table_structure(sqlite_file_name: str,
-                           columns_dict: Dict[str, str],
-                           table_name: str = "metadata"):
+                           columns_dict: Dict[str, str] = None,
+                           table_name: str = "spectrum_data"):
     """Creates a new sqlite file, with columns defined in columns_dict
 
     Args:
@@ -51,15 +65,25 @@ def create_table_structure(sqlite_file_name: str,
         Name of sqlite_file that should be created, if it already exists the
         table spectra is overwritten.
     columns_dict:
-        Dictionary with as keys the column names and as values the sql datatype
+        Dictionary with as keys columns that need to be added and as values the
+        datatype. Default = None results in the columns spectrum_id, peaks,
+        intensities and metadata. These column names always have to be in
+        columns_dict.
     table_name:
         Name of the table that is created in the sqlite file,
-        default = "metadata"
+        default = "spectrum_data"
     """
-    # Add default columns:
-    columns_dict["peaks"] = "TEXT"
-    columns_dict["intensities"] = "TEXT"
-    columns_dict["metadata"] = "TEXT"
+    # Create a new datatype array for sqlite
+    # Converts np.array to TEXT when inserting
+    sqlite3.register_adapter(np.ndarray, adapt_array)
+
+
+    if columns_dict is None:
+        columns_dict = {"spectrum_id": "TEXT",
+                        "peaks": "array",
+                        "intensities": "array",
+                        "metadata": "TEXT"}
+
     create_table_command = f"""
     DROP TABLE IF EXISTS {table_name};
     CREATE TABLE {table_name} (
@@ -77,12 +101,30 @@ def create_table_structure(sqlite_file_name: str,
     conn.close()
 
 
+def adapt_array(arr):
+    """Converts array to binary format, so it can be stored in sqlite
+
+    By running this command:
+    sqlite3.register_adapter(np.ndarray, adapt_array)
+    This function will be called everytime a np.ndarray is loaded into a sqlite
+    file.
+
+    Found at: http://stackoverflow.com/a/31312102/190597 (SoulNibbler)
+
+    Args:
+    -------
+    arr:
+        A np ndarray
+        """
+    out = io.BytesIO()
+    np.save(out, arr)
+    out.seek(0)
+    return sqlite3.Binary(out.read())
+
+
 def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
-                                  pickled_file_name: str,
-                                  table_name: str = "metadata"):
-
-    list_of_spectra = load_pickled_file(pickled_file_name)
-
+                                  list_of_spectra: List[Spectrum],
+                                  table_name: str = "spectrum_data"):
     conn = sqlite3.connect(sqlite_file_name)
     # Get the column names in the sqlite file
     cur = conn.execute(f'select * from {table_name}')
@@ -100,8 +142,8 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
         intensities = spectrum.peaks.intensities
         metadata = spectrum.metadata
 
-        value_dict = {'peaks': str(peaks),
-                      "intensities": str(intensities),
+        value_dict = {'peaks': peaks,
+                      "intensities": intensities,
                       "metadata": str(metadata)}
         for column in column_names:
             if column not in ['peaks', 'intensities', 'metadata']:
@@ -118,69 +160,10 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
     conn.close()
 
 
-def add_spectra_to_database(sqlite_file_name: str,
-                            json_spectrum_file_name: str,
-                            table_name: str = "metadata"):
-    """Creates a sqlite file containing the information from a json file.
-
-    Args:
-    -------
-    sqlite_file_name:
-        Name of sqlite file to which the spectra should be added.
-    json_spectrum_file_name:
-        File location of the json file that stores the spectra.
-    table_name:
-        Name of the table in the database to which the spectra should be added,
-        default = "metadata"
-    """
-    spectra = json.load(open(json_spectrum_file_name))
-    conn = sqlite3.connect(sqlite_file_name)
-
-    # Get the column names in the sqlite file
-    cur = conn.execute(f'select * from {table_name}')
-    column_names = list(map(lambda x: x[0], cur.description))
-
-    # Add the information of each spectrum to the sqlite file
-    for spectrum_nr, spectrum in enumerate(spectra):
-        columns = ""
-        values = ""
-        # Check if there is a key for the spectrum that is the same as the
-        # specified columns and if this is the case add this value to this
-        # column.
-        for column in column_names:
-            if column in spectrum:
-                # Add comma when it is not the first column that is added
-                if len(columns) > 0:
-                    columns += ", "
-                    values += ", "
-                columns += column
-                values += '"' + spectrum[column] + '"'
-
-            # Add the complete spectrum in json format to the column full_json
-            elif column == "full_json":
-                if len(columns) > 0:
-                    columns += ", "
-                    values += ", "
-                columns += "full_json"
-                values += f'"{spectrum}"'
-            else:
-                print(f"No value found for column: {column} in "
-                      f"spectrum {spectrum['spectrum_id']}")
-        add_spectrum_command = f"INSERT INTO {table_name} " \
-                               + f"({columns}) values ({values})"
-
-        cur = conn.cursor()
-        cur.execute(add_spectrum_command)
-        if spectrum_nr % 100 == 0:
-            print(spectrum_nr)
-    conn.commit()
-    conn.close()
-
-
 def create_inchikey_sqlite_table(file_name: str,
+                                 csv_file_with_inchikey_order: str,
                                  table_name: str = 'inchikeys',
-                                 col_name_inchikey: str = 'inchikeys',
-                                 col_name_identifier: str = 'identifier'):
+                                 col_name_inchikey: str = 'inchikey'):
     """Creates a table storing the identifiers belonging to the inchikeys
 
     Removes the table if it already exists and makes the col_name_inchikey
@@ -199,10 +182,6 @@ def create_inchikey_sqlite_table(file_name: str,
     col_name_inchikey:
         Name of the first column in the table containing the inchikeys.
         Default = inchikeys
-    col_name_identifier:
-        Name of the second column in the table containing the identifiers.
-        Default = identifier.
-
     """
 
     conn = sqlite3.connect(file_name)
@@ -220,7 +199,7 @@ def create_inchikey_sqlite_table(file_name: str,
     conn.commit()
 
     # Fill table
-    ordered_inchikey_list = get_inchikey_order()
+    ordered_inchikey_list = get_inchikey_order(csv_file_with_inchikey_order)
 
     for inchikey in ordered_inchikey_list:
         add_row_to_table_command = f"""INSERT INTO {table_name} 
@@ -230,9 +209,7 @@ def create_inchikey_sqlite_table(file_name: str,
     conn.close()
 
 
-def get_inchikey_order(metadata_file: str =
-                       "../downloads/metadata_AllInchikeys14.csv"
-                       ) -> List[str]:
+def get_inchikey_order(metadata_file: str) -> List[str]:
     """Return list of Inchi14s in same order as in metadata_file
 
     Args:
@@ -385,14 +362,15 @@ def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
 
 
 if __name__ == "__main__":
-    column_type_dict = {"spectrum_id": "VARCHAR",
-                        "source_file": "VARCHAR",
-                        "ms_level": "INTEGER",
-                        }
-    #
-    # make_sqlfile_wrapper("test_file_3_tables.sqlite",
-    #                      column_type_dict,
-    #                      "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.json",
-    #                      "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy")
-    create_table_structure("test_file_3_tables.sqlite", column_type_dict)
-    add_list_of_spectra_to_sqlite("test_file_3_tables.sqlite", "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle")
+    # make_sqlfile_wrapper("../downloads/data_all_inchikeys.sqlite",
+    #                      "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy",
+    #                      "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle")
+    # list_of_spectra = load_pickled_file("../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle")
+    # list_of_spectra = list_of_spectra[:10]
+    # outfile = open("../tests/test_files_sqlite/first_10_spectra.pickle", "wb")
+    # pickle.dump(list_of_spectra, outfile)
+    # outfile.close()
+    # list_of_spectra = load_pickled_file("../tests/test_files_sqlite/first_10_spectra.pickle")
+    # print(list_of_spectra)
+    pass
+
