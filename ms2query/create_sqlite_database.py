@@ -116,7 +116,7 @@ def create_table_structure(sqlite_file_name: str,
     conn.close()
 
 
-def adapt_array(arr) -> sqlite3.Binary:
+def adapt_array(arr: np.array) -> sqlite3.Binary:
     """Converts array to binary format, so it can be stored in sqlite
 
     By running this command:

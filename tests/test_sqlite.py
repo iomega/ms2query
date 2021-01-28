@@ -6,6 +6,7 @@ from ms2query.query_from_sqlite_database import \
 import pandas as pd
 from ms2query.app_helpers import load_pickled_file
 
+
 def test_sqlite_functions(tmp_path):
     """Tests create_sqlite_database.py and query_from_sqlite_database.py
     """
@@ -77,22 +78,27 @@ def test_sqlite_functions(tmp_path):
 
 
 if __name__ == "__main__":
-    test_sqlite_functions("")
-
+    # # To manually run the test
+    # test_sqlite_functions("")
+    #
     # # To test large file:
     #
     # # Create new sql file with all the large datasets
-    # new_sqlite_file_name = "../downloads/data_all_inchikeys_and_all_tanimoto_scores.sqlite"
-    # # make_sqlfile_wrapper(new_sqlite_file_name,
-    # #                      "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy",
-    # #                      "../downloads/gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle",
-    # #                      "../downloads/metadata_AllInchikeys14.csv")
+    # new_sqlite_file_name = \
+    #     "../downloads/data_all_inchikeys_and_all_tanimoto_scores.sqlite"
+    # make_sqlfile_wrapper(
+    #     new_sqlite_file_name,
+    #     "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy",
+    #     "../downloads/" +
+    #     "gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle",
+    #     "../downloads/metadata_AllInchikeys14.csv")
     #
     # # Loading tanimoto scores took 770 s (12800 inchikeys)
     # # Loading spectrum data took less than a minute
     #
     # spectra = get_spectra_from_sqlite(new_sqlite_file_name,
-    #                                   ["CCMSLIB00000001547", "CCMSLIB00000001548"])
+    #                                   ["CCMSLIB00000001547",
+    #                                    "CCMSLIB00000001548"])
     # # Takes 0.0025 s
     #
     # print(spectra[0].metadata)
