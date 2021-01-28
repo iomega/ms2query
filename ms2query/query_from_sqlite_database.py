@@ -122,7 +122,7 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
 
     # Create string with placeholders for sqlite command
     question_marks = ''
-    for i in range(len(list_of_inchikeys)):
+    for _ in range(len(list_of_inchikeys)):
         question_marks += '?,'
     # Remove the last comma
     question_marks = question_marks[:-1]
