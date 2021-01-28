@@ -2,13 +2,13 @@
 Functions to obtain data from sqlite files.
 """
 
-import sqlite3
-from typing import Dict, List
-from matchms.Spectrum import Spectrum
 import ast
-import pandas as pd
-import numpy as np
 import io
+from typing import Dict, List
+import numpy as np
+import pandas as pd
+import sqlite3
+from matchms.Spectrum import Spectrum
 
 
 def get_spectra_from_sqlite(sqlite_file_name: str,

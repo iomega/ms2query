@@ -1,10 +1,10 @@
-from ms2query.create_sqlite_database import make_sqlfile_wrapper
 import os
-from matchms.Spectrum import Spectrum
+import pandas as pd
+from matchms import Spectrum
+from ms2query.app_helpers import load_pickled_file
+from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite
-import pandas as pd
-from ms2query.app_helpers import load_pickled_file
 
 
 def test_sqlite_functions(tmp_path):

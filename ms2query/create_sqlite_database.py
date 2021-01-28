@@ -8,14 +8,14 @@ Inchikeys contains the order of inchikeys, that can be used to find
 corresponding indexes in the tanimoto_scores table.
 """
 
-import sqlite3
+import io
+import time
 from typing import Dict, List
 import pandas as pd
 import numpy as np
-import time
+import sqlite3
+from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
-from matchms.Spectrum import Spectrum
-import io
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
