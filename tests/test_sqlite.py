@@ -1,22 +1,44 @@
-from ms2query.create_sqlite_database import make_sqlfile_wrapper
 import os
-from matchms.Spectrum import Spectrum
+import pandas as pd
+import numpy as np
+from matchms import Spectrum
+from ms2query.app_helpers import load_pickled_file
+from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite
-import pandas as pd
-from ms2query.app_helpers import load_pickled_file
 
 
-def test_sqlite_functions(tmp_path):
-    """Tests create_sqlite_database.py and query_from_sqlite_database.py
+def test_sqlite_functions_wrapper(tmp_path):
+    """Tests all sqlite related functions
+
+    These functions are creating a new sqlite file with spectra data and
+    tanimoto scores (create_sqlite_database.py) and functions to retrieve
+    information from the sqlite database.
     """
-
     sqlite_file_name = os.path.join(tmp_path, "test_spectra_database.sqlite")
 
-    # Create path so it also works for automatic testing
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files_sqlite')
+
+    # Creates a temporary sqlite file with test data.
+    make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir)
+    # Test if the correct tanimoto score data is retrieved from the sqlite file
+    get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir)
+    # Test if the correct spectrum data is loaded from the sqlite file
+    get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir)
+
+
+def make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir):
+    """Makes a sqlite file and tests if it was made
+
+    Args:
+    ------
+    sqlite_file_name:
+        The file name of the temporary test sqlite file
+    path_to_test_files_sqlite_dir:
+        The path from this directory to the directory with test files
+    """
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(sqlite_file_name,
                          os.path.join(path_to_test_files_sqlite_dir,
@@ -29,30 +51,45 @@ def test_sqlite_functions(tmp_path):
     # Test if file is made
     assert os.path.isfile(sqlite_file_name), "Expected a file to be created"
 
+
+def get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir):
+    """Tests if the correct tanimoto scores are retrieved from sqlite file
+
+    Args:
+    ------
+    sqlite_file_name:
+        The file name of the temporary test sqlite file
+    path_to_test_files_sqlite_dir:
+        The path from this directory to the directory with test files
+    """
+    test_inchikeys = ['MYHSVHWQEVDFQT',
+                      'BKAWJIRCKVUVED',
+                      'CXVGEDCSTKKODG']
     tanimoto_score_dataframe = get_tanimoto_score_for_inchikeys(
-        ['MYHSVHWQEVDFQT',
-         'BKAWJIRCKVUVED',
-         'CXVGEDCSTKKODG'],
+        test_inchikeys,
         sqlite_file_name)
 
-    # The matrix in the testfile: [[1.0, 0.068, 0.106],
-    #                              [0.068, 1.0, 0.045],
-    #                              [0.106, 0.045, 1.0]])
+    scores_in_test_file = np.load(os.path.join(path_to_test_files_sqlite_dir,
+                                               "test_tanimoto_scores.npy"))
 
-    assert isinstance(tanimoto_score_dataframe, pd.DataFrame)
-    assert tanimoto_score_dataframe['MYHSVHWQEVDFQT']['MYHSVHWQEVDFQT'] == \
-           1.0, "Expected different value in dataframe"
-    assert tanimoto_score_dataframe['BKAWJIRCKVUVED']['MYHSVHWQEVDFQT'] == \
-           0.068, "Expected different value in dataframe"
-    assert tanimoto_score_dataframe['CXVGEDCSTKKODG']['MYHSVHWQEVDFQT'] == \
-           0.106, "Expected different value in dataframe"
-    assert tanimoto_score_dataframe['BKAWJIRCKVUVED']['BKAWJIRCKVUVED'] == \
-           1.0, "Expected different value in dataframe"
-    assert tanimoto_score_dataframe['CXVGEDCSTKKODG']['BKAWJIRCKVUVED'] == \
-           0.045, "Expected different value in dataframe"
-    assert tanimoto_score_dataframe['CXVGEDCSTKKODG']['CXVGEDCSTKKODG'] == \
-           1.0, "Expected different value in dataframe"
+    expected_dataframe = pd.DataFrame(scores_in_test_file,
+                                      index=test_inchikeys,
+                                      columns=test_inchikeys)
 
+    assert expected_dataframe.equals(tanimoto_score_dataframe), \
+        "Expected different tanimoto scores, or columns/index names"
+
+
+def get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir):
+    """Tests if the correct spectrum data is returned from a sqlite file
+
+    Args:
+    ------
+    sqlite_file_name:
+        The file name of the temporary test sqlite file
+    path_to_test_files_sqlite_dir:
+        The path from this directory to the directory with test files
+    """
     spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
     spectra_list = get_spectra_from_sqlite(sqlite_file_name, spectra_id_list)
 
@@ -69,47 +106,6 @@ def test_sqlite_functions(tmp_path):
                                      "first_10_spectra.pickle")
     original_spectra = load_pickled_file(pickled_file_name)
     assert original_spectra[0].__eq__(spectra_list[0]), \
-        "expected different spectrum"
+        "Expected different spectrum"
     assert original_spectra[2].__eq__(spectra_list[1]), \
-        "expected different spectrum"
-
-    print(tanimoto_score_dataframe)
-    print(spectra_list)
-
-
-if __name__ == "__main__":
-    # # To manually run the test
-    # test_sqlite_functions("")
-    #
-    # # To test large file:
-    #
-    # # Create new sql file with all the large datasets
-    # new_sqlite_file_name = \
-    #     "../downloads/data_all_inchikeys_and_all_tanimoto_scores.sqlite"
-    # make_sqlfile_wrapper(
-    #     new_sqlite_file_name,
-    #     "../downloads/similarities_AllInchikeys14_daylight2048_jaccard.npy",
-    #     "../downloads/" +
-    #     "gnps_positive_ionmode_cleaned_by_matchms_and_lookups.pickle",
-    #     "../downloads/metadata_AllInchikeys14.csv")
-    #
-    # # Loading tanimoto scores took 770 s (12800 inchikeys)
-    # # Loading spectrum data took less than a minute
-    #
-    # spectra = get_spectra_from_sqlite(new_sqlite_file_name,
-    #                                   ["CCMSLIB00000001547",
-    #                                    "CCMSLIB00000001548"])
-    # # Takes 0.0025 s
-    #
-    # print(spectra[0].metadata)
-    # print(spectra)
-    #
-    # print(get_tanimoto_score_for_inchikeys(['MYHSVHWQEVDFQT',
-    #                                         'HYTGGNIMZXFORS',
-    #                                         'JAMSDVDUWQNQFZ',
-    #                                         'QASOACWKTAXFSE',
-    #                                         'MZWQZYDNVSKPPF',
-    #                                         'abc'],
-    #                                        new_sqlite_file_name))
-    # # Takes 0.025 seconds
-    pass
+        "Expected different spectrum"

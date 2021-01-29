@@ -2,13 +2,13 @@
 Functions to obtain data from sqlite files.
 """
 
-import sqlite3
-from typing import Dict, List
-from matchms.Spectrum import Spectrum
 import ast
-import pandas as pd
-import numpy as np
 import io
+from typing import Dict, List
+import numpy as np
+import pandas as pd
+import sqlite3
+from matchms.Spectrum import Spectrum
 
 
 def get_spectra_from_sqlite(sqlite_file_name: str,
@@ -53,7 +53,7 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     return list_of_spectra
 
 
-def convert_array(text):
+def convert_array(nd_array_in_bytes: bytes) -> np.array:
     """Converts np.ndarray stored in binary format back to an np.ndarray
 
     By running this command:
@@ -64,10 +64,10 @@ def convert_array(text):
 
     Args:
     -------
-    text:
+    nd_array_in_bytes:
         A numpy array stored in a binary format.
     """
-    out = io.BytesIO(text)
+    out = io.BytesIO(nd_array_in_bytes)
     out.seek(0)
     return np.load(out)
 
@@ -159,11 +159,7 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
         are returned.
     """
     conn = sqlite3.connect(sqlite_file_name)
-    identifier_string = ""
-    for identifier in list_of_identifiers:
-        identifier_string += str(identifier) + ","
-    # Remove last comma
-    identifier_string = identifier_string[:-1]
+    identifier_string = ",".join([str(x) for x in list_of_identifiers])
 
     sqlite_command = f"""SELECT identifier_1, identifier_2, tanimoto_score 
                     FROM tanimoto_scores
@@ -176,12 +172,22 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     for result in cur:
         result_list.append(result)
 
-    result_dataframe = pd.DataFrame(result_list,
-                                    columns=["identifier_1",
-                                             "identifier_2",
-                                             "tanimoto_score"])
+    # The data is changed to pd.DataFrame twice and then added together. So
+    # that both the tanimoto score is given for 1,2 and 2,1. Thereby
+    # duplicating the data, but making the lookup easier for other functions.
+    scores_normal_identifiers = pd.DataFrame(result_list,
+                                             columns=["identifier_1",
+                                                      "identifier_2",
+                                                      "tanimoto_score"])
+    scores_reversed_identifiers = pd.DataFrame(result_list,
+                                               columns=["identifier_2",
+                                                        "identifier_1",
+                                                        "tanimoto_score"])
+    result_dataframe_melt_structure = pd.concat([scores_normal_identifiers,
+                                                 scores_reversed_identifiers])
+
     # Changes the structure of the database from a melt structure to a matrix
-    result_dataframe = pd.pivot_table(result_dataframe,
+    result_dataframe = pd.pivot_table(result_dataframe_melt_structure,
                                       columns="identifier_1",
                                       index="identifier_2",
                                       values="tanimoto_score")

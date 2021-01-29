@@ -8,14 +8,14 @@ Inchikeys contains the order of inchikeys, that can be used to find
 corresponding indexes in the tanimoto_scores table.
 """
 
-import sqlite3
+import io
+from tqdm import tqdm
 from typing import Dict, List
 import pandas as pd
 import numpy as np
-import time
+import sqlite3
+from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
-from matchms.Spectrum import Spectrum
-import io
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
@@ -322,7 +322,8 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
                                         'identifier_1',
                                         col_name_identifier2: str =
                                         'identifier_2',
-                                        col_name_score: str = 'tanimoto_score'
+                                        col_name_score: str = 'tanimoto_score',
+                                        progress_bar: bool = True,
                                         ):
     """Adds tanimoto scores from npy file to sqlite table
 
@@ -348,7 +349,10 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     col_name_score:
         Name of the third column of the table, this column will store the
         tanimoto scores. Default = 'tanimoto_score'
+    progress_bar:
+        Show progress bar if set to True. Default is True.
     """
+    # pylint: disable=too-many-arguments
     tanimoto_score_matrix = np.load(
         npy_file_path,
         mmap_mode='r')
@@ -359,9 +363,12 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     for i in range(len(tanimoto_score_matrix[0])):
         list_of_numbers.append(i)
 
-    start_time = time.time()
     # Create a dataframe and add to sqlite table row by row
-    for row_nr, row in enumerate(tanimoto_score_matrix):
+    for row_nr, row in enumerate(
+            tqdm(tanimoto_score_matrix,
+                 desc="Adding tanimoto scores to sqlite file",
+                 disable=not progress_bar)):
+
         # Remove duplicates
         row = row[:row_nr+1]
         # Transform to pd.Dataframe
@@ -374,12 +381,6 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
         df.rename(columns={0: col_name_score}, inplace=True)
         # Add dataframe to table in sqlite file
         convert_dataframe_to_sqlite(df, sqlite_file_name)
-
-        if row_nr % 100 == 0:
-            print("The tanimoto scores for " + str(row_nr)
-                  + " inchikeys have been added")
-    print("Adding the tanimoto scores took %s seconds" % (time.time() -
-                                                          start_time))
 
 
 def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
