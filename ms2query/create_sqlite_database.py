@@ -352,6 +352,7 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     progress_bar:
         Show progress bar if set to True. Default is True.
     """
+    # pylint: disable=too-many-arguments
     tanimoto_score_matrix = np.load(
         npy_file_path,
         mmap_mode='r')
