@@ -1,6 +1,14 @@
+"""Tests all sqlite related functions
+
+These functions are creating a new sqlite file with spectra data and
+tanimoto scores (create_sqlite_database.py) and functions to retrieve
+information from the sqlite database.
+"""
+
 import os
 import pandas as pd
 import numpy as np
+import sqlite3
 from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
@@ -8,39 +16,21 @@ from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite
 
 
-def test_sqlite_functions_wrapper(tmp_path):
-    """Tests all sqlite related functions
-
-    These functions are creating a new sqlite file with spectra data and
-    tanimoto scores (create_sqlite_database.py) and functions to retrieve
-    information from the sqlite database.
+def test_making_sqlite_file(tmp_path):
+    """Makes a temporary sqlite file and tests if it contains the correct info
     """
-    sqlite_file_name = os.path.join(tmp_path, "test_spectra_database.sqlite")
+    # tmp_path is a fixture that makes sure a temporary file is created
+    new_sqlite_file_name = os.path.join(tmp_path,
+                                        "test_spectra_database.sqlite")
 
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files_sqlite')
 
-    # Creates a temporary sqlite file with test data.
-    make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir)
-    # Test if the correct tanimoto score data is retrieved from the sqlite file
-    get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir)
-    # Test if the correct spectrum data is loaded from the sqlite file
-    get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir)
-
-
-def make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir):
-    """Makes a sqlite file and tests if it was made
-
-    Args:
-    ------
-    sqlite_file_name:
-        The file name of the temporary test sqlite file
-    path_to_test_files_sqlite_dir:
-        The path from this directory to the directory with test files
-    """
+    reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
+                                         "test_spectra_database.sqlite")
     # Create sqlite file, with 3 tables
-    make_sqlfile_wrapper(sqlite_file_name,
+    make_sqlfile_wrapper(new_sqlite_file_name,
                          os.path.join(path_to_test_files_sqlite_dir,
                                       "test_tanimoto_scores.npy"),
                          os.path.join(path_to_test_files_sqlite_dir,
@@ -49,19 +39,43 @@ def make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir):
                                       "test_metadata_for_inchikey_order.csv"))
 
     # Test if file is made
-    assert os.path.isfile(sqlite_file_name), "Expected a file to be created"
+    assert os.path.isfile(new_sqlite_file_name), \
+        "Expected a file to be created"
+
+    # Test if the file has the correct information
+    get_table_names = \
+        "SELECT name FROM sqlite_master WHERE type='table' order by name"
+    conn1 = sqlite3.connect(new_sqlite_file_name)
+    cur1 = conn1.cursor()
+    table_names1 = cur1.execute(get_table_names).fetchall()
+
+    conn2 = sqlite3.connect(reference_sqlite_file)
+    cur2 = conn2.cursor()
+    table_names2 = cur2.execute(get_table_names).fetchall()
+
+    assert table_names1 == table_names2, \
+        "Different sqlite tables are created than expected"
+
+    for table_nr, table_name1 in enumerate(table_names1):
+        table_name1 = table_name1[0]
+        # Get all rows from both tables
+        rows_1 = cur1.execute("SELECT * FROM " + table_name1).fetchall()
+        rows_2 = cur2.execute("SELECT * FROM " + table_name1).fetchall()
+        assert rows_1 == rows_2, \
+            f"Different data was expected in table {table_name1}"
+    conn1.close()
+    conn2.close()
 
 
-def get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir):
+def test_get_tanimoto_scores():
     """Tests if the correct tanimoto scores are retrieved from sqlite file
-
-    Args:
-    ------
-    sqlite_file_name:
-        The file name of the temporary test sqlite file
-    path_to_test_files_sqlite_dir:
-        The path from this directory to the directory with test files
     """
+    path_to_test_files_sqlite_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files_sqlite')
+    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
+                                    "test_spectra_database.sqlite")
+
     test_inchikeys = ['MYHSVHWQEVDFQT',
                       'BKAWJIRCKVUVED',
                       'CXVGEDCSTKKODG']
@@ -80,16 +94,15 @@ def get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir):
         "Expected different tanimoto scores, or columns/index names"
 
 
-def get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir):
+def test_get_spectrum_data():
     """Tests if the correct spectrum data is returned from a sqlite file
-
-    Args:
-    ------
-    sqlite_file_name:
-        The file name of the temporary test sqlite file
-    path_to_test_files_sqlite_dir:
-        The path from this directory to the directory with test files
     """
+    path_to_test_files_sqlite_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files_sqlite')
+    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
+                                    "test_spectra_database.sqlite")
+
     spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
     spectra_list = get_spectra_from_sqlite(sqlite_file_name, spectra_id_list)
 
@@ -106,6 +119,6 @@ def get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir):
                                      "first_10_spectra.pickle")
     original_spectra = load_pickled_file(pickled_file_name)
     assert original_spectra[0].__eq__(spectra_list[0]), \
-        "Expected different spectrum"
+        "Expected different spectrum to be loaded"
     assert original_spectra[2].__eq__(spectra_list[1]), \
-        "Expected different spectrum"
+        "Expected different spectrum to be loaded"
