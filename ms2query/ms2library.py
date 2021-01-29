@@ -5,6 +5,7 @@ from matchms.Spectrum import Spectrum
 import pandas as pd
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 
+
 class Ms2Library:
     def __init__(self,
                  sqlite_file_location: Union[str, None],
@@ -66,14 +67,13 @@ if __name__ == "__main__":
 
     my_small_library = Ms2Library(
         None,
-        {"new_sqlite_file_name"
-         : "small_sqlite_test_file.sqlite",
-         "npy_file_location"
-         : "../tests/test_files_sqlite/test_tanimoto_scores.npy",
-         "pickled_file_name"
-         : "../tests/test_files_sqlite/first_10_spectra.pickle",
-         "csv_file_name"
-         : "../tests/test_files_sqlite/test_metadata_for_inchikey_order.csv"})
+        {"new_sqlite_file_name": "small_sqlite_test_file.sqlite",
+         "npy_file_location":
+             "../tests/test_files_sqlite/test_tanimoto_scores.npy",
+         "pickled_file_name":
+             "../tests/test_files_sqlite/first_10_spectra.pickle",
+         "csv_file_name":
+             "../tests/test_files_sqlite/test_metadata_for_inchikey_order.csv"})
 
     print(my_small_library.get_tanimoto_scores(["MYHSVHWQEVDFQT",
                                                 "BKAWJIRCKVUVED",
