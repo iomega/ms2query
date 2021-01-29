@@ -172,7 +172,9 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     for result in cur:
         result_list.append(result)
 
-    # The data is
+    # The data is changed to pd.DataFrame twice and then added together. So
+    # that both the tanimoto score is given for 1,2 and 2,1. Thereby
+    # duplicating the data, but making the lookup easier for other functions.
     scores_normal_identifiers = pd.DataFrame(result_list,
                                              columns=["identifier_1",
                                                       "identifier_2",
@@ -181,7 +183,6 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                                                columns=["identifier_2",
                                                         "identifier_1",
                                                         "tanimoto_score"])
-
     result_dataframe_melt_structure = pd.concat([scores_normal_identifiers,
                                                  scores_reversed_identifiers])
 
