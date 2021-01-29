@@ -172,12 +172,21 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     for result in cur:
         result_list.append(result)
 
-    result_dataframe = pd.DataFrame(result_list,
-                                    columns=["identifier_1",
-                                             "identifier_2",
-                                             "tanimoto_score"])
+    # The data is
+    scores_normal_identifiers = pd.DataFrame(result_list,
+                                             columns=["identifier_1",
+                                                      "identifier_2",
+                                                      "tanimoto_score"])
+    scores_reversed_identifiers = pd.DataFrame(result_list,
+                                               columns=["identifier_2",
+                                                        "identifier_1",
+                                                        "tanimoto_score"])
+
+    result_dataframe_melt_structure = pd.concat([scores_normal_identifiers,
+                                                 scores_reversed_identifiers])
+
     # Changes the structure of the database from a melt structure to a matrix
-    result_dataframe = pd.pivot_table(result_dataframe,
+    result_dataframe = pd.pivot_table(result_dataframe_melt_structure,
                                       columns="identifier_1",
                                       index="identifier_2",
                                       values="tanimoto_score")
