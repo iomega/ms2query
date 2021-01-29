@@ -323,7 +323,7 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
                                         col_name_identifier2: str =
                                         'identifier_2',
                                         col_name_score: str = 'tanimoto_score',
-                                        disable_progress_bar: bool = False
+                                        progress_bar: bool = True,
                                         ):
     """Adds tanimoto scores from npy file to sqlite table
 
@@ -349,8 +349,8 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     col_name_score:
         Name of the third column of the table, this column will store the
         tanimoto scores. Default = 'tanimoto_score'
-    disable_progress_bar:
-        When True the progress bar is not shown, default = False
+    progress_bar:
+        Show progress bar if set to True. Default is True.
     """
     tanimoto_score_matrix = np.load(
         npy_file_path,
@@ -366,7 +366,8 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     for row_nr, row in enumerate(
             tqdm(tanimoto_score_matrix,
                  desc="Adding tanimoto scores to sqlite file",
-                 disable=disable_progress_bar)):
+                 disable=not progress_bar)):
+
         # Remove duplicates
         row = row[:row_nr+1]
         # Transform to pd.Dataframe
