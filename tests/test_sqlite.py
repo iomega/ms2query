@@ -28,6 +28,7 @@ def test_sqlite_functions_wrapper(tmp_path):
     # Test if the correct spectrum data is loaded from the sqlite file
     get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir)
 
+
 def make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir):
     """Makes a sqlite file and tests if it was made
 
@@ -49,6 +50,7 @@ def make_sqlite_file(sqlite_file_name, path_to_test_files_sqlite_dir):
 
     # Test if file is made
     assert os.path.isfile(sqlite_file_name), "Expected a file to be created"
+
 
 def get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir):
     """Tests if the correct tanimoto scores are retrieved from sqlite file
@@ -76,6 +78,7 @@ def get_tanimoto_scores(sqlite_file_name, path_to_test_files_sqlite_dir):
 
     assert expected_dataframe.equals(tanimoto_score_dataframe), \
         "Expected different tanimoto scores, or columns/index names"
+
 
 def get_spectrum_data(sqlite_file_name, path_to_test_files_sqlite_dir):
     """Tests if the correct spectrum data is returned from a sqlite file
