@@ -53,7 +53,7 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     return list_of_spectra
 
 
-def convert_array(text):
+def convert_array(nd_array_in_bytes: bytes) -> np.array:
     """Converts np.ndarray stored in binary format back to an np.ndarray
 
     By running this command:
@@ -64,10 +64,10 @@ def convert_array(text):
 
     Args:
     -------
-    text:
+    nd_array_in_bytes:
         A numpy array stored in a binary format.
     """
-    out = io.BytesIO(text)
+    out = io.BytesIO(nd_array_in_bytes)
     out.seek(0)
     return np.load(out)
 
