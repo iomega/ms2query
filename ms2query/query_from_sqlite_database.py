@@ -159,11 +159,7 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
         are returned.
     """
     conn = sqlite3.connect(sqlite_file_name)
-    identifier_string = ""
-    for identifier in list_of_identifiers:
-        identifier_string += str(identifier) + ","
-    # Remove last comma
-    identifier_string = identifier_string[:-1]
+    identifier_string = ",".join([str(x) for x in list_of_identifiers])
 
     sqlite_command = f"""SELECT identifier_1, identifier_2, tanimoto_score 
                     FROM tanimoto_scores
