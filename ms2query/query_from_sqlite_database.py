@@ -13,7 +13,8 @@ from matchms.Spectrum import Spectrum
 
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
-                            table_name: str = "spectrum_data"
+                            table_name: str = "spectrum_data",
+                            get_all_spectra: bool = False
                             ) -> List[Spectrum]:
     """Returns a list with all spectra specified in spectrum_id_list
 
@@ -25,6 +26,10 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         List of spectrum_id's of which the spectra objects should be returned
     table_name:
         Name of the table in the sqlite file that stores the spectrum data
+    get_all_spectra:
+        When True all spectra in the sqlite table are returned, instead of
+        only the once mentioned in spectrum_id_list, in this case
+        spectrum_id_list can be an empty list. Default = False.
     """
     # Converts TEXT to np.array when querying
     sqlite3.register_converter("array", convert_array)
@@ -33,9 +38,10 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
                            detect_types=sqlite3.PARSE_DECLTYPES)
 
     # Get all relevant data.
-    sqlite_command = f"""SELECT peaks, intensities, metadata FROM {table_name} 
-                    WHERE spectrum_id 
-                    IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+    sqlite_command = f"SELECT peaks, intensities, metadata FROM {table_name} "
+    if not get_all_spectra:
+        sqlite_command += f"""WHERE spectrum_id 
+                          IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
 
