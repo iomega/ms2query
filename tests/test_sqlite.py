@@ -36,7 +36,8 @@ def test_making_sqlite_file(tmp_path):
                          os.path.join(path_to_test_files_sqlite_dir,
                                       "first_10_spectra.pickle"),
                          os.path.join(path_to_test_files_sqlite_dir,
-                                      "test_metadata_for_inchikey_order.csv"))
+                                      "test_metadata_for_inchikey_order.csv"),
+                         columns_dict={"parent_mass": "REAL"})
 
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \

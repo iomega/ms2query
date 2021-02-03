@@ -21,7 +21,8 @@ from ms2query.app_helpers import load_pickled_file
 def make_sqlfile_wrapper(sqlite_file_name: str,
                          npy_file_location: str,
                          pickled_file_name: str,
-                         csv_file_with_inchikey_order: str
+                         csv_file_with_inchikey_order: str,
+                         columns_dict: Dict[str, str] = None
                          ):
     """Wrapper to create sqlite file with three tables.
 
@@ -41,6 +42,14 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         This csv file is expected to contain inchikeys on the second column
         starting from the second row. These inchikeys should be ordered in the
         same way the tanimoto scores are ordered in the npy_file_location.
+    columns_dict:
+        Dictionary with as keys columns that need to be added in addition to
+        the default columns and as values the datatype. The defaults columns
+        are spectrum_id, peaks, intensities and metadata. The additional
+        columns should be the same names that are in the metadata dictionary,
+        since these values will be automatically added in the function
+        add_list_of_spectra_to_sqlite.
+        Default = None results in the default columns.
     """
 
     # Creates a sqlite table containing all tanimoto scores
@@ -54,14 +63,15 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
 
     # Creates a sqlite table with the metadata, peaks and intensities
     list_of_spectra = load_pickled_file(pickled_file_name)
-    create_table_structure(sqlite_file_name)
+    create_table_structure(sqlite_file_name,
+                           additional_columns_dict=columns_dict)
     add_list_of_spectra_to_sqlite(sqlite_file_name, list_of_spectra)
 
 
 def create_table_structure(sqlite_file_name: str,
-                           columns_dict: Dict[str, str] = None,
+                           additional_columns_dict: Dict[str, str] = None,
                            table_name: str = "spectrum_data"):
-    """Creates a new sqlite file, with columns defined in columns_dict
+    """Creates a new sqlite file, with columns defined in combined_columns_dict
 
     On default the columns spectrum_id, peaks, intensities and metadata are
     created. The column spectrum_id will be the primary key. Extra columns can
@@ -73,7 +83,7 @@ def create_table_structure(sqlite_file_name: str,
         Name of sqlite_file that should be created, if it already exists a new
         table is added. If the table with the name specified by table_name
         already exists, then this table is overwritten.
-    columns_dict:
+    additional_columns_dict:
         Dictionary with as keys columns that need to be added in addition to
         the default columns and as values the datatype. The defaults columns
         are spectrum_id, peaks, intensities and metadata. The additional
@@ -90,23 +100,24 @@ def create_table_structure(sqlite_file_name: str,
     sqlite3.register_adapter(np.ndarray, adapt_array)
 
     # Initialize default columns
-    if columns_dict is None:
-        columns_dict = {}
+    if additional_columns_dict is None:
+        additional_columns_dict = {}
 
-    # Add default columns to dictionary
-    columns_dict["spectrum_id"] = "TEXT"
-    columns_dict["peaks"] = "array"
-    columns_dict["intensities"] = "array"
-    columns_dict["metadata"] = "TEXT"
+    # Create default combined_columns_dict
+    default_columns_dict = {"spectrum_id": "TEXT",
+                            "peaks": "array",
+                            "intensities": "array",
+                            "metadata": "TEXT"}
 
+    combined_columns_dict = {**default_columns_dict, **additional_columns_dict}
     create_table_command = f"""
     DROP TABLE IF EXISTS {table_name};
     CREATE TABLE {table_name} (
     """
-    # add all columns with the type specified in columns_dict
-    for column_header in columns_dict:
+    # add all columns with the type specified in combined_columns_dict
+    for column_header in combined_columns_dict:
         create_table_command += column_header + " " \
-                                + columns_dict[column_header] + ",\n"
+                                + combined_columns_dict[column_header] + ",\n"
     create_table_command += "PRIMARY KEY (spectrum_id));"
 
     conn = sqlite3.connect(sqlite_file_name)
