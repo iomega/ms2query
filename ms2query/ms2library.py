@@ -11,13 +11,10 @@ from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
-from matchms.similarity import ParentMassMatch
-import time
-from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.ms2query.query_from_sqlite_database import convert_array
 from ms2query.ms2query.s2v_functions import \
-    post_process_s2v, set_spec2vec_defaults
-from ms2query.app_helpers import load_pickled_file
+    post_process_s2v
+
 
 class Ms2Library:
     def __init__(self,
@@ -44,6 +41,7 @@ class Ms2Library:
         # Set default settings
         self.mass_tolerance = 1.0
 
+        # Change default settings to settings given as kwargs
         allowed_arguments = self.__dict__
         for key in settings:
             if key in allowed_arguments:
@@ -56,8 +54,8 @@ class Ms2Library:
 
         # todo check if the sqlite file contains the correct tables
         self.sqlite_file_location = sqlite_file_location
-
         self.model = Word2Vec.load(model_file_name)
+        # loads the library embeddings into memory
         with open(pickled_embeddings_file_name, "rb") as pickled_embeddings:
             self.embeddings = pickle.load(pickled_embeddings)
 
@@ -121,15 +119,19 @@ class Ms2Library:
                 columns=query_spectra_name_list)
             return spec2vec_similarities_dataframe
 
-        def get_parent_mass_matches_all_queries():
-            """
+        def get_parent_mass_matches_all_queries() -> Dict[str, List[str]]:
+            """Returns a dictionary with all spectra with similar masses
+
+            The keys are the query spectrum Ids and the values are the library
+            spectrum Ids that have a similar parent mass.
 
             Args:
             -------
             mass_tolerance: float, optional
                 Specify tolerance for a parentmass match. Default = 1.
             """
-            def get_parent_mass_matches():
+            def get_parent_mass_matches() -> List[str]:
+                """Returns all spectra ids that have a similar mass to query"""
                 conn = sqlite3.connect(self.sqlite_file_location)
                 # Get all relevant data.
                 sqlite_command = \
@@ -139,23 +141,24 @@ class Ms2Library:
 
                 cur = conn.cursor()
                 cur.execute(sqlite_command)
-                spectrums_with_similar_mass = []
+                spectra_with_similar_mass = []
                 for result in cur:
-                    spectrums_with_similar_mass.append(result[0])
+                    spectra_with_similar_mass.append(result[0])
                 conn.close()
-                return spectrums_with_similar_mass
+                return spectra_with_similar_mass
 
             spectra_with_similar_mass_dict = {}
             for query_spectrum in query_spectra:
                 query_mass = query_spectrum.get("parent_mass")
-                spectrums_with_similar_mass = get_parent_mass_matches()
                 query_spectrum_id = query_spectrum.get("spectrum_id")
                 spectra_with_similar_mass_dict[query_spectrum_id] = \
-                    spectrums_with_similar_mass
+                    get_parent_mass_matches()
             return spectra_with_similar_mass_dict
 
-        spec2vec_similarities_scores = get_spec2vec_similarity_matrix()
+        def get_ms2deepscore_similarity_matrix():
+            pass
 
+        spec2vec_similarities_scores = get_spec2vec_similarity_matrix()
         same_masses = get_parent_mass_matches_all_queries()
         return spec2vec_similarities_scores, same_masses
 
@@ -175,27 +178,15 @@ class Ms2Library:
         return tanimoto_score_matrix
 
 
-def create_spectrum_document_outside_class(spectrum):
-    assert isinstance(spectrum, Spectrum), f"this is the error{spectrum}"
-
-    spectrum = post_process_s2v(spectrum)
-    if spectrum is None:
-        return None
-    spectrum_document = SpectrumDocument(spectrum, n_decimals=2)
-    return spectrum_document
-
-def create_s2v_embedding_outside_class(spectrum, model) -> np.array:
-    spectrum_document = create_spectrum_document_outside_class(spectrum)
-    if spectrum_document is None:
-        return None
-    spectrum_embedding = calc_vector(model,
-                                     spectrum_document)
-    return spectrum_embedding
-
-def create_all_s2v_embeddings_outside_class(sqlite_file_location,
+# Not part of the class, used to create embeddings, that are than stored in a
+# pickled file. (Storing in pickled file is not part of the function)
+def create_all_s2v_embeddings(sqlite_file_location: str,
                               model: Word2Vec,
                               progress_bar: bool = True
                               ) -> pd.DataFrame:
+    """Returns a dataframe with embeddings for all library spectra"""
+    # todo replace sqlite lookup with
+    #  get_spectra_from_sqlite(get_all_spectra = True)
     sqlite3.register_converter("array", convert_array)
 
     conn = sqlite3.connect(sqlite_file_location,
@@ -220,7 +211,7 @@ def create_all_s2v_embeddings_outside_class(sqlite_file_location,
         spectrum = Spectrum(mz=peaks,
                             intensities=intensities,
                             metadata=metadata)
-        embedding = create_s2v_embedding_outside_class(spectrum,
+        embedding = create_s2v_embedding(spectrum,
                                          model)
         if embedding is not None:
             embeddings_dict[metadata["spectrum_id"]] = embedding
@@ -230,17 +221,55 @@ def create_all_s2v_embeddings_outside_class(sqlite_file_location,
     return embeddings_dataframe
 
 
+def create_spectrum_document(spectrum: Spectrum
+                             ) -> Union[SpectrumDocument, None]:
+    """Transforms a Spectrum object to a SpectrumDocument"""
+    spectrum = post_process_s2v(spectrum)
+    if spectrum is None:
+        return None
+    spectrum_document = SpectrumDocument(spectrum, n_decimals=2)
+    return spectrum_document
+
+
+def create_s2v_embedding(spectrum: Spectrum,
+                         model
+                         ) -> Union[np.array, None]:
+    """Returns s2v embeddings for one spectrum"""
+    spectrum_document = create_spectrum_document(spectrum)
+    if spectrum_document is None:
+        return None
+    spectrum_embedding = calc_vector(model,
+                                     spectrum_document)
+    return spectrum_embedding
+
+
 if __name__ == "__main__":
+    # To run a sqlite file should be made that contains also the table parent_mass
+    # Use make_sqlfile_wrapper for this, see test_sqlite.py for example
+    # (but use different start files for full dataset)
+    sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
     model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
+    model = Word2Vec.load(model_file_name)
 
-    my_library = Ms2Library(
-        "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite",
-        model_file_name,
-        "../downloads/embeddings_all_spectra.pickle")
+    # Create pickled file with library embeddings:
+    library_embeddings = create_all_s2v_embeddings(
+        sqlite_file_name,
+        model)
 
-    query_spectra_names = my_library.get_spectra(["CCMSLIB00000001547",
-                                                  "CCMSLIB00000001549"])
+    library_embeddings.to_pickle(new_pickled_embeddings_file)
 
-    s2v_matrix, similar_mass_dict = my_library.pre_select_spectra(query_spectra_names)
+    # Create library object
+    my_library = Ms2Library(sqlite_file_name,
+                            model_file_name,
+                            new_pickled_embeddings_file)
+
+    # Get two query spectras
+    query_spectra = my_library.get_spectra(["CCMSLIB00000001547",
+                                            "CCMSLIB00000001549"])
+
+    s2v_matrix, similar_mass_dict = my_library.pre_select_spectra(
+        query_spectra)
+
     print(s2v_matrix)
     print(similar_mass_dict)
