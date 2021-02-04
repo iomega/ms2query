@@ -1,6 +1,6 @@
 from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
     get_tanimoto_score_for_inchikeys
-from typing import Optional, List, Dict, Union, Tuple
+from typing import List, Dict, Union
 from matchms.Spectrum import Spectrum
 import pandas as pd
 import numpy as np
@@ -45,7 +45,7 @@ class Ms2Library:
         allowed_arguments = self.__dict__
         for key in settings:
             if key in allowed_arguments:
-                if type(settings[key]) == type(allowed_arguments[key]):
+                if isinstance(settings[key], allowed_arguments[key]):
                     setattr(self, key, settings[key])
                 else:
                     print(f"Different type is expected for argument: {key}")
@@ -62,7 +62,8 @@ class Ms2Library:
     def pre_select_spectra(self,
                            query_spectra: List[Spectrum]):
         def get_spec2vec_similarity_matrix() -> pd.DataFrame:
-            """Returns a matrix with s2v similarity scores for all query spectra
+            """
+            Returns a matrix with s2v similarity scores for all query spectra
 
             The column names are the query spectrum ids and the indexes are the
             library spectrum ids.
@@ -100,7 +101,7 @@ class Ms2Library:
                     spectrum_name]
                 # Get the embeddings for current spectra
                 query_spectrum_embedding = calc_vector(self.model,
-                                                 spectrum_document)
+                                                       spectrum_document)
 
                 query_embeddings_list.append(query_spectrum_embedding)
                 query_spectra_name_list.append(spectrum_name)
@@ -244,9 +245,9 @@ def create_s2v_embedding(spectrum: Spectrum,
 
 
 if __name__ == "__main__":
-    # To run a sqlite file should be made that contains also the table parent_mass
-    # Use make_sqlfile_wrapper for this, see test_sqlite.py for example
-    # (but use different start files for full dataset)
+    # To run a sqlite file should be made that contains also the table
+    # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
+    # example (but use different start files for full dataset)
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
     model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
     new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
