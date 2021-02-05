@@ -7,6 +7,7 @@ import numpy as np
 import sqlite3
 import ast
 import pickle
+import time
 from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument
@@ -195,8 +196,11 @@ def create_all_s2v_embeddings(sqlite_file_location: str,
     model:
         Trained Spec2Vec model
     progress_bars:
-        When True progress bars will be shown. Default = True
+        When True progress bars and steps in progress will be shown.
+        Default = True
     """
+    if progress_bars:
+        print("Loading data from sqlite")
     library_spectra = get_spectra_from_sqlite(sqlite_file_location,
                                               [],
                                               get_all_spectra=True,
@@ -244,7 +248,7 @@ if __name__ == "__main__":
     # example (but use different start files for full dataset)
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
     model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    new_pickled_embeddings_file = "embeddings_all_spectra.pickle"
+    new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
     model = Word2Vec.load(model_file_name)
 
     # Create pickled file with library embeddings:

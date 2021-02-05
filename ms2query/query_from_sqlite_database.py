@@ -46,11 +46,11 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
                           IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
-
+    list_of_results = cur.fetchall()
     # Convert to list of matchms.Spectrum
     list_of_spectra = []
-    for result in tqdm(cur,
-                       desc="Loading spectra from sqlite",
+    for result in tqdm(list_of_results,
+                       desc="Converting to Spectrum objects",
                        disable=not progress_bar):
         peaks = result[0]
         intensities = result[1]
