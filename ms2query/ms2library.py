@@ -157,6 +157,7 @@ class Ms2Library:
             return spectra_with_similar_mass_dict
 
         def get_ms2deepscore_similarity_matrix():
+
             pass
 
         spec2vec_similarities_scores = get_spec2vec_similarity_matrix()
@@ -183,40 +184,33 @@ class Ms2Library:
 # pickled file. (Storing in pickled file is not part of the function)
 def create_all_s2v_embeddings(sqlite_file_location: str,
                               model: Word2Vec,
-                              progress_bar: bool = True
+                              progress_bars: bool = True
                               ) -> pd.DataFrame:
-    """Returns a dataframe with embeddings for all library spectra"""
-    # todo replace sqlite lookup with
-    #  get_spectra_from_sqlite(get_all_spectra = True)
-    sqlite3.register_converter("array", convert_array)
+    """Returns a dataframe with embeddings for all library spectra
 
-    conn = sqlite3.connect(sqlite_file_location,
-                           detect_types=sqlite3.PARSE_DECLTYPES)
-
-    # Get all relevant data.
-    sqlite_command = f"""SELECT peaks, intensities, metadata 
-                         FROM spectrum_data"""
-
-    cur = conn.cursor()
-    cur.execute(sqlite_command)
-
-    # Convert to list of matchms.Spectrum
+    Args
+    ------
+    sqlite_file_location:
+        Location of sqlite file containing spectrum data.\
+    model:
+        Trained Spec2Vec model
+    progress_bars:
+        When True progress bars will be shown. Default = True
+    """
+    library_spectra = get_spectra_from_sqlite(sqlite_file_location,
+                                              [],
+                                              get_all_spectra=True,
+                                              progress_bar=progress_bars)
     embeddings_dict = {}
-    for result in tqdm(cur,
-                       desc="Calculating embeddings",
-                       disable=not progress_bar):
-        peaks = result[0]
-        intensities = result[1]
-        metadata = ast.literal_eval(result[2])
-
-        spectrum = Spectrum(mz=peaks,
-                            intensities=intensities,
-                            metadata=metadata)
+    for spectrum in tqdm(library_spectra,
+                         desc="Calculating embeddings",
+                         disable=not progress_bars):
         embedding = create_s2v_embedding(spectrum,
                                          model)
         if embedding is not None:
-            embeddings_dict[metadata["spectrum_id"]] = embedding
-    conn.close()
+            embeddings_dict[spectrum.get("spectrum_id")] = embedding
+
+    # Convert to pandas Dataframe
     embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                   orient="index")
     return embeddings_dataframe
@@ -250,7 +244,7 @@ if __name__ == "__main__":
     # example (but use different start files for full dataset)
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
     model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
+    new_pickled_embeddings_file = "embeddings_all_spectra.pickle"
     model = Word2Vec.load(model_file_name)
 
     # Create pickled file with library embeddings:

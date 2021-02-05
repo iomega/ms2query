@@ -7,6 +7,7 @@ import io
 from typing import Dict, List
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 import sqlite3
 from matchms.Spectrum import Spectrum
 
@@ -14,7 +15,8 @@ from matchms.Spectrum import Spectrum
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
                             table_name: str = "spectrum_data",
-                            get_all_spectra: bool = False
+                            get_all_spectra: bool = False,
+                            progress_bar: bool = False
                             ) -> List[Spectrum]:
     """Returns a list with all spectra specified in spectrum_id_list
 
@@ -47,7 +49,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
 
     # Convert to list of matchms.Spectrum
     list_of_spectra = []
-    for result in cur:
+    for result in tqdm(cur,
+                       desc="Loading spectra from sqlite",
+                       disable=not progress_bar):
         peaks = result[0]
         intensities = result[1]
         metadata = ast.literal_eval(result[2])
