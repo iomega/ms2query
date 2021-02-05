@@ -1,6 +1,6 @@
 from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
     get_tanimoto_score_for_inchikeys
-from typing import List, Dict
+from typing import List, Dict, Any
 from matchms.Spectrum import Spectrum
 import pandas as pd
 import numpy as np
@@ -39,6 +39,9 @@ class Ms2Library:
             as value the location of these files.
             Default = None
         """
+        # Set default settings
+        self.mass_tolerance = 1.0
+        # Change default settings to values given in **settings
         self._set_settings(settings)
 
         # todo check if the sqlite file contains the correct tables
@@ -48,16 +51,26 @@ class Ms2Library:
         with open(pickled_embeddings_file_name, "rb") as pickled_embeddings:
             self.embeddings = pickle.load(pickled_embeddings)
 
-    def _set_settings(self, settings):
-        # Set default settings
-        self.mass_tolerance = 1.0
+    def _set_settings(self,
+                      settings: Dict[str, Any]):
+        """Changes default settings to settings
 
-        # Change default settings to settings given as kwargs
+        Attributes specified in settings are expected to have been defined with
+        a default value before calling this function.
+        Args
+        ------
+        settings:
+            Dictionary with as keys the name of the attribute that should be
+            set and as value the value this attribute should have.
+
+        """
+        # Get all attributes to check if the arguments in settings are allowed
         allowed_arguments = self.__dict__
+        # Set all kwargs as attributes, when in allowed_arguments
         for key in settings:
             assert key in allowed_arguments, \
                 f"Invalid argument in constructor:{key}"
-            assert isinstance(settings[key], allowed_arguments[key]), \
+            assert isinstance(settings[key], type(allowed_arguments[key])), \
                 f"Different type is expected for argument: {key}"
             setattr(self, key, settings[key])
 
@@ -259,15 +272,15 @@ if __name__ == "__main__":
     # library_embeddings.to_pickle(new_pickled_embeddings_file)
 
     # Create library object
-    my_library = Ms2Library(sqlite_file_name, model_file_name,
+    my_library = Ms2Library(sqlite_file_name,
+                            model_file_name,
                             new_pickled_embeddings_file)
-
     # Get two query spectras
-    query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
-                                            "CCMSLIB00000001549"])
-
-    s2v_matrix, similar_mass_dict = my_library.pre_select_spectra(
-        query_spectra_to_test)
-
-    print(s2v_matrix)
-    print(similar_mass_dict)
+    # query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
+    #                                         "CCMSLIB00000001549"])
+    #
+    # s2v_matrix, similar_mass_dict = my_library.pre_select_spectra(
+    #     query_spectra_to_test)
+    #
+    # print(s2v_matrix)
+    # print(similar_mass_dict)
