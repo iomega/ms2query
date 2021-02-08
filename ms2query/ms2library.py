@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import sqlite3
 import pickle
+from ms2deepscore.models import load_model as load_ms2ds_model
+from ms2deepscore.models import SiameseModel
+from ms2deepscore import MS2DeepScore
 from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument
@@ -22,6 +25,7 @@ class Ms2Library:
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
                  pickled_embeddings_file_name: str,
+                 ms2ds_model_file_name: str,
                  **settings):
         """
 
@@ -41,12 +45,14 @@ class Ms2Library:
         """
         # Set default settings
         self.mass_tolerance = 1.0
+
         # Change default settings to values given in **settings
         self._set_settings(settings)
 
         # todo check if the sqlite file contains the correct tables
         self.sqlite_file_location = sqlite_file_location
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
+        self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
         # loads the library embeddings into memory
         with open(pickled_embeddings_file_name, "rb") as pickled_embeddings:
             self.embeddings = pickle.load(pickled_embeddings)
@@ -79,14 +85,27 @@ class Ms2Library:
         """Currently only runs functions that will later be needed to do the
         pre selection"""
 
-        spec2vec_similarities_scores = self._get_spec2vec_similarity_matrix(
-            query_spectra)
+        # spec2vec_similarities_scores = self._get_spec2vec_similarity_matrix(
+        #     query_spectra)
         same_masses = self._get_parent_mass_matches_all_queries(query_spectra)
-        return spec2vec_similarities_scores, same_masses
+        library_spectra_names = same_masses[query_spectra[0].get("spectrum_id")]
+        library_spectra = get_spectra_from_sqlite(self.sqlite_file_location,
+                                                  library_spectra_names)
+        print(library_spectra)
+        print(query_spectra)
+        self.get_ms2deepscore_similarity_matrix(query_spectra, query_spectra)
+        return same_masses
 
-    def _get_ms2deepscore_similarity_matrix(self):
+    def get_ms2deepscore_similarity_matrix(self,
+                                           query_spectra,
+                                           library_spectra):
 
-        pass
+        ms2ds = MS2DeepScore(self.ms2ds_model)
+        self.ms2ds_model.spectrum_binner.__setattr__("allowed_missing_percentage", 100)
+        binned_references = self.ms2ds_model.spectrum_binner.transform(library_spectra)
+
+        print(binned_references)
+
 
     def _get_parent_mass_matches_all_queries(self,
                                              query_spectra: List[Spectrum]
@@ -186,28 +205,41 @@ class Ms2Library:
 
 # Not part of the class, used to create embeddings, that are than stored in a
 # pickled file. (Storing in pickled file is not part of the function)
-def create_all_s2v_embeddings(sqlite_file_location: str,
-                              model: Word2Vec,
-                              progress_bars: bool = True
-                              ) -> pd.DataFrame:
+
+def create_all_ms2ds_embeddings(sqlite_file_location: str,
+                                model: SiameseModel,
+                                progress_bars=True):
+    if progress_bars:
+        print("Loading data from sqlite")
+
+    ms2ds = MS2DeepScore(model)
+
+    binned_references = model.spectrum_binner.transform(
+        library_spectra)
+    for index_reference, reference in enumerate(tqdm(binned_references,
+                                                     desc='Calculating vectors of reference spectrums',
+                                                     disable=self.disable_progress_bar)):
+        reference_vectors[index_reference,
+        0:self.output_vector_dim] = self.model.base.predict(
+            self._create_input_vector(reference))
+
+
+def create_s2v_embeddings(library_spectra: List[Spectrum],
+                          model: Word2Vec,
+                          progress_bars: bool = True
+                          ) -> pd.DataFrame:
     """Returns a dataframe with embeddings for all library spectra
 
     Args
     ------
-    sqlite_file_location:
-        Location of sqlite file containing spectrum data.\
+    library_spectra:
+        Spectra for which the embeddings should be obtained
     model:
         Trained Spec2Vec model
     progress_bars:
         When True progress bars and steps in progress will be shown.
         Default = True
     """
-    if progress_bars:
-        print("Loading data from sqlite")
-    library_spectra = get_spectra_from_sqlite(sqlite_file_location,
-                                              [],
-                                              get_all_spectra=True,
-                                              progress_bar=progress_bars)
     # Convert Spectrum objects to SpectrumDocument
     spectrum_documents = create_spectrum_documents(library_spectra,
                                                    progress_bar=progress_bars)
@@ -256,31 +288,44 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
 
 
 if __name__ == "__main__":
-    # To run a sqlite file should be made that contains also the table
-    # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
-    # example (but use different start files for full dataset)
+    # # To run a sqlite file should be made that contains also the table
+    # # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
+    # # example (but use different start files for full dataset)
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
-    model = Word2Vec.load(model_file_name)
-
-    # Create pickled file with library embeddings:
-    # library_embeddings = create_all_s2v_embeddings(
-    #     sqlite_file_name,
-    #     model)
-    # print(library_embeddings)
-    # library_embeddings.to_pickle(new_pickled_embeddings_file)
-
-    # Create library object
-    my_library = Ms2Library(sqlite_file_name,
-                            model_file_name,
-                            new_pickled_embeddings_file)
-    # Get two query spectras
+    # model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    # new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
+    ms2ds_model_file_name = "../../ms2deepscore/tests/resources/testmodel.hdf5"
+    # model = Word2Vec.load(model_file_name)
+    #
+    # # Create pickled file with library embeddings:
+    # # library_embeddings = create_all_s2v_embeddings(
+    # #     sqlite_file_name,
+    # #     model)
+    # # print(library_embeddings)
+    # # library_embeddings.to_pickle(new_pickled_embeddings_file)
+    #
+    # # Create library object
+    # my_library = Ms2Library(sqlite_file_name,
+    #                         model_file_name,
+    #                         new_pickled_embeddings_file,
+    #                         "../../ms2deepscore/tests/resources/testmodel.hdf5")
+    # # Get two query spectras
     # query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
     #                                         "CCMSLIB00000001549"])
     #
-    # s2v_matrix, similar_mass_dict = my_library.pre_select_spectra(
+    # similar_mass_dict = my_library.pre_select_spectra(
     #     query_spectra_to_test)
-    #
+
     # print(s2v_matrix)
     # print(similar_mass_dict)
+
+    library_spectra = get_spectra_from_sqlite(sqlite_file_name,
+                                              ["CCMSLIB00000001547",
+                                               "CCMSLIB00000001549"],
+                                              get_all_spectra=False,
+                                              progress_bar=True)
+
+    model = load_ms2ds_model(ms2ds_model_file_name)
+    model.spectrum_binner.__setattr__("allowed_missing_percentage",
+                                      100)
+    create_all_ms2ds_embeddings(sqlite_file_name, model)
