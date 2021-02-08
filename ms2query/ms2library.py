@@ -9,6 +9,7 @@ import pickle
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore.models import SiameseModel
 from ms2deepscore import MS2DeepScore
+from ms2deepscore.vector_operations import cosine_similarity_matrix
 from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument
@@ -24,8 +25,9 @@ class Ms2Library:
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
-                 pickled_embeddings_file_name: str,
                  ms2ds_model_file_name: str,
+                 pickled_s2v_embeddings_file_name: str,
+                 pickled_ms2ds_embeddings_file_name: str,
                  **settings):
         """
 
@@ -54,8 +56,12 @@ class Ms2Library:
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
         # loads the library embeddings into memory
-        with open(pickled_embeddings_file_name, "rb") as pickled_embeddings:
-            self.embeddings = pickle.load(pickled_embeddings)
+        with open(pickled_s2v_embeddings_file_name, "rb") as \
+                pickled_s2v_embeddings:
+            self.s2v_embeddings = pickle.load(pickled_s2v_embeddings)
+        with open(pickled_ms2ds_embeddings_file_name, "rb") as \
+                pickled_ms2ds_embeddings:
+            self.ms2ds_embeddings = pickle.load(pickled_ms2ds_embeddings)
 
     def _set_settings(self,
                       settings: Dict[str, Any]):
@@ -96,16 +102,71 @@ class Ms2Library:
         self.get_ms2deepscore_similarity_matrix(query_spectra, query_spectra)
         return same_masses
 
-    def get_ms2deepscore_similarity_matrix(self,
-                                           query_spectra,
-                                           library_spectra):
+    def get_ms2deepscore_similarity_matrix(
+            self,
+            query_spectra) -> pd.DataFrame:
+        """Returns a dataframe with the ms2deepscore similarity scores
 
+        query_spectra:
+            All query spectra that should get a similarity score with all
+            library spectra.
+        library_embeddings_file_name:
+            File name of the pickled file in which the library embeddings are
+            stored.
+        """
         ms2ds = MS2DeepScore(self.ms2ds_model)
         self.ms2ds_model.spectrum_binner.__setattr__("allowed_missing_percentage", 100)
-        binned_references = self.ms2ds_model.spectrum_binner.transform(library_spectra)
+        query_embeddings = ms2ds.calculate_vectors(query_spectra)
+        ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
+        print(ms2ds_embeddings_numpy)
+        similarity_matrix = cosine_similarity_matrix(ms2ds_embeddings_numpy,
+                                                     query_embeddings)
+        similarity_matrix_dataframe = pd.DataFrame(
+            similarity_matrix,
+            index=self.ms2ds_embeddings.index,
+            columns=[spectrum.get("spectrum_id") for
+                     spectrum in query_spectra])
+        return similarity_matrix_dataframe
 
-        print(binned_references)
+    def _get_spec2vec_similarity_matrix(self,
+                                        query_spectra: List[Spectrum]
+                                        ) -> pd.DataFrame:
+        """
+        Returns a matrix with s2v similarity scores for all query spectra
 
+        The column names are the query spectrum ids and the indexes are the
+        library spectrum ids.
+
+        Args:
+        ------
+        query_spectra:
+            All spectra for which similarity scores should be calculated.
+        """
+
+        # Convert list of Spectrum objects to list of SpectrumDocuments
+        query_spectrum_documents = create_spectrum_documents(query_spectra)
+
+        query_spectra_name_list = []
+        query_embeddings_list = []
+        for spectrum_document in query_spectrum_documents:
+            spectrum_name = spectrum_document._obj.get("spectrum_id")
+            # Get the embeddings for current spectra
+            query_spectrum_embedding = calc_vector(self.s2v_model,
+                                                   spectrum_document)
+            # Store in lists
+            query_embeddings_list.append(query_spectrum_embedding)
+            query_spectra_name_list.append(spectrum_name)
+
+        # Get the spec2vect cosine similarity score for all query spectra
+        spec2vec_similarities = cosine_similarity_matrix(
+            self.s2v_embeddings.to_numpy(),
+            np.array(query_embeddings_list))
+        # Convert to dataframe, with the correct indexes and columns.
+        spec2vec_similarities_dataframe = pd.DataFrame(
+            spec2vec_similarities,
+            index=self.s2v_embeddings.index,
+            columns=query_spectra_name_list)
+        return spec2vec_similarities_dataframe
 
     def _get_parent_mass_matches_all_queries(self,
                                              query_spectra: List[Spectrum]
@@ -147,46 +208,6 @@ class Ms2Library:
         conn.close()
         return spectra_with_similar_mass_dict
 
-    def _get_spec2vec_similarity_matrix(self,
-                                        query_spectra: List[Spectrum]
-                                        ) -> pd.DataFrame:
-        """
-        Returns a matrix with s2v similarity scores for all query spectra
-
-        The column names are the query spectrum ids and the indexes are the
-        library spectrum ids.
-
-        Args:
-        ------
-        query_spectra:
-            All spectra for which similarity scores should be calculated.
-        """
-
-        # Convert list of Spectrum objects to list of SpectrumDocuments
-        query_spectrum_documents = create_spectrum_documents(query_spectra)
-
-        query_spectra_name_list = []
-        query_embeddings_list = []
-        for spectrum_document in query_spectrum_documents:
-            spectrum_name = spectrum_document._obj.get("spectrum_id")
-            # Get the embeddings for current spectra
-            query_spectrum_embedding = calc_vector(self.s2v_model,
-                                                   spectrum_document)
-            # Store in lists
-            query_embeddings_list.append(query_spectrum_embedding)
-            query_spectra_name_list.append(spectrum_name)
-
-        # Get the spec2vect cosine similarity score for all query spectra
-        spec2vec_similarities = cosine_similarity_matrix(
-            self.embeddings.to_numpy(),
-            np.array(query_embeddings_list))
-        # Convert to dataframe, with the correct indexes and columns.
-        spec2vec_similarities_dataframe = pd.DataFrame(
-            spec2vec_similarities,
-            index=self.embeddings.index,
-            columns=query_spectra_name_list)
-        return spec2vec_similarities_dataframe
-
     def get_spectra(self, spectrum_id_list: List[str]) -> List[Spectrum]:
         """Returns the spectra corresponding to the spectrum ids"""
         spectra_list = get_spectra_from_sqlite(self.sqlite_file_location,
@@ -206,42 +227,56 @@ class Ms2Library:
 # Not part of the class, used to create embeddings, that are than stored in a
 # pickled file. (Storing in pickled file is not part of the function)
 
-def create_all_ms2ds_embeddings(sqlite_file_location: str,
-                                model: SiameseModel,
-                                progress_bars=True):
-    if progress_bars:
-        print("Loading data from sqlite")
+def store_ms2ds_embeddings(spectrum_list: List[Spectrum],
+                           model: SiameseModel,
+                           new_pickled_embeddings_file_name):
+    """Creates a pickled file with embeddings scores for spectra
 
+    A dataframe with as index the spectrum_ids and as columns the indexes of
+    the vector is converted to pickle.
+
+    Args:
+    ------
+    spectrum_list:
+        Spectra for which embeddings should be calculated.
+    model:
+        SiameseModel that is used to calculate the embeddings.
+    new_picled_embeddings_file_name:
+        The file name in which the pickled dataframe is stored.
+    """
     ms2ds = MS2DeepScore(model)
+    spectra_vectors = ms2ds.calculate_vectors(spectrum_list)
 
-    binned_references = model.spectrum_binner.transform(
-        library_spectra)
-    for index_reference, reference in enumerate(tqdm(binned_references,
-                                                     desc='Calculating vectors of reference spectrums',
-                                                     disable=self.disable_progress_bar)):
-        reference_vectors[index_reference,
-        0:self.output_vector_dim] = self.model.base.predict(
-            self._create_input_vector(reference))
+    spectra_vector_dataframe = pd.DataFrame(
+        spectra_vectors,
+        index=[spectrum.get("spectrum_id") for spectrum in spectrum_list])
+    spectra_vector_dataframe.to_pickle(new_pickled_embeddings_file_name)
 
 
-def create_s2v_embeddings(library_spectra: List[Spectrum],
-                          model: Word2Vec,
-                          progress_bars: bool = True
-                          ) -> pd.DataFrame:
-    """Returns a dataframe with embeddings for all library spectra
+def store_s2v_embeddings(spectra_list: List[Spectrum],
+                         model: Word2Vec,
+                         new_pickled_embeddings_file_name: str,
+                         progress_bars: bool = True
+                         ):
+    """Creates a pickled file with embeddings for all given spectra
+
+    A dataframe with as index the spectrum_ids and as columns the indexes of
+    the vector is converted to pickle.
 
     Args
     ------
-    library_spectra:
+    spectra_list:
         Spectra for which the embeddings should be obtained
     model:
         Trained Spec2Vec model
+    new_pickled_embeddings_file_name:
+        File name for file created
     progress_bars:
         When True progress bars and steps in progress will be shown.
         Default = True
     """
     # Convert Spectrum objects to SpectrumDocument
-    spectrum_documents = create_spectrum_documents(library_spectra,
+    spectrum_documents = create_spectrum_documents(spectra_list,
                                                    progress_bar=progress_bars)
     embeddings_dict = {}
     for spectrum_document in tqdm(spectrum_documents,
@@ -254,7 +289,7 @@ def create_s2v_embeddings(library_spectra: List[Spectrum],
     # Convert to pandas Dataframe
     embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                   orient="index")
-    return embeddings_dataframe
+    embeddings_dataframe.to_pickle(new_pickled_embeddings_file_name)
 
 
 def create_spectrum_documents(query_spectra: List[Spectrum],
@@ -290,42 +325,39 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
 if __name__ == "__main__":
     # # To run a sqlite file should be made that contains also the table
     # # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
-    # # example (but use different start files for full dataset)
+    # example (but use different start files for full dataset)
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    # model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    # new_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
+    s2v_model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    s2v_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
     ms2ds_model_file_name = "../../ms2deepscore/tests/resources/testmodel.hdf5"
-    # model = Word2Vec.load(model_file_name)
-    #
-    # # Create pickled file with library embeddings:
-    # # library_embeddings = create_all_s2v_embeddings(
-    # #     sqlite_file_name,
-    # #     model)
-    # # print(library_embeddings)
-    # # library_embeddings.to_pickle(new_pickled_embeddings_file)
-    #
-    # # Create library object
-    # my_library = Ms2Library(sqlite_file_name,
-    #                         model_file_name,
-    #                         new_pickled_embeddings_file,
-    #                         "../../ms2deepscore/tests/resources/testmodel.hdf5")
-    # # Get two query spectras
-    # query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
-    #                                         "CCMSLIB00000001549"])
-    #
-    # similar_mass_dict = my_library.pre_select_spectra(
-    #     query_spectra_to_test)
+    ms2ds_embeddings_file_name = "../downloads/ms2ds_embeddings_2_spectra.pickle"
 
-    # print(s2v_matrix)
-    # print(similar_mass_dict)
+    # Create pickled file with library embeddings:
+    # library_embeddings = create_all_s2v_embeddings(
+    #     sqlite_file_name,
+    #     model)
+    # print(library_embeddings)
+    # library_embeddings.to_pickle(new_pickled_embeddings_file)
 
-    library_spectra = get_spectra_from_sqlite(sqlite_file_name,
-                                              ["CCMSLIB00000001547",
-                                               "CCMSLIB00000001549"],
-                                              get_all_spectra=False,
-                                              progress_bar=True)
+    # Create library object
+    my_library = Ms2Library(sqlite_file_name,
+                            s2v_model_file_name,
+                            ms2ds_model_file_name,
+                            s2v_pickled_embeddings_file,
+                            ms2ds_embeddings_file_name)
+    # Get two query spectras
+    query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
+                                            "CCMSLIB00000001549"])
 
-    model = load_ms2ds_model(ms2ds_model_file_name)
-    model.spectrum_binner.__setattr__("allowed_missing_percentage",
-                                      100)
-    create_all_ms2ds_embeddings(sqlite_file_name, model)
+    my_library.get_ms2deepscore_similarity_matrix(query_spectra_to_test)
+
+    # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
+    #                                           ["CCMSLIB00000001547",
+    #                                            "CCMSLIB00000001549"],
+    #                                           get_all_spectra=False,
+    #                                           progress_bar=True)
+    #
+    # model = load_ms2ds_model(ms2ds_model_file_name)
+    # model.spectrum_binner.__setattr__("allowed_missing_percentage",
+    #                                   100)
+    # store_ms2ds_embeddings(library_spectra, model, "../downloads/ms2ds_embeddings_2_spectra.pickle")
