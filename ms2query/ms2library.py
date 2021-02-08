@@ -94,12 +94,7 @@ class Ms2Library:
         # spec2vec_similarities_scores = self._get_spec2vec_similarity_matrix(
         #     query_spectra)
         same_masses = self._get_parent_mass_matches_all_queries(query_spectra)
-        library_spectra_names = same_masses[query_spectra[0].get("spectrum_id")]
-        library_spectra = get_spectra_from_sqlite(self.sqlite_file_location,
-                                                  library_spectra_names)
-        print(library_spectra)
-        print(query_spectra)
-        self.get_ms2deepscore_similarity_matrix(query_spectra, query_spectra)
+
         return same_masses
 
     def get_ms2deepscore_similarity_matrix(
@@ -115,10 +110,8 @@ class Ms2Library:
             stored.
         """
         ms2ds = MS2DeepScore(self.ms2ds_model)
-        self.ms2ds_model.spectrum_binner.__setattr__("allowed_missing_percentage", 100)
         query_embeddings = ms2ds.calculate_vectors(query_spectra)
         ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
-        print(ms2ds_embeddings_numpy)
         similarity_matrix = cosine_similarity_matrix(ms2ds_embeddings_numpy,
                                                      query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
@@ -329,15 +322,8 @@ if __name__ == "__main__":
     sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
     s2v_model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
     s2v_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
-    ms2ds_model_file_name = "../../ms2deepscore/tests/resources/testmodel.hdf5"
-    ms2ds_embeddings_file_name = "../downloads/ms2ds_embeddings_2_spectra.pickle"
-
-    # Create pickled file with library embeddings:
-    # library_embeddings = create_all_s2v_embeddings(
-    #     sqlite_file_name,
-    #     model)
-    # print(library_embeddings)
-    # library_embeddings.to_pickle(new_pickled_embeddings_file)
+    ms2ds_model_file_name = "../../ms2deepscore/data/ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
+    ms2ds_embeddings_file_name = "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
 
     # Create library object
     my_library = Ms2Library(sqlite_file_name,
@@ -347,9 +333,9 @@ if __name__ == "__main__":
                             ms2ds_embeddings_file_name)
     # Get two query spectras
     query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
-                                            "CCMSLIB00000001549"])
+                                                    "CCMSLIB00000001549"])
 
-    my_library.get_ms2deepscore_similarity_matrix(query_spectra_to_test)
+    print(my_library.get_ms2deepscore_similarity_matrix(query_spectra_to_test))
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
@@ -358,6 +344,5 @@ if __name__ == "__main__":
     #                                           progress_bar=True)
     #
     # model = load_ms2ds_model(ms2ds_model_file_name)
-    # model.spectrum_binner.__setattr__("allowed_missing_percentage",
-    #                                   100)
-    # store_ms2ds_embeddings(library_spectra, model, "../downloads/ms2ds_embeddings_2_spectra.pickle")
+    #
+    # store_ms2ds_embeddings(library_spectra, model, ms2ds_embeddings_file_name)
