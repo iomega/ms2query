@@ -88,14 +88,29 @@ class Ms2Library:
 
     def pre_select_spectra(self,
                            query_spectra: List[Spectrum]):
-        """Currently only runs functions that will later be needed to do the
-        pre selection"""
+        """Returns dict of dataframe with preselected spectra
+
+        The structure of the panda dataframe is
+
+        Args:
+        ------
+        query_spectra:
+            spectra for which a preselection of possible library matches should
+            be done
+        """
 
         # spec2vec_similarities_scores = self._get_spec2vec_similarity_matrix(
         #     query_spectra)
         same_masses = self._get_parent_mass_matches_all_queries(query_spectra)
 
-        return same_masses
+        dict_with_preselected_spectra = {}
+        for spectrum_id in same_masses:
+            preselected_matches = same_masses[spectrum_id]
+            dict_with_preselected_spectra[spectrum_id] = \
+                pd.DataFrame(preselected_matches,
+                             columns=["spectrum"])
+        self.collect_data_for_tanimoto_prediction_model(dict_with_preselected_spectra)
+        return dict_with_preselected_spectra
 
     def get_ms2deepscore_similarity_matrix(
             self,
@@ -216,6 +231,18 @@ class Ms2Library:
             self.sqlite_file_location)
         return tanimoto_score_matrix
 
+    def collect_data_for_tanimoto_prediction_model(self,
+                                                   preselected_spectra:
+                                                   Dict[str, pd.DataFrame]):
+        column_list = ["cosine_score",
+                       "cosine_matches",
+                       "mod_cosine_score",
+                       "mod_cosine_matches",
+                       "s2v_scores"]
+        for query_spectrum_id in preselected_spectra:
+            preselected_spectra_dataframe = preselected_spectra[query_spectrum_id]
+            preselected_spectra_list = [spectrum_id for spectrum_id in preselected_spectra_dataframe['spectrum']]
+            print(preselected_spectra_list)
 
 # Not part of the class, used to create embeddings, that are than stored in a
 # pickled file. (Storing in pickled file is not part of the function)
@@ -335,7 +362,7 @@ if __name__ == "__main__":
     query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
                                                     "CCMSLIB00000001549"])
 
-    print(my_library.get_ms2deepscore_similarity_matrix(query_spectra_to_test))
+    my_library.pre_select_spectra(query_spectra_to_test)
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
