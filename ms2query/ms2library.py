@@ -238,11 +238,21 @@ class Ms2Library:
                        "cosine_matches",
                        "mod_cosine_score",
                        "mod_cosine_matches",
-                       "s2v_scores"]
+                       "s2v_scores",
+                       "parent_mass",
+                       "mass_sim"]
+
         for query_spectrum_id in preselected_spectra:
-            preselected_spectra_dataframe = preselected_spectra[query_spectrum_id]
-            preselected_spectra_list = [spectrum_id for spectrum_id in preselected_spectra_dataframe['spectrum']]
-            print(preselected_spectra_list)
+            matches_dataframe = preselected_spectra[query_spectrum_id]
+            preselected_spectra_id_list = \
+                [spectrum_id for spectrum_id
+                 in matches_dataframe['spectrum']]
+            preselected_spectra_list = get_spectra_from_sqlite(
+                self.sqlite_file_location,
+                preselected_spectra_id_list)
+
+        # Use from s2v_functions: find matches
+
 
 # Not part of the class, used to create embeddings, that are than stored in a
 # pickled file. (Storing in pickled file is not part of the function)
