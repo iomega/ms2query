@@ -1,6 +1,6 @@
 from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
     get_tanimoto_score_for_inchikeys
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from matchms.Spectrum import Spectrum
 import pandas as pd
 import numpy as np
@@ -9,12 +9,15 @@ import pickle
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore.models import SiameseModel
 from ms2deepscore import MS2DeepScore
+from matchms.similarity import CosineGreedy, ModifiedCosine
 from gensim.models import Word2Vec
 from tqdm import tqdm
-from spec2vec import SpectrumDocument
+from spec2vec import SpectrumDocument, Spec2Vec
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from ms2query.ms2query.s2v_functions import \
     post_process_s2v
+from tensorflow.keras.models import load_model
+
 
 
 class Ms2Library:
@@ -102,10 +105,28 @@ class Ms2Library:
         dict_with_preselected_spectra = {}
         for spectrum_id in same_masses:
             preselected_matches = same_masses[spectrum_id]
+            # Remove spectra that do not get through the post_process_selection
+            spectra_to_skip = create_spectrum_documents(
+                get_spectra_from_sqlite(self.sqlite_file_location,
+                                        preselected_matches))[1]
+            preselected_matches = [spectrum_id for spectrum_id
+                                   in preselected_matches
+                                   if spectrum_id not in spectra_to_skip]
+            # Convert to dict with dataframes
             dict_with_preselected_spectra[spectrum_id] = \
                 pd.DataFrame(preselected_matches,
                              columns=["spectrum"])
-        self.collect_data_for_tanimoto_prediction_model(dict_with_preselected_spectra)
+
+        for query_spectrum in query_spectra:
+            spectrum_id = query_spectrum.get("spectrum_id")
+            matches_with_info = self.collect_data_for_tanimoto_prediction_model(
+                query_spectrum,
+                dict_with_preselected_spectra[spectrum_id])
+            print(matches_with_info)
+            model = load_model("../model/nn_2000_queries_trimming_simple_10.hdf5")
+            predictions = model.predict(matches_with_info.drop(["spectrum"],
+                                                               axis=1))
+            print(predictions)
         return dict_with_preselected_spectra
 
     def get_ms2deepscore_similarity_matrix(
@@ -148,7 +169,7 @@ class Ms2Library:
         """
 
         # Convert list of Spectrum objects to list of SpectrumDocuments
-        query_spectrum_documents = create_spectrum_documents(query_spectra)
+        query_spectrum_documents = create_spectrum_documents(query_spectra)[0]
 
         embedding_dim_s2v = self.s2v_model.wv.vector_size
         query_embeddings = np.empty((len(query_spectrum_documents),
@@ -225,28 +246,57 @@ class Ms2Library:
             self.sqlite_file_location)
         return tanimoto_score_matrix
 
-    def collect_data_for_tanimoto_prediction_model(self,
-                                                   preselected_spectra:
-                                                   Dict[str, pd.DataFrame]):
-        column_list = ["cosine_score",
-                       "cosine_matches",
-                       "mod_cosine_score",
-                       "mod_cosine_matches",
-                       "s2v_scores",
-                       "parent_mass",
-                       "mass_sim"]
+    def collect_data_for_tanimoto_prediction_model(
+            self,
+            query_spectrum: Spectrum,
+            preselected_spectra_df: pd.DataFrame):
 
-        for query_spectrum_id in preselected_spectra:
-            matches_dataframe = preselected_spectra[query_spectrum_id]
-            preselected_spectra_id_list = \
-                [spectrum_id for spectrum_id
-                 in matches_dataframe['spectrum']]
-            preselected_spectra_list = get_spectra_from_sqlite(
-                self.sqlite_file_location,
-                preselected_spectra_id_list)
+        # Todo make constants, something like settings or attributes
+        TOLERANCE = 0.1
+        BASE_NUM_MASS_SIM = 0.8
 
-        # Use from s2v_functions: find matches
+        # Gets a list of all preselected spectra as Spectrum objects
+        preselected_spectra_list = get_spectra_from_sqlite(
+            self.sqlite_file_location,
+            [spectrum_id for spectrum_id
+             in preselected_spectra_df['spectrum']])
 
+        # Gets cosine similarity matrix
+        cosine_sim_matrix = CosineGreedy(tolerance=TOLERANCE).matrix(
+                preselected_spectra_list,
+                [query_spectrum])
+        # Gets modified cosine similarity matrix
+        mod_cosine_sim_matrix = ModifiedCosine(tolerance=TOLERANCE).matrix(
+                preselected_spectra_list,
+                [query_spectrum])
+        # Changes [[(cos_score1, cos_match1)] [(cos_score2, cos_match2)]] into
+        # [cos_score1, cos_score2], [cos_match1, cos_match2]
+        cosine_score, cosine_matches = map(list, zip(
+            *[x[0] for x in cosine_sim_matrix]))
+        mod_cosine_score, mod_cosine_matches = map(list, zip(
+            *[x[0] for x in mod_cosine_sim_matrix]))
+
+        # Get s2v_scores
+        s2v_scores = Spec2Vec(self.s2v_model).matrix(
+            create_spectrum_documents(preselected_spectra_list)[0],
+            create_spectrum_documents([query_spectrum])[0])
+
+        parent_masses = [spectrum.get("parent_mass")
+                         for spectrum in preselected_spectra_list]
+
+        mass_similarity = [BASE_NUM_MASS_SIM **
+                           (spectrum.get("parent_mass") -
+                            query_spectrum.get("parent_mass"))
+                           for spectrum in preselected_spectra_list]
+
+        preselected_spectra_df["cosine_score"] = cosine_score
+        preselected_spectra_df["cosine_matches"] = cosine_matches
+        preselected_spectra_df["mod_cosine_score"] = mod_cosine_score
+        preselected_spectra_df["mod_cosine_matches"] = mod_cosine_matches
+        preselected_spectra_df["s2v_scores"] = s2v_scores
+        preselected_spectra_df["parent_mass"] = parent_masses
+        preselected_spectra_df["mass_sim"] = mass_similarity
+        return preselected_spectra_df
 
 # Not part of the class, used to create embeddings, that are than stored in a
 # pickled file. (Storing in pickled file is not part of the function)
@@ -301,7 +351,8 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
     """
     # Convert Spectrum objects to SpectrumDocument
     spectrum_documents = create_spectrum_documents(spectra_list,
-                                                   progress_bar=progress_bars)
+                                                   progress_bar=progress_bars
+                                                   )[0]
     embeddings_dict = {}
     for spectrum_document in tqdm(spectrum_documents,
                                   desc="Calculating embeddings",
@@ -318,10 +369,8 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
 
 def create_spectrum_documents(query_spectra: List[Spectrum],
                               progress_bar: bool = False
-                              ) -> List[SpectrumDocument]:
-    """Transforms list of Spectrum to dict of SpectrumDocument
-
-    Keys are the spectrum_id and values the SpectrumDocument
+                              ) -> Tuple[List[SpectrumDocument], List[str]]:
+    """Transforms list of Spectrum to List of SpectrumDocument
 
     Args
     ------
@@ -343,7 +392,7 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
         else:
             spectrum_id = spectrum.metadata["spectrum_id"]
             spectra_not_past_post_process_spectra.append(spectrum_id)
-    return spectrum_documents
+    return spectrum_documents, spectra_not_past_post_process_spectra
 
 
 if __name__ == "__main__":
@@ -366,7 +415,7 @@ if __name__ == "__main__":
     query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
                                                     "CCMSLIB00000001549"])
 
-    print(my_library._get_spec2vec_similarity_matrix(query_spectra_to_test))
+    my_library.pre_select_spectra(query_spectra_to_test)
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
