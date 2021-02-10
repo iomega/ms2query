@@ -9,16 +9,12 @@ import pickle
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore.models import SiameseModel
 from ms2deepscore import MS2DeepScore
-from ms2deepscore.vector_operations import cosine_similarity_matrix
 from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from ms2query.ms2query.s2v_functions import \
     post_process_s2v
-
-# todo Check for _obj.get() for spectrumdocuments and after new release change
-#  to .get()
 
 
 class Ms2Library:
@@ -140,7 +136,7 @@ class Ms2Library:
                                         query_spectra: List[Spectrum]
                                         ) -> pd.DataFrame:
         """
-        Returns a matrix with s2v similarity scores for all query spectra
+        Returns s2v similarity scores between all query and library spectra
 
         The column names are the query spectrum ids and the indexes are the
         library spectrum ids.
@@ -154,26 +150,24 @@ class Ms2Library:
         # Convert list of Spectrum objects to list of SpectrumDocuments
         query_spectrum_documents = create_spectrum_documents(query_spectra)
 
-        query_spectra_name_list = []
-        query_embeddings_list = []
-        for spectrum_document in query_spectrum_documents:
-            spectrum_name = spectrum_document._obj.get("spectrum_id")
+        embedding_dim_s2v = self.s2v_model.wv.vector_size
+        query_embeddings = np.empty((len(query_spectrum_documents),
+                                    embedding_dim_s2v))
+
+        for i, spectrum_document in enumerate(query_spectrum_documents):
             # Get the embeddings for current spectra
-            query_spectrum_embedding = calc_vector(self.s2v_model,
-                                                   spectrum_document)
-            # Store in lists
-            query_embeddings_list.append(query_spectrum_embedding)
-            query_spectra_name_list.append(spectrum_name)
+            query_embeddings[i, :] = calc_vector(self.s2v_model,
+                                                 spectrum_document)
 
         # Get the spec2vect cosine similarity score for all query spectra
         spec2vec_similarities = cosine_similarity_matrix(
             self.s2v_embeddings.to_numpy(),
-            np.array(query_embeddings_list))
+            query_embeddings)
         # Convert to dataframe, with the correct indexes and columns.
         spec2vec_similarities_dataframe = pd.DataFrame(
             spec2vec_similarities,
             index=self.s2v_embeddings.index,
-            columns=query_spectra_name_list)
+            columns=[s.get("spectrum_id") for s in query_spectrum_documents])
         return spec2vec_similarities_dataframe
 
     def _get_parent_mass_matches_all_queries(self,
@@ -314,7 +308,7 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
                                   disable=not progress_bars):
         embedding = calc_vector(model,
                                 spectrum_document)
-        embeddings_dict[spectrum_document._obj.get("spectrum_id")] = embedding
+        embeddings_dict[spectrum_document.get("spectrum_id")] = embedding
 
     # Convert to pandas Dataframe
     embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
@@ -372,7 +366,7 @@ if __name__ == "__main__":
     query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
                                                     "CCMSLIB00000001549"])
 
-    my_library.pre_select_spectra(query_spectra_to_test)
+    print(my_library._get_spec2vec_similarity_matrix(query_spectra_to_test))
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
