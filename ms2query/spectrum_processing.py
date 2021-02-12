@@ -3,10 +3,14 @@ and inspection is expected to happen prior to running MS2Query and is not taken
 into account here. Processing here hence refers to inspecting, filtering, adjusting
 the spectrum peaks (m/z and intensities).
 """
+from typing import Dict, Union
+import numpy as np
 from matchms.typing import SpectrumType
+from matchms.filtering import normalize_intensities, select_by_mz
+
 
 def set_minimal_processing_defaults(**settings: Dict[str, Union[int, float]]) \
-        -> Dict[str, Union[int, bool]]:
+    -> Dict[str, Union[int, bool]]:
     """Set default argument values (where no user input is given).
 
     Args:
@@ -27,8 +31,9 @@ def set_minimal_processing_defaults(**settings: Dict[str, Union[int, float]]) \
     return settings
 
 
-def spectrum_processing_minimal(spectrums: SpectrumType,
-                                **settings: Dict[str, Union[int, float]) -> Union[Spectrum, None]:
+def spectrum_processing_minimal(spectrum: SpectrumType,
+                                **settings: Dict[str, Union[int, float]]) \
+    -> Union[SpectrumType, None]:
     """Minimal necessary spectrum processing that is required by MS2Query.
     This mostly includes intensity normalization and setting spectrums to None
     when they do not meet the minimum requirements.
@@ -50,8 +55,8 @@ def spectrum_processing_minimal(spectrums: SpectrumType,
     """
     settings = set_minimal_processing_defaults(**settings)
     spectrum = normalize_intensities(spectrum)
-    spectrum = select_by_mz(spectrum, mz_from=settings["mz_from"], mz_to=None)
-    spectrum = require_peaks_below_mz(spectrum, n_required=settings["n_required_below_1000"]
+    spectrum = select_by_mz(spectrum, mz_from=settings["mz_from"], mz_to=np.inf)
+    spectrum = require_peaks_below_mz(spectrum, n_required=settings["n_required_below_1000"],
                                       max_mz=settings["max_mz_required"])
     return spectrum
 
@@ -61,7 +66,7 @@ def require_peaks_below_mz(spectrum_in: SpectrumType,
                            max_mz: float = 1000.0) -> SpectrumType:
     """Spectrum will be set to None when it has fewer peaks than required.
 
-    Parameters
+    Parametersgit 
     ----------
     spectrum_in:
         Input spectrum.
