@@ -91,7 +91,7 @@ def set_spec2vec_defaults(**settings: Dict[str, Union[int, bool]]) \
 
 def spectrum_processing_s2v(spectrum: SpectrumType,
                             **settings: Dict[str, Union[int, bool]]) \
-    -> Union[Spectrum, None]:
+    -> Union[SpectrumType, None]:
     """Spectrum processing required for computing Spec2Vec scores.
 
     Args:
