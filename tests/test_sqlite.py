@@ -67,11 +67,16 @@ def test_making_sqlite_file(tmp_path):
         assert table_info1 == table_info2, \
             f"Different column names or table settings " \
             f"were expected in table {table_name1}"
-        # Get all rows from both tables
-        rows_1 = cur1.execute("SELECT * FROM " + table_name1).fetchall()
-        rows_2 = cur2.execute("SELECT * FROM " + table_name1).fetchall()
-        assert rows_1 == rows_2, \
-            f"Different data was expected in table {table_name1}"
+        column_names = [column_info[1] for column_info in table_info1]
+        for column in column_names:
+            # Get all rows from both tables
+            rows_1 = cur1.execute(f"SELECT {column} FROM " +
+                                  table_name1).fetchall()
+            rows_2 = cur2.execute(f"SELECT {column} FROM " +
+                                  table_name1).fetchall()
+            assert rows_1 == rows_2, \
+                f"Different data was expected in column {column} " \
+                f"in table {table_name1}"
     conn1.close()
     conn2.close()
 
@@ -131,3 +136,5 @@ def test_get_spectrum_data():
         "Expected different spectrum to be loaded"
     assert original_spectra[2].__eq__(spectra_list[1]), \
         "Expected different spectrum to be loaded"
+
+test_making_sqlite_file("")
