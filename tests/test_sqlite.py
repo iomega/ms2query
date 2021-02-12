@@ -136,5 +136,3 @@ def test_get_spectrum_data():
         "Expected different spectrum to be loaded"
     assert original_spectra[2].__eq__(spectra_list[1]), \
         "Expected different spectrum to be loaded"
-
-test_making_sqlite_file("")
