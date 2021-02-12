@@ -59,6 +59,14 @@ def test_making_sqlite_file(tmp_path):
 
     for table_nr, table_name1 in enumerate(table_names1):
         table_name1 = table_name1[0]
+        # Get column names and settings like primary key etc.
+        table_info1 = cur1.execute(
+            f"PRAGMA table_info({table_name1});").fetchall()
+        table_info2 = cur2.execute(
+            f"PRAGMA table_info({table_name1});").fetchall()
+        assert table_info1 == table_info2, \
+            f"Different column names or table settings " \
+            f"were expected in table {table_name1}"
         # Get all rows from both tables
         rows_1 = cur1.execute("SELECT * FROM " + table_name1).fetchall()
         rows_2 = cur2.execute("SELECT * FROM " + table_name1).fetchall()
@@ -123,3 +131,5 @@ def test_get_spectrum_data():
         "Expected different spectrum to be loaded"
     assert original_spectra[2].__eq__(spectra_list[1]), \
         "Expected different spectrum to be loaded"
+
+test_making_sqlite_file("")
