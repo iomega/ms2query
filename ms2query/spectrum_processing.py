@@ -6,7 +6,8 @@ the spectrum peaks (m/z and intensities).
 from typing import Dict, Union
 import numpy as np
 from matchms.typing import SpectrumType
-from matchms.filtering import normalize_intensities, select_by_mz, select_by_intensity
+from matchms.filtering import normalize_intensities, \
+    select_by_mz, select_by_intensity, reduce_to_number_of_peaks, add_losses
 
 
 def set_minimal_processing_defaults(**settings: Dict[str, Union[int, float]]) \
@@ -55,7 +56,7 @@ def spectrum_processing_minimal(spectrum: SpectrumType,
     """
     settings = set_minimal_processing_defaults(**settings)
     spectrum = normalize_intensities(spectrum)
-    spectrum = select_by_intensity(spectrum, intensity_from=setting["intensity_from"])
+    spectrum = select_by_intensity(spectrum, intensity_from=settings["intensity_from"])
     spectrum = select_by_mz(spectrum, mz_from=settings["mz_from"], mz_to=np.inf)
     spectrum = require_peaks_below_mz(spectrum, n_required=settings["n_required_below_1000"],
                                       max_mz=settings["max_mz_required"])
