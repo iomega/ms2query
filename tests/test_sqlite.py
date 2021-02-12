@@ -74,9 +74,15 @@ def test_making_sqlite_file(tmp_path):
                                   table_name1).fetchall()
             rows_2 = cur2.execute(f"SELECT {column} FROM " +
                                   table_name1).fetchall()
-            assert rows_1 == rows_2, \
-                f"Different data was expected in column {column} " \
-                f"in table {table_name1}"
+            error_msg = f"Different data was expected in column {column} " \
+                f"in table {table_name1}. The wrong value is:"
+            if column == "parent_mass":
+                np.testing.assert_almost_equal(rows_1,
+                                               rows_2,
+                                               err_msg=error_msg,
+                                               verbose=True)
+            else:
+                assert rows_1 == rows_2, error_msg
     conn1.close()
     conn2.close()
 
