@@ -72,6 +72,7 @@ def set_spec2vec_defaults(**settings: Dict[str, Union[int, bool]]) \
         Change default settings
     """
     defaults = {"mz_from": 10.0,
+                "n_required": 1,
                 "ratio_desired": 0.5,
                 "intensity_from": 0.001,
                 "n_max": 1000,
