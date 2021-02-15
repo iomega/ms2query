@@ -56,20 +56,20 @@ def test_spectrum_processing_minimal_default():
         "Expected None because the number of peaks (4) is less than the default threshold (10)."
 
 
-def test_spectrum_processing_minimal_set_n_required():
+def test_spectrum_processing_minimal_set_n_required_and_max_mz():
     spectrum_in = Spectrum(mz=np.array([5, 110, 220, 330, 399, 440], dtype="float"),
                            intensities=np.array([10, 10, 1, 10, 20, 100], dtype="float"))
-    spectrum = spectrum_processing_minimal(spectrum_in, n_required_below_1000=4, max_mz_required=400)
+    spectrum = spectrum_processing_minimal(spectrum_in, n_required_below_mz=4, max_mz_required=400)
 
     assert np.all(spectrum.peaks.mz == spectrum_in.peaks.mz[1:]), "Expected different m/z values"
     assert np.all(spectrum.peaks.intensities == np.array([0.1 , 0.01, 0.1 , 0.2 , 1.  ])), \
-        "Expected different, normalized intensities"
+        "Expected different intensities"
 
 
 def test_spectrum_processing_minimal_set_n_required_intensity_from():
     spectrum_in = Spectrum(mz=np.array([5, 110, 220, 330, 440], dtype="float"),
                            intensities=np.array([10, 10, 0.1, 10, 101], dtype="float"))
-    spectrum = spectrum_processing_minimal(spectrum_in, n_required_below_1000=4)
+    spectrum = spectrum_processing_minimal(spectrum_in, n_required_below_mz=4)
 
     assert spectrum is None, \
         "Expected None because 1 peak has m/z > max_mz_required and 1 peak has intensity < intensity_from"
@@ -96,5 +96,5 @@ def test_spectrum_processing_s2v():
 #                                      "precursor_mz": 240.0})
 #     spectrum = spectrum_processing_s2v(spectrum_in, n_max=4)
 #     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
-#     assert spectrum.peaks == spectrum_in.peaks[1:], "Expected spectrum peaks to be unchanged by function"
+#     assert spectrum.peaks == spectrum_in.peaks[1:], "Expected only the first peak to be removed"
 #     assert np.all(spectrum.losses.mz == np.array([ 20., 130.])), "Expected other losses"
