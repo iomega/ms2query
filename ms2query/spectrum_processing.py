@@ -37,7 +37,7 @@ def minimal_processing_multiple_spectra(spectrum_list: List[SpectrumType],
     """
     for i, spectrum in enumerate(
             tqdm(spectrum_list,
-                 desc="Adding tanimoto scores to sqlite file",
+                 desc="Preprocessing spectra",
                  disable=not progress_bar)):
         processed_spectrum = spectrum_processing_minimal(spectrum,
                                                          **settings)
