@@ -16,6 +16,7 @@ import numpy as np
 import sqlite3
 from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
+from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
@@ -61,8 +62,11 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     create_inchikey_sqlite_table(sqlite_file_name,
                                  csv_file_with_inchikey_order)
 
-    # Creates a sqlite table with the metadata, peaks and intensities
+    # Loads the spectra from a pickled file
     list_of_spectra = load_pickled_file(pickled_file_name)
+    # Does normalization and filtering of spectra
+    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
+    # Creates a sqlite table with the metadata, peaks and intensities
     create_table_structure(sqlite_file_name,
                            additional_columns_dict=columns_dict)
     add_list_of_spectra_to_sqlite(sqlite_file_name, list_of_spectra)
