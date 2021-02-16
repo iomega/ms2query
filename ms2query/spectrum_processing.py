@@ -33,7 +33,7 @@ def set_minimal_processing_defaults(**settings: Union[int, float]
 
 
 def spectrum_processing_minimal(spectrum: SpectrumType,
-                                **settings: Dict[str, Union[int, float]]
+                                **settings: Union[int, float]
                                 ) -> Union[SpectrumType, None]:
     """Minimal necessary spectrum processing that is required by MS2Query.
     This mostly includes intensity normalization and setting spectra to None
@@ -94,8 +94,8 @@ def set_spec2vec_defaults(**settings: Union[int, float]
 
 
 def spectrum_processing_s2v(spectrum: SpectrumType,
-                            **settings: Dict[str, Union[int, bool]]
-                            ) -> Union[SpectrumType, None]:
+                            **settings: Union[int, float]
+                            ) -> Union[SpectrumType]:
     """Spectrum processing required for computing Spec2Vec scores.
 
     Args:
