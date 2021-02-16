@@ -25,7 +25,7 @@ def test_making_sqlite_file(tmp_path):
 
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files_sqlite')
+        'tests/test_files')
 
     reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
                                          "test_spectra_database.sqlite")
@@ -92,7 +92,7 @@ def test_get_tanimoto_scores():
     """
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files_sqlite')
+        'tests/test_files')
     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
                                     "test_spectra_database.sqlite")
 
@@ -119,7 +119,7 @@ def test_get_spectrum_data():
     """
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files_sqlite')
+        'tests/test_files')
     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
                                     "test_spectra_database.sqlite")
 
