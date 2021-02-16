@@ -14,7 +14,7 @@ from gensim.models import Word2Vec
 from tqdm import tqdm
 from spec2vec import SpectrumDocument, Spec2Vec
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
-from ms2query.ms2query.s2v_functions import \
+from ms2query.s2v_functions import \
     post_process_s2v
 from tensorflow.keras.models import load_model as load_nn_model
 
@@ -51,6 +51,8 @@ class Ms2Library:
         #  since they should be the same as how the network is trained
         self.cosine_score_tolerance = 0.1
         self.base_nr_mass_similarity = 0.8
+        # todo make new model that has a fixed basic mass
+        self.max_parent_mass = 13418.370894192036
 
         # Change default settings to values given in **settings
         self._set_settings(settings)
@@ -67,6 +69,7 @@ class Ms2Library:
         with open(pickled_ms2ds_embeddings_file_name, "rb") as \
                 pickled_ms2ds_embeddings:
             self.ms2ds_embeddings = pickle.load(pickled_ms2ds_embeddings)
+
 
     def _set_settings(self,
                       settings: Dict[str, Any]):
@@ -91,7 +94,7 @@ class Ms2Library:
                 f"Different type is expected for argument: {key}"
             setattr(self, key, settings[key])
 
-    def get_matches(self, query_spectra) -> Dict[pd.DataFrame]:
+    def get_matches(self, query_spectra) -> Dict[str, pd.DataFrame]:
         """Returns found matches and relevant info"""
         dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
 
@@ -104,6 +107,7 @@ class Ms2Library:
                 self.collect_data_for_tanimoto_prediction_model(
                     query_spectrum,
                     dict_with_preselected_spectra[spectrum_id])
+            pd.set_option("display.max_columns", None)
             predictions = self.nn_model.predict(matches_with_info)
             matches_with_info["tanimoto_prediction"] = predictions
 
@@ -280,14 +284,19 @@ class Ms2Library:
             *[x[0] for x in cosine_sim_matrix]))
         mod_cosine_score, mod_cosine_matches = map(list, zip(
             *[x[0] for x in mod_cosine_sim_matrix]))
+        # Transform cosine score and mod cosine matches to in between 0-1
+        normalized_cosine_matches = [1 - 0.93 ** i for i in cosine_matches]
+        normalized_mod_cos_matches = [1 - 0.93 ** i for i in mod_cosine_matches]
 
         # Get s2v_scores
         s2v_scores = Spec2Vec(self.s2v_model).matrix(
             create_spectrum_documents(preselected_spectra_list)[0],
-            create_spectrum_documents([query_spectrum])[0])[0]
+            create_spectrum_documents([query_spectrum])[0])[:, 0]
 
         parent_masses = [spectrum.get("parent_mass")
                          for spectrum in preselected_spectra_list]
+        normalized_parent_masses = [parent_mass/self.max_parent_mass
+                                    for parent_mass in parent_masses]
 
         mass_similarity = [self.base_nr_mass_similarity **
                            (spectrum.get("parent_mass") -
@@ -297,20 +306,14 @@ class Ms2Library:
         # Add info together into a dataframe
         preselected_spectra_df = pd.DataFrame(
             {"cosine_score": cosine_score,
-             "cosine_matches": cosine_matches,
+             "cosine_matches": normalized_cosine_matches,
              "mod_cosine_score": mod_cosine_score,
-             "mod_cosine_matches": mod_cosine_matches,
+             "mod_cosine_matches": normalized_mod_cos_matches,
              "s2v_scores": s2v_scores,
-             "parent_mass": parent_masses,
+             "parent_mass": normalized_parent_masses,
              "mass_sim": mass_similarity},
             index=preselected_spectrum_ids)
         return preselected_spectra_df
-
-    def get_spectra(self, spectrum_id_list: List[str]) -> List[Spectrum]:
-        """Returns the spectra corresponding to the spectrum ids"""
-        spectra_list = get_spectra_from_sqlite(self.sqlite_file_location,
-                                               spectrum_id_list)
-        return spectra_list
 
     def get_tanimoto_scores(self,
                             list_of_inchikeys: List[str]
@@ -320,6 +323,12 @@ class Ms2Library:
             list_of_inchikeys,
             self.sqlite_file_location)
         return tanimoto_score_matrix
+
+    def get_max_spectrum(self):
+        conn = sqlite3.connect(self.sqlite_file_location)
+        cur = conn.cursor()
+        sqlite_command = """SELECT MAX(parent_mass) FROM spectrum_data"""
+        cur.execute(sqlite_command)
 
 
 # Not part of the class, used to create embeddings, that are than stored in a
@@ -438,8 +447,8 @@ if __name__ == "__main__":
                             ms2ds_embeddings_file_name,
                             neural_network_model_file_location)
     # Get two query spectras
-    query_spectra_to_test = my_library.get_spectra(["CCMSLIB00000001547",
-                                                    "CCMSLIB00000001549"])
+    query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
+                                                    ["CCMSLIB00000001655"])
 
     print(my_library.get_matches(query_spectra_to_test))
 
