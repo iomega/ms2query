@@ -70,7 +70,6 @@ class Ms2Library:
                 pickled_ms2ds_embeddings:
             self.ms2ds_embeddings = pickle.load(pickled_ms2ds_embeddings)
 
-
     def _set_settings(self,
                       settings: Dict[str, Any]):
         """Changes default settings to settings
@@ -134,7 +133,8 @@ class Ms2Library:
         #     query_spectra)
         # ms2ds_similarities_scores = self._get_ms2deepscore_similarity_matrix(
         #     query_spectra)
-        spectra_with_similar_masses = self._get_parent_mass_matches_all_queries(query_spectra)
+        spectra_with_similar_masses = \
+            self._get_parent_mass_matches_all_queries(query_spectra)
 
         dict_with_preselected_spectra = {}
         for spectrum_id in spectra_with_similar_masses:
@@ -286,7 +286,8 @@ class Ms2Library:
             *[x[0] for x in mod_cosine_sim_matrix]))
         # Transform cosine score and mod cosine matches to in between 0-1
         normalized_cosine_matches = [1 - 0.93 ** i for i in cosine_matches]
-        normalized_mod_cos_matches = [1 - 0.93 ** i for i in mod_cosine_matches]
+        normalized_mod_cos_matches = \
+            [1 - 0.93 ** i for i in mod_cosine_matches]
 
         # Get s2v_scores
         s2v_scores = Spec2Vec(self.s2v_model).matrix(
@@ -323,12 +324,6 @@ class Ms2Library:
             list_of_inchikeys,
             self.sqlite_file_location)
         return tanimoto_score_matrix
-
-    def get_max_spectrum(self):
-        conn = sqlite3.connect(self.sqlite_file_location)
-        cur = conn.cursor()
-        sqlite_command = """SELECT MAX(parent_mass) FROM spectrum_data"""
-        cur.execute(sqlite_command)
 
 
 # Not part of the class, used to create embeddings, that are than stored in a
@@ -412,6 +407,7 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
     progress_bar:
         When true a progress bar is shown. Default = False
     """
+    # todo use new preprocessing and remove spectra_not_past_post_process_spect
     spectrum_documents = []
     spectra_not_past_post_process_spectra = []
     for spectrum in tqdm(query_spectra,
@@ -432,12 +428,20 @@ if __name__ == "__main__":
     # # To run a sqlite file should be made that contains also the table
     # # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
     # example (but use different start files for full dataset)
-    sqlite_file_name = "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    s2v_model_file_name = "../downloads/spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    s2v_pickled_embeddings_file = "../downloads/embeddings_all_spectra.pickle"
-    ms2ds_model_file_name = "../../ms2deepscore/data/ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
-    ms2ds_embeddings_file_name = "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
-    neural_network_model_file_location = "../model/nn_2000_queries_trimming_simple_10.hdf5"
+    sqlite_file_name = \
+        "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
+    s2v_model_file_name = \
+        "../downloads/" \
+        "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    s2v_pickled_embeddings_file = \
+        "../downloads/embeddings_all_spectra.pickle"
+    ms2ds_model_file_name = \
+        "../../ms2deepscore/data/" \
+        "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
+    ms2ds_embeddings_file_name = \
+        "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
+    neural_network_model_file_location = \
+        "../model/nn_2000_queries_trimming_simple_10.hdf5"
 
     # Create library object
     my_library = Ms2Library(sqlite_file_name,
@@ -460,4 +464,6 @@ if __name__ == "__main__":
     #
     # model = load_ms2ds_model(ms2ds_model_file_name)
     #
-    # store_ms2ds_embeddings(library_spectra, model, ms2ds_embeddings_file_name)
+    # store_ms2ds_embeddings(library_spectra,
+    #                        model,
+    #                        ms2ds_embeddings_file_name)
