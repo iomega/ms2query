@@ -65,9 +65,9 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     # Loads the spectra from a pickled file
     list_of_spectra = load_pickled_file(pickled_file_name)
     # Todo see issue #63. Decide if processing should happen here
-    # Does normalization and filtering of spectra
-    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra,
-                                                          progress_bar=True)
+    # # Does normalization and filtering of spectra
+    # list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra,
+    #                                                       progress_bar=True)
     # Creates a sqlite table with the metadata, peaks and intensities
     create_table_structure(sqlite_file_name,
                            additional_columns_dict=columns_dict)
