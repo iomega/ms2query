@@ -48,7 +48,8 @@ def set_spec2vec_defaults(**settings: Dict[str, Union[int, bool]]) \
 def post_process_s2v(spectrum: Spectrum,
                      **settings: Dict[str, Union[int, bool]]) \
         -> Union[Spectrum, None]:
-    """Returns a processed matchms.Spectrum.Spectrum
+    """Processing of spectrums
+    TODO: to be updated to new processing pipeline. Or replace.
 
     Args:
     ----------
