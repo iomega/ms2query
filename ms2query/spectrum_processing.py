@@ -124,6 +124,8 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
     spectrum = add_losses(spectrum,
                           loss_mz_from=settings["loss_mz_from"],
                           loss_mz_to=settings["loss_mz_to"])
+    assert spectrum is None, \
+        "Expects Spectrum that has high enough quality and is not None"
     return spectrum
 
 
