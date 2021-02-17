@@ -26,7 +26,7 @@ class Ms2Library:
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 neural_network_file_name: str,
+                 neural_network_file_name: str = None,
                  **settings):
         """
 
@@ -61,7 +61,14 @@ class Ms2Library:
         self.sqlite_file_location = sqlite_file_location
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-        self.nn_model = load_nn_model(neural_network_file_name)
+
+        # Check if neural_network_file_name is provided otherwise set
+        # self.nn_model to None
+        if neural_network_file_name:
+            self.nn_model = load_nn_model(neural_network_file_name)
+        else:
+            self.nn_model = None
+
         # loads the library embeddings into memory
         with open(pickled_s2v_embeddings_file_name, "rb") as \
                 pickled_s2v_embeddings:
@@ -241,7 +248,8 @@ class Ms2Library:
                                       matches_info: Dict[str, pd.DataFrame]
                                       ):
         """"""
-        # todo Move to subclass together with self.nn_model
+        assert self.nn_model is None, \
+            "expected neural_network_file_name to be provided"
         for query_spectrum_id in matches_info:
             current_query_matches_info = matches_info[query_spectrum_id]
             prediction = self.nn_model.predict(current_query_matches_info)
