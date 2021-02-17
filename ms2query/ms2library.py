@@ -93,26 +93,6 @@ class Ms2Library:
                 f"Different type is expected for argument: {key}"
             setattr(self, key, settings[key])
 
-    def get_matches(self, query_spectra) -> Dict[str, pd.DataFrame]:
-        """Returns found matches and relevant info"""
-        dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
-
-        # Run neural network model over all found spectra and add the predicted
-        # scores to a dict with the spectra in dataframes
-        dict_with_spectra_df = {}
-        for query_spectrum in query_spectra:
-            spectrum_id = query_spectrum.get("spectrum_id")
-            matches_with_info = \
-                self.collect_data_for_tanimoto_prediction_model(
-                    query_spectrum,
-                    dict_with_preselected_spectra[spectrum_id])
-            pd.set_option("display.max_columns", None)
-            predictions = self.nn_model.predict(matches_with_info)
-            matches_with_info["tanimoto_prediction"] = predictions
-
-            dict_with_spectra_df[spectrum_id] = matches_with_info
-        return dict_with_spectra_df
-
     def pre_select_spectra(self,
                            query_spectra: List[Spectrum]
                            ) -> Dict[str, List[str]]:
@@ -256,6 +236,50 @@ class Ms2Library:
                 spectra_with_similar_mass
         conn.close()
         return spectra_with_similar_mass_dict
+
+    def filter_by_tanimoto_prediction(self,
+                                      matches_info: Dict[str, pd.DataFrame]
+                                      ):
+        """"""
+        # todo Move to subclass together with self.nn_model
+        for query_spectrum_id in matches_info:
+            current_query_matches_info = matches_info[query_spectrum_id]
+            prediction = self.nn_model.predict(current_query_matches_info)
+            current_query_matches_info["tanimoto_prediction"] = prediction
+            matches_info[query_spectrum_id] = current_query_matches_info
+        # Add function that removes matches below a certain tanimoto prediction
+        return matches_info
+
+    def collect_matches_data_multiple_spectra(self,
+                                              query_spectra: List[Spectrum]
+                                              ) -> Dict[str, pd.DataFrame]:
+        """Returns a dataframe with info for all matches to all query spectra
+
+        This is stored in a dictionary with as keys the spectrum_ids and as
+        values a pd.Dataframe with on each row the information for one spectrum
+        that was found in the preselection. The column names tell the info that
+        is stored. Which column names/info is stored can be found in
+        collect_data_for_tanimoto_prediction_model.
+
+        Args:
+        ------
+        query_spectra:
+            The spectra for which info about matches should be collected
+        """
+        # Gets a preselection of spectra for all query_spectra
+        dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
+
+        # Run neural network model over all found spectra and add the predicted
+        # scores to a dict with the spectra in dataframes
+        dict_with_preselected_spectra_info = {}
+        for query_spectrum in query_spectra:
+            spectrum_id = query_spectrum.get("spectrum_id")
+            matches_with_info = \
+                self.collect_data_for_tanimoto_prediction_model(
+                    query_spectrum,
+                    dict_with_preselected_spectra[spectrum_id])
+            dict_with_preselected_spectra_info[spectrum_id] = matches_with_info
+        return dict_with_preselected_spectra_info
 
     def collect_data_for_tanimoto_prediction_model(
             self,
@@ -454,7 +478,8 @@ if __name__ == "__main__":
     query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
                                                     ["CCMSLIB00000001655"])
 
-    print(my_library.get_matches(query_spectra_to_test))
+    print(my_library.collect_matches_data_multiple_spectra(
+        query_spectra_to_test))
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
