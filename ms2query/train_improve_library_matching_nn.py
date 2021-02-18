@@ -1,10 +1,26 @@
+"""
+Choices made, different than joris method:
+The test data set used bij Joris named nn_prep_training_found_matches_s2v_2dec.pickle
+contains 2 sets of 2000 spectra the second set is testing data. This set
+consists of 1000 spectra that have more than 4 inchikeys and 1000 spectra that
+have only 1 inchikey. From this set a validation set is selected of 500 spectra.
+To make sure this set is similar, 250 were taken from the first 1000 and 250
+were taken from the second 1000. In the functions here this is not, the case,
+since later sets will probably just have random spectra.
+
+"""
 import pickle
 import os
 from typing import List
+import numpy as np
+import pandas as pd
+from matchms.typing import SpectrumType
 from tensorflow.keras.models import Sequential, load_model, Model
 from tensorflow.keras.layers import Dense
 from ms2query.app_helpers import load_pickled_file
 from ms2query.ms2library import Ms2Library, get_spectra_from_sqlite
+from ms2query.query_from_sqlite_database import \
+    get_tanimoto_score_for_inchikeys
 
 
 class TrainImproveLibraryMatchingNN(Ms2Library):
@@ -14,9 +30,28 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 training_spectra_ids: List[str],
+                 training_spectra_file_name: str,
                  **settings):
-        self.training_spectra = training_spectra_ids
+        self.training_spectra, test_and_val_spectra = \
+            load_pickled_file(training_spectra_file_name)
+
+        # Select random spectra for validation set.
+        random_val_spectra_indexes = list(
+            np.random.choice(range(0, len(test_and_val_spectra)),
+                             500,
+                             replace=False))
+        self.test_spectra = [spectrum
+                             for i, spectrum in enumerate(test_and_val_spectra)
+                             if i not in random_val_spectra_indexes]
+        self.validation_spectra = [spectrum for i, spectrum
+                                   in enumerate(test_and_val_spectra)
+                                   if i in random_val_spectra_indexes]
+
+        self.training_spectra = self.training_spectra[:20]
+        self.test_spectra = self.test_spectra[:15]
+        self.validation_spectra = self.validation_spectra[:5]
+        print(type(self.validation_spectra[0]))
+        print("ingeladen")
 
         super().__init__(sqlite_file_location,
                          s2v_model_file_name,
@@ -26,10 +61,28 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
                          **settings)
 
     def train_network(self):
-        # add label and similarity score
-        # Select validation set
-        self.train_nn()
-        pass
+        self.get_spectra_info_for_training(self.test_spectra)
+
+    def get_spectra_info_for_training(self,
+                                      query_spectra: List[SpectrumType]):
+
+        # Does a preselection of the 20 spectra with the highest ms2ds score
+        # and add info.
+        query_spectra_matches_info = \
+            self.collect_matches_data_multiple_spectra(query_spectra)
+
+        query_spectra_ids = [spectrum.get("spectrum_id") for spectrum
+                             in query_spectra]
+        tanimoto_scores = pd.Dataframe()
+        for query_spectrum_id in query_spectra_ids:
+            match_spectrum_ids = query_spectra_matches_info[query_spectrum_id]["spectrum_id"]
+            tanimoto_scores.append(
+                get_tanimoto_score_for_inchikeys(query_spectra_ids,
+                                                 match_spectrum_ids,
+                                                 self.sqlite_file_location))
+
+        print(query_spectra_matches_info)
+        print(tanimoto_scores)
 
     def train_nn(self, X_train, y_train, X_test, y_test,
                  layers=[12, 12, 12, 12, 12, 1],
@@ -37,7 +90,7 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
                  last_activation='sigmoid', model_epochs=20,
                  model_batch_size=16,
                  save_name=False):
-        '''Train a keras deep NN and test on test data, returns (model, history, accuracy, loss)
+        """Train a keras deep NN and test on test data, returns (model, history, accuracy, loss)
 
         X_train: matrix like object like pd.DataFrame, training set
         y_train: list like object like np.array, training labels
@@ -59,7 +112,7 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
         loss, float, loss on test set
 
         If save_name is not False and save_name exists this function will load existing model
-        '''
+        """
 
         # define the keras model
         nn_model = Sequential()
@@ -110,29 +163,15 @@ if __name__ == "__main__":
         "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
     neural_network_model_file_location = \
         "../model/nn_2000_queries_trimming_simple_10.hdf5"
-
+    training_spectra_file_name = \
+        "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectra_nn_model.pickle"
     # Create library object
     my_library = TrainImproveLibraryMatchingNN(
         sqlite_file_name,
         s2v_model_file_name,
         ms2ds_model_file_name,
         s2v_pickled_embeddings_file,
-        ms2ds_embeddings_file_name
-        )
-    # Get two query spectras
-    query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
-                                                    ["CCMSLIB00000001655"])
+        ms2ds_embeddings_file_name,
+        training_spectra_file_name)
 
-    training_spectra, test_spectra = load_pickled_file(
-        "../downloads/models/spec2vec_models/"
-        "train_nn_model_data/testing_query_library_s2v_2dec.pickle")
-
-    print(my_library.collect_matches_data_multiple_spectra(
-        query_spectra_to_test))
-
-
-
-
-
-
-
+    print(my_library.train_network())
