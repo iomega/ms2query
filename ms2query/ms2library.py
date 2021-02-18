@@ -351,8 +351,14 @@ class Ms2Library:
     def get_tanimoto_scores(self,
                             list_of_inchikeys: List[str]
                             ) -> pd.DataFrame:
-        """Returns a panda dataframe with the tanimoto scores"""
+        """Returns a panda dataframe with the tanimoto scores
+
+        list_of_inchikeys:
+            A list with inchikeys. The tanimoto scores are calculated between
+            every combination of inchikeys.
+        """
         tanimoto_score_matrix = get_tanimoto_score_for_inchikeys(
+            list_of_inchikeys,
             list_of_inchikeys,
             self.sqlite_file_location)
         return tanimoto_score_matrix

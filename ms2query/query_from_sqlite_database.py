@@ -82,32 +82,41 @@ def convert_array(nd_array_in_bytes: bytes) -> np.array:
     return np.load(out)
 
 
-def get_tanimoto_score_for_inchikeys(list_of_inchikeys: List[str],
+def get_tanimoto_score_for_inchikeys(list_of_inchikeys_1: List[str],
+                                     list_of_inchikeys_2: List[str],
                                      sqlite_file_name: str) -> pd.DataFrame:
-    """Returns a panda dataframe matrix with the tanimoto scores
+    """Returns a panda dataframe with the tanimoto scores
 
     Args:
     -------
-    list_of_inchikeys:
-        A list with all the inchikeys of between which the tanimoto scores
-        are returned.
+    list_of_identifiers_1:
+        A list with inchikeys, the tanimoto scores between this list and
+        list_of_identifiers_2 are returned.
+    list_of_identifiers_2:
+        A list with inchikeys, the tanimoto scores between this list and
+        list_of_identifiers_1 are returned
     sqlite_file_name:
         The sqlite file in which the tanimoto scores are stored.
     """
     # Gets the identifiers from the inchikeys
-    inchikey_dict = get_index_of_inchikeys(list_of_inchikeys, sqlite_file_name)
-    identifier_list = []
-    for inchikey in inchikey_dict:
-        identifier_list.append(inchikey_dict[inchikey])
+    inchikey_dict_1 = get_index_of_inchikeys(list_of_inchikeys_1,
+                                             sqlite_file_name)
+    inchikey_dict_2 = get_index_of_inchikeys(list_of_inchikeys_2,
+                                             sqlite_file_name)
+    identifiers_list_1 = list(inchikey_dict_1.values())
+    identifiers_list_2 = list(inchikey_dict_2.values())
 
     # Get the tanimoto scores between the inchikeys in list_of_inchikeys
     tanimoto_score_matrix = get_tanimoto_from_sqlite(sqlite_file_name,
-                                                     identifier_list)
+                                                     identifiers_list_1,
+                                                     identifiers_list_2)
     # Reverse the dictionary value becomes key and key becomes value
-    reversed_inchikey_dict = {v: k for k, v in inchikey_dict.items()}
+    reversed_inchikey_dict_1 = {v: k for k, v in inchikey_dict_1.items()}
+    reversed_inchikey_dict_2 = {v: k for k, v in inchikey_dict_2.items()}
+
     # Change the column names and indexes from identifiers to inchikeys
-    tanimoto_score_matrix.rename(columns=reversed_inchikey_dict,
-                                 index=reversed_inchikey_dict, inplace=True)
+    tanimoto_score_matrix.rename(columns=reversed_inchikey_dict_1,
+                                 index=reversed_inchikey_dict_2, inplace=True)
     return tanimoto_score_matrix
 
 
@@ -157,24 +166,29 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
 
 
 def get_tanimoto_from_sqlite(sqlite_file_name: str,
-                             list_of_identifiers: List[int]) -> pd.DataFrame:
-    """Returns the tanimoto scores between the identifiers
+                             list_of_identifiers_1: List[int],
+                             list_of_identifiers_2) -> pd.DataFrame:
+    """Returns the tanimoto scores between the lists of identifiers
 
     args:
     ------
     sqlite_file_name:
         The sqlite file in which the tanimoto scores are stored.
-    list_of_identifiers:
-        A list with all the inchikeys of between which the tanimoto scores
-        are returned.
+    list_of_identifiers_1:
+        A list with inchikeys, the tanimoto scores between this list and
+        list_of_identifiers_2 are returned.
+    list_of_identifiers_2:
+        A list with inchikeys, the tanimoto scores between this list and
+        list_of_identifiers_1 are returned
     """
     conn = sqlite3.connect(sqlite_file_name)
-    identifier_string = ",".join([str(x) for x in list_of_identifiers])
+    identifier_string_1 = ",".join([str(x) for x in list_of_identifiers_1])
+    identifier_string_2 = ",".join([str(x) for x in list_of_identifiers_2])
 
     sqlite_command = f"""SELECT identifier_1, identifier_2, tanimoto_score 
                     FROM tanimoto_scores
-                    WHERE identifier_1 in ({identifier_string}) 
-                    and identifier_2 in ({identifier_string});
+                    WHERE identifier_1 in ({identifier_string_1}) 
+                    and identifier_2 in ({identifier_string_2});
                     """
     cur = conn.cursor()
     cur.execute(sqlite_command)

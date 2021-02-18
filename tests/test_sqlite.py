@@ -101,6 +101,7 @@ def test_get_tanimoto_scores():
                       'CXVGEDCSTKKODG']
     tanimoto_score_dataframe = get_tanimoto_score_for_inchikeys(
         test_inchikeys,
+        test_inchikeys,
         sqlite_file_name)
 
     scores_in_test_file = np.load(os.path.join(path_to_test_files_sqlite_dir,
