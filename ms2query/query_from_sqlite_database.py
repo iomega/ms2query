@@ -115,8 +115,8 @@ def get_tanimoto_score_for_inchikeys(list_of_inchikeys_1: List[str],
     reversed_inchikey_dict_2 = {v: k for k, v in inchikey_dict_2.items()}
 
     # Change the column names and indexes from identifiers to inchikeys
-    tanimoto_score_matrix.rename(columns=reversed_inchikey_dict_1,
-                                 index=reversed_inchikey_dict_2, inplace=True)
+    tanimoto_score_matrix.rename(columns=reversed_inchikey_dict_2,
+                                 index=reversed_inchikey_dict_1, inplace=True)
     return tanimoto_score_matrix
 
 
@@ -185,36 +185,40 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     identifier_string_1 = ",".join([str(x) for x in list_of_identifiers_1])
     identifier_string_2 = ",".join([str(x) for x in list_of_identifiers_2])
 
-    sqlite_command = f"""SELECT identifier_1, identifier_2, tanimoto_score 
+    sqlite_command = f"""SELECT identifier_1, identifier_2, tanimoto_score
                     FROM tanimoto_scores
-                    WHERE identifier_1 in ({identifier_string_1}) 
-                    and identifier_2 in ({identifier_string_2});
+                    WHERE identifier_1 in ({identifier_string_1})
+                    and identifier_2 in ({identifier_string_2})
+                    UNION
+                    SELECT identifier_1, identifier_2, tanimoto_score
+                    FROM tanimoto_scores
+                    WHERE identifier_1 in ({identifier_string_2})
+                    and identifier_2 in ({identifier_string_1})
+                    ;
                     """
     cur = conn.cursor()
     cur.execute(sqlite_command)
-    result_list = []
-    for result in cur:
-        result_list.append(result)
-
-    # The data is changed to pd.DataFrame twice and then added together. So
-    # that both the tanimoto score is given for 1,2 and 2,1. Thereby
-    # duplicating the data, but making the lookup easier for other functions.
-    scores_normal_identifiers = pd.DataFrame(result_list,
-                                             columns=["identifier_1",
-                                                      "identifier_2",
-                                                      "tanimoto_score"])
-    scores_reversed_identifiers = pd.DataFrame(result_list,
-                                               columns=["identifier_2",
-                                                        "identifier_1",
-                                                        "tanimoto_score"])
-    result_dataframe_melt_structure = pd.concat([scores_normal_identifiers,
-                                                 scores_reversed_identifiers])
-
-    # Changes the structure of the database from a melt structure to a matrix
-    result_dataframe = pd.pivot_table(result_dataframe_melt_structure,
-                                      columns="identifier_1",
-                                      index="identifier_2",
-                                      values="tanimoto_score")
+    results = cur.fetchall()
+    result_dict = {}
+    for result in results:
+        identifier_1 = result[0]
+        identifier_2 = result[1]
+        tanimoto_score = result[2]
+        # Store the tanimoto score twice also with reversed combination
+        result_dict[(identifier_1, identifier_2)] = tanimoto_score
+        result_dict[(identifier_2, identifier_1)] = tanimoto_score
+    # Create matrix with tanimoto scores
+    tanimoto_scores = []
+    for row, identifier_1 in enumerate(list_of_identifiers_1):
+        current_row = []
+        for column, identifier_2 in enumerate(list_of_identifiers_2):
+            tanimoto_score = result_dict[(identifier_1, identifier_2)]
+            current_row.append(tanimoto_score)
+        tanimoto_scores.append(current_row)
+    # Store as pd.dataframe
+    result_dataframe = pd.DataFrame(data=tanimoto_scores,
+                                    index=list_of_identifiers_1,
+                                    columns=list_of_identifiers_2)
     conn.close()
     return result_dataframe
 
@@ -254,6 +258,10 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
         metadata = ast.literal_eval(metadata[0])
         results_dict[metadata["spectrum_id"]] = \
             metadata[part_of_metadata_to_select]
+    # Check if all spectrum_ids were found
+    for spectrum_id in spectrum_id_list:
+        assert spectrum_id in results_dict, \
+            f"spectrum_id {spectrum_id} was not found in database"
     # Output from get_part_of_metadata is not always in order of input, so this
     # is sorted again here.
     results_in_correct_order = \
