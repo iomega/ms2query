@@ -158,7 +158,7 @@ def test_get_part_of_metadata_from_sqlite():
     result = get_part_of_metadata_from_sqlite(sqlite_file_name,
                                               spectra_id_list,
                                               "inchikey")
-    assert isinstance(result, dict), "Expected dictionary as output"
-    assert result == {'CCMSLIB00000001547': 'IYDKWWDUBYWQGF-NNAZGLEUSA-N',
-                      'CCMSLIB00000001549': 'WXDBUBIFYCCNLE-NSCMQRKRSA-N'}, \
+    assert isinstance(result, list), "Expected dictionary as output"
+    assert result == ['IYDKWWDUBYWQGF-NNAZGLEUSA-N',
+                      'WXDBUBIFYCCNLE-NSCMQRKRSA-N'], \
         "Expected, different results"

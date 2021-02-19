@@ -223,7 +223,7 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
                                      spectrum_id_list: List[str],
                                      part_of_metadata_to_select: str,
                                      table_name: str = "spectrum_data"
-                                     ) -> Dict[str, str]:
+                                     ) -> List[str]:
     """Returns a dict with part of metadata for each spectrum id
 
     The key of the dict are the spectrum_ids and the values the part of the
@@ -249,8 +249,14 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
     cur = conn.cursor()
     cur.execute(sqlite_command)
     list_of_metadata = cur.fetchall()
-    results = {}
+    results_dict = {}
     for metadata in list_of_metadata:
         metadata = ast.literal_eval(metadata[0])
-        results[metadata["spectrum_id"]] = metadata[part_of_metadata_to_select]
-    return results
+        results_dict[metadata["spectrum_id"]] = \
+            metadata[part_of_metadata_to_select]
+    # Output from get_part_of_metadata is not always in order of input, so this
+    # is sorted again here.
+    results_in_correct_order = \
+        [results_dict[spectrum_id]
+         for spectrum_id in spectrum_id_list]
+    return results_in_correct_order
