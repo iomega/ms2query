@@ -13,7 +13,8 @@ from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite
+    get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite, \
+    get_part_of_metadata_from_sqlite
 
 
 def test_making_sqlite_file(tmp_path):
@@ -143,3 +144,21 @@ def test_get_spectrum_data():
         "Expected different spectrum to be loaded"
     assert original_spectra[2].__eq__(spectra_list[1]), \
         "Expected different spectrum to be loaded"
+
+
+def test_get_part_of_metadata_from_sqlite():
+    path_to_test_files_sqlite_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files')
+    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
+                                    "test_spectra_database.sqlite")
+
+    spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
+
+    result = get_part_of_metadata_from_sqlite(sqlite_file_name,
+                                              spectra_id_list,
+                                              "inchikey")
+    assert isinstance(result, dict), "Expected dictionary as output"
+    assert result == {'CCMSLIB00000001547': 'IYDKWWDUBYWQGF-NNAZGLEUSA-N',
+                      'CCMSLIB00000001549': 'WXDBUBIFYCCNLE-NSCMQRKRSA-N'}, \
+        "Expected, different results"

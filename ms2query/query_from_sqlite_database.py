@@ -217,3 +217,40 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                                       values="tanimoto_score")
     conn.close()
     return result_dataframe
+
+
+def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
+                                     spectrum_id_list: List[str],
+                                     part_of_metadata_to_select: str,
+                                     table_name: str = "spectrum_data"
+                                     ) -> Dict[str, str]:
+    """Returns a dict with part of metadata for each spectrum id
+
+    The key of the dict are the spectrum_ids and the values the part of the
+    metadata that was marked with part_of_metadata_to_select.
+
+    Args:
+    ------
+    sqlite_file_name:
+        The sqlite file in which the spectra data is stored.
+    spectrum_id_list:
+        A list with spectrum ids for which the part of the metadata should be
+        looked up.
+    part_of_metadata_to_select:
+        The key under which this metadata is stored in the sqlite file.
+    table_name:
+        The name of the table in the sqlite file in which the metadata is
+        stored. Default = "spectrum_data"
+    """
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"""SELECT metadata FROM {table_name} 
+        WHERE spectrum_id IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    list_of_metadata = cur.fetchall()
+    results = {}
+    for metadata in list_of_metadata:
+        metadata = ast.literal_eval(metadata[0])
+        results[metadata["spectrum_id"]] = metadata[part_of_metadata_to_select]
+    return results
