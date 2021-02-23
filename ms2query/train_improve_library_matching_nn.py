@@ -11,7 +11,7 @@ since later sets will probably just have random spectra.
 """
 import pickle
 import os
-from typing import List
+from typing import List, Dict, Tuple
 import numpy as np
 import pandas as pd
 from matchms.typing import SpectrumType
@@ -20,7 +20,7 @@ from tensorflow.keras.layers import Dense
 from ms2query.app_helpers import load_pickled_file
 from ms2query.ms2library import Ms2Library, get_spectra_from_sqlite
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikeys
+    get_tanimoto_score_for_inchikeys, get_part_of_metadata_from_sqlite
 
 
 class TrainImproveLibraryMatchingNN(Ms2Library):
@@ -32,6 +32,7 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
                  pickled_ms2ds_embeddings_file_name: str,
                  training_spectra_file_name: str,
                  **settings):
+
         self.training_spectra, test_and_val_spectra = \
             load_pickled_file(training_spectra_file_name)
 
@@ -50,7 +51,6 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
         self.training_spectra = self.training_spectra[:20]
         self.test_spectra = self.test_spectra[:15]
         self.validation_spectra = self.validation_spectra[:5]
-        print(type(self.validation_spectra[0]))
         print("ingeladen")
 
         super().__init__(sqlite_file_location,
@@ -61,92 +61,103 @@ class TrainImproveLibraryMatchingNN(Ms2Library):
                          **settings)
 
     def train_network(self):
-        self.get_spectra_info_for_training(self.test_spectra)
+        self.get_matches_info_for_training(self.test_spectra[:2])
 
-    def get_spectra_info_for_training(self,
+    def get_matches_info_for_training(self,
                                       query_spectra: List[SpectrumType]):
+        """Returns tanimoto scores and info about matches of all query spectra
 
-        # Does a preselection of the 20 spectra with the highest ms2ds score
-        # and add info.
+        A selection of matches is made for each query_spectrum. Based on the
+        spectra multiple scores are calculated (info_of_matches_with_tanimoto)
+        and the tanimoto scores based on the smiles is returned. All matches of
+        all query_spectra are added together and the order of the tanimoto
+        scores corresponds to the order of the info, so they can be used for
+        training.
+
+        Args:
+        ------
+        query_spectra:
+            List of Spectrum objects
+        """
         query_spectra_matches_info = \
             self.collect_matches_data_multiple_spectra(query_spectra)
+        all_tanimoto_scores = pd.DataFrame()
+        info_of_matches_with_tanimoto = pd.DataFrame()
+        for query_spectrum in query_spectra:
+            query_spectrum_id = query_spectrum.get("spectrum_id")
+            match_info_df = query_spectra_matches_info[query_spectrum_id]
+            match_spectrum_ids = list(match_info_df.index)
+            # Get tanimoto scores, spectra that do not have an inchikey are not
+            # returned.
+            tanimoto_scores_for_query_spectrum = \
+                get_tanimoto_for_spectrum_ids(self.sqlite_file_location,
+                                              query_spectrum,
+                                              match_spectrum_ids)
+            all_tanimoto_scores = \
+                all_tanimoto_scores.append(tanimoto_scores_for_query_spectrum,
+                                           ignore_index=True)
 
-        query_spectra_ids = [spectrum.get("spectrum_id") for spectrum
-                             in query_spectra]
-        tanimoto_scores = pd.Dataframe()
-        for query_spectrum_id in query_spectra_ids:
-            match_spectrum_ids = query_spectra_matches_info[query_spectrum_id]["spectrum_id"]
-            tanimoto_scores.append(
-                get_tanimoto_score_for_inchikeys(query_spectra_ids,
-                                                 match_spectrum_ids,
-                                                 self.sqlite_file_location))
+            # Add matches for which a tanimoto score could be calculated
+            matches_with_tanimoto = \
+                match_info_df.loc[tanimoto_scores_for_query_spectrum.index]
+            info_of_matches_with_tanimoto = \
+                info_of_matches_with_tanimoto.append(matches_with_tanimoto,
+                                                     ignore_index=True)
+        return info_of_matches_with_tanimoto, all_tanimoto_scores
 
-        print(query_spectra_matches_info)
-        print(tanimoto_scores)
 
-    def train_nn(self, X_train, y_train, X_test, y_test,
-                 layers=[12, 12, 12, 12, 12, 1],
-                 model_loss='binary_crossentropy', activations='relu',
-                 last_activation='sigmoid', model_epochs=20,
-                 model_batch_size=16,
-                 save_name=False):
-        """Train a keras deep NN and test on test data, returns (model, history, accuracy, loss)
+def get_tanimoto_for_spectrum_ids(sqlite_file_location: str,
+                                  query_spectrum: SpectrumType,
+                                  spectra_ids_list: List[str]
+                                  ) -> pd.DataFrame:
+    """Returns a dataframe with tanimoto scores
 
-        X_train: matrix like object like pd.DataFrame, training set
-        y_train: list like object like np.array, training labels
-        X_test: matrix like object like pd.DataFrame, test set
-        y_test: list like object like np.array, test labels
-        layers: list of ints, the number of layers is the len of this list while the elements
-            are the amount of neurons per layer, default: [12, 12, 12, 12, 12, 1]
-        model_loss: str, loss function, default: binary_crossentropy
-        activations: str, the activation of the layers except the last one, default: relu
-        last_activation: str, activation of last layer, default: sigmoid
-        model_epochs: int, number of epochs, default: 20
-        model_batch_size: int, batch size for updating the model, default: 16
-        save_name: str, location for saving model, optional, default: False
+    Spectra in spectra_ids_list without inchikey are removed.
+    Args:
+    ------
+    sqlite_file_location:
+        location of sqlite file with spectrum info
+    query_spectrum:
+        Single Spectrum, the tanimoto scores are calculated between this
+        spectrum and the spectra in match_spectrum_ids.
+    match_spectrum_ids:
+        list of spectrum_ids, which are preselected matches of the
+        query_spectrum
+    """
+    query_inchikey = query_spectrum.get("inchikey")[:14]
 
-        Returns:
-        model: keras sequential
-        history: dict, training statistics
-        accuracy: float, accuracy on test set
-        loss, float, loss on test set
+    # Get inchikeys belonging to spectra ids
+    unfiltered_inchikeys = get_part_of_metadata_from_sqlite(
+        sqlite_file_location,
+        spectra_ids_list,
+        "inchikey")
 
-        If save_name is not False and save_name exists this function will load existing model
-        """
+    inchikeys_dict = {}
+    for i, inchikey in enumerate(unfiltered_inchikeys):
+        # Only get the first 14 characters of the inchikeys
+        inchikey_14 = inchikey[:14]
+        # Don't save spectra that do not have an inchikey. If a spectra has no
+        # inchikey it is stored as "", so it will not be stored.
+        spectrum_id = spectra_ids_list[i]
+        if len(inchikey_14) == 14:
+            inchikeys_dict[spectrum_id] = inchikey_14
+    inchikeys_list = list(inchikeys_dict.values())
+    # Returns tanimoto score for each unique inchikey.
+    tanimoto_scores_inchikeys = get_tanimoto_score_for_inchikeys(
+        inchikeys_list,
+        [query_inchikey],
+        sqlite_file_location)
+    # Add tanimoto scores to dataframe.
+    tanimoto_scores_spectra_ids = pd.DataFrame(columns=["Tanimoto_score"],
+                                               index=list(inchikeys_dict.keys()))
+    for spectrum_id in inchikeys_dict:
+        inchikey = inchikeys_dict[spectrum_id]
+        tanimoto_score = tanimoto_scores_inchikeys.loc[inchikey,
+                                                       query_inchikey]
+        tanimoto_scores_spectra_ids.at[spectrum_id,
+                                       "Tanimoto_score"] = tanimoto_score
+    return tanimoto_scores_spectra_ids
 
-        # define the keras model
-        nn_model = Sequential()
-        # add first layer
-        nn_model.add(Dense(layers[0], input_dim=X_train.shape[1],
-                           activation=activations))
-        # add other layers
-        for i in range(1, len(layers) - 1):  # skip first and last one
-            nn_model.add(Dense(layers[i], activation=activations))
-        # add last layer
-        nn_model.add(Dense(layers[-1], activation=last_activation))
-        # compile the keras model
-        nn_model.compile(loss=model_loss, optimizer='adam',
-                         metrics=['accuracy'])
-        # fit the keras model on the dataset
-        hist = nn_model.fit(X_train, y_train, epochs=model_epochs,
-                            batch_size=model_batch_size)
-        history = hist.history
-
-        # training set
-        print('Training loss: {:.4f}\n'.format(history['loss'][-1]))
-
-        # test set
-        loss, accuracy = nn_model.evaluate(X_test, y_test)
-        print('Test accuracy: {:.2f}'.format(accuracy * 100))
-        print('Test loss: {:.4f}'.format(loss))
-
-        if save_name and not os.path.exists(save_name):
-            print('Saving model at:', save_name)
-            nn_model.save(save_name)
-            with open(save_name + '_train_hist.pickle', 'wb') as hist_outf:
-                pickle.dump(history, hist_outf)
-
-        return nn_model, history, accuracy, loss
 
 if __name__ == "__main__":
     sqlite_file_name = \
@@ -173,5 +184,32 @@ if __name__ == "__main__":
         s2v_pickled_embeddings_file,
         ms2ds_embeddings_file_name,
         training_spectra_file_name)
+    query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
+                                             ["CCMSLIB00000001552",
+                                              "CCMSLIB00000001547"])
+    print(my_library.get_matches_info_for_training(query_spectrum))
 
-    print(my_library.train_network())
+    # training_spectra_file_name = "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
+    # training_spectrum_docs, test_and_val_spectrum_docs = \
+    #     load_pickled_file(training_spectra_file_name)
+    #
+    # training_spectra = [spectrum._obj for spectrum in
+    #                          training_spectrum_docs]
+    # test_and_val_spectra = [spectrum._obj for spectrum in
+    #                         test_and_val_spectrum_docs]
+    # with open("../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectra_nn_model.pickle", "wb") as new_file:
+    #     pickle.dump((training_spectra, test_and_val_spectra), new_file)
+
+
+
+    # sqlite_file_name = \
+    #     "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
+    #
+    # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
+    #                                          ["CCMSLIB00000001552"])[0]
+    # spectra_ids = ["CCMSLIB00000001547", "CCMSLIB00000001548",
+    #                  "CCMSLIB00000001549","CCMSLIB00000001551"]
+    # print(get_tanimoto_for_spectrum_ids(sqlite_file_name,
+    #                                     query_spectrum,
+    #                                     spectra_ids))
+    pass

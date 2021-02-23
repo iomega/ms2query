@@ -101,7 +101,9 @@ class Ms2Library:
             setattr(self, key, settings[key])
 
     def pre_select_spectra(self,
-                           query_spectra: List[Spectrum]
+                           query_spectra: List[Spectrum],
+                           nr_of_spectra: int = 20,
+                           need_inchikey: bool = True
                            ) -> Dict[str, List[str]]:
         """Returns dict with spectrum IDs that are preselected
 
@@ -118,8 +120,17 @@ class Ms2Library:
         #  ms2deepscore for this as well
         # spec2vec_similarities_scores = self._get_spec2vec_similarity_matrix(
         #     query_spectra)
+        # todo: use the code below, when ms2ds embeddings are available for
+        #  multiple spectra
         # ms2ds_similarities_scores = self._get_ms2deepscore_similarity_matrix(
         #     query_spectra)
+        # for query_spectrum_id in ms2ds_similarities_scores.columns:
+        #     query_spectrum_ms2ds_scores = \
+        #         ms2ds_similarities_scores[query_spectrum_id]
+        #     selected_spectra = np.argpartition(ms2ds_similarities_scores,
+        #                                        -nr_of_spectra,
+        #                                        axis=0)[-nr_of_spectra:, :]
+
         spectra_with_similar_masses = \
             self._get_parent_mass_matches_all_queries(query_spectra)
 
@@ -150,9 +161,6 @@ class Ms2Library:
         query_spectra:
             All query spectra that should get a similarity score with all
             library spectra.
-        library_embeddings_file_name:
-            File name of the pickled file in which the library embeddings are
-            stored.
         """
         ms2ds = MS2DeepScore(self.ms2ds_model)
         query_embeddings = ms2ds.calculate_vectors(query_spectra)
@@ -492,7 +500,7 @@ if __name__ == "__main__":
     query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
                                                     ["CCMSLIB00000001655"])
 
-    print(my_library.collect_matches_data_multiple_spectra(
+    print(my_library.pre_select_spectra(
         query_spectra_to_test))
 
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,

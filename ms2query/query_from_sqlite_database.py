@@ -160,8 +160,8 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
 
     # Check if all inchikeys are found
     for inchikey in list_of_inchikeys:
-        if inchikey not in identifier_dict:
-            print(inchikey + " is not found")
+        assert inchikey in identifier_dict, \
+            f"Inchikey {inchikey} was not found in sqlite file"
     return identifier_dict
 
 
