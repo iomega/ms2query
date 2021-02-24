@@ -1,5 +1,8 @@
 from tensorflow.keras.models import Sequential, load_model, Model
 from tensorflow.keras.layers import Dense
+from ms2query.app_helpers import load_pickled_file
+import pandas as pd
+
 
 def train_nn(x_train, y_train, x_test, y_test,
              layers=[12, 12, 12, 12, 12, 1],
@@ -64,3 +67,44 @@ def train_nn(x_train, y_train, x_test, y_test,
     #         pickle.dump(history, hist_outf)
 
     return nn_model, history, accuracy, loss
+
+def run_test_file():
+    training_data = "../downloads/models/spec2vec_models/train_nn_model_data/nn_prep_training_found_matches_s2v_2dec.pickle"
+    testing_data = "../downloads/models/spec2vec_models/train_nn_model_data/nn_prep_testing_found_matches_s2v_2dec.pickle"
+
+    training_set = load_pickled_file(training_data)
+    testing_set = load_pickled_file(testing_data)
+    nn_training_found_matches_s2v_2dec = training_set[0].append(
+        training_set[1:])
+    nn_training_found_matches_s2v_2dec = \
+        nn_training_found_matches_s2v_2dec.sample(frac=1)
+
+    nn_testing_full_found_matches_s2v_2dec = \
+        testing_set[0].append(
+            testing_set[1:])
+    nn_testing_full_found_matches_s2v_2dec = nn_testing_full_found_matches_s2v_2dec.sample(
+        frac=1)
+
+    x_train = nn_training_found_matches_s2v_2dec.drop(['similarity', 'label'],
+                                                      axis=1)
+    y_train = nn_training_found_matches_s2v_2dec['similarity']
+    x_test = nn_testing_full_found_matches_s2v_2dec.drop(
+        ['similarity', 'label'],
+        axis=1)
+    y_test = nn_testing_full_found_matches_s2v_2dec['similarity']
+    print(nn_training_found_matches_s2v_2dec)
+    print(type(nn_training_found_matches_s2v_2dec))
+    print(nn_testing_full_found_matches_s2v_2dec)
+    train_nn(x_train[:20], y_train[:20], x_test, y_test)
+
+
+if __name__ == "__main__":
+    file_name = "test_matches_info_training_and_testing.pickle"
+    training_set, training_labels, testing_set, testing_labels = \
+        load_pickled_file(file_name)
+
+    train_nn(training_set,
+             training_labels,
+             testing_set,
+             testing_labels)
+    # run_test_file()

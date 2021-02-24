@@ -55,6 +55,11 @@ class SelectDataForTraining(Ms2Library):
             self.get_matches_info_and_tanimoto(self.training_spectra)
         testing_set, testing_labels = \
             self.get_matches_info_and_tanimoto(self.test_spectra)
+        # Keras model cannot read float64
+        training_set = training_set.astype("float32")
+        training_labels = training_labels.astype("float32")
+        testing_set = testing_set.astype("float32")
+        testing_labels = testing_labels.astype("float32")
         if save_file_name:
             with open(save_file_name, "wb") \
                     as new_file:
@@ -81,7 +86,8 @@ class SelectDataForTraining(Ms2Library):
             List of Spectrum objects
         """
         query_spectra_matches_info = \
-            self.collect_matches_data_multiple_spectra(query_spectra)
+            self.collect_matches_data_multiple_spectra(query_spectra,
+                                                       progress_bar=True)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra):
@@ -125,7 +131,6 @@ class SelectDataForTraining(Ms2Library):
         """
         query_inchikey = query_spectrum.get("inchikey")[:14]
 
-        print("inchikey: " + query_inchikey)
         # todo replace with assert statement
         if len(query_inchikey) < 14:
             return pd.DataFrame()
@@ -157,8 +162,14 @@ class SelectDataForTraining(Ms2Library):
             inchikey = inchikeys_dict[spectrum_id]
             tanimoto_score = tanimoto_scores_inchikeys.loc[inchikey,
                                                            query_inchikey]
-            tanimoto_scores_spectra_ids.at[spectrum_id,
-                                           "Tanimoto_score"] = tanimoto_score
+            # Todo remove once tanimoto matrix cannot contain null anymore
+            if np.isnan(tanimoto_score):
+                tanimoto_scores_spectra_ids.drop(index=spectrum_id,
+                                                 inplace=True)
+            else:
+                tanimoto_scores_spectra_ids.at[spectrum_id,
+                                               "Tanimoto_score"] = \
+                    tanimoto_score
         return tanimoto_scores_spectra_ids
 
 
@@ -178,7 +189,7 @@ if __name__ == "__main__":
     neural_network_model_file_location = \
         "../model/nn_2000_queries_trimming_simple_10.hdf5"
     training_spectra_file_name = \
-        "test_spectra.pickle"
+        "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
     # Create library object
     my_library = SelectDataForTraining(
         sqlite_file_name,
@@ -190,8 +201,15 @@ if __name__ == "__main__":
     # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
     #                                          ["CCMSLIB00000001552",
     #                                           "CCMSLIB00000001547"])
-    file_name = "test_matches_info_training_and_testing.pickle"
-    print(my_library.create_train_and_test_data(file_name))
+    file_name = "matches_info_training_and_testing.pickle"
+    training_set, training_labels, testing_set, testing_labels = \
+        my_library.create_train_and_test_data(save_file_name=file_name)
+    print(training_set)
+    print(testing_set)
+    print(training_labels)
+    print(testing_labels)
+
+
 
     # training_spectra_file_name = "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
     # training_spectrum_docs, test_and_val_spectrum_docs = \

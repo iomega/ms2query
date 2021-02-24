@@ -230,7 +230,8 @@ class Ms2Library:
         """
         spectra_with_similar_mass_dict = {}
         conn = sqlite3.connect(self.sqlite_file_location)
-        for query_spectrum in query_spectra:
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="selecting matches based on parent mass"):
             query_mass = query_spectrum.get("parent_mass")
             query_spectrum_id = query_spectrum.get("spectrum_id")
 
@@ -267,7 +268,8 @@ class Ms2Library:
         return matches_info
 
     def collect_matches_data_multiple_spectra(self,
-                                              query_spectra: List[Spectrum]
+                                              query_spectra: List[Spectrum],
+                                              progress_bar=False
                                               ) -> Dict[str, pd.DataFrame]:
         """Returns a dataframe with info for all matches to all query spectra
 
@@ -281,6 +283,8 @@ class Ms2Library:
         ------
         query_spectra:
             The spectra for which info about matches should be collected
+        progress_bar:
+            If true a progress bar is shown. Default is False
         """
         # Gets a preselection of spectra for all query_spectra
         dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
@@ -288,7 +292,9 @@ class Ms2Library:
         # Run neural network model over all found spectra and add the predicted
         # scores to a dict with the spectra in dataframes
         dict_with_preselected_spectra_info = {}
-        for query_spectrum in query_spectra:
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="collecting matches info",
+                                   disable=not progress_bar):
             spectrum_id = query_spectrum.get("spectrum_id")
             matches_with_info = \
                 self.collect_data_for_tanimoto_prediction_model(
@@ -340,7 +346,7 @@ class Ms2Library:
                                     for parent_mass in parent_masses]
 
         mass_similarity = [self.base_nr_mass_similarity **
-                           (spectrum.get("parent_mass") -
+                           abs(spectrum.get("parent_mass") -
                             query_spectrum.get("parent_mass"))
                            for spectrum in preselected_spectra_list]
 
@@ -489,20 +495,27 @@ if __name__ == "__main__":
     neural_network_model_file_location = \
         "../model/nn_2000_queries_trimming_simple_10.hdf5"
 
-    # Create library object
-    my_library = Ms2Library(sqlite_file_name,
-                            s2v_model_file_name,
-                            ms2ds_model_file_name,
-                            s2v_pickled_embeddings_file,
-                            ms2ds_embeddings_file_name,
-                            neural_network_model_file_location)
+    # # Create library object
+    # my_library = Ms2Library(sqlite_file_name,
+    #                         s2v_model_file_name,
+    #                         ms2ds_model_file_name,
+    #                         s2v_pickled_embeddings_file,
+    #                         ms2ds_embeddings_file_name,
+    #                         neural_network_model_file_location)
     # Get two query spectras
     query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
                                                     ["CCMSLIB00000001655"])
+    with open(ms2ds_embeddings_file_name, "rb") as \
+            pickled_ms2ds_embeddings:
+        print(pickle.load(pickled_ms2ds_embeddings))
+    # print(my_library.pre_select_spectra(
+    #     query_spectra_to_test))
 
-    print(my_library.pre_select_spectra(
-        query_spectra_to_test))
-
+    query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
+                                                    ["CCMSLIB00000001655"])
+    ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
+    ms2ds = MS2DeepScore(ms2ds_model)
+    print(ms2ds.calculate_vectors(query_spectra_to_test))
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
     #                                            "CCMSLIB00000001549"],
