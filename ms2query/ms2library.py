@@ -505,17 +505,19 @@ if __name__ == "__main__":
     # Get two query spectras
     query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
                                                     ["CCMSLIB00000001655"])
-    with open(ms2ds_embeddings_file_name, "rb") as \
-            pickled_ms2ds_embeddings:
-        print(pickle.load(pickled_ms2ds_embeddings))
+    # with open(ms2ds_embeddings_file_name, "rb") as \
+    #         pickled_ms2ds_embeddings:
+    #     print(pickle.load(pickled_ms2ds_embeddings))
     # print(my_library.pre_select_spectra(
     #     query_spectra_to_test))
 
-    query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
-                                                    ["CCMSLIB00000001655"])
+    all_spectra = get_spectra_from_sqlite(sqlite_file_name,
+                                          [],
+                                          get_all_spectra=True)
     ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-    ms2ds = MS2DeepScore(ms2ds_model)
-    print(ms2ds.calculate_vectors(query_spectra_to_test))
+    store_ms2ds_embeddings(all_spectra,
+                           ms2ds_model,
+                           "ms2ds_embeddings_all_2dec")
     # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
     #                                           ["CCMSLIB00000001547",
     #                                            "CCMSLIB00000001549"],

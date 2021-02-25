@@ -174,42 +174,45 @@ class SelectDataForTraining(Ms2Library):
 
 
 if __name__ == "__main__":
-    sqlite_file_name = \
-        "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    s2v_model_file_name = \
-        "../downloads/" \
-        "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    s2v_pickled_embeddings_file = \
-        "../downloads/embeddings_all_spectra.pickle"
-    ms2ds_model_file_name = \
-        "../../ms2deepscore/data/" \
-        "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
-    ms2ds_embeddings_file_name = \
-        "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
-    neural_network_model_file_location = \
-        "../model/nn_2000_queries_trimming_simple_10.hdf5"
-    training_spectra_file_name = \
-        "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
-    # Create library object
-    my_library = SelectDataForTraining(
-        sqlite_file_name,
-        s2v_model_file_name,
-        ms2ds_model_file_name,
-        s2v_pickled_embeddings_file,
-        ms2ds_embeddings_file_name,
-        training_spectra_file_name)
-    # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
-    #                                          ["CCMSLIB00000001552",
-    #                                           "CCMSLIB00000001547"])
-    file_name = "matches_info_training_and_testing.pickle"
-    training_set, training_labels, testing_set, testing_labels = \
-        my_library.create_train_and_test_data(save_file_name=file_name)
-    print(training_set)
-    print(testing_set)
-    print(training_labels)
-    print(testing_labels)
+    # sqlite_file_name = \
+    #     "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
+    # s2v_model_file_name = \
+    #     "../downloads/" \
+    #     "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    # s2v_pickled_embeddings_file = \
+    #     "../downloads/embeddings_all_spectra.pickle"
+    # ms2ds_model_file_name = \
+    #     "../../ms2deepscore/data/" \
+    #     "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
+    # ms2ds_embeddings_file_name = \
+    #     "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
+    # neural_network_model_file_location = \
+    #     "../model/nn_2000_queries_trimming_simple_10.hdf5"
+    # training_spectra_file_name = \
+    #     "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
+    # # Create library object
+    # my_library = SelectDataForTraining(
+    #     sqlite_file_name,
+    #     s2v_model_file_name,
+    #     ms2ds_model_file_name,
+    #     s2v_pickled_embeddings_file,
+    #     ms2ds_embeddings_file_name,
+    #     training_spectra_file_name)
+    # # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
+    # #                                          ["CCMSLIB00000001552",
+    # #                                           "CCMSLIB00000001547"])
+    # file_name = "matches_info_training_and_testing.pickle"
+    # training_set, training_labels, testing_set, testing_labels = \
+    #     my_library.create_train_and_test_data(save_file_name=file_name)
+    # print(training_set)
+    # print(testing_set)
+    # print(training_labels)
+    # print(testing_labels)
 
+    tanimoto_scores = load_pickled_file("../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle")
 
+    print(tanimoto_scores)
+    print(tanimoto_scores.isnull().values.any())
 
     # training_spectra_file_name = "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
     # training_spectrum_docs, test_and_val_spectrum_docs = \
