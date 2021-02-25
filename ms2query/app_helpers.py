@@ -165,7 +165,7 @@ def download_zenodo_library(example_libs_dict: Dict[str, Tuple[str, str, int]],
 
 
 @st.cache(allow_output_mutation=True)  # for speedup, e.a. lib is not mutated
-def load_pickled_file(file_name: str) -> List[Spectrum]:
+def load_pickled_file(file_name: str):
     """Returns contents from the pickle file
 
     Args:
