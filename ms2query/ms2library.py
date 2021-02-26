@@ -137,7 +137,7 @@ class Ms2Library:
         dict_with_preselected_spectra = {}
         for spectrum_id in spectra_with_similar_masses:
             # select the spectra with similar masses as preselected matches
-            # Later will be decided which spectra are actually sellected
+            # Later will be decided which spectra are actually selected
             preselected_matches = spectra_with_similar_masses[spectrum_id]
 
             # todo remove this part once the preselection is done before
@@ -213,7 +213,9 @@ class Ms2Library:
         return spec2vec_similarities_dataframe
 
     def _get_parent_mass_matches_all_queries(self,
-                                             query_spectra: List[Spectrum]
+                                             query_spectra: List[Spectrum],
+                                             spectrum_id_storage_name: str
+                                             = "spectrumid"
                                              ) -> Dict[str, List[str]]:
         """Returns a dictionary with all library spectra with similar masses
 
@@ -227,17 +229,20 @@ class Ms2Library:
             masses are returned.
         mass_tolerance: float, optional
             Specify tolerance for a parentmass match. Default = 1.
+        spectrum_id_storage_name:
+            The name under which the spectrum ids are stored in the metadata.
+            Default = 'spectrumid'
         """
         spectra_with_similar_mass_dict = {}
         conn = sqlite3.connect(self.sqlite_file_location)
         for query_spectrum in tqdm(query_spectra,
                                    desc="selecting matches based on parent mass"):
             query_mass = query_spectrum.get("parent_mass")
-            query_spectrum_id = query_spectrum.get("spectrum_id")
+            query_spectrum_id = query_spectrum.get(spectrum_id_storage_name)
 
             # Get spectrum_ids from sqlite with parent_mass within tolerance
             sqlite_command = \
-                f"""SELECT spectrum_id FROM spectrum_data
+                f"""SELECT {spectrum_id_storage_name} FROM spectrum_data
                     WHERE parent_mass > {query_mass - self.mass_tolerance}
                     AND parent_mass < {query_mass + self.mass_tolerance}"""
 
@@ -269,7 +274,9 @@ class Ms2Library:
 
     def collect_matches_data_multiple_spectra(self,
                                               query_spectra: List[Spectrum],
-                                              progress_bar=False
+                                              progress_bar=False,
+                                              spectrum_id_storage_name: str
+                                              = "spectrumid"
                                               ) -> Dict[str, pd.DataFrame]:
         """Returns a dataframe with info for all matches to all query spectra
 
@@ -285,6 +292,9 @@ class Ms2Library:
             The spectra for which info about matches should be collected
         progress_bar:
             If true a progress bar is shown. Default is False
+        spectrum_id_storage_name:
+            The name under which the spectrum ids are stored in the metadata.
+            Default = 'spectrumid'
         """
         # Gets a preselection of spectra for all query_spectra
         dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
@@ -295,7 +305,7 @@ class Ms2Library:
         for query_spectrum in tqdm(query_spectra,
                                    desc="collecting matches info",
                                    disable=not progress_bar):
-            spectrum_id = query_spectrum.get("spectrum_id")
+            spectrum_id = query_spectrum.get(spectrum_id_storage_name)
             matches_with_info = \
                 self.collect_data_for_tanimoto_prediction_model(
                     query_spectrum,
@@ -438,8 +448,9 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
                                   desc="Calculating embeddings",
                                   disable=not progress_bars):
         embedding = calc_vector(model,
-                                spectrum_document)
-        embeddings_dict[spectrum_document.get("spectrum_id")] = embedding
+                                spectrum_document,
+                                allowed_missing_percentage=100)
+        embeddings_dict[spectrum_document.get("spectrumid")] = embedding
 
     # Convert to pandas Dataframe
     embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
@@ -448,6 +459,7 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
 
 
 def create_spectrum_documents(query_spectra: List[Spectrum],
+                              spectrum_id_storage_name: str = "spectrumid",
                               progress_bar: bool = False
                               ) -> Tuple[List[SpectrumDocument], List[str]]:
     """Transforms list of Spectrum to List of SpectrumDocument
@@ -458,6 +470,9 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
         List of Spectrum objects that are transformed to SpectrumDocument
     progress_bar:
         When true a progress bar is shown. Default = False
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
     """
     # todo use new preprocessing and remove spectra_not_past_post_process_spect
     spectrum_documents = []
@@ -471,7 +486,7 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
                 post_process_spectrum,
                 n_decimals=2))
         else:
-            spectrum_id = spectrum.metadata["spectrum_id"]
+            spectrum_id = spectrum.get(spectrum_id_storage_name)
             spectra_not_past_post_process_spectra.append(spectrum_id)
     return spectrum_documents, spectra_not_past_post_process_spectra
 
@@ -481,51 +496,39 @@ if __name__ == "__main__":
     # # parent_mass. Use make_sqlfile_wrapper for this, see test_sqlite.py for
     # example (but use different start files for full dataset)
     sqlite_file_name = \
-        "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
+        "../downloads/gnps_210125/all_gnps_210125.sqlite"
     s2v_model_file_name = \
         "../downloads/" \
         "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
     s2v_pickled_embeddings_file = \
-        "../downloads/embeddings_all_spectra.pickle"
+        "../downloads/gnps_210125/s2v_embeddings_gnps210125"
     ms2ds_model_file_name = \
         "../../ms2deepscore/data/" \
         "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
     ms2ds_embeddings_file_name = \
-        "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
+        "../downloads/gnps_210125/ms2ds_embeddings_gnps210207.pickle"
     neural_network_model_file_location = \
         "../model/nn_2000_queries_trimming_simple_10.hdf5"
 
-    # # Create library object
-    # my_library = Ms2Library(sqlite_file_name,
-    #                         s2v_model_file_name,
-    #                         ms2ds_model_file_name,
-    #                         s2v_pickled_embeddings_file,
-    #                         ms2ds_embeddings_file_name,
-    #                         neural_network_model_file_location)
+    # Create library object
+    my_library = Ms2Library(sqlite_file_name,
+                            s2v_model_file_name,
+                            ms2ds_model_file_name,
+                            s2v_pickled_embeddings_file,
+                            ms2ds_embeddings_file_name,
+                            neural_network_model_file_location)
     # Get two query spectras
     query_spectra_to_test = get_spectra_from_sqlite(sqlite_file_name,
-                                                    ["CCMSLIB00000001655"])
-    # with open(ms2ds_embeddings_file_name, "rb") as \
-    #         pickled_ms2ds_embeddings:
-    #     print(pickle.load(pickled_ms2ds_embeddings))
-    # print(my_library.pre_select_spectra(
-    #     query_spectra_to_test))
-
-    all_spectra = get_spectra_from_sqlite(sqlite_file_name,
-                                          [],
-                                          get_all_spectra=True)
-    ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-    store_ms2ds_embeddings(all_spectra,
-                           ms2ds_model,
-                           "ms2ds_embeddings_all_2dec")
-    # library_spectra = get_spectra_from_sqlite(sqlite_file_name,
-    #                                           ["CCMSLIB00000001547",
-    #                                            "CCMSLIB00000001549"],
-    #                                           get_all_spectra=False,
-    #                                           progress_bar=True)
-    #
-    # model = load_ms2ds_model(ms2ds_model_file_name)
-    #
-    # store_ms2ds_embeddings(library_spectra,
-    #                        model,
-    #                        ms2ds_embeddings_file_name)
+                                                    ["CCMSLIB00000001547",
+                                                     "CCMSLIB00000001549"])
+    print(my_library.collect_matches_data_multiple_spectra(query_spectra_to_test))
+    def clean_up_parent_mass():
+        from ms2query.app_helpers import load_pickled_file
+        spectra = load_pickled_file("../downloads/gnps_210125/ALL_GNPS_210125_positive_cleaned_by_matchms_and_lookups.pickle")
+        for i, spectrum in enumerate(spectra):
+            parent_mass = spectrum.get("parent_mass")
+            if isinstance(parent_mass, np.ndarray):
+                spectrum.set("parent_mass", parent_mass[0])
+                spectra[i] = spectrum
+        with open("../downloads/gnps_210125/spectra_gnps_210125_cleaned_parent_mass", "wb") as file:
+            pickle.dump(spectra, file)

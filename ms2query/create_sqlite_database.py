@@ -14,17 +14,19 @@ from typing import Dict, List
 import pandas as pd
 import numpy as np
 import sqlite3
+import os
+import gc
 from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
-                         npy_file_location: str,
-                         pickled_file_name: str,
-                         csv_file_with_inchikey_order: str,
-                         columns_dict: Dict[str, str] = None
-                         ):
+                         tanimoto_scores_pickled_dataframe_file: str,
+                         pickled_spectra_file_name: str,
+                         columns_dict: Dict[str, str] = None,
+                         progress_bars: bool = True,
+                         spectrum_column_name: str = "spectrumid"):
     """Wrapper to create sqlite file with three tables.
 
     Args:
@@ -33,16 +35,11 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         Name of sqlite_file that should be created, if it already exists the
         tables are added. If the tables in this sqlite file already exist, they
         will be overwritten.
-    npy_file_location:
-        The file location of an .npy file. This file is expected to contain the
-        tanimoto scores and have an equal amount of rows and columns equal to
-        the number of inchikeys in csv_file_with_inchikey_order.
-    pickled_file_name:
-        This file is expected to contain a list of matchms.Spectrum.
-    csv_file_with_inchikey_order:
-        This csv file is expected to contain inchikeys on the second column
-        starting from the second row. These inchikeys should be ordered in the
-        same way the tanimoto scores are ordered in the npy_file_location.
+    tanimoto_scores_pickled_dataframe_file:
+        A pickled file with tanimoto scores. The column names and indexes are
+        14inchikeys.
+    pickled_spectra_file_name:
+        This pickled file is expected to contain a list of matchms.Spectrum.
     columns_dict:
         Dictionary with as keys columns that need to be added in addition to
         the default columns and as values the datatype. The defaults columns
@@ -51,32 +48,92 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         since these values will be automatically added in the function
         add_list_of_spectra_to_sqlite.
         Default = None results in the default columns.
+    progress_bars:
+        If progress_bars is True progress bars will be shown for the different
+        parts of the progress.
+    spectrum_column_name:
+        The spectrum column name is the name given to the column storing the
+        spectrum ids. This is important since this name will be used to look
+        up the spectrum id in the metadata. Per version of the data this
+        differs between 'spectrum_id' and 'spectrumid'
     """
+
+    add_tanimoto_scores_to_sqlite(sqlite_file_name,
+                                  tanimoto_scores_pickled_dataframe_file)
+
+    # Loads the spectra from a pickled file
+    list_of_spectra = load_pickled_file(pickled_spectra_file_name)
+    assert list_of_spectra[0].get("spectrumid"), \
+        "Expected spectra to have 'spectrumid' in metadata, " \
+        "probably named 'spectrum_id' instead"
+    # # Does normalization and filtering of spectra
+    list_of_spectra = \
+        minimal_processing_multiple_spectra(list_of_spectra,
+                                            progress_bar=progress_bars)
+    # Creates a sqlite table with the metadata, peaks and intensities
+    create_table_structure(sqlite_file_name,
+                           additional_columns_dict=columns_dict,
+                           spectrum_column_name=spectrum_column_name)
+    add_list_of_spectra_to_sqlite(sqlite_file_name,
+                                  list_of_spectra,
+                                  progress_bar=progress_bars)
+
+
+def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
+                                  tanimoto_scores_pickled_dataframe_file: str,
+                                  temporary_tanimoto_file_name: str
+                                  = "temporary_tanimoto_scores",
+                                  progress_bars: bool = True):
+    """Adds tanimoto scores and inchikeys to sqlite table
+
+    sqlite_file_name:
+        Name of sqlite_file that should be created, if it already exists the
+        tables are added. If the tables in this sqlite file already exist, they
+        will be overwritten.
+    tanimoto_scores_pickled_dataframe_file:
+        A pickled file with tanimoto scores. The column names and indexes are
+        14inchikeys.
+    temporary_tanimoto_file_name:
+        The file name of a temporary .npy file that is created to memory
+        efficiently read out the tanimoto scores. The file is deleted after
+        finishing.
+    progress_bars:
+        If True progress bars will show the progress of the different steps
+        in the process.
+    """
+    temporary_tanimoto_file_name = os.path.join(os.getcwd(),
+                                                temporary_tanimoto_file_name)
+    assert not os.path.exists(temporary_tanimoto_file_name + ".npy"), \
+        "A file already exists with the temporary file name you want to create"
+
+    if progress_bars:
+        print("Loading tanimoto scores in memory")
+    tanimoto_df = load_pickled_file(tanimoto_scores_pickled_dataframe_file)
+
+    assert not tanimoto_df.isnull().values.any(), \
+        "No NaN values were expected in tanimoto scores"
+    if progress_bars:
+        print("Saving tanimoto scores to temporary .npy file")
+    np.save(temporary_tanimoto_file_name, tanimoto_df.to_numpy())
+    inchikeys_order = tanimoto_df.index
 
     # Creates a sqlite table containing all tanimoto scores
     initialize_tanimoto_score_table(sqlite_file_name)
-    add_tanimoto_scores_to_sqlite_table(sqlite_file_name, npy_file_location)
-
+    add_tanimoto_scores_to_sqlite_table(sqlite_file_name,
+                                        temporary_tanimoto_file_name + ".npy",
+                                        progress_bar=progress_bars)
+    os.remove(temporary_tanimoto_file_name + ".npy")
     # Creates a table containing the identifiers belonging to each inchikey
     # These identifiers correspond to the identifiers in tanimoto_scores
     create_inchikey_sqlite_table(sqlite_file_name,
-                                 csv_file_with_inchikey_order)
-
-    # Loads the spectra from a pickled file
-    list_of_spectra = load_pickled_file(pickled_file_name)
-    # Todo see issue #63. Decide if processing should happen here
-    # # Does normalization and filtering of spectra
-    # list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra,
-    #                                                       progress_bar=True)
-    # Creates a sqlite table with the metadata, peaks and intensities
-    create_table_structure(sqlite_file_name,
-                           additional_columns_dict=columns_dict)
-    add_list_of_spectra_to_sqlite(sqlite_file_name, list_of_spectra)
+                                 inchikeys_order,
+                                 progress_bar=progress_bars)
 
 
 def create_table_structure(sqlite_file_name: str,
                            additional_columns_dict: Dict[str, str] = None,
-                           table_name: str = "spectrum_data"):
+                           table_name: str = "spectrum_data",
+                           spectrum_column_name: str = "spectrumid"):
     """Creates a new sqlite file, with columns defined in combined_columns_dict
 
     On default the columns spectrum_id, peaks, intensities and metadata are
@@ -100,6 +157,11 @@ def create_table_structure(sqlite_file_name: str,
     table_name:
         Name of the table that is created in the sqlite file,
         default = "spectrum_data"
+    spectrum_column_name:
+        The spectrum column name is the name given to the column storing the
+        spectrum ids. This is important since this name will be used to look
+        up the spectrum id in the metadata. Per version of the data this
+        differs between 'spectrum_id' and 'spectrumid'
     """
     # Create a new datatype array for sqlite
     # Converts np.array to TEXT when inserting
@@ -110,7 +172,7 @@ def create_table_structure(sqlite_file_name: str,
         additional_columns_dict = {}
 
     # Create default combined_columns_dict
-    default_columns_dict = {"spectrum_id": "TEXT",
+    default_columns_dict = {spectrum_column_name: "TEXT",
                             "peaks": "array",
                             "intensities": "array",
                             "metadata": "TEXT"}
@@ -124,7 +186,7 @@ def create_table_structure(sqlite_file_name: str,
     for column_header in combined_columns_dict:
         create_table_command += column_header + " " \
                                 + combined_columns_dict[column_header] + ",\n"
-    create_table_command += "PRIMARY KEY (spectrum_id));"
+    create_table_command += f"PRIMARY KEY ({spectrum_column_name}));"
 
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
@@ -156,7 +218,8 @@ def adapt_array(arr: np.array) -> sqlite3.Binary:
 
 def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
                                   list_of_spectra: List[Spectrum],
-                                  table_name: str = "spectrum_data"):
+                                  table_name: str = "spectrum_data",
+                                  progress_bar: bool = True):
     """Adds the data of a list of spectra to a sqlite file
 
     The spectrum_id is the primary key and the data is stored in the columns
@@ -177,6 +240,8 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
         expected to already contain the default columns spectrum_id, peaks,
         intensities and metadata.
         default = "spectrum_data"
+    progress_bar:
+        If True a progress bar will show the progress.
     """
     conn = sqlite3.connect(sqlite_file_name)
 
@@ -193,7 +258,9 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
                            values ({value_placeholders[:-2]})"""
 
     # Add the data of each spectrum to the sqlite table
-    for spectrum in list_of_spectra:
+    for spectrum in tqdm(list_of_spectra,
+                         desc="Adding spectra to sqlite table",
+                         disable=not progress_bar):
         peaks = spectrum.peaks.mz
         intensities = spectrum.peaks.intensities
         metadata = spectrum.metadata
@@ -218,9 +285,10 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
 
 
 def create_inchikey_sqlite_table(file_name: str,
-                                 csv_file_with_inchikey_order: str,
+                                 ordered_inchikey_list: List[str],
                                  table_name: str = 'inchikeys',
-                                 col_name_inchikey: str = 'inchikey'):
+                                 col_name_inchikey: str = 'inchikey',
+                                 progress_bar: bool = True):
     """Creates a table storing the identifiers belonging to the inchikeys
 
     Overwrites the table if it already exists. The column specified in
@@ -233,16 +301,17 @@ def create_inchikey_sqlite_table(file_name: str,
     -------
     sqlite_file_name:
         Name of sqlite file to which the table should be added.
-    csv_file_with_inchikey_order:
-        This csv file is expected to contain inchikeys on the second column
-        starting from the second row. These inchikeys should be ordered in the
-        same way the tanimoto scores are ordered in the tanimoto_scores table.
+    ordered_inchikey_list:
+        List with inchikeys, the inchikeys will be stored in sqlite in the same
+        order.
     table_name:
         Name of the table in the database that should store the (order of) the
         inchikeys. Default = inchikeys.
     col_name_inchikey:
         Name of the column in the table containing the inchikeys.
         Default = inchikeys
+    progress_bar:
+        If True a progress bar is shown.
     """
 
     conn = sqlite3.connect(file_name)
@@ -259,34 +328,15 @@ def create_inchikey_sqlite_table(file_name: str,
     cur.executescript(create_table_command)
     conn.commit()
 
-    # Get the ordered inchikeys from the csv file
-    ordered_inchikey_list = get_inchikey_order(csv_file_with_inchikey_order)
-
     # Fill table
-    for inchikey in ordered_inchikey_list:
+    for inchikey in tqdm(ordered_inchikey_list,
+                         desc="Adding inchikeys to sqlite table",
+                         disable=not progress_bar):
         add_row_to_table_command = f"""INSERT INTO {table_name} 
                                     values ('{inchikey}');"""
         cur.execute(add_row_to_table_command)
     conn.commit()
     conn.close()
-
-
-def get_inchikey_order(metadata_csv_file: str) -> List[str]:
-    """Return list of Inchi14s in same order as in metadata_file
-
-    Args:
-    ------
-    metadata_csv_file:
-        path to metadata file, expected format is csv, with inchikeys in the
-        second column, starting from the second row.
-    """
-    with open(metadata_csv_file, 'r') as inf:
-        inf.readline()
-        inchi_list = []
-        for line in inf:
-            line = line.strip().split(',')
-            inchi_list.append(line[1])
-    return inchi_list
 
 
 def initialize_tanimoto_score_table(sqlite_file_name: str,
@@ -378,7 +428,7 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
     # inchikeys
     list_of_numbers = []
     for i in range(len(tanimoto_score_matrix[0])):
-        list_of_numbers.append(i)
+        list_of_numbers.append(i+1)
 
     # Create a dataframe and add to sqlite table row by row
     for row_nr, row in enumerate(
@@ -392,12 +442,15 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
         df = pd.DataFrame(row)
         # Add columns with identifiers (they correspond to the indexes of the
         # rows and columns in the npy file
-        df[col_name_identifier1] = np.array(len(row) * [row_nr])
+        df[col_name_identifier1] = np.array(len(row) * [row_nr+1])
         df[col_name_identifier2] = np.array(list_of_numbers[:len(row)])
 
         df.rename(columns={0: col_name_score}, inplace=True)
         # Add dataframe to table in sqlite file
         convert_dataframe_to_sqlite(df, sqlite_file_name)
+    # del and gc.collect are needed to later delete the file
+    del tanimoto_score_matrix
+    gc.collect()
 
 
 def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
@@ -423,3 +476,18 @@ def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
                               index=False)
     connection.commit()
     connection.close()
+
+
+# tanimoto_scores_pickled_dataframe_file = "../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle"
+# spectra_file = "../downloads/gnps_210125/spectra_gnps_210125_cleaned_parent_mass"
+#
+# spectra = load_pickled_file(spectra_file)
+#
+# make_sqlfile_wrapper("../downloads/gnps_210125/test_again_all_gnps_210125.sqlite",
+#                      tanimoto_scores_pickled_dataframe_file,
+#                      spectra_file,
+#                      {"parent_mass": "REAL"})
+
+
+
+

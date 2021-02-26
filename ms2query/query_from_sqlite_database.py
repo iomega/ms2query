@@ -14,6 +14,7 @@ from matchms.Spectrum import Spectrum
 
 def get_spectra_from_sqlite(sqlite_file_name: str,
                             spectrum_id_list: List[str],
+                            spectrum_id_storage_name: str = "spectrumid",
                             table_name: str = "spectrum_data",
                             get_all_spectra: bool = False,
                             progress_bar: bool = False
@@ -26,6 +27,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         File name of the sqlite file that contains the spectrum information
     spectrum_id_list:
         List of spectrum_id's of which the spectra objects should be returned
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
     table_name:
         Name of the table in the sqlite file that stores the spectrum data
     get_all_spectra:
@@ -42,7 +46,7 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     # Get all relevant data.
     sqlite_command = f"SELECT peaks, intensities, metadata FROM {table_name} "
     if not get_all_spectra:
-        sqlite_command += f"""WHERE spectrum_id 
+        sqlite_command += f"""WHERE {spectrum_id_storage_name} 
                           IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
@@ -154,7 +158,7 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
     # Convert result to dictionary
     identifier_dict = {}
     for result in cur:
-        identifier_dict[result[0]] = result[1]-1
+        identifier_dict[result[0]] = result[1]
 
     conn.close()
 
@@ -226,6 +230,8 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
 def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
                                      spectrum_id_list: List[str],
                                      part_of_metadata_to_select: str,
+                                     spectrum_id_storage_name: str
+                                     = "spectrumid",
                                      table_name: str = "spectrum_data"
                                      ) -> List[str]:
     """Returns a dict with part of metadata for each spectrum id
@@ -242,6 +248,9 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
         looked up.
     part_of_metadata_to_select:
         The key under which this metadata is stored in the sqlite file.
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
     table_name:
         The name of the table in the sqlite file in which the metadata is
         stored. Default = "spectrum_data"
@@ -249,19 +258,20 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
         f"""SELECT metadata FROM {table_name} 
-        WHERE spectrum_id IN ('{"', '".join(map(str, spectrum_id_list))}')"""
+        WHERE {spectrum_id_storage_name} 
+        IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
     list_of_metadata = cur.fetchall()
     results_dict = {}
     for metadata in list_of_metadata:
         metadata = ast.literal_eval(metadata[0])
-        results_dict[metadata["spectrum_id"]] = \
+        results_dict[metadata[spectrum_id_storage_name]] = \
             metadata[part_of_metadata_to_select]
     # Check if all spectrum_ids were found
     for spectrum_id in spectrum_id_list:
         assert spectrum_id in results_dict, \
-            f"spectrum_id {spectrum_id} was not found in database"
+            f"{spectrum_id_storage_name} {spectrum_id} not found in database"
     # Output from get_part_of_metadata is not always in order of input, so this
     # is sorted again here.
     results_in_correct_order = \
