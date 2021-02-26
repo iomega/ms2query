@@ -33,12 +33,11 @@ def test_making_sqlite_file(tmp_path):
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
                          os.path.join(path_to_test_files_sqlite_dir,
-                                      "test_tanimoto_scores.npy"),
+                                      "test_tanimoto_scores.pickle"),
                          os.path.join(path_to_test_files_sqlite_dir,
                                       "first_10_spectra.pickle"),
-                         os.path.join(path_to_test_files_sqlite_dir,
-                                      "test_metadata_for_inchikey_order.csv"),
-                         columns_dict={"parent_mass": "REAL"})
+                         columns_dict={"parent_mass": "REAL"},
+                         spectrum_column_name="spectrum_id")
 
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \
@@ -97,23 +96,23 @@ def test_get_tanimoto_scores():
     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
                                     "test_spectra_database.sqlite")
 
-    test_inchikeys = ['MYHSVHWQEVDFQT',
-                      'BKAWJIRCKVUVED',
-                      'CXVGEDCSTKKODG']
+    test_inchikeys = ['TXZUPPVCNIMVHW',
+                      'WIOKWEJDRXNVSH',
+                      'VBFKEZGCUWHGSK']
     tanimoto_score_dataframe = get_tanimoto_score_for_inchikeys(
         test_inchikeys,
         test_inchikeys,
         sqlite_file_name)
 
-    scores_in_test_file = np.load(os.path.join(path_to_test_files_sqlite_dir,
-                                               "test_tanimoto_scores.npy"))
+    reference_tanimoto_scores = \
+        load_pickled_file(os.path.join(path_to_test_files_sqlite_dir,
+                                       "test_tanimoto_scores.pickle"))
+    expected_result = reference_tanimoto_scores.loc[test_inchikeys][
+        test_inchikeys]
 
-    expected_dataframe = pd.DataFrame(scores_in_test_file,
-                                      index=test_inchikeys,
-                                      columns=test_inchikeys)
-
-    assert expected_dataframe.equals(tanimoto_score_dataframe), \
-        "Expected different tanimoto scores, or columns/index names"
+    pd.testing.assert_frame_equal(tanimoto_score_dataframe,
+                                  expected_result,
+                                  check_like=True)
 
 
 def test_get_spectrum_data():
@@ -126,7 +125,10 @@ def test_get_spectrum_data():
                                     "test_spectra_database.sqlite")
 
     spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
-    spectra_list = get_spectra_from_sqlite(sqlite_file_name, spectra_id_list)
+    spectra_list = get_spectra_from_sqlite(sqlite_file_name,
+                                           spectra_id_list,
+                                           spectrum_id_storage_name=
+                                           "spectrum_id")
 
     # Test if the output is of the right type
     assert isinstance(spectra_list, list), "Expected a list"
@@ -157,7 +159,9 @@ def test_get_part_of_metadata_from_sqlite():
 
     result = get_part_of_metadata_from_sqlite(sqlite_file_name,
                                               spectra_id_list,
-                                              "inchikey")
+                                              "inchikey",
+                                              spectrum_id_storage_name=
+                                              "spectrum_id")
     assert isinstance(result, list), "Expected dictionary as output"
     assert result == ['IYDKWWDUBYWQGF-NNAZGLEUSA-N',
                       'WXDBUBIFYCCNLE-NSCMQRKRSA-N'], \
