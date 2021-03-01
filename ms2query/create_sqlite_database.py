@@ -63,9 +63,9 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
 
     # Loads the spectra from a pickled file
     list_of_spectra = load_pickled_file(pickled_spectra_file_name)
-    assert list_of_spectra[0].get("spectrumid"), \
-        "Expected spectra to have 'spectrumid' in metadata, " \
-        "probably named 'spectrum_id' instead"
+    assert list_of_spectra[0].get(spectrum_column_name), \
+        f"Expected spectra to have '{spectrum_column_name}' in metadata, " \
+        "probably named 'spectrum_id' or 'spectrumid'"
     # # Does normalization and filtering of spectra
     list_of_spectra = \
         minimal_processing_multiple_spectra(list_of_spectra,
@@ -476,18 +476,3 @@ def convert_dataframe_to_sqlite(spectrum_dataframe: pd.DataFrame,
                               index=False)
     connection.commit()
     connection.close()
-
-
-# tanimoto_scores_pickled_dataframe_file = "../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle"
-# spectra_file = "../downloads/gnps_210125/spectra_gnps_210125_cleaned_parent_mass"
-#
-# spectra = load_pickled_file(spectra_file)
-#
-# make_sqlfile_wrapper("../downloads/gnps_210125/test_again_all_gnps_210125.sqlite",
-#                      tanimoto_scores_pickled_dataframe_file,
-#                      spectra_file,
-#                      {"parent_mass": "REAL"})
-
-
-
-
