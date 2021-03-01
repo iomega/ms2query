@@ -64,6 +64,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
                                         intensities=intensities,
                                         metadata=metadata))
     conn.close()
+    if not get_all_spectra:
+        assert len(list_of_spectra) == len(spectrum_id_list), \
+            "Not all spectra were found in sqlite"
     return list_of_spectra
 
 
