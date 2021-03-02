@@ -26,7 +26,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
                          list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
                          progress_bars: bool = True,
-                         spectrum_column_name: str = "spectrumid"):
+                         spectrum_id_column_name: str = "spectrumid"):
     """Wrapper to create sqlite file with three tables.
 
     Args:
@@ -51,8 +51,8 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     progress_bars:
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
-    spectrum_column_name:
-        The spectrum column name is the name given to the column storing the
+    spectrum_id_column_name:
+        The spectrum id column name is the name given to the column storing the
         spectrum ids. This is important since this name will be used to look
         up the spectrum id in the metadata. Per version of the data this
         differs between 'spectrum_id' and 'spectrumid'
@@ -63,7 +63,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
                                   progress_bars=progress_bars)
     create_table_structure(sqlite_file_name,
                            additional_columns_dict=columns_dict,
-                           spectrum_column_name=spectrum_column_name)
+                           spectrum_column_name=spectrum_id_column_name)
     add_list_of_spectra_to_sqlite(sqlite_file_name,
                                   list_of_spectra,
                                   progress_bar=progress_bars)
