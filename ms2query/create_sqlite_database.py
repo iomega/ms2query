@@ -23,7 +23,7 @@ from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
                          tanimoto_scores_pickled_dataframe_file: str,
-                         pickled_spectra_file_name: str,
+                         list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
                          progress_bars: bool = True,
                          spectrum_column_name: str = "spectrumid"):
@@ -38,8 +38,8 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     tanimoto_scores_pickled_dataframe_file:
         A pickled file with tanimoto scores. The column names and indexes are
         14inchikeys.
-    pickled_spectra_file_name:
-        This pickled file is expected to contain a list of matchms.Spectrum.
+    list_of_spectra:
+        A list with spectrum objects
     columns_dict:
         Dictionary with as keys columns that need to be added in addition to
         the default columns and as values the datatype. The defaults columns
@@ -59,18 +59,8 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     """
 
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
-                                  tanimoto_scores_pickled_dataframe_file)
-
-    # Loads the spectra from a pickled file
-    list_of_spectra = load_pickled_file(pickled_spectra_file_name)
-    assert list_of_spectra[0].get(spectrum_column_name), \
-        f"Expected spectra to have '{spectrum_column_name}' in metadata, " \
-        "probably named 'spectrum_id' or 'spectrumid'"
-    # # Does normalization and filtering of spectra
-    list_of_spectra = \
-        minimal_processing_multiple_spectra(list_of_spectra,
-                                            progress_bar=progress_bars)
-    # Creates a sqlite table with the metadata, peaks and intensities
+                                  tanimoto_scores_pickled_dataframe_file,
+                                  progress_bars=progress_bars)
     create_table_structure(sqlite_file_name,
                            additional_columns_dict=columns_dict,
                            spectrum_column_name=spectrum_column_name)
@@ -101,6 +91,9 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
         If True progress bars will show the progress of the different steps
         in the process.
     """
+    # todo instead of creating a real file and than deleting make a temporary
+    #  file, not yet implemented since numpy memmap is not able to access the
+    #  file in this case.
     temporary_tanimoto_file_name = os.path.join(os.getcwd(),
                                                 temporary_tanimoto_file_name)
     assert not os.path.exists(temporary_tanimoto_file_name + ".npy"), \

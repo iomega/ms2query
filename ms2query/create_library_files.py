@@ -13,6 +13,7 @@ from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.app_helpers import load_pickled_file
 
+
 def create_all_library_files(pickled_spectra_file_name: str,
                              ms2ds_model_file_name: str,
                              s2v_model_file_name: str,
@@ -53,12 +54,16 @@ def create_all_library_files(pickled_spectra_file_name: str,
 
     store_ms2ds_embeddings(list_of_spectra,
                            ms2ds_model_file_name,
-                           new_ms2ds_embeddings_file_name)
+                           new_ms2ds_embeddings_file_name,
+                           spectrum_column_name=spectrum_column_name,
+                           progress_bar=progress_bars)
 
 
 def store_ms2ds_embeddings(spectrum_list: List[Spectrum],
                            ms2ds_model_file_name: str,
-                           new_pickled_embeddings_file_name):
+                           new_pickled_embeddings_file_name: str,
+                           spectrum_column_name: str = 'spectrumid',
+                           progress_bar: bool = True):
     """Creates a pickled file with embeddings scores for spectra
 
     A dataframe with as index the spectrum_ids and as columns the indexes of
@@ -73,14 +78,21 @@ def store_ms2ds_embeddings(spectrum_list: List[Spectrum],
     new_picled_embeddings_file_name:
         The file name in which the pickled dataframe is stored.
     """
-    # todo, make it calculate the embeddings one by one
     model = load_ms2ds_model(ms2ds_model_file_name)
     ms2ds = MS2DeepScore(model)
-    spectra_vectors = ms2ds.calculate_vectors(spectrum_list)
+
+    embeddings = []
+    for spec in tqdm(spectrum_list,
+                     desc="Calculating ms2ds embeddings",
+                     disable= not progress_bar):
+        binned_spec = model.spectrum_binner.transform([spec],
+                                                      progress_bar=False)[0]
+        embeddings.append(
+            model.base.predict(ms2ds._create_input_vector(binned_spec))[0])
 
     spectra_vector_dataframe = pd.DataFrame(
-        spectra_vectors,
-        index=[spectrum.get("spectrum_id") for spectrum in spectrum_list])
+        embeddings,
+        index=[spectrum.get(spectrum_column_name) for spectrum in spectrum_list])
     spectra_vector_dataframe.to_pickle(new_pickled_embeddings_file_name)
 
 
@@ -111,8 +123,7 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
     model = Word2Vec.load(s2v_model_file_name)
     # Convert Spectrum objects to SpectrumDocument
     spectrum_documents = create_spectrum_documents(spectra_list,
-                                                   progress_bar=progress_bars
-                                                   )[0]
+                                                   progress_bar=progress_bars)
     embeddings_dict = {}
     for spectrum_document in tqdm(spectrum_documents,
                                   desc="Calculating embeddings",
@@ -126,3 +137,23 @@ def store_s2v_embeddings(spectra_list: List[Spectrum],
     embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                   orient="index")
     embeddings_dataframe.to_pickle(new_pickled_embeddings_file_name)
+
+
+if __name__ == "__main__":
+    ms2ds_model_file_name = "../../ms2deepscore/data/" \
+            "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
+    spectra_file = "../downloads/gnps_210125/spectra/spectra_gnps_210125_cleaned_parent_mass"
+    s2v_model_file = "../downloads/" \
+            "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
+    sqlite_file_name = "test_sqlite_file.sqlite"
+    ms2ds_embeddings_file_name = "test_ms2ds_embeddings"
+    s2v_embeddings_file_name = "test_s2v_embeddings"
+    tanimoto_scores_file = "../tests/test_files/test_tanimoto_scores.pickle"
+
+    create_all_library_files(spectra_file,
+                             ms2ds_model_file_name,
+                             s2v_model_file,
+                             sqlite_file_name,
+                             ms2ds_embeddings_file_name,
+                             s2v_embeddings_file_name,
+                             tanimoto_scores_file)
