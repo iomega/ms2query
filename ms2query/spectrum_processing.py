@@ -82,6 +82,9 @@ def spectrum_processing_minimal(spectrum: SpectrumType,
         spectrum,
         n_required=settings["n_required_below_mz"],
         max_mz=settings["max_mz_required"])
+    # todo remove again once implemented in matchms
+    if spectrum.get("precursor_mz") == 0.0:
+        spectrum = None
     return spectrum
 
 
