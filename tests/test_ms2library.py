@@ -6,6 +6,7 @@ import pickle
 # from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec import SpectrumDocument
 from ms2query.ms2library import create_spectrum_documents
+from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 # from ms2query.ms2library import store_ms2ds_embeddings, store_s2v_embeddings, \
 #     Ms2Library
 
@@ -16,9 +17,9 @@ def test_create_spectrum_documents():
         'tests/test_files/first_10_spectra.pickle')
     with open(path_to_pickled_file, "rb") as pickled_file:
         spectrum_list = pickle.load(pickled_file)
+    spectrum_list = minimal_processing_multiple_spectra(spectrum_list)
 
-    spectrum_documents, spectra_not_past_post_processing = \
-        create_spectrum_documents(spectrum_list)
+    spectrum_documents = create_spectrum_documents(spectrum_list)
     assert isinstance(spectrum_documents, list), \
         "A list with spectrum_documents is expected"
     for spectrum_doc in spectrum_documents:

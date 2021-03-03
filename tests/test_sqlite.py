@@ -15,6 +15,7 @@ from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite, \
     get_part_of_metadata_from_sqlite
+from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 def test_making_sqlite_file(tmp_path):
@@ -30,14 +31,17 @@ def test_making_sqlite_file(tmp_path):
 
     reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
                                          "test_spectra_database.sqlite")
+
+    list_of_spectra = load_pickled_file(os.path.join(
+        path_to_test_files_sqlite_dir, "first_10_spectra.pickle"))
+    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
                          os.path.join(path_to_test_files_sqlite_dir,
                                       "test_tanimoto_scores.pickle"),
-                         os.path.join(path_to_test_files_sqlite_dir,
-                                      "first_10_spectra.pickle"),
+                         list_of_spectra,
                          columns_dict={"parent_mass": "REAL"},
-                         spectrum_column_name="spectrum_id")
+                         spectrum_id_column_name="spectrum_id")
 
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \

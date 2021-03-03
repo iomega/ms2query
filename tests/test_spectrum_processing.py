@@ -115,7 +115,7 @@ def test_spectrum_processing_minimal_set_n_required_intensity_from():
 
 def test_spectrum_processing_s2v():
     """Test processing an individual spectrum with spectrum_processing_s2v"""
-    spectrum_in = Spectrum(mz=np.array([5, 110, 220, 330, 440],
+    spectrum_in = Spectrum(mz=np.array([110, 220, 330, 440, 1050],
                                        dtype="float"),
                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
                                                 dtype="float"),
@@ -123,8 +123,11 @@ def test_spectrum_processing_s2v():
                                      "precursor_mz": 240.0})
     spectrum = spectrum_processing_s2v(spectrum_in)
     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
-    assert spectrum.peaks == spectrum_in.peaks, \
-        "Expected spectrum peaks to be unchanged by function"
+    assert np.all(spectrum.peaks.mz == spectrum_in.peaks.mz[:-1]), \
+        "Expected the last peak to be removed, the rest should be unchanged"
+    assert np.all(spectrum.peaks.intensities ==
+                  spectrum_in.peaks.intensities[:-1]),         \
+        "Expected the last peak to be removed, the rest should be unchanged"
     assert np.all(spectrum.losses.mz == np.array([20., 130.])), \
         "Expected other losses"
 
