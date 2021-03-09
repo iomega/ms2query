@@ -104,7 +104,7 @@ class CreateFilesForLibrary:
         assert list_of_spectra[0].get(self.spectrum_id_column_name), \
             f"Expected spectra to have '{self.spectrum_id_column_name}' in " \
             f"metadata, to solve specify the correct spectrum_solumn_name"
-        # # Does normalization and filtering of spectra
+        # Does normalization and filtering of spectra
         list_of_spectra = \
             minimal_processing_multiple_spectra(list_of_spectra,
                                                 progress_bar=self.progress_bar)
@@ -166,21 +166,24 @@ class CreateFilesForLibrary:
         model = load_ms2ds_model(ms2ds_model_file_name)
         ms2ds = MS2DeepScore(model)
 
-        embeddings = []
         for spectrum in tqdm(self.list_of_spectra,
                              desc="Calculating ms2ds embeddings",
                              disable=not self.progress_bar):
             binned_spec = model.spectrum_binner.transform(
                 [spectrum],
                 progress_bar=False)[0]
-            embeddings.append(
-                model.base.predict(ms2ds._create_input_vector(binned_spec))[0])
-
-        spectra_vector_dataframe = pd.DataFrame(
-            embeddings,
-            index=[spectrum.get(self.spectrum_id_column_name)
-                   for spectrum in self.list_of_spectra])
-        spectra_vector_dataframe.to_pickle(self.ms2ds_embeddings_file_name)
+            embedding = model.base.predict(ms2ds._create_input_vector(binned_spec))[0]
+            spectrum_id = spectrum.get(self.spectrum_id_column_name)
+            embedding_df = pd.DataFrame([embedding], index=[spectrum_id])
+            embedding_df.to_csv("test_embedding.csv",
+                                index=True,
+                                mode="a",
+                                header=False)
+        all_embeddings_df = pd.read_csv("test_embedding.csv",
+                                        index_col=0,
+                                        header=None,
+                                        names=[i for i in range(400)])
+        all_embeddings_df.to_pickle(self.ms2ds_embeddings_file_name)
 
     def store_s2v_embeddings(self, s2v_model_file_name):
         """Creates and stored a dataframe with embeddings as pickled file
@@ -217,15 +220,10 @@ class CreateFilesForLibrary:
 
 
 if __name__ == "__main__":
-    ms2ds_model_file = \
-        "../../ms2deepscore/data/" \
-        "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
-    spectra_file = "../downloads/gnps_210125/spectra/" \
-                   "spectra_gnps_210125_cleaned_parent_mass.pickle"
-    s2v_model_file = \
-        "../downloads/" \
-        "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    tanimoto_scores_file = "../tests/test_files/test_tanimoto_scores.pickle"
+    ms2ds_model_file = "../downloads/train_ms2query_nn_data/ms2ds_siamese_210301_5000_500_400.hdf5"
+    spectra_file = "../downloads/train_ms2query_nn_data/original_spectra_sets/ALL_GNPS_positive_train_split_210305_cleaned_parent_mass.pickle"
+    s2v_model_file = "../downloads/train_ms2query_nn_data/spec2vec_model/ALL_GNPS_positive_210305_Spec2Vec_strict_filtering_iter_20.model"
+    tanimoto_scores_file = "../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle"
 
-    CreateFilesForLibrary(spectra_file).create_all_library_files(
-        tanimoto_scores_file, ms2ds_model_file, s2v_model_file)
+    CreateFilesForLibrary(spectra_file).create_all_library_files(tanimoto_scores_file, ms2ds_model_file, s2v_model_file)
+    # print(load_pickled_file("../downloads/train_ms2query_nn_data/spectra_sets/ALL_GNPS_positive_train_split_210305_ms2ds_embeddings.pickle"))
