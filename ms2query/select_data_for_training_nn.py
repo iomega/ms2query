@@ -17,57 +17,38 @@ class SelectDataForTraining(Ms2Library):
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 training_spectra_file_name: str,
+                 training_spectra_file: str,
+                 validation_spectra_file: str,
                  **settings):
-
-        self.training_spectra, self.test_spectra = \
-            load_pickled_file(training_spectra_file_name)
-
-        select_validation_set = False
-
-        if select_validation_set:
-            self.training_spectra, test_and_val_spectra = \
-                load_pickled_file(training_spectra_file_name)
-
-            # Select random spectra for validation set.
-            random_val_spectra_indexes = list(
-                np.random.choice(range(0, len(test_and_val_spectra)),
-                                 500,
-                                 replace=False))
-            self.test_spectra = [spectrum
-                                 for i, spectrum in enumerate(test_and_val_spectra)
-                                 if i not in random_val_spectra_indexes]
-            self.validation_spectra = [spectrum for i, spectrum
-                                       in enumerate(test_and_val_spectra)
-                                       if i in random_val_spectra_indexes]
-
         super().__init__(sqlite_file_location,
                          s2v_model_file_name,
                          ms2ds_model_file_name,
                          pickled_s2v_embeddings_file_name,
                          pickled_ms2ds_embeddings_file_name,
                          **settings)
+        self.training_spectra = load_pickled_file(training_spectra_file)
+        self.validation_spectra = load_pickled_file(validation_spectra_file)
 
-    def create_train_and_test_data(self,
-                                   save_file_name: Union[bool, str] = False
-                                   ):
+    def create_train_and_val_data(self,
+                                  save_file_name: Union[bool, str] = False
+                                  ):
         training_set, training_labels = \
             self.get_matches_info_and_tanimoto(self.training_spectra)
-        testing_set, testing_labels = \
-            self.get_matches_info_and_tanimoto(self.test_spectra)
+        validation_set, validation_labels = \
+            self.get_matches_info_and_tanimoto(self.validation_spectra)
         # Keras model cannot read float64
         training_set = training_set.astype("float32")
         training_labels = training_labels.astype("float32")
-        testing_set = testing_set.astype("float32")
-        testing_labels = testing_labels.astype("float32")
+        validation_set = validation_set.astype("float32")
+        validation_labels = validation_labels.astype("float32")
         if save_file_name:
             with open(save_file_name, "wb") \
                     as new_file:
                 pickle.dump((training_set,
                              training_labels,
-                             testing_set,
-                             testing_labels), new_file)
-        return training_set, training_labels, testing_set, testing_labels
+                             validation_set,
+                             validation_labels), new_file)
+        return training_set, training_labels, validation_set, validation_labels
 
     def get_matches_info_and_tanimoto(self,
                                       query_spectra: List[SpectrumType]):
@@ -90,8 +71,9 @@ class SelectDataForTraining(Ms2Library):
                                                        progress_bar=True)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        for query_spectrum in tqdm(query_spectra):
-            query_spectrum_id = query_spectrum.get("spectrum_id")
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Get tanimoto scores"):
+            query_spectrum_id = query_spectrum.get(self.spectrum_id_column_name)
             match_info_df = query_spectra_matches_info[query_spectrum_id]
             match_spectrum_ids = list(match_info_df.index)
             # Get tanimoto scores, spectra that do not have an inchikey are not
@@ -173,46 +155,62 @@ class SelectDataForTraining(Ms2Library):
         return tanimoto_scores_spectra_ids
 
 
+def select_random_spectra(spectrum_file,
+                          percentage_validation,
+                          validation_file_name,
+                          training_file_name):
+    spectra_list: List[SpectrumType] = load_pickled_file(spectrum_file)
+    nr_of_spectra = len(spectra_list)
+    id_list = np.arange(nr_of_spectra)
+    n_validation = int(nr_of_spectra * percentage_validation)
+    n_spectra = nr_of_spectra - n_validation
+    validation_ids = np.random.choice(id_list,
+                                      n_validation,
+                                      replace=False)
+    training_ids = list(set(id_list) - set(validation_ids))
+    assert len(training_ids) == n_spectra
+    for id in validation_ids:
+        assert id not in training_ids, id
+    validation_spectra = [spectra_list[i] for i in validation_ids]
+    training_spectra = [spectra_list[i] for i in training_ids]
+
+    pickle.dump(validation_spectra, open(validation_file_name, "wb"))
+    pickle.dump(training_spectra, open(training_file_name, "wb"))
+    return validation_spectra, training_spectra
+
+
 if __name__ == "__main__":
-    # sqlite_file_name = \
-    #     "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    # s2v_model_file_name = \
-    #     "../downloads/" \
-    #     "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
-    # s2v_pickled_embeddings_file = \
-    #     "../downloads/embeddings_all_spectra.pickle"
-    # ms2ds_model_file_name = \
-    #     "../../ms2deepscore/data/" \
-    #     "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
-    # ms2ds_embeddings_file_name = \
-    #     "../../ms2deepscore/data/ms2ds_embeddings_2_spectra.pickle"
-    # neural_network_model_file_location = \
-    #     "../model/nn_2000_queries_trimming_simple_10.hdf5"
-    # training_spectra_file_name = \
-    #     "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
-    # # Create library object
-    # my_library = SelectDataForTraining(
-    #     sqlite_file_name,
-    #     s2v_model_file_name,
-    #     ms2ds_model_file_name,
-    #     s2v_pickled_embeddings_file,
-    #     ms2ds_embeddings_file_name,
-    #     training_spectra_file_name)
-    # # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
-    # #                                          ["CCMSLIB00000001552",
-    # #                                           "CCMSLIB00000001547"])
-    # file_name = "matches_info_training_and_testing.pickle"
-    # training_set, training_labels, testing_set, testing_labels = \
-    #     my_library.create_train_and_test_data(save_file_name=file_name)
-    # print(training_set)
-    # print(testing_set)
-    # print(training_labels)
-    # print(testing_labels)
+    sqlite_file_name = \
+        "../downloads/train_ms2query_nn_data/ALL_GNPS_positive_train_split_210305.sqlite"
+    s2v_model_file_name = \
+        "../downloads/train_ms2query_nn_data/spec2vec_model/ALL_GNPS_positive_210305_Spec2Vec_strict_filtering_iter_20.model"
+    s2v_pickled_embeddings_file = "../downloads/train_ms2query_nn_data/spec2vec_model/ALL_GNPS_positive_train_split_210305_s2v_embeddings.pickle"
+    ms2ds_model_file_name = \
+        "../downloads/train_ms2query_nn_data/ms2ds/ms2ds_siamese_210301_5000_500_400.hdf5"
+    ms2ds_embeddings_file_name = \
+        "../downloads/train_ms2query_nn_data/ms2ds/ALL_GNPS_positive_train_split_210305_ms2ds_embeddings.pickle"
+    training_spectra_file_name = \
+        "../downloads/train_ms2query_nn_data/new_spectra_sets/training_spectra_ms2q_nn.pickle"
+    validation_spectra_file_name = "../downloads/train_ms2query_nn_data/new_spectra_sets/validation_spectra_ms2q_nn.pickle"
 
-    tanimoto_scores = load_pickled_file("../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle")
 
-    print(tanimoto_scores)
-    print(tanimoto_scores.isnull().values.any())
+    # Create library object
+    my_library = SelectDataForTraining(
+        sqlite_file_name,
+        s2v_model_file_name,
+        ms2ds_model_file_name,
+        s2v_pickled_embeddings_file,
+        ms2ds_embeddings_file_name,
+        training_spectra_file_name,
+        validation_spectra_file_name)
+
+    file_name = "../downloads/train_ms2query_nn_data/training_and_validations_sets.pickle"
+    training_set, training_labels, validation_set, validation_labels = \
+        my_library.create_train_and_val_data(save_file_name=file_name)
+    print(training_set)
+    print(training_labels)
+    print(validation_set)
+    print(validation_labels)
 
     # training_spectra_file_name = "../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectrum_docs_nn_model.pickle"
     # training_spectrum_docs, test_and_val_spectrum_docs = \
@@ -225,16 +223,4 @@ if __name__ == "__main__":
     # with open("../downloads/models/spec2vec_models/train_nn_model_data/test_and_validation_spectra_nn_model.pickle", "wb") as new_file:
     #     pickle.dump((training_spectra, test_and_val_spectra), new_file)
 
-
-
-    # sqlite_file_name = \
-    #     "../downloads/data_all_inchikeys_with_tanimoto_and_parent_mass.sqlite"
-    #
-    # query_spectrum = get_spectra_from_sqlite(sqlite_file_name,
-    #                                          ["CCMSLIB00000001552"])[0]
-    # spectra_ids = ["CCMSLIB00000001547", "CCMSLIB00000001548",
-    #                  "CCMSLIB00000001549","CCMSLIB00000001551"]
-    # print(get_tanimoto_for_spectrum_ids(sqlite_file_name,
-    #                                     query_spectrum,
-    #                                     spectra_ids))
     pass
