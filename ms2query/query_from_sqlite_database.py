@@ -56,7 +56,6 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     for result in tqdm(list_of_results,
                        desc="Converting to Spectrum objects",
                        disable=not progress_bar):
-        print(result)
         peaks = result[0]
         intensities = result[1]
         metadata = ast.literal_eval(result[2])
