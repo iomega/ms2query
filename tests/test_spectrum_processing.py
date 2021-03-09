@@ -9,10 +9,13 @@ def test_minimal_processing_multiple_spectra():
     spectrum_1 = Spectrum(mz=np.array([5, 110, 220, 330, 399, 440],
                                        dtype="float"),
                           intensities=np.array([10, 10, 1, 10, 20, 100],
-                                               dtype="float"))
+                                               dtype="float"),
+                          metadata={"precursor_mz": 240.0})
 
     spectrum_2 = Spectrum(mz=np.array([110, 220, 330], dtype="float"),
-                          intensities=np.array([0, 1, 10], dtype="float"))
+                          intensities=np.array([0, 1, 10], dtype="float"),
+                          metadata={"precursor_mz": 240.0}
+                          )
     spectrum_list = [spectrum_1, spectrum_2]
     processed_spectrum_list = minimal_processing_multiple_spectra(
         spectrum_list,
@@ -89,7 +92,9 @@ def test_spectrum_processing_minimal_set_n_required_and_max_mz():
     spectrum_in = Spectrum(mz=np.array([5, 110, 220, 330, 399, 440],
                                        dtype="float"),
                            intensities=np.array([10, 10, 1, 10, 20, 100],
-                                                dtype="float"))
+                                                dtype="float"),
+                           metadata={"precursor_mz": 240.0}
+                           )
     spectrum = spectrum_processing_minimal(spectrum_in, n_required_below_mz=4,
                                            max_mz_required=400)
 
