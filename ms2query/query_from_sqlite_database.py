@@ -52,21 +52,28 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
     cur.execute(sqlite_command)
     list_of_results = cur.fetchall()
     # Convert to list of matchms.Spectrum
-    list_of_spectra = []
+    spectra_dict = {}
     for result in tqdm(list_of_results,
                        desc="Converting to Spectrum objects",
                        disable=not progress_bar):
+        print(result)
         peaks = result[0]
         intensities = result[1]
         metadata = ast.literal_eval(result[2])
-
-        list_of_spectra.append(Spectrum(mz=peaks,
-                                        intensities=intensities,
-                                        metadata=metadata))
+        spectrum_id = metadata[spectrum_id_storage_name]
+        spectra_dict[spectrum_id] = Spectrum(mz=peaks,
+                                             intensities=intensities,
+                                             metadata=metadata)
     conn.close()
-    if not get_all_spectra:
-        assert len(list_of_spectra) == len(spectrum_id_list), \
-            "Not all spectra were found in sqlite"
+    if get_all_spectra:
+        list_of_spectra = list(spectra_dict.values())
+    else:
+        # Make sure the returned list has same order as spectrum_id_list
+        list_of_spectra = []
+        for spectrum_id in spectrum_id_list:
+            assert spectrum_id in spectra_dict, \
+                f"No spectrum with spectrum_id: {spectrum_id} was found in sqlite"
+            list_of_spectra.append(spectra_dict[spectrum_id])
     return list_of_spectra
 
 
