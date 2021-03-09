@@ -117,6 +117,7 @@ class Ms2Library:
         ms2ds_similarities_scores = self._get_ms2deepscore_similarity_matrix(
             query_spectra)
         dict_with_preselected_spectra = {}
+        # Select top nr of spectra
         for query_spectrum_id in ms2ds_similarities_scores.columns:
             # Select the top spectra with the highest ms2ds scores
             query_spectrum_ms2ds_scores = \
@@ -291,8 +292,7 @@ class Ms2Library:
         # Gets a list of all preselected spectra as Spectrum objects
         preselected_spectra_list = get_spectra_from_sqlite(
             self.sqlite_file_location,
-            [spectrum_id for spectrum_id
-             in preselected_spectrum_ids])
+            preselected_spectrum_ids)
         # Gets cosine similarity matrix
         cosine_sim_matrix = CosineGreedy(
             tolerance=self.cosine_score_tolerance).matrix(
@@ -314,12 +314,6 @@ class Ms2Library:
         normalized_mod_cos_matches = \
             [1 - 0.93 ** i for i in mod_cosine_matches]
 
-        # Get s2v_scores
-        s2v_scores = Spec2Vec(self.s2v_model,
-                              allowed_missing_percentage=100).matrix(
-            create_spectrum_documents(preselected_spectra_list),
-            create_spectrum_documents([query_spectrum]))[:, 0]
-
         parent_masses = [spectrum.get("parent_mass")
                          for spectrum in preselected_spectra_list]
         normalized_parent_masses = [parent_mass/self.max_parent_mass
@@ -329,15 +323,32 @@ class Ms2Library:
                            abs(spectrum.get("parent_mass") -
                             query_spectrum.get("parent_mass"))
                            for spectrum in preselected_spectra_list]
+
+        # Get s2v_scores
+        s2v_scores = Spec2Vec(self.s2v_model,
+                              allowed_missing_percentage=100).matrix(
+            create_spectrum_documents(preselected_spectra_list),
+            create_spectrum_documents([query_spectrum]))[:, 0]
+
+        # Get ms2ds_scores
+        query_ms2ds_embeddings = \
+            MS2DeepScore(self.ms2ds_model).calculate_vectors([query_spectrum])
+        preselected_ms2ds_embeddings = \
+            self.ms2ds_embeddings.loc[preselected_spectrum_ids].to_numpy()
+        ms2ds_scores = cosine_similarity_matrix(query_ms2ds_embeddings,
+                                                preselected_ms2ds_embeddings
+                                                )[0]
+
         # Add info together into a dataframe
         preselected_spectra_df = pd.DataFrame(
             {"cosine_score": cosine_score,
              "cosine_matches": normalized_cosine_matches,
              "mod_cosine_score": mod_cosine_score,
              "mod_cosine_matches": normalized_mod_cos_matches,
-             "s2v_scores": s2v_scores,
              "parent_mass": normalized_parent_masses,
-             "mass_sim": mass_similarity},
+             "mass_sim": mass_similarity,
+             "s2v_scores": s2v_scores,
+             "ms2ds_scores": ms2ds_scores},
             index=preselected_spectrum_ids)
         return preselected_spectra_df
 
@@ -390,12 +401,12 @@ if __name__ == "__main__":
         "../downloads/" \
         "spec2vec_AllPositive_ratio05_filtered_201101_iter_15.model"
     s2v_pickled_embeddings_file = \
-        "../downloads/gnps_210125/s2v_embeddings_gnps210125"
+        "../downloads/gnps_210125/embeddings/s2v_embeddings_gnps210125"
     ms2ds_model_file_name = \
         "../../ms2deepscore/data/" \
         "ms2ds_siamese_210207_ALL_GNPS_positive_L1L2.hdf5"
     ms2ds_embeddings_file_name = \
-        "../downloads/gnps_210125/post_processing_embeddings_gnpas_210125.pickle"
+        "../downloads/gnps_210125/embeddings/post_processing_ms2ds_embeddings_gnps_210125.pickle"
     neural_network_model_file_location = \
         "../model/nn_2000_queries_trimming_simple_10.hdf5"
 
@@ -411,8 +422,6 @@ if __name__ == "__main__":
                                                     ["CCMSLIB00000001547",
                                                      "CCMSLIB00000001549"])
     print(my_library.collect_matches_data_multiple_spectra(query_spectra_to_test))
-
-
 
 
     def remove_spectra_from_embeddings_not_in_sqlite():
