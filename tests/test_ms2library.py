@@ -21,8 +21,6 @@ def test_ms2library_set_settings():
                               spectrum_id_column_name=spectrum_id_column_name,
                               cosine_score_tolerance=0.2)
 
-    assert test_library.mass_tolerance == 1.0, \
-        "Different value for attribute was expected"
     assert test_library.cosine_score_tolerance == 0.2, \
         "Different value for attribute was expected"
     assert test_library.base_nr_mass_similarity == 0.8, \
