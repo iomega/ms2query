@@ -1,6 +1,7 @@
 from typing import List, Dict, Any
 import pandas as pd
 import numpy as np
+import pickle
 from tqdm import tqdm
 from tensorflow.keras.models import load_model as load_nn_model
 from gensim.models import Word2Vec
@@ -86,10 +87,14 @@ class Ms2Library:
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
         # loads the library embeddings into memory
-        self.s2v_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_s2v_embeddings_file_name)
-        self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_ms2ds_embeddings_file_name)
+        self.s2v_embeddings: pd.Dataframe = pickle.load(
+            open(pickled_s2v_embeddings_file_name, "rb"))
+        self.ms2ds_embeddings: pd.Dataframe = pickle.load(
+            open(pickled_ms2ds_embeddings_file_name, "rb"))
+        # self.s2v_embeddings: pd.DataFrame = load_pickled_file(
+        #     pickled_s2v_embeddings_file_name)
+        # self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
+        #     pickled_ms2ds_embeddings_file_name)
 
     def _set_settings(self,
                       settings: Dict[str, Any]):
