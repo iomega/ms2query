@@ -2,7 +2,7 @@ import os
 import pickle
 from typing import Union
 from tensorflow.keras.models import Sequential, load_model, Model
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Dense
 from matplotlib import pyplot as plt
 from ms2query.app_helpers import load_pickled_file
@@ -73,16 +73,18 @@ def train_nn(x_train, y_train, x_val, y_val,
 
     earlystopper = EarlyStopping(monitor='val_loss', patience=10,
                                  verbose=1)  # patience - try x more epochs to improve val_loss
+    checkpointer = ModelCheckpoint(filepath=save_name + ".hdf5",
+                                   monitor='val_loss', verbose=1,
+                                   save_best_only=True)
+
     # fit the keras model on the dataset
     hist = nn_model.fit(x_train, y_train, epochs=model_epochs,
                         batch_size=model_batch_size,
                         validation_data=(x_val, y_val),
-                        callbacks=(earlystopper))
+                        callbacks=[earlystopper, checkpointer])
     history = hist.history
 
     if save_name and not os.path.exists(save_name):
-        print('Saving model at:', save_name)
-        nn_model.save(save_name)
         with open(save_name + '_train_hist.pickle', 'wb') as hist_outf:
             pickle.dump(history, hist_outf)
     return nn_model, history
@@ -131,8 +133,8 @@ if __name__ == "__main__":
     #                             training_labels,
     #                             testing_set,
     #                             testing_labels,
-    #                             save_name="../downloads/train_ms2query_nn_data/test_models/test_mse")
-    # history_file = "../downloads/train_ms2query_nn_data/test_models/test_model_train_hist.pickle"
-    history_file = "../downloads/train_ms2query_nn_data/test_models/test_mse_train_hist.pickle"
+    #                             save_name="../downloads/train_ms2query_nn_data/test_models/ms2query_model")
+    history_file = "../downloads/train_ms2query_nn_data/test_models/ms2query_model_train_hist.pickle"
+    # history_file = "../downloads/train_ms2query_nn_data/test_models/test_mse_train_hist.pickle"
     history = load_pickled_file(history_file)
     plot_history(history)
