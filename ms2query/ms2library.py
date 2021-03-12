@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Union
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -58,21 +58,21 @@ class Ms2Library:
         max_parent_mass:
             The value used to normalize the parent mass by dividing it by the
             max_parent_mass. Default = 13428.370894192036
-        #todo add the rest (if this is the correct way of documentation)
         """
-        # Set default settings
-        self.spectrum_id_column_name = "spectrumid"
+        # Change default settings to values given in **settings
+        settings = self._set_settings(settings)
+
+        # Set given settings
+        self.spectrum_id_column_name = settings["spectrum_id_column_name"]
         # todo create a ms2query model class that stores the model but also the
         #  settings used, since the settings used should always be the same as
         #  when the model was trained
-        self.cosine_score_tolerance = 0.1
-        self.base_nr_mass_similarity = 0.8
+        self.cosine_score_tolerance = settings["cosine_score_tolerance"]
+        self.base_nr_mass_similarity = settings["base_nr_mass_similarity"]
         # todo make new model that has a fixed basic mass
-        self.max_parent_mass = 13418.370894192036
+        self.max_parent_mass = settings["max_parent_mass"]
 
-        # Change default settings to values given in **settings
-        self._set_settings(settings)
-
+        # Load models and set sqlite_file_location
         self.sqlite_file_location = sqlite_file_location
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
@@ -83,27 +83,36 @@ class Ms2Library:
         self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
             pickled_ms2ds_embeddings_file_name)
 
-    def _set_settings(self,
-                      settings: Dict[str, Any]):
-        """Changes default settings to settings
+    @staticmethod
+    def _set_settings(new_settings: Dict[str, Union[str, bool]],
+                      ) -> Dict[str, Union[str, float]]:
+        """Changes default settings to new_settings and creates file names
 
-        Attributes specified in settings are expected to have been defined with
-        a default value before calling this function.
-        Args
+        Args:
         ------
-        settings:
-            Dictionary with as keys the name of the attribute that should be
-            set and as value the value this attribute should have.
+        new_settings:
+            Dictionary with settings that should be changed. Only the
+            keys given in default_settings can be used and the type has to be
+            the same as the type of the values in default settings.
+        pickled_spectra_file_name:
+            The name of a pickled spectra file name. Expected to end on
+            '.pickle'. It is used to create 3 new file names, with different
+            extensions.
         """
-        # Get all attributes to check if the arguments in settings are allowed
-        allowed_arguments = self.__dict__
-        # Set all kwargs as attributes, when in allowed_arguments
-        for key in settings:
-            assert key in allowed_arguments, \
-                f"Invalid argument in constructor:{key}"
-            assert isinstance(settings[key], type(allowed_arguments[key])), \
-                f"Different type is expected for argument: {key}"
-            setattr(self, key, settings[key])
+        # Set default settings
+        default_settings = {"spectrum_id_column_name": "spectrumid",
+                            "cosine_score_tolerance": 0.1,
+                            "base_nr_mass_similarity": 0.8,
+                            "max_parent_mass": 13418.370894192036}
+
+        for attribute in new_settings:
+            assert attribute in default_settings, \
+                f"Invalid argument in constructor:{attribute}"
+            assert isinstance(new_settings[attribute],
+                              type(default_settings[attribute])), \
+                f"Different type is expected for argument: {attribute}"
+            default_settings[attribute] = new_settings[attribute]
+        return default_settings
 
     def select_best_matches(self,
                             query_spectra: List[Spectrum],
