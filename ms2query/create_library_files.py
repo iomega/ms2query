@@ -7,9 +7,9 @@ from gensim.models import Word2Vec
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
-from ms2query.ms2library import create_spectrum_documents
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
+    create_spectrum_documents
 from ms2query.app_helpers import load_pickled_file
 
 
@@ -78,14 +78,6 @@ class CreateFilesForLibrary:
         if default_settings["new_s2v_embeddings_file_name"] == "":
             default_settings["new_s2v_embeddings_file_name"] = \
                 base_file_name + "_s2v_embeddings.pickle"
-        assert not os.path.exists(default_settings["new_sqlite_file_name"]), \
-            "Given new_sqlite_file_name already exists"
-        assert not os.path.exists(default_settings[
-                                      "new_ms2ds_embeddings_file_name"]), \
-            "Given new_sqlite_file_name already exists"
-        assert not os.path.exists(default_settings[
-                                      "new_s2v_embeddings_file_name"]), \
-            "Given new_sqlite_file_name already exists"
 
         return default_settings
 
@@ -128,6 +120,12 @@ class CreateFilesForLibrary:
         s2v_model_file_name:
             file name of a s2v model
         """
+        assert not os.path.exists(self.sqlite_file_name), \
+            "Given new_sqlite_file_name already exists"
+        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
+            "Given ms2ds_embeddings_file_name already exists"
+        assert not os.path.exists(self.s2v_embeddings_file_name), \
+            "Given s2v_embeddings_file_name already exists"
         if self.calculate_new_tanimoto_scores:
             assert not os.path.exists(tanimoto_scores_file_name),\
                 "Tanimoto scores file already exists, " \
@@ -163,6 +161,8 @@ class CreateFilesForLibrary:
         new_picled_embeddings_file_name:
             The file name in which the pickled dataframe is stored.
         """
+        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
+            "Given ms2ds_embeddings_file_name already exists"
         model = load_ms2ds_model(ms2ds_model_file_name)
         ms2ds = MS2DeepScore(model)
 
@@ -198,6 +198,8 @@ class CreateFilesForLibrary:
              extension .model, .model.trainables.syn1neg.npy and
              .model.wv.vectors.npy, together containing a Spec2Vec model,
         """
+        assert not os.path.exists(self.s2v_embeddings_file_name), \
+            "Given s2v_embeddings_file_name already exists"
         model = Word2Vec.load(s2v_model_file_name)
         # Convert Spectrum objects to SpectrumDocument
         spectrum_documents = create_spectrum_documents(
