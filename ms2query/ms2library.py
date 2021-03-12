@@ -94,10 +94,6 @@ class Ms2Library:
             Dictionary with settings that should be changed. Only the
             keys given in default_settings can be used and the type has to be
             the same as the type of the values in default settings.
-        pickled_spectra_file_name:
-            The name of a pickled spectra file name. Expected to end on
-            '.pickle'. It is used to create 3 new file names, with different
-            extensions.
         """
         # Set default settings
         default_settings = {"spectrum_id_column_name": "spectrumid",
