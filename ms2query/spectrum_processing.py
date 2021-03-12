@@ -5,6 +5,8 @@ adjusting the spectrum peaks (m/z and intensities).
 """
 from typing import Dict, Union, List
 import numpy as np
+from matchms import Spectrum
+from spec2vec import SpectrumDocument
 from tqdm import tqdm
 import pickle
 from matchms.typing import SpectrumType
@@ -250,3 +252,29 @@ def set_spec2vec_defaults(**settings: Union[int, float]
         if key not in settings:
             settings[key] = defaults[key]
     return settings
+
+
+def create_spectrum_documents(query_spectra: List[Spectrum],
+                              progress_bar: bool = False,
+                              nr_of_decimals: int = 2
+                              ) -> List[SpectrumDocument]:
+    """Transforms list of Spectrum to List of SpectrumDocument
+
+    Args
+    ------
+    query_spectra:
+        List of Spectrum objects that are transformed to SpectrumDocument
+    progress_bar:
+        When true a progress bar is shown. Default = False
+    nr_of_decimals:
+        The number of decimals used for binning the peaks.
+    """
+    spectrum_documents = []
+    for spectrum in tqdm(query_spectra,
+                         desc="Converting Spectrum to Spectrum_document",
+                         disable=not progress_bar):
+        post_process_spectrum = spectrum_processing_s2v(spectrum)
+        spectrum_documents.append(SpectrumDocument(
+            post_process_spectrum,
+            n_decimals=nr_of_decimals))
+    return spectrum_documents

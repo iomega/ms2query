@@ -1,8 +1,12 @@
+import os
+import pickle
+
 import numpy as np
 from matchms import Spectrum
 from ms2query.spectrum_processing import require_peaks_below_mz, \
     spectrum_processing_minimal, spectrum_processing_s2v, \
-    minimal_processing_multiple_spectra
+    minimal_processing_multiple_spectra, create_spectrum_documents
+from spec2vec import SpectrumDocument
 
 
 def test_minimal_processing_multiple_spectra():
@@ -152,3 +156,17 @@ def test_spectrum_processing_s2v():
 #         "Expected only the first peak to be removed"
 #     assert np.all(spectrum.losses.mz == np.array([ 20., 130.])), \
 #         "Expected other losses"
+def test_create_spectrum_documents():
+    path_to_pickled_file = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/first_10_spectra.pickle')
+    with open(path_to_pickled_file, "rb") as pickled_file:
+        spectrum_list = pickle.load(pickled_file)
+    spectrum_list = minimal_processing_multiple_spectra(spectrum_list)
+
+    spectrum_documents = create_spectrum_documents(spectrum_list)
+    assert isinstance(spectrum_documents, list), \
+        "A list with spectrum_documents is expected"
+    for spectrum_doc in spectrum_documents:
+        assert isinstance(spectrum_doc, SpectrumDocument), \
+            "A list with spectrum_documents is expected"
