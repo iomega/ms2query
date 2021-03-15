@@ -2,6 +2,7 @@ from typing import List, Dict, Union
 import pandas as pd
 import os
 from tqdm import tqdm
+import tempfile
 from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
 from ms2deepscore import MS2DeepScore
@@ -24,10 +25,8 @@ class CreateFilesForLibrary:
             'new_ms2ds_embeddings_file_name']
         self.s2v_embeddings_file_name = settings[
             "new_s2v_embeddings_file_name"]
-        self.progress_bar = settings["progress_bars"]
+        self.progress_bars = settings["progress_bars"]
         self.spectrum_id_column_name = settings["spectrum_id_column_name"]
-        self.calculate_new_tanimoto_scores = settings[
-            "calculate_new_tanimoto_scores"]
 
         # Load in the spectra
         self.list_of_spectra = \
@@ -54,8 +53,7 @@ class CreateFilesForLibrary:
                             "new_ms2ds_embeddings_file_name": "",
                             "new_s2v_embeddings_file_name": "",
                             "progress_bars": True,
-                            "spectrum_id_column_name": "spectrumid",
-                            "calculate_new_tanimoto_scores": False}
+                            "spectrum_id_column_name": "spectrumid"}
 
         for attribute in new_settings:
             assert attribute in default_settings, \
@@ -99,13 +97,14 @@ class CreateFilesForLibrary:
         # Does normalization and filtering of spectra
         list_of_spectra = \
             minimal_processing_multiple_spectra(list_of_spectra,
-                                                progress_bar=self.progress_bar)
+                                                progress_bar=self.progress_bars)
         return list_of_spectra
 
     def create_all_library_files(self,
                                  tanimoto_scores_file_name: str,
                                  ms2ds_model_file_name: str,
-                                 s2v_model_file_name: str):
+                                 s2v_model_file_name: str,
+                                 calculate_new_tanimoto_scores: bool = False):
         """Creates files with embeddings and a sqlite file with spectra data
 
         Args
@@ -119,6 +118,9 @@ class CreateFilesForLibrary:
             File name of a ms2ds model
         s2v_model_file_name:
             file name of a s2v model
+        calculate_new_tanimoto_scores:
+            If True new tanimoto scores will be calculated and stored in
+            tanimoto_scores_file_name.
         """
         assert not os.path.exists(self.sqlite_file_name), \
             "Given new_sqlite_file_name already exists"
@@ -126,7 +128,7 @@ class CreateFilesForLibrary:
             "Given ms2ds_embeddings_file_name already exists"
         assert not os.path.exists(self.s2v_embeddings_file_name), \
             "Given s2v_embeddings_file_name already exists"
-        if self.calculate_new_tanimoto_scores:
+        if calculate_new_tanimoto_scores:
             assert not os.path.exists(tanimoto_scores_file_name),\
                 "Tanimoto scores file already exists, " \
                 "to use a file with already calculated tanimoto scores, " \
@@ -138,7 +140,7 @@ class CreateFilesForLibrary:
             tanimoto_scores_file_name,
             self.list_of_spectra,
             columns_dict={"parent_mass": "REAL"},
-            progress_bars=self.progress_bar,
+            progress_bars=self.progress_bars,
             spectrum_id_column_name=self.spectrum_id_column_name)
 
         self.store_s2v_embeddings(s2v_model_file_name)
@@ -158,32 +160,37 @@ class CreateFilesForLibrary:
         ms2ds_model_file_name:
             File name for a SiameseModel that is used to calculate the
             embeddings.
-        new_picled_embeddings_file_name:
+        new_pickled_embeddings_file_name:
             The file name in which the pickled dataframe is stored.
         """
         assert not os.path.exists(self.ms2ds_embeddings_file_name), \
             "Given ms2ds_embeddings_file_name already exists"
+        temporary_csv_file_name = "temporary_embeddings_file.csv"
+        assert not os.path.exists(temporary_csv_file_name), \
+            f"{temporary_csv_file_name} already exists"
         model = load_ms2ds_model(ms2ds_model_file_name)
         ms2ds = MS2DeepScore(model)
 
         for spectrum in tqdm(self.list_of_spectra,
                              desc="Calculating ms2ds embeddings",
-                             disable=not self.progress_bar):
+                             disable=not self.progress_bars):
             binned_spec = model.spectrum_binner.transform(
                 [spectrum],
                 progress_bar=False)[0]
-            embedding = model.base.predict(ms2ds._create_input_vector(binned_spec))[0]
+            embedding = model.base.predict(
+                ms2ds._create_input_vector(binned_spec))[0]
             spectrum_id = spectrum.get(self.spectrum_id_column_name)
             embedding_df = pd.DataFrame([embedding], index=[spectrum_id])
-            embedding_df.to_csv("test_embedding.csv",
+            embedding_df.to_csv(temporary_csv_file_name,
                                 index=True,
                                 mode="a",
                                 header=False)
-        all_embeddings_df = pd.read_csv("test_embedding.csv",
+        all_embeddings_df = pd.read_csv(temporary_csv_file_name,
                                         index_col=0,
                                         header=None,
                                         names=[i for i in range(400)])
         all_embeddings_df.to_pickle(self.ms2ds_embeddings_file_name)
+        os.remove(temporary_csv_file_name)
 
     def store_s2v_embeddings(self, s2v_model_file_name):
         """Creates and stored a dataframe with embeddings as pickled file
@@ -204,11 +211,11 @@ class CreateFilesForLibrary:
         # Convert Spectrum objects to SpectrumDocument
         spectrum_documents = create_spectrum_documents(
             self.list_of_spectra,
-            progress_bar=self.progress_bar)
+            progress_bar=self.progress_bars)
         embeddings_dict = {}
         for spectrum_document in tqdm(spectrum_documents,
                                       desc="Calculating embeddings",
-                                      disable=not self.progress_bar):
+                                      disable=not self.progress_bars):
             embedding = calc_vector(model,
                                     spectrum_document,
                                     allowed_missing_percentage=100)
