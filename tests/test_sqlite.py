@@ -18,31 +18,8 @@ from ms2query.query_from_sqlite_database import \
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
-def test_making_sqlite_file(tmp_path):
-    """Makes a temporary sqlite file and tests if it contains the correct info
-    """
-    # tmp_path is a fixture that makes sure a temporary file is created
-    new_sqlite_file_name = os.path.join(tmp_path,
-                                        "test_spectra_database.sqlite")
-
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-
-    reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
-                                         "test_spectra_database.sqlite")
-
-    list_of_spectra = load_pickled_file(os.path.join(
-        path_to_test_files_sqlite_dir, "first_10_spectra.pickle"))
-    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
-    # Create sqlite file, with 3 tables
-    make_sqlfile_wrapper(new_sqlite_file_name,
-                         os.path.join(path_to_test_files_sqlite_dir,
-                                      "test_tanimoto_scores.pickle"),
-                         list_of_spectra,
-                         columns_dict={"parent_mass": "REAL"},
-                         spectrum_id_column_name="spectrum_id")
-
+def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
+    """Raises an error if the two sqlite files are not equal"""
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \
         "Expected a file to be created"
@@ -89,6 +66,33 @@ def test_making_sqlite_file(tmp_path):
                 assert rows_1 == rows_2, error_msg
     conn1.close()
     conn2.close()
+
+
+def test_making_sqlite_file(tmp_path):
+    """Makes a temporary sqlite file and tests if it contains the correct info
+    """
+    # tmp_path is a fixture that makes sure a temporary file is created
+    new_sqlite_file_name = os.path.join(tmp_path,
+                                        "test_spectra_database.sqlite")
+
+    path_to_test_files_sqlite_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files')
+
+    reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
+                                         "test_spectra_database.sqlite")
+
+    list_of_spectra = load_pickled_file(os.path.join(
+        path_to_test_files_sqlite_dir, "first_10_spectra.pickle"))
+    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
+    # Create sqlite file, with 3 tables
+    make_sqlfile_wrapper(new_sqlite_file_name,
+                         os.path.join(path_to_test_files_sqlite_dir,
+                                      "test_tanimoto_scores.pickle"),
+                         list_of_spectra,
+                         columns_dict={"parent_mass": "REAL"},
+                         spectrum_id_column_name="spectrum_id")
+    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
 def test_get_tanimoto_scores():
