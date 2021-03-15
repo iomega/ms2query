@@ -1,9 +1,9 @@
 import os
 import pytest
 import pandas as pd
+from .test_sqlite import check_sqlite_files_are_equal
 from ms2query.create_library_files import CreateFilesForLibrary
 from ms2query.app_helpers import load_pickled_file
-from ms2query.tests.sqlite_file import check_sqlite_files_are_equal
 
 
 def test_set_settings_correct():
