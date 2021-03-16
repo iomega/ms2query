@@ -2,7 +2,6 @@ from typing import List, Dict, Union
 import pandas as pd
 import os
 from tqdm import tqdm
-import tempfile
 from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
 from ms2deepscore import MS2DeepScore
@@ -18,7 +17,34 @@ class CreateFilesForLibrary:
     def __init__(self,
                  pickled_spectra_file_name: str,
                  **settings):
+        """Creates files needed to run queries on a library
 
+        Parameters
+        ----------
+        pickled_spectra_file_name:
+            File name of a pickled file containing spectrum objects.
+
+        **settings:
+            The following optional parameters can be defined.
+        new_sqlite_file_name:
+            The file name of the new sqlite file that is created. As default
+            the pickled_spectra_file_name is used and ".pickle" is removed and
+            replaced with ".sqlite".
+        new_ms2ds_embeddings_file_name:
+            The file name of the file with ms2ds embeddings that is created.
+            As default the pickled_spectra_file_name is used and ".pickle" is
+            removed and replaced with "_ms2ds_embeddings.pickle".
+        new_s2v_embeddings_file_name:
+            The file name of the file with s2v embeddings. As default the
+            pickled_spectra_file_name is used and ".pickle" is removed and
+            replaced with "_s2v_embeddings.pickle".
+        progress_bars:
+            If True, a progress bar of the different processes is shown.
+            Default = True.
+        spectrum_id_column_name:
+            The name of the column or key under which the spectrum id is
+            stored. Default = "spectrumid"
+        """
         settings = self._set_settings(settings, pickled_spectra_file_name)
         self.sqlite_file_name = settings["new_sqlite_file_name"]
         self.ms2ds_embeddings_file_name = settings[
@@ -96,8 +122,9 @@ class CreateFilesForLibrary:
             f"metadata, to solve specify the correct spectrum_solumn_name"
         # Does normalization and filtering of spectra
         list_of_spectra = \
-            minimal_processing_multiple_spectra(list_of_spectra,
-                                                progress_bar=self.progress_bars)
+            minimal_processing_multiple_spectra(
+                list_of_spectra,
+                progress_bar=self.progress_bars)
         return list_of_spectra
 
     def create_all_library_files(self,
@@ -128,6 +155,7 @@ class CreateFilesForLibrary:
             "Given ms2ds_embeddings_file_name already exists"
         assert not os.path.exists(self.s2v_embeddings_file_name), \
             "Given s2v_embeddings_file_name already exists"
+
         if calculate_new_tanimoto_scores:
             assert not os.path.exists(tanimoto_scores_file_name),\
                 "Tanimoto scores file already exists, " \
@@ -226,13 +254,3 @@ class CreateFilesForLibrary:
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
         embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
-
-
-if __name__ == "__main__":
-    ms2ds_model_file = "../downloads/train_ms2query_nn_data/ms2ds_siamese_210301_5000_500_400.hdf5"
-    spectra_file = "../downloads/train_ms2query_nn_data/original_spectra_sets/ALL_GNPS_positive_train_split_210305_cleaned_parent_mass.pickle"
-    s2v_model_file = "../downloads/train_ms2query_nn_data/spec2vec_model/ALL_GNPS_positive_210305_Spec2Vec_strict_filtering_iter_20.model"
-    tanimoto_scores_file = "../downloads/gnps_210125/ALL_GNPS_210125_positive_tanimoto_scores.pickle"
-
-    CreateFilesForLibrary(spectra_file).create_all_library_files(tanimoto_scores_file, ms2ds_model_file, s2v_model_file)
-    # print(load_pickled_file("../downloads/train_ms2query_nn_data/spectra_sets/ALL_GNPS_positive_train_split_210305_ms2ds_embeddings.pickle"))
