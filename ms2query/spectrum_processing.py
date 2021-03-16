@@ -8,58 +8,10 @@ import numpy as np
 from matchms import Spectrum
 from spec2vec import SpectrumDocument
 from tqdm import tqdm
-import pickle
 from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
-from ms2query.app_helpers import load_pickled_file
-
-
-# todo remove again once matchms is released again
-def require_precursor_mz(spectrum_in: SpectrumType
-                         ) -> Union[SpectrumType, None]:
-
-    """Returns None if there is no precursor_mz or if <=0
-
-    Parameters
-    ----------
-    spectrum_in:
-        Input spectrum.
-    """
-    if spectrum_in is None:
-        return None
-
-    spectrum = spectrum_in.clone()
-
-    precursor_mz = spectrum.get("precursor_mz", None)
-    if precursor_mz is None:
-        pepmass = spectrum.get("pepmass", None)
-        assert pepmass is None or not isinstance(pepmass[0], (float, int)), \
-            "Found 'pepmass' but no 'precursor_mz'. " \
-            "Consider applying 'add_precursor_mz' filter first."
-        return None
-
-    assert isinstance(precursor_mz, (float, int)), \
-        ("Expected 'precursor_mz' to be a scalar number.",
-         "Consider applying 'add_precursor_mz' filter first.")
-    if precursor_mz <= 0:
-        return None
-
-    return spectrum
-
-
-# todo remove when committing, is by now already implemented in matchms,
-#  but not yet done for all files
-def clean_up_parent_mass(spectra_file,
-                         cleaned_spectra_file_name):
-    spectra = load_pickled_file(spectra_file)
-    for i, spectrum in enumerate(spectra):
-        parent_mass = spectrum.get("parent_mass")
-        if isinstance(parent_mass, np.ndarray):
-            spectrum.set("parent_mass", parent_mass[0])
-            spectra[i] = spectrum
-    with open(cleaned_spectra_file_name, "wb") as file:
-        pickle.dump(spectra, file)
+from matchms.filtering.require_precursor_mz import require_precursor_mz
 
 
 def minimal_processing_multiple_spectra(spectrum_list: List[SpectrumType],
