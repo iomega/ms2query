@@ -197,6 +197,7 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
         A list with inchikeys, the tanimoto scores between this list and
         list_of_identifiers_1 are returned
     """
+    # pylint: disable=too-many-locals
     conn = sqlite3.connect(sqlite_file_name)
     identifier_string_1 = ",".join([str(x) for x in list_of_identifiers_1])
     identifier_string_2 = ",".join([str(x) for x in list_of_identifiers_2])
@@ -212,7 +213,6 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                     and identifier_2 in ({identifier_string_1})
                     ;
                     """
-    # pylint: disable=too-many-locals
     cur = conn.cursor()
     cur.execute(sqlite_command)
     results = cur.fetchall()

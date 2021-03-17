@@ -205,9 +205,9 @@ class CreateFilesForLibrary:
             binned_spec = model.spectrum_binner.transform(
                 [spectrum],
                 progress_bar=False)[0]
+            # pylint: disable=protected-access
             embedding = model.base.predict(
                 ms2ds._create_input_vector(binned_spec))[0]
-            # pylint: disable=protected_access
             spectrum_id = spectrum.get(self.spectrum_id_column_name)
             embedding_df = pd.DataFrame([embedding], index=[spectrum_id])
             embedding_df.to_csv(temporary_csv_file_name,

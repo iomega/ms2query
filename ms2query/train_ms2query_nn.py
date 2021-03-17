@@ -47,6 +47,7 @@ def train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
         Location for saving model, result is not saved when None. Default=None
     """
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
 
     # define the keras model
     nn_model = Sequential()
