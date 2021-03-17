@@ -58,6 +58,7 @@ class SelectDataForTraining(Ms2Library):
         max_parent_mass:
             The value used to normalize the parent mass by dividing it by the
             max_parent_mass. Default = 13428.370894192036"""
+        # pylint: disable=too-many-arguments
         super().__init__(sqlite_file_location,
                          s2v_model_file_name,
                          ms2ds_model_file_name,

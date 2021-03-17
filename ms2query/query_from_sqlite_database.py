@@ -37,6 +37,9 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         only the once mentioned in spectrum_id_list, in this case
         spectrum_id_list can be an empty list. Default = False.
     """
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
+
     # Converts TEXT to np.array when querying
     sqlite3.register_converter("array", convert_array)
 
@@ -209,6 +212,7 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                     and identifier_2 in ({identifier_string_1})
                     ;
                     """
+    # pylint: disable=too-many-locals
     cur = conn.cursor()
     cur.execute(sqlite_command)
     results = cur.fetchall()
@@ -222,9 +226,9 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
         result_dict[(identifier_2, identifier_1)] = tanimoto_score
     # Create matrix with tanimoto scores
     tanimoto_scores = []
-    for row, identifier_1 in enumerate(list_of_identifiers_1):
+    for identifier_1 in list_of_identifiers_1:
         current_row = []
-        for column, identifier_2 in enumerate(list_of_identifiers_2):
+        for identifier_2 in list_of_identifiers_2:
             tanimoto_score = result_dict[(identifier_1, identifier_2)]
             current_row.append(tanimoto_score)
         tanimoto_scores.append(current_row)

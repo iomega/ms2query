@@ -59,6 +59,7 @@ class Ms2Library:
             The value used to normalize the parent mass by dividing it by the
             max_parent_mass. Default = 13428.370894192036
         """
+        # pylint: disable=too-many-arguments
         # Change default settings to values given in **settings
         settings = self._set_settings(settings)
 
@@ -236,6 +237,8 @@ class Ms2Library:
             List of spectrum ids that have the highest ms2ds scores with the
             query_spectrum
         """
+        # pylint: disable=too-many-locals
+
         # Gets a list of all preselected spectra as Spectrum objects
         preselected_spectra_list = get_spectra_from_sqlite(
             self.sqlite_file_location,

@@ -18,7 +18,6 @@ import os
 import gc
 from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
-from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
@@ -57,7 +56,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         up the spectrum id in the metadata. Per version of the data this
         differs between 'spectrum_id' and 'spectrumid'
     """
-
+    # pylint: disable=too-many-arguments
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
                                   tanimoto_scores_pickled_dataframe_file,
                                   progress_bars=progress_bars)

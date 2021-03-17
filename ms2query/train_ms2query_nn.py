@@ -46,6 +46,7 @@ def train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
     save_name:
         Location for saving model, result is not saved when None. Default=None
     """
+    # pylint: disable=too-many-arguments
 
     # define the keras model
     nn_model = Sequential()
@@ -85,7 +86,7 @@ def train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
 
 def plot_history(history):
     """Plots the MAE and MSE loss for the history of a trained model"""
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex="all", figsize=(12, 8),
+    _, (ax1, ax2) = plt.subplots(2, 1, sharex="all", figsize=(12, 8),
                                    dpi=100)
 
     ax1.plot(history['mae'], "o--", label='Acuracy (training data)')
