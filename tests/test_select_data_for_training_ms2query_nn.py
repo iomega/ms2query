@@ -61,9 +61,9 @@ def test_create_train_and_val_data_with_saving(tmp_path):
 
 def test_get_matches_info_and_tanimoto():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-    ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-    spectrum_id_column_name, training_spectra_file_name, \
-    validation_spectra_file_name = get_test_file_names()
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, training_spectra_file_name, \
+        validation_spectra_file_name = get_test_file_names()
 
     select_data_for_training = SelectDataForTraining(
         sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
