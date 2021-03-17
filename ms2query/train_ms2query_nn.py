@@ -1,60 +1,51 @@
 import os
 import pickle
-from typing import Union
-from tensorflow.keras.models import Sequential, load_model, Model
+import pandas as pd
+from typing import Union, List, Tuple, Dict
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Dense
 from matplotlib import pyplot as plt
-from ms2query.app_helpers import load_pickled_file
 
 
-def plot_history(history):
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12,8), dpi=100)
+def train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
+                      x_val: pd.DataFrame, y_val: pd.DataFrame,
+                      layers: List[int],
+                      model_loss: str = 'mean_squared_error',
+                      activations: str = 'relu', last_activation=None,
+                      model_epochs: int = 100, model_batch_size: int = 16,
+                      save_name: Union[None, str] = None
+                      ) -> Tuple[Sequential, Dict[str, float]]:
+    """Train a keras deep NN, returns (model, history)
 
-    ax1.plot(history['mae'], "o--", label='Acuracy (training data)')
-    ax1.plot(history['val_mae'], "o--", label='Acuracy (validation data)')
-    ax1.set_title('MAE loss')
-    ax1.set_ylabel("MAE")
-    ax1.legend()
-
-    ax2.plot(history['loss'], "o--", label='training data')
-    ax2.plot(history['val_loss'], "o--", label='validation data')
-    ax2.set_title('MSE loss')
-    ax2.set_ylabel("MSE loss")
-    ax2.set_xlabel("epochs")
-    ax2.legend()
-    plt.show()
-
-
-def train_nn(x_train, y_train, x_val, y_val,
-             layers=[48, 48, 1],
-             model_loss='mean_squared_error', activations='relu',
-             last_activation=None, model_epochs=100,
-             model_batch_size=16,
-             save_name: Union[None, str] = None):
-    '''Train a keras deep NN and test on test data, returns (model, history, accuracy, loss)
-
-    X_train: matrix like object like pd.DataFrame, training set
-    y_train: list like object like np.array, training labels
-    X_test: matrix like object like pd.DataFrame, test set
-    y_test: list like object like np.array, test labels
-    layers: list of ints, the number of layers is the len of this list while the elements
-        are the amount of neurons per layer, default: [12, 12, 12, 12, 12, 1]
-    model_loss: str, loss function, default: binary_crossentropy
-    activations: str, the activation of the layers except the last one, default: relu
-    last_activation: str, activation of last layer, default: sigmoid
-    model_epochs: int, number of epochs, default: 20
-    model_batch_size: int, batch size for updating the model, default: 16
-    save_name: str, location for saving model, optional, default: False
-
-    Returns:
-    model: keras sequential
-    history: dict, training statistics
-    accuracy: float, accuracy on test set
-    loss, float, loss on test set
-
-    If save_name is not False and save_name exists this function will load existing model
-    '''
+    Args
+    ----
+    x_train:
+        The training set. Contains scores for matches between spectra.
+    y_train:
+        The training labels, containing the tanimoto scores corresponding to
+        the matches in the training set.
+    x_val:
+        Validation set. Contains scores for matches between spectra.
+    y_val:
+        Validation labels, containing the tanimoto scores corresponding to the
+        matches in the validation set.
+    layers:
+        The number of layers is the length of this list while the elements
+        are the amount of neurons per layer.
+    model_loss:
+        Loss function, default: "mean_squared_error"
+    activations:
+        The activation of the layers except the last one, default: "relu"
+    last_activation:
+        Activation of last layer, default: None
+    model_epochs:
+        Number of epochs, default: 100
+    model_batch_size:
+        Batch size for updating the model, default: 16
+    save_name:
+        Location for saving model, result is not saved when None. Default=None
+    """
 
     # define the keras model
     nn_model = Sequential()
@@ -70,18 +61,20 @@ def train_nn(x_train, y_train, x_val, y_val,
     nn_model.compile(loss=model_loss, optimizer='adam',
                      metrics=['mae'])
 
-
     earlystopper = EarlyStopping(monitor='val_loss', patience=10,
-                                 verbose=1)  # patience - try x more epochs to improve val_loss
-    checkpointer = ModelCheckpoint(filepath=save_name + ".hdf5",
-                                   monitor='val_loss', verbose=1,
-                                   save_best_only=True)
-
+                                 verbose=1)
+    if save_name and not os.path.exists(save_name + ".hdf5"):
+        checkpointer = ModelCheckpoint(filepath=save_name + ".hdf5",
+                                       monitor='val_loss', verbose=1,
+                                       save_best_only=True)
+        callbacks = [earlystopper, checkpointer]
+    else:
+        callbacks = earlystopper
     # fit the keras model on the dataset
     hist = nn_model.fit(x_train, y_train, epochs=model_epochs,
                         batch_size=model_batch_size,
                         validation_data=(x_val, y_val),
-                        callbacks=[earlystopper, checkpointer])
+                        callbacks=callbacks)
     history = hist.history
 
     if save_name and not os.path.exists(save_name):
@@ -89,52 +82,22 @@ def train_nn(x_train, y_train, x_val, y_val,
             pickle.dump(history, hist_outf)
     return nn_model, history
 
-def run_test_file():
-    training_data = "../downloads/models/train_nn_model_data/nn_prep_training_found_matches_s2v_2dec.pickle"
-    testing_data = "../downloads/models/train_nn_model_data/nn_prep_testing_found_matches_s2v_2dec.pickle"
 
-    training_set = load_pickled_file(training_data)
-    testing_set = load_pickled_file(testing_data)
-    nn_training_found_matches_s2v_2dec = training_set[0].append(
-        training_set[1:])
-    nn_training_found_matches_s2v_2dec = \
-        nn_training_found_matches_s2v_2dec.sample(frac=1)
+def plot_history(history):
+    """Plots the MAE and MSE loss for the history of a trained model"""
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex="all", figsize=(12, 8),
+                                   dpi=100)
 
-    nn_testing_full_found_matches_s2v_2dec = \
-        testing_set[0].append(
-            testing_set[1:])
-    nn_testing_full_found_matches_s2v_2dec = nn_testing_full_found_matches_s2v_2dec.sample(
-        frac=1)
+    ax1.plot(history['mae'], "o--", label='Acuracy (training data)')
+    ax1.plot(history['val_mae'], "o--", label='Acuracy (validation data)')
+    ax1.set_title('MAE loss')
+    ax1.set_ylabel("MAE")
+    ax1.legend()
 
-    x_train = nn_training_found_matches_s2v_2dec.drop(['similarity', 'label'],
-                                                      axis=1)
-    y_train = nn_training_found_matches_s2v_2dec['similarity']
-    x_test = nn_testing_full_found_matches_s2v_2dec.drop(
-        ['similarity', 'label'],
-        axis=1)
-    y_test = nn_testing_full_found_matches_s2v_2dec['similarity']
-    print(nn_training_found_matches_s2v_2dec)
-    print(type(nn_training_found_matches_s2v_2dec))
-    print(nn_testing_full_found_matches_s2v_2dec)
-    train_nn(x_train, y_train, x_test, y_test)
-
-
-if __name__ == "__main__":
-    # file_name = "../downloads/train_ms2query_nn_data/training_and_validations_sets.pickle"
-    # training_set, training_labels, testing_set, testing_labels = \
-    #     load_pickled_file(file_name)
-    # import pandas as pd
-    # pd.set_option("display.max_columns", 10)
-    # print(training_set,
-    #          training_labels,
-    #          testing_set,
-    #          testing_labels)
-    # nn_model, history = train_nn(training_set,
-    #                             training_labels,
-    #                             testing_set,
-    #                             testing_labels,
-    #                             save_name="../downloads/train_ms2query_nn_data/test_models/ms2query_model")
-    history_file = "../downloads/train_ms2query_nn_data/test_models/ms2query_model_train_hist.pickle"
-    # history_file = "../downloads/train_ms2query_nn_data/test_models/test_mse_train_hist.pickle"
-    history = load_pickled_file(history_file)
-    plot_history(history)
+    ax2.plot(history['loss'], "o--", label='training data')
+    ax2.plot(history['val_loss'], "o--", label='validation data')
+    ax2.set_title('MSE loss')
+    ax2.set_ylabel("MSE loss")
+    ax2.set_xlabel("epochs")
+    ax2.legend()
+    plt.show()
