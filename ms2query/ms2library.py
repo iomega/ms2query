@@ -15,7 +15,7 @@ from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
 
-class Ms2Library:
+class MS2Library:
     """Calculates scores of spectra in library and selects best matches"""
     def __init__(self,
                  sqlite_file_location: str,

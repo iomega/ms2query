@@ -109,7 +109,7 @@ def test_get_tanimoto_for_spectrum_ids():
 
 
 def get_test_file_names():
-    """Returns file names of the files needed to create Ms2Library object"""
+    """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/')

@@ -4,13 +4,13 @@ import pandas as pd
 from tqdm import tqdm
 from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
-from ms2query.ms2library import Ms2Library
+from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikey14s, get_part_of_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
-class SelectDataForTraining(Ms2Library):
+class SelectDataForTraining(MS2Library):
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,

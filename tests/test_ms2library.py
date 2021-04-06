@@ -2,7 +2,7 @@ import os
 import numpy as np
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import Ms2Library
+from ms2query.ms2library import MS2Library
 from ms2query.app_helpers import load_pickled_file
 from pandas import DataFrame
 
@@ -13,7 +13,7 @@ def test_ms2library_set_settings():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -38,7 +38,7 @@ def test_collect_matches_data_multiple_spectra():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -63,7 +63,7 @@ def test_pre_select_spectra():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -94,7 +94,7 @@ def test_get_all_ms2ds_scores():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -115,7 +115,7 @@ def test_collect_data_for_ms2query_model():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -145,7 +145,7 @@ def test_get_ms2query_model_prediction():
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name = get_test_file_names()
 
-    test_library = Ms2Library(sqlite_file_loc,
+    test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
@@ -171,7 +171,7 @@ def test_get_ms2query_model_prediction():
 
 
 def get_test_file_names():
-    """Returns file names of the files needed to create Ms2Library object"""
+    """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/')
