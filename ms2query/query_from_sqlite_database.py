@@ -74,7 +74,8 @@ def get_spectra_from_sqlite(sqlite_file_name: str,
         list_of_spectra = []
         for spectrum_id in spectrum_id_list:
             assert spectrum_id in spectra_dict, \
-                f"No spectrum with spectrum_id: {spectrum_id} was found in sqlite"
+                f"No spectrum with spectrum_id: {spectrum_id} " \
+                f"was found in sqlite"
             list_of_spectra.append(spectra_dict[spectrum_id])
     return list_of_spectra
 
@@ -98,58 +99,59 @@ def convert_array(nd_array_in_bytes: bytes) -> np.array:
     return np.load(out)
 
 
-def get_tanimoto_score_for_inchikeys(list_of_inchikeys_1: List[str],
-                                     list_of_inchikeys_2: List[str],
-                                     sqlite_file_name: str) -> pd.DataFrame:
+def get_tanimoto_score_for_inchikey14s(list_of_inchikey14s_1: List[str],
+                                       list_of_inchikey14s_2: List[str],
+                                       sqlite_file_name: str) -> pd.DataFrame:
     """Returns a panda dataframe with the tanimoto scores
 
     Args:
     -------
     list_of_identifiers_1:
-        A list with inchikeys, the tanimoto scores between this list and
+        A list with inchikey14s, the tanimoto scores between this list and
         list_of_identifiers_2 are returned.
     list_of_identifiers_2:
-        A list with inchikeys, the tanimoto scores between this list and
+        A list with inchikey14s, the tanimoto scores between this list and
         list_of_identifiers_1 are returned
     sqlite_file_name:
         The sqlite file in which the tanimoto scores are stored.
     """
-    # Gets the identifiers from the inchikeys
-    inchikey_dict_1 = get_index_of_inchikeys(list_of_inchikeys_1,
-                                             sqlite_file_name)
-    inchikey_dict_2 = get_index_of_inchikeys(list_of_inchikeys_2,
-                                             sqlite_file_name)
-    identifiers_list_1 = list(inchikey_dict_1.values())
-    identifiers_list_2 = list(inchikey_dict_2.values())
+    # Gets the identifiers from the inchikey14s
+    inchikey14_dict_1 = get_index_of_inchikey14s(list_of_inchikey14s_1,
+                                                 sqlite_file_name)
+    inchikey14_dict_2 = get_index_of_inchikey14s(list_of_inchikey14s_2,
+                                                 sqlite_file_name)
+    identifiers_list_1 = list(inchikey14_dict_1.values())
+    identifiers_list_2 = list(inchikey14_dict_2.values())
 
-    # Get the tanimoto scores between the inchikeys in list_of_inchikeys
+    # Get the tanimoto scores between the inchikey14s in list_of_inchikey14s
     tanimoto_score_matrix = get_tanimoto_from_sqlite(sqlite_file_name,
                                                      identifiers_list_1,
                                                      identifiers_list_2)
     # Reverse the dictionary value becomes key and key becomes value
-    reversed_inchikey_dict_1 = {v: k for k, v in inchikey_dict_1.items()}
-    reversed_inchikey_dict_2 = {v: k for k, v in inchikey_dict_2.items()}
+    reversed_inchikey14_dict_1 = {v: k for k, v in inchikey14_dict_1.items()}
+    reversed_inchikey14_dict_2 = {v: k for k, v in inchikey14_dict_2.items()}
 
-    # Change the column names and indexes from identifiers to inchikeys
-    tanimoto_score_matrix.rename(columns=reversed_inchikey_dict_2,
-                                 index=reversed_inchikey_dict_1, inplace=True)
+    # Change the column names and indexes from identifiers to inchikey14s
+    tanimoto_score_matrix.rename(
+        columns=reversed_inchikey14_dict_2,
+        index=reversed_inchikey14_dict_1, inplace=True)
     return tanimoto_score_matrix
 
 
-def get_index_of_inchikeys(list_of_inchikeys: List[str],
-                           sqlite_file_name: str,
-                           table_name: str = "inchikeys") -> Dict[str, int]:
-    """Look up the identifiers for each inchikey in a sqlite file.
+def get_index_of_inchikey14s(list_of_inchikey14s: List[str],
+                             sqlite_file_name: str,
+                             table_name: str = "inchikeys") -> Dict[str, int]:
+    """Look up the identifiers for each inchikey14 in a sqlite file.
 
     Args:
     -------
-    list_of_inchikeys:
+    list_of_inchikey14s:
         A list of 14 letter inchikeys
     sqlite_file_name:
-        The file name of a sqlite file in which the identifiers of the inchikey
-        are stored
+        The file name of a sqlite file in which the identifiers of the
+        inchikey14 are stored
     table_name:
-        The table name in which the identifiers or the inchikey are stored.
+        The table name in which the identifiers or the inchikey14 are stored.
         Default = "inchikeys"
     """
 
@@ -157,7 +159,7 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
 
     # Create string with placeholders for sqlite command
     question_marks = ''
-    for _ in range(len(list_of_inchikeys)):
+    for _ in range(len(list_of_inchikey14s)):
         question_marks += '?,'
     # Remove the last comma
     question_marks = question_marks[:-1]
@@ -166,7 +168,7 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
                         WHERE inchikey in ({question_marks})"""
 
     cur = conn.cursor()
-    cur.execute(sqlite_command, list_of_inchikeys)
+    cur.execute(sqlite_command, list_of_inchikey14s)
     # Convert result to dictionary
     identifier_dict = {}
     for result in cur:
@@ -174,10 +176,10 @@ def get_index_of_inchikeys(list_of_inchikeys: List[str],
 
     conn.close()
 
-    # Check if all inchikeys are found
-    for inchikey in list_of_inchikeys:
-        assert inchikey in identifier_dict, \
-            f"Inchikey {inchikey} was not found in sqlite file"
+    # Check if all inchikey14s are found
+    for inchikey14 in list_of_inchikey14s:
+        assert inchikey14 in identifier_dict, \
+            f"Inchikey14 {inchikey14} was not found in sqlite file"
     return identifier_dict
 
 
@@ -191,10 +193,10 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     sqlite_file_name:
         The sqlite file in which the tanimoto scores are stored.
     list_of_identifiers_1:
-        A list with inchikeys, the tanimoto scores between this list and
+        A list with inchikey14s, the tanimoto scores between this list and
         list_of_identifiers_2 are returned.
     list_of_identifiers_2:
-        A list with inchikeys, the tanimoto scores between this list and
+        A list with inchikey14s, the tanimoto scores between this list and
         list_of_identifiers_1 are returned
     """
     # pylint: disable=too-many-locals

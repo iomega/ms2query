@@ -6,7 +6,7 @@ from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
 from ms2query.ms2library import Ms2Library
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikeys, get_part_of_metadata_from_sqlite
+    get_tanimoto_score_for_inchikey14s, get_part_of_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
@@ -170,9 +170,10 @@ class SelectDataForTraining(Ms2Library):
             list of spectrum_ids, which are preselected matches of the
             query_spectrum
         """
-        query_inchikey = query_spectrum.get("inchikey")[:14]
-        assert len(query_inchikey) == 14, \
-            f"Expected inchikey of length 14, got inchikey = {query_inchikey}"
+        query_inchikey14 = query_spectrum.get("inchikey")[:14]
+        assert len(query_inchikey14) == 14, \
+            f"Expected inchikey of length 14, " \
+            f"got inchikey = {query_inchikey14}"
 
         # Get inchikeys belonging to spectra ids
         unfiltered_inchikeys = get_part_of_metadata_from_sqlite(
@@ -180,29 +181,27 @@ class SelectDataForTraining(Ms2Library):
             spectra_ids_list,
             "inchikey")
 
-        inchikeys_dict = {}
+        inchikey14s_dict = {}
         for i, inchikey in enumerate(unfiltered_inchikeys):
             # Only get the first 14 characters of the inchikeys
-            inchikey_14 = inchikey[:14]
+            inchikey14 = inchikey[:14]
             spectrum_id = spectra_ids_list[i]
             # Don't save spectra that do not have an inchikey. If a spectra has
             # no inchikey it is stored as "", so it will not be stored.
-            if len(inchikey_14) == 14:
-                inchikeys_dict[spectrum_id] = inchikey_14
-        inchikeys_list = list(inchikeys_dict.values())
-        # Returns tanimoto score for each unique inchikey.
-        tanimoto_scores_inchikeys = get_tanimoto_score_for_inchikeys(
-            inchikeys_list,
-            [query_inchikey],
-            self.sqlite_file_location)
+            if len(inchikey14) == 14:
+                inchikey14s_dict[spectrum_id] = inchikey14
+        inchikey14s_list = list(inchikey14s_dict.values())
+        # Returns tanimoto score for each unique inchikey14.
+        tanimoto_scores_inchikey14s = get_tanimoto_score_for_inchikey14s(
+            inchikey14s_list, [query_inchikey14], self.sqlite_file_location)
         # Add tanimoto scores to dataframe.
         tanimoto_scores_spectra_ids = pd.DataFrame(
             columns=["Tanimoto_score"],
-            index=list(inchikeys_dict.keys()))
-        for spectrum_id in inchikeys_dict:
-            inchikey = inchikeys_dict[spectrum_id]
-            tanimoto_score = tanimoto_scores_inchikeys.loc[inchikey,
-                                                           query_inchikey]
+            index=list(inchikey14s_dict.keys()))
+        for spectrum_id in inchikey14s_dict:
+            inchikey14 = inchikey14s_dict[spectrum_id]
+            tanimoto_score = tanimoto_scores_inchikey14s.loc[inchikey14,
+                                                             query_inchikey14]
             tanimoto_scores_spectra_ids.at[spectrum_id, "Tanimoto_score"] = \
                 tanimoto_score
         return tanimoto_scores_spectra_ids

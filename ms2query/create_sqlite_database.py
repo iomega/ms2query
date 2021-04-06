@@ -4,7 +4,7 @@ Functions to create sqlite file that contains 3 tables
 The 3 tables are spectrum_data, inchikeys and tanimoto_scores.
 Spectrum_data contains the peaks, intensities and metadata from all spectra.
 Tanimoto_scores contains all tanimoto scores.
-Inchikeys contains the order of inchikeys, that can be used to find
+Inchikeys contains the order of inchikey14s, that can be used to find
 corresponding indexes in the tanimoto_scores table.
 """
 
@@ -36,7 +36,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         will be overwritten.
     tanimoto_scores_pickled_dataframe_file:
         A pickled file with tanimoto scores. The column names and indexes are
-        14inchikeys.
+        inchikey14s.
     list_of_spectra:
         A list with spectrum objects
     columns_dict:
@@ -73,7 +73,7 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
                                   temporary_tanimoto_file_name: str
                                   = "temporary_tanimoto_scores",
                                   progress_bars: bool = True):
-    """Adds tanimoto scores and inchikeys to sqlite table
+    """Adds tanimoto scores and inchikey14s to sqlite table
 
     sqlite_file_name:
         Name of sqlite_file that should be created, if it already exists the
@@ -81,7 +81,7 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
         will be overwritten.
     tanimoto_scores_pickled_dataframe_file:
         A pickled file with tanimoto scores. The column names and indexes are
-        14inchikeys.
+        inchikey14s.
     temporary_tanimoto_file_name:
         The file name of a temporary .npy file that is created to memory
         efficiently read out the tanimoto scores. The file is deleted after
@@ -115,7 +115,7 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
                                         temporary_tanimoto_file_name + ".npy",
                                         progress_bar=progress_bars)
     os.remove(temporary_tanimoto_file_name + ".npy")
-    # Creates a table containing the identifiers belonging to each inchikey
+    # Creates a table containing the identifiers belonging to each inchikey14
     # These identifiers correspond to the identifiers in tanimoto_scores
     create_inchikey_sqlite_table(sqlite_file_name,
                                  inchikeys_order,
@@ -281,7 +281,7 @@ def create_inchikey_sqlite_table(file_name: str,
                                  table_name: str = 'inchikeys',
                                  col_name_inchikey: str = 'inchikey',
                                  progress_bar: bool = True):
-    """Creates a table storing the identifiers belonging to the inchikeys
+    """Creates a table storing the identifiers belonging to the inchikey14s
 
     Overwrites the table if it already exists. The column specified in
     col_name_inchikey becomes the primary key. The datatype of
@@ -293,15 +293,15 @@ def create_inchikey_sqlite_table(file_name: str,
     -------
     sqlite_file_name:
         Name of sqlite file to which the table should be added.
-    ordered_inchikey_list:
-        List with inchikeys, the inchikeys will be stored in sqlite in the same
-        order.
+    ordered_inchikey14_list:
+        List with the first 14 symbols of inchikeys, the inchikey14s will be
+        stored in sqlite in the same order.
     table_name:
         Name of the table in the database that should store the (order of) the
-        inchikeys. Default = inchikeys.
+        inchikey14s. Default = inchikeys.
     col_name_inchikey:
-        Name of the column in the table containing the inchikeys.
-        Default = inchikeys
+        Name of the column in the table containing the inchikey14s.
+        Default = inchikey
     progress_bar:
         If True a progress bar is shown.
     """
@@ -321,11 +321,11 @@ def create_inchikey_sqlite_table(file_name: str,
     conn.commit()
 
     # Fill table
-    for inchikey in tqdm(ordered_inchikey_list,
-                         desc="Adding inchikeys to sqlite table",
+    for inchikey14 in tqdm(ordered_inchikey_list,
+                         desc="Adding inchikey14s to sqlite table",
                          disable=not progress_bar):
         add_row_to_table_command = f"""INSERT INTO {table_name} 
-                                    values ('{inchikey}');"""
+                                    values ('{inchikey14}');"""
         cur.execute(add_row_to_table_command)
     conn.commit()
     conn.close()
@@ -351,10 +351,10 @@ def initialize_tanimoto_score_table(sqlite_file_name: str,
         scores. Default = tanimoto_scores.
     col_name_identifier1:
         Name of the first column of the table, this column will store numbers
-        that are the identifier of inchikeys. Default = 'identifier_1'
+        that are the identifier of inchikey14s. Default = 'identifier_1'
     col_name_identifier2:
         Name of the second column of the table, this column will store numbers
-        that are the identifier of inchikeys. Default = 'identifier_2'
+        that are the identifier of inchikey14s. Default = 'identifier_2'
     col_name_score:
         Name of the third column of the table, this column will store the
         tanimoto scores. Default = 'tanimoto_score'
@@ -401,10 +401,10 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
         nr of rows.
     col_name_identifier1:
         Name of the first column of the table, this column will store numbers
-        that are the identifier of inchikeys. Default = 'identifier_1'
+        that are the identifier of inchikey14s. Default = 'identifier_1'
     col_name_identifier2:
         Name of the second column of the table, this column will store numbers
-        that are the identifier of inchikeys. Default = 'identifier_2'
+        that are the identifier of inchikey14s. Default = 'identifier_2'
     col_name_score:
         Name of the third column of the table, this column will store the
         tanimoto scores. Default = 'tanimoto_score'
@@ -417,7 +417,7 @@ def add_tanimoto_scores_to_sqlite_table(sqlite_file_name: str,
         mmap_mode='r')
 
     # Create a list of consecutive numbers, later used as identifiers for the
-    # inchikeys
+    # inchikey14s
     list_of_numbers = []
     for i in range(len(tanimoto_score_matrix[0])):
         list_of_numbers.append(i+1)

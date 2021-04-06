@@ -13,7 +13,7 @@ from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikeys, get_spectra_from_sqlite, \
+    get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite, \
     get_part_of_metadata_from_sqlite
 
 
@@ -105,10 +105,8 @@ def test_get_tanimoto_scores():
     test_inchikeys = ['TXZUPPVCNIMVHW',
                       'WIOKWEJDRXNVSH',
                       'VBFKEZGCUWHGSK']
-    tanimoto_score_dataframe = get_tanimoto_score_for_inchikeys(
-        test_inchikeys,
-        test_inchikeys,
-        sqlite_file_name)
+    tanimoto_score_dataframe = get_tanimoto_score_for_inchikey14s(
+        test_inchikeys, test_inchikeys, sqlite_file_name)
 
     reference_tanimoto_scores = \
         load_pickled_file(os.path.join(path_to_test_files_sqlite_dir,
