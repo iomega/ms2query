@@ -26,15 +26,15 @@ class CreateFilesForLibrary:
 
         **settings:
             The following optional parameters can be defined.
-        new_sqlite_file_name:
+        sqlite_file_name:
             The file name of the new sqlite file that is created. As default
             the pickled_spectra_file_name is used and ".pickle" is removed and
             replaced with ".sqlite".
-        new_ms2ds_embeddings_file_name:
+        ms2ds_embeddings_file_name:
             The file name of the file with ms2ds embeddings that is created.
             As default the pickled_spectra_file_name is used and ".pickle" is
             removed and replaced with "_ms2ds_embeddings.pickle".
-        new_s2v_embeddings_file_name:
+        s2v_embeddings_file_name:
             The file name of the file with s2v embeddings. As default the
             pickled_spectra_file_name is used and ".pickle" is removed and
             replaced with "_s2v_embeddings.pickle".
@@ -68,9 +68,9 @@ class CreateFilesForLibrary:
             '.pickle'. It is used to create 3 new file names, with different
             extensions.
         """
-        default_settings = {"new_sqlite_file_name": "",
-                            "new_ms2ds_embeddings_file_name": "",
-                            "new_s2v_embeddings_file_name": "",
+        default_settings = {"sqlite_file_name": "",
+                            "ms2ds_embeddings_file_name": "",
+                            "s2v_embeddings_file_name": "",
                             "progress_bars": True,
                             "spectrum_id_column_name": "spectrumid"}
 
@@ -86,14 +86,14 @@ class CreateFilesForLibrary:
         assert pickled_spectra_file_name[-7:] == ".pickle", \
             "Pickled_spectra_file_name is expected end on '.pickle'"
         base_file_name = pickled_spectra_file_name[:-7]
-        if default_settings["new_sqlite_file_name"] == "":
-            default_settings["new_sqlite_file_name"] = \
+        if default_settings["sqlite_file_name"] == "":
+            default_settings["sqlite_file_name"] = \
                 pickled_spectra_file_name[:-7] + ".sqlite"
-        if default_settings["new_ms2ds_embeddings_file_name"] == "":
-            default_settings["new_ms2ds_embeddings_file_name"] = \
+        if default_settings["ms2ds_embeddings_file_name"] == "":
+            default_settings["ms2ds_embeddings_file_name"] = \
                 base_file_name + "_ms2ds_embeddings.pickle"
-        if default_settings["new_s2v_embeddings_file_name"] == "":
-            default_settings["new_s2v_embeddings_file_name"] = \
+        if default_settings["s2v_embeddings_file_name"] == "":
+            default_settings["s2v_embeddings_file_name"] = \
                 base_file_name + "_s2v_embeddings.pickle"
 
         return default_settings
@@ -144,13 +144,13 @@ class CreateFilesForLibrary:
             If True new tanimoto scores will be calculated and stored in
             tanimoto_scores_file_name.
         """
-        assert not os.path.exists(self.settings["new_sqlite_file_name"]), \
-            "Given new_sqlite_file_name already exists"
+        assert not os.path.exists(self.settings["sqlite_file_name"]), \
+            "Given sqlite_file_name already exists"
         assert not os.path.exists(self.settings[
-                                      'new_ms2ds_embeddings_file_name']), \
+                                      'ms2ds_embeddings_file_name']), \
             "Given ms2ds_embeddings_file_name already exists"
         assert not os.path.exists(self.settings[
-            "new_s2v_embeddings_file_name"]), \
+            "s2v_embeddings_file_name"]), \
             "Given s2v_embeddings_file_name already exists"
 
         if calculate_new_tanimoto_scores:
@@ -161,7 +161,7 @@ class CreateFilesForLibrary:
             # Todo automatically create tanimoto scores
 
         make_sqlfile_wrapper(
-            self.settings["new_sqlite_file_name"],
+            self.settings["sqlite_file_name"],
             tanimoto_scores_file_name,
             self.list_of_spectra,
             columns_dict={"parent_mass": "REAL"},
@@ -189,7 +189,7 @@ class CreateFilesForLibrary:
             The file name in which the pickled dataframe is stored.
         """
         assert not os.path.exists(self.settings[
-                                      'new_ms2ds_embeddings_file_name']), \
+                                      'ms2ds_embeddings_file_name']), \
             "Given ms2ds_embeddings_file_name already exists"
         temporary_csv_file_name = "temporary_embeddings_file.csv"
         assert not os.path.exists(temporary_csv_file_name), \
@@ -218,7 +218,7 @@ class CreateFilesForLibrary:
                                         header=None,
                                         names=list(range(400)))
         all_embeddings_df.to_pickle(self.settings[
-                                        'new_ms2ds_embeddings_file_name'])
+                                        'ms2ds_embeddings_file_name'])
         os.remove(temporary_csv_file_name)
 
     def store_s2v_embeddings(self, s2v_model_file_name):
@@ -235,7 +235,7 @@ class CreateFilesForLibrary:
              .model.wv.vectors.npy, together containing a Spec2Vec model,
         """
         assert not os.path.exists(self.settings[
-            "new_s2v_embeddings_file_name"]), \
+            "s2v_embeddings_file_name"]), \
             "Given s2v_embeddings_file_name already exists"
         model = Word2Vec.load(s2v_model_file_name)
         # Convert Spectrum objects to SpectrumDocument
@@ -258,4 +258,4 @@ class CreateFilesForLibrary:
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
         embeddings_dataframe.to_pickle(self.settings[
-            "new_s2v_embeddings_file_name"])
+            "s2v_embeddings_file_name"])

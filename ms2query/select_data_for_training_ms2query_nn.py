@@ -130,7 +130,7 @@ class SelectDataForTraining(MS2Library):
                                    desc="Get tanimoto scores",
                                    disable=not progress_bars):
             query_spectrum_id = query_spectrum.get(
-                self.spectrum_id_column_name)
+                self.settings["spectrum_id_column_name"])
             match_info_df = query_spectra_matches_info[query_spectrum_id]
             match_spectrum_ids = list(match_info_df.index)
             # Get tanimoto scores, spectra that do not have an inchikey are not

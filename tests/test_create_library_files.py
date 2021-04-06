@@ -13,22 +13,22 @@ def test_set_settings_correct():
         'tests/test_files/general_test_files')
     test_create_files = CreateFilesForLibrary(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        new_sqlite_file_name="test_sqlite_name", progress_bars=False)
+        sqlite_file_name="test_sqlite_name", progress_bars=False)
 
-    assert test_create_files.sqlite_file_name == "test_sqlite_name", \
-        "Expected different sqlite_file_name"
-    assert test_create_files.progress_bars is False, \
+    assert test_create_files.settings["sqlite_file_name"] == \
+           "test_sqlite_name", "Expected different sqlite_file_name"
+    assert test_create_files.settings["progress_bars"] is False, \
         "Expected different setting for progress_bar"
-    assert test_create_files.spectrum_id_column_name == "spectrumid", \
-        "Expected different spectrum_id_column_name"
-    assert test_create_files.ms2ds_embeddings_file_name == os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle"), \
-        "Expected different ms2ds_embeddings_file_name"
-    assert test_create_files.s2v_embeddings_file_name == os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle"), \
-        "Expected different s2v_embeddings_file_name"
+    assert test_create_files.settings["spectrum_id_column_name"] == \
+           "spectrumid", "Expected different spectrum_id_column_name"
+    assert test_create_files.settings["ms2ds_embeddings_file_name"] == \
+           os.path.join(path_to_general_test_files,
+                        "100_test_spectra_ms2ds_embeddings.pickle"), \
+           "Expected different ms2ds_embeddings_file_name"
+    assert test_create_files.settings["s2v_embeddings_file_name"] == \
+           os.path.join(path_to_general_test_files,
+                        "100_test_spectra_s2v_embeddings.pickle"), \
+           "Expected different s2v_embeddings_file_name"
 
 
 def test_set_settings_wrong():
@@ -51,9 +51,9 @@ def test_create_all_library_files(tmp_path):
     sqlite_file = os.path.join(tmp_path, "sqlite")
     test_create_files = CreateFilesForLibrary(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        new_ms2ds_embeddings_file_name=ms2ds_embeddings_file,
-        new_s2v_embeddings_file_name=s2v_embeddings_file,
-        new_sqlite_file_name=sqlite_file)
+        ms2ds_embeddings_file_name=ms2ds_embeddings_file,
+        s2v_embeddings_file_name=s2v_embeddings_file,
+        sqlite_file_name=sqlite_file)
     test_create_files.create_all_library_files(
         os.path.join(path_to_general_test_files,
                      '100_test_spectra_tanimoto_scores.pickle'),
@@ -94,7 +94,7 @@ def test_store_ms2ds_embeddings(tmp_path):
                                             "new_test_ms2ds_embeddings.pickle")
     test_create_files = CreateFilesForLibrary(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        new_ms2ds_embeddings_file_name=new_embeddings_file_name)
+        ms2ds_embeddings_file_name=new_embeddings_file_name)
     test_create_files.store_ms2ds_embeddings(os.path.join(
         path_to_general_test_files,
         'ms2ds_siamese_210301_5000_500_400.hdf5'))
@@ -117,7 +117,7 @@ def test_store_s2v_embeddings(tmp_path):
                                             "new_test_s2v_embeddings.pickle")
     test_create_files = CreateFilesForLibrary(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        new_s2v_embeddings_file_name=new_embeddings_file_name)
+        s2v_embeddings_file_name=new_embeddings_file_name)
     test_create_files.store_s2v_embeddings(os.path.join(
         path_to_general_test_files,
         "100_test_spectra_s2v_model.model"))
