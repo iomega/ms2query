@@ -87,7 +87,7 @@ class MS2Library:
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
                       ) -> Dict[str, Union[str, float]]:
-        """Changes default settings to new_settings and creates file names
+        """Changes default settings to new_settings
 
         Args:
         ------
