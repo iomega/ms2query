@@ -204,6 +204,9 @@ class MS2Library:
     def _get_all_ms2ds_scores(self, query_spectrum: Spectrum) -> pd.DataFrame:
         """Returns a dataframe with the ms2deepscore similarity scores
 
+        The similarity scores are calculated between the query_spectrum and all
+        library spectra.
+
         query_spectrum
             Spectrum for which similarity scores should be calculated for all
             spectra in the ms2ds embeddings file.
