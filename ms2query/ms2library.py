@@ -60,18 +60,12 @@ class MS2Library:
             max_parent_mass. Default = 13428.370894192036
         """
         # pylint: disable=too-many-arguments
-        # Change default settings to values given in **settings
-        settings = self._set_settings(settings)
-
-        # Set given settings
-        self.spectrum_id_column_name = settings["spectrum_id_column_name"]
         # todo create a ms2query model class that stores the model but also the
         #  settings used, since the settings used should always be the same as
         #  when the model was trained
-        self.cosine_score_tolerance = settings["cosine_score_tolerance"]
-        self.base_nr_mass_similarity = settings["base_nr_mass_similarity"]
-        # todo make new model that has a fixed basic mass
-        self.max_parent_mass = settings["max_parent_mass"]
+
+        # Change default settings to values given in **settings
+        self.settings = self._set_settings(settings)
 
         # Load models and set sqlite_file_location
         self.sqlite_file_location = sqlite_file_location
@@ -101,7 +95,7 @@ class MS2Library:
                             "cosine_score_tolerance": 0.1,
                             "base_nr_mass_similarity": 0.8,
                             "max_parent_mass": 13418.370894192036}
-
+        # todo make new model that has a fixed basic mass
         for attribute in new_settings:
             assert attribute in default_settings, \
                 f"Invalid argument in constructor:{attribute}"
@@ -162,7 +156,8 @@ class MS2Library:
         for query_spectrum in tqdm(query_spectra,
                                    desc="collecting matches info",
                                    disable=not progress_bar):
-            spectrum_id = query_spectrum.get(self.spectrum_id_column_name)
+            spectrum_id = query_spectrum.get(
+                self.settings["spectrum_id_column_name"])
             matches_with_info = \
                 self._collect_data_for_ms2query_model(
                     query_spectrum,
@@ -191,7 +186,7 @@ class MS2Library:
         # Select top nr of spectra
         for query_spectrum in query_spectra:
             query_spectrum_id = query_spectrum.get(
-                self.spectrum_id_column_name)
+                self.settings["spectrum_id_column_name"])
             ms2ds_scores = self._get_all_ms2ds_scores(query_spectrum)
             ms2ds_scores_np = ms2ds_scores["ms2ds_score"].to_numpy()
             # Get the indexes of the spectra with the highest ms2ds scores
@@ -243,15 +238,15 @@ class MS2Library:
         preselected_spectra_list = get_spectra_from_sqlite(
             self.sqlite_file_location,
             preselected_spectrum_ids,
-            spectrum_id_storage_name=self.spectrum_id_column_name)
+            spectrum_id_storage_name=self.settings["spectrum_id_column_name"])
         # Gets cosine similarity matrix
         cosine_sim_matrix = CosineGreedy(
-            tolerance=self.cosine_score_tolerance).matrix(
+            tolerance=self.settings["cosine_score_tolerance"]).matrix(
                 preselected_spectra_list,
                 [query_spectrum])
         # Gets modified cosine similarity matrix
         mod_cosine_sim_matrix = ModifiedCosine(
-            tolerance=self.cosine_score_tolerance).matrix(
+            tolerance=self.settings["cosine_score_tolerance"]).matrix(
                 preselected_spectra_list,
                 [query_spectrum])
         # Changes [[(cos_score1, cos_match1)] [(cos_score2, cos_match2)]] into
@@ -267,10 +262,11 @@ class MS2Library:
 
         parent_masses = [spectrum.get("parent_mass")
                          for spectrum in preselected_spectra_list]
-        normalized_parent_masses = [parent_mass/self.max_parent_mass
-                                    for parent_mass in parent_masses]
+        normalized_parent_masses = \
+            [parent_mass/self.settings["max_parent_mass"]
+             for parent_mass in parent_masses]
 
-        mass_similarity = [self.base_nr_mass_similarity **
+        mass_similarity = [self.settings["base_nr_mass_similarity"] **
                            abs(spectrum.get("parent_mass") -
                                query_spectrum.get("parent_mass"))
                            for spectrum in preselected_spectra_list]
