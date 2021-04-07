@@ -182,45 +182,49 @@ class MS2Library:
         nr_of_spectra:
             How many top spectra should be selected. Default = 20
         """
+        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+
         dict_with_preselected_spectra = {}
         # Select top nr of spectra
         for query_spectrum in query_spectra:
             query_spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
-            ms2ds_scores = self._get_all_ms2ds_scores(query_spectrum)
-            ms2ds_scores_np = ms2ds_scores["ms2ds_score"].to_numpy()
+            ms2ds_scores_np = ms2ds_scores[query_spectrum_id].to_numpy()
             # Get the indexes of the spectra with the highest ms2ds scores
             indexes_of_top_spectra = np.argpartition(
                 ms2ds_scores_np,
                 -nr_of_spectra,
                 axis=0)[-nr_of_spectra:]
             # Select the spectra with the highest score
-            selected_spectra = list(ms2ds_scores["ms2ds_score"].iloc[
+            selected_spectra = list(ms2ds_scores[query_spectrum_id].iloc[
                 indexes_of_top_spectra].index)
             # Store selected spectra in dict
             dict_with_preselected_spectra[query_spectrum_id] = selected_spectra
         return dict_with_preselected_spectra
 
-    def _get_all_ms2ds_scores(self, query_spectrum: Spectrum) -> pd.DataFrame:
+    def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
+                              ) -> pd.DataFrame:
         """Returns a dataframe with the ms2deepscore similarity scores
 
-        The similarity scores are calculated between the query_spectrum and all
+        The similarity scores are calculated between the query_spectra and all
         library spectra.
 
-        query_spectrum
-            Spectrum for which similarity scores should be calculated for all
+        query_spectra
+            Spectra for which similarity scores should be calculated for all
             spectra in the ms2ds embeddings file.
         """
         ms2ds = MS2DeepScore(self.ms2ds_model, progress_bar=False)
-        query_embedding = ms2ds.calculate_vectors([query_spectrum])
+        query_embeddings = ms2ds.calculate_vectors(query_spectra)
         library_ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
 
         ms2ds_scores = cosine_similarity_matrix(library_ms2ds_embeddings_numpy,
-                                                query_embedding)
+                                                query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
             ms2ds_scores,
             index=self.ms2ds_embeddings.index,
-            columns=["ms2ds_score"])
+            columns=[query_spectrum.get(
+                self.settings["spectrum_id_column_name"])
+                for query_spectrum in query_spectra])
         return similarity_matrix_dataframe
 
     def _collect_data_for_ms2query_model(

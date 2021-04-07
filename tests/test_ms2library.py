@@ -101,7 +101,8 @@ def test_get_all_ms2ds_scores():
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     test_spectra = create_test_spectra()
-    result = test_library._get_all_ms2ds_scores(test_spectra[0])
+    result = test_library._get_all_ms2ds_scores(test_spectra)
+
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
