@@ -58,6 +58,8 @@ class MS2Library:
         max_parent_mass:
             The value used to normalize the parent mass by dividing it by the
             max_parent_mass. Default = 13428.370894192036
+        progress_bars:
+            If True progress bars will be shown of all methods. Default = True
         """
         # pylint: disable=too-many-arguments
         # todo create a ms2query model class that stores the model but also the
@@ -94,7 +96,8 @@ class MS2Library:
         default_settings = {"spectrum_id_column_name": "spectrumid",
                             "cosine_score_tolerance": 0.1,
                             "base_nr_mass_similarity": 0.8,
-                            "max_parent_mass": 13418.370894192036}
+                            "max_parent_mass": 13418.370894192036,
+                            "progress_bars": True}
         # todo make new model that has a fixed basic mass
         for attribute in new_settings:
             assert attribute in default_settings, \
@@ -129,8 +132,7 @@ class MS2Library:
         return preselected_matches_with_prediction
 
     def collect_matches_data_multiple_spectra(self,
-                                              query_spectra: List[Spectrum],
-                                              progress_bar=False
+                                              query_spectra: List[Spectrum]
                                               ) -> Dict[str, pd.DataFrame]:
         """Returns a dataframe with info for all matches to all query spectra
 
@@ -144,8 +146,6 @@ class MS2Library:
         ------
         query_spectra:
             The spectra for which info about matches should be collected
-        progress_bar:
-            If true a progress bar is shown. Default is False
         """
         # Gets a preselection of spectra for all query_spectra
         dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
@@ -155,7 +155,7 @@ class MS2Library:
         dict_with_preselected_spectra_info = {}
         for query_spectrum in tqdm(query_spectra,
                                    desc="collecting matches info",
-                                   disable=not progress_bar):
+                                   disable=not self.settings["progress_bars"]):
             spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
             matches_with_info = \
@@ -186,7 +186,9 @@ class MS2Library:
 
         dict_with_preselected_spectra = {}
         # Select top nr of spectra
-        for query_spectrum in query_spectra:
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Preselecting spectra",
+                                   disable=not self.settings["progress_bars"]):
             query_spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
             ms2ds_scores_np = ms2ds_scores[query_spectrum_id].to_numpy()
