@@ -4,7 +4,7 @@ Functions to obtain data from sqlite files.
 
 import ast
 import io
-from typing import Dict, List
+from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -242,17 +242,12 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
     return result_dataframe
 
 
-def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
-                                     spectrum_id_list: List[str],
-                                     part_of_metadata_to_select: str,
-                                     spectrum_id_storage_name: str
-                                     = "spectrumid",
-                                     table_name: str = "spectrum_data"
-                                     ) -> List[str]:
-    """Returns a dict with part of metadata for each spectrum id
-
-    The key of the dict are the spectrum_ids and the values the part of the
-    metadata that was marked with part_of_metadata_to_select.
+def get_metadata_from_sqlite(sqlite_file_name: str,
+                             spectrum_id_list: List[str],
+                             spectrum_id_storage_name: str = "spectrumid",
+                             table_name: str = "spectrum_data"
+                             ) -> Dict[str, dict]:
+    """Returns a dict with as values the metadata for each spectrum id
 
     Args:
     ------
@@ -261,8 +256,6 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
     spectrum_id_list:
         A list with spectrum ids for which the part of the metadata should be
         looked up.
-    part_of_metadata_to_select:
-        The key under which this metadata is stored in the sqlite file.
     spectrum_id_storage_name:
         The name under which the spectrum ids are stored in the metadata.
         Default = 'spectrumid'
@@ -278,18 +271,13 @@ def get_part_of_metadata_from_sqlite(sqlite_file_name: str,
     cur = conn.cursor()
     cur.execute(sqlite_command)
     list_of_metadata = cur.fetchall()
+    # Convert to dictionary
     results_dict = {}
     for metadata in list_of_metadata:
         metadata = ast.literal_eval(metadata[0])
-        results_dict[metadata[spectrum_id_storage_name]] = \
-            metadata[part_of_metadata_to_select]
+        results_dict[metadata[spectrum_id_storage_name]] = metadata
     # Check if all spectrum_ids were found
     for spectrum_id in spectrum_id_list:
         assert spectrum_id in results_dict, \
             f"{spectrum_id_storage_name} {spectrum_id} not found in database"
-    # Output from get_part_of_metadata is not always in order of input, so this
-    # is sorted again here.
-    results_in_correct_order = \
-        [results_dict[spectrum_id]
-         for spectrum_id in spectrum_id_list]
-    return results_in_correct_order
+    return results_dict

@@ -13,8 +13,8 @@ from matchms import Spectrum
 from ms2query.app_helpers import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite, \
-    get_part_of_metadata_from_sqlite
+    get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite,  \
+    get_metadata_from_sqlite
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
@@ -189,7 +189,7 @@ def test_get_spectra_from_sqlite_all_spectra():
             f"{expected_spectrum.get('spectrum_id')} to be returned as well"
 
 
-def test_get_part_of_metadata_from_sqlite():
+def test_get_metadata_from_sqlite():
     path_to_test_files_sqlite_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files')
@@ -198,12 +198,23 @@ def test_get_part_of_metadata_from_sqlite():
 
     spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
 
-    result = get_part_of_metadata_from_sqlite(
+    result = get_metadata_from_sqlite(
         sqlite_file_name,
         spectra_id_list,
-        "inchikey",
         spectrum_id_storage_name="spectrum_id")
-    assert isinstance(result, list), "Expected dictionary as output"
-    assert result == ['IYDKWWDUBYWQGF-NNAZGLEUSA-N',
-                      'WXDBUBIFYCCNLE-NSCMQRKRSA-N'], \
-        "Expected, different results"
+    assert isinstance(result, dict), "Expected dictionary as output"
+    assert len(result) == len(spectra_id_list), \
+        "Expected the same number of results as the spectra_id_list"
+    for spectrum_id in spectra_id_list:
+        assert spectrum_id in result, \
+            f"The spectrum_id {spectrum_id} was expected as key"
+        metadata = result[spectrum_id]
+        assert isinstance(metadata, dict), \
+            "Expected metadata to be stored as dict"
+        assert metadata['spectrum_id'] == spectrum_id, \
+            "Expected different spectrum id in metadata"
+        for key in metadata.keys():
+            assert isinstance(key, str), \
+                "Expected keys of metadata to be string"
+            assert isinstance(metadata[key], (str, float, int, list)), \
+                f"Expected values of metadata to be string {metadata[key]}"

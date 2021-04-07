@@ -6,7 +6,7 @@ from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikey14s, get_part_of_metadata_from_sqlite
+    get_tanimoto_score_for_inchikey14s, get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
@@ -176,10 +176,12 @@ class SelectDataForTraining(MS2Library):
             f"got inchikey = {query_inchikey14}"
 
         # Get inchikeys belonging to spectra ids
-        unfiltered_inchikeys = get_part_of_metadata_from_sqlite(
+        metadata_dict = get_metadata_from_sqlite(
             self.sqlite_file_location,
             spectra_ids_list,
-            "inchikey")
+            self.settings["spectrum_id_column_name"])
+        unfiltered_inchikeys = [metadata_dict[spectrum_id]["inchikey"]
+                                for spectrum_id in spectra_ids_list]
 
         inchikey14s_dict = {}
         for i, inchikey in enumerate(unfiltered_inchikeys):

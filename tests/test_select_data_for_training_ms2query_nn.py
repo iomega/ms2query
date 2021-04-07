@@ -139,3 +139,5 @@ def get_test_file_names():
         s2v_pickled_embeddings_file, ms2ds_model_file_name, \
         ms2ds_embeddings_file_name, spectrum_id_column_name, \
         training_spectra_file_name, validation_spectra_file_name
+
+test_get_tanimoto_for_spectrum_ids()
