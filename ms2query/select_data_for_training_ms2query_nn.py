@@ -58,7 +58,9 @@ class SelectDataForTraining(MS2Library):
             The base nr used for normalizing the mass similarity. Default = 0.8
         max_parent_mass:
             The value used to normalize the parent mass by dividing it by the
-            max_parent_mass. Default = 13428.370894192036"""
+            max_parent_mass. Default = 13428.370894192036
+        progress_bars:
+            If True progress bars will be shown. Default = True"""
         # pylint: disable=too-many-arguments
         super().__init__(sqlite_file_location,
                          s2v_model_file_name,
@@ -103,8 +105,7 @@ class SelectDataForTraining(MS2Library):
         return training_set, training_labels, validation_set, validation_labels
 
     def get_matches_info_and_tanimoto(self,
-                                      query_spectra: List[SpectrumType],
-                                      progress_bars=True):
+                                      query_spectra: List[SpectrumType]):
         """Returns tanimoto scores and info about matches of all query spectra
 
         A selection of matches is made for each query_spectrum. Based on the
@@ -118,18 +119,15 @@ class SelectDataForTraining(MS2Library):
         ------
         query_spectra:
             List of Spectrum objects
-        progress_bars:
-            If True progress bars are shown. Default = True.
         """
         query_spectra_matches_info = \
             self.collect_matches_data_multiple_spectra(
-                query_spectra,
-                progress_bar=progress_bars)
+                query_spectra)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,
                                    desc="Get tanimoto scores",
-                                   disable=not progress_bars):
+                                   disable=not self.settings["progress_bars"]):
             query_spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
             match_info_df = query_spectra_matches_info[query_spectrum_id]
