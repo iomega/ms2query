@@ -11,6 +11,7 @@ from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 class SelectDataForTraining(MS2Library):
+    """Class to collect data needed to train a ms2query neural network"""
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
