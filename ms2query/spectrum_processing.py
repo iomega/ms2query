@@ -47,8 +47,7 @@ def minimal_processing_multiple_spectra(spectrum_list: List[SpectrumType],
         spectrum_list[i] = processed_spectrum
 
     # Remove None values
-    result = [spectrum for spectrum in spectrum_list if spectrum]
-    return result
+    return [spectrum for spectrum in spectrum_list if spectrum]
 
 
 def spectrum_processing_minimal(spectrum: SpectrumType,
