@@ -6,11 +6,15 @@ from ms2query.create_library_files import CreateFilesForLibrary
 from ms2query.app_helpers import load_pickled_file
 
 
-def test_set_settings_correct():
-    """Tests if settings are set correctly"""
-    path_to_general_test_files = os.path.join(
+@pytest.fixture
+def path_to_general_test_files() -> str:
+    return os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/general_test_files')
+
+
+def test_set_settings_correct(path_to_general_test_files):
+    """Tests if settings are set correctly"""
     test_create_files = CreateFilesForLibrary(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
         sqlite_file_name="test_sqlite_name", progress_bars=False)
@@ -41,11 +45,8 @@ def test_set_settings_wrong():
                   not_recognized_attribute="test_value")
 
 
-def test_create_all_library_files(tmp_path):
+def test_create_all_library_files(tmp_path, path_to_general_test_files):
     """Tests create_all_library_files"""
-    path_to_general_test_files = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
     ms2ds_embeddings_file = os.path.join(tmp_path, "ms2ds_embeddings")
     s2v_embeddings_file = os.path.join(tmp_path, "s2v_embeddings")
     sqlite_file = os.path.join(tmp_path, "sqlite")
@@ -85,11 +86,8 @@ def test_create_all_library_files(tmp_path):
         path_to_general_test_files, "100_test_spectra.sqlite"))
 
 
-def test_store_ms2ds_embeddings(tmp_path):
+def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     """Tests store_ms2ds_embeddings"""
-    path_to_general_test_files = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
     new_embeddings_file_name = os.path.join(tmp_path,
                                             "new_test_ms2ds_embeddings.pickle")
     test_create_files = CreateFilesForLibrary(os.path.join(
@@ -108,11 +106,8 @@ def test_store_ms2ds_embeddings(tmp_path):
     pd.testing.assert_frame_equal(embeddings, expected_embeddings)
 
 
-def test_store_s2v_embeddings(tmp_path):
+def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     """Tests store_ms2ds_embeddings"""
-    path_to_general_test_files = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
     new_embeddings_file_name = os.path.join(tmp_path,
                                             "new_test_s2v_embeddings.pickle")
     test_create_files = CreateFilesForLibrary(os.path.join(
