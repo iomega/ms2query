@@ -125,7 +125,7 @@ class MS2Library:
         preselected_matches_with_prediction = \
             self.get_ms2query_model_prediction(preselected_matches_info,
                                                ms2query_model_file_name)
-        # todo decide for a good filtering method e.g. below certain treshold
+        # todo decide for a good filtering method e.g. below certain threshold
         return preselected_matches_with_prediction
 
     def collect_matches_data_multiple_spectra(self,

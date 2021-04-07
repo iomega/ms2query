@@ -72,6 +72,7 @@ def train_ms2query_nn(nn_model: Sequential,
     save_name:
         Location for saving model, result is not saved when None. Default=None
     """
+    # pylint: disable=too-many-arguments
     earlystopper = EarlyStopping(monitor='val_loss', patience=10,
                                  verbose=1)
     if save_name and not os.path.exists(save_name + ".hdf5"):
@@ -135,7 +136,6 @@ def create_and_train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
         Location for saving model, result is not saved when None. Default=None
     """
     # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-locals
     nn_model = create_ms2query_nn(layers, x_train.shape[1], model_loss,
                                   activations, last_activation)
     nn_model, history = train_ms2query_nn(nn_model, x_train, y_train, x_val,

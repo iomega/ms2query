@@ -4,7 +4,7 @@ Functions to obtain data from sqlite files.
 
 import ast
 import io
-from typing import Dict, List, Union
+from typing import Dict, List
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
