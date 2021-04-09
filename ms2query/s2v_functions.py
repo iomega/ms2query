@@ -407,6 +407,7 @@ def combine_found_matches(documents_query: List[SpectrumDocument],
     combined_matches = []
 
     for i, document_query in enumerate(documents_query):
+        # Selects all s2v similarity scores for current query spectrum
         s2v_top_ids = selection_spec2vec[:, i]
         mass_match_ids = selection_massmatch[i]
 

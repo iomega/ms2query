@@ -37,6 +37,8 @@ setup(
         "plotly",
         "h5py<3.0.0",
         "tensorflow",
+        "ms2deepscore",
+        "gensim==3.8.0",
     ],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",

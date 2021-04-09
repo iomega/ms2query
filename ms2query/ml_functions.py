@@ -148,7 +148,7 @@ def find_mass_similarity(matches: pd.DataFrame,
     library_ids = df.index.values
     scaled_mass_sims = []
     for lib_id in library_ids:
-        lib_mass = documents_library[lib_id]._obj.get("parent_mass")
+        lib_mass = documents_library[lib_id].get("parent_mass")
         mass_diff = abs(lib_mass - query_mass)
         scaled_mass_sim = base_num ** mass_diff
         scaled_mass_sims.append(scaled_mass_sim)
