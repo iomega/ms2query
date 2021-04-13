@@ -9,8 +9,9 @@ from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec import Spec2Vec
-from spec2vec.vector_operations import cosine_similarity_matrix
-from ms2query.query_from_sqlite_database import get_spectra_from_sqlite
+from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
+from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
+    get_parent_mass_within_range
 from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
@@ -204,6 +205,29 @@ class MS2Library:
             dict_with_preselected_spectra[query_spectrum_id] = selected_spectra
         return dict_with_preselected_spectra
 
+    def select_potential_perfect_matches(self,
+                                         query_spectra: List[Spectrum],
+                                         mass_tolerance: Union[float, int] = 1
+                                         ) -> Dict[str, List[str]]:
+        selected_spectra = {}
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Selecting potential perfect matches",
+                                   disable=not self.settings["progress_bars"]):
+            query_parent_mass = query_spectrum.get("parent_mass")
+            query_spectrum_id = query_spectrum.get(
+                self.settings["spectrum_id_column_name"])
+            parent_masses_within_mass_tolerance = get_parent_mass_within_range(
+                self.sqlite_file_location,
+                query_parent_mass-mass_tolerance,
+                query_parent_mass+mass_tolerance,
+                self.settings["spectrum_id_column_name"])
+            # todo add selection based on ms2ds
+            # todo add more strict ms2ds selection for spectra with larger
+            #  mass_tolerance
+            selected_spectra[query_spectrum_id] = \
+                [result[0] for result in parent_masses_within_mass_tolerance]
+        return selected_spectra
+
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
         """Returns a dataframe with the ms2deepscore similarity scores
@@ -232,7 +256,7 @@ class MS2Library:
     def _collect_data_for_ms2query_model(
             self,
             query_spectrum: Spectrum,
-            preselected_spectrum_ids: List[str]) -> pd.DataFrame:
+            preselected_spectrum_ids: List[str]) -> Union[pd.DataFrame, None]:
         """Returns dataframe with relevant info for ms2query nn model
 
         query_spectrum:
@@ -242,7 +266,9 @@ class MS2Library:
             query_spectrum
         """
         # pylint: disable=too-many-locals
-
+        if len(preselected_spectrum_ids) == 0:
+            # If there are no preselected spectra None is returned
+            return None
         # Gets a list of all preselected spectra as Spectrum objects
         preselected_spectra_list = get_spectra_from_sqlite(
             self.sqlite_file_location,
@@ -310,9 +336,10 @@ class MS2Library:
         return preselected_spectra_df
 
     @staticmethod
-    def get_ms2query_model_prediction(matches_info: Dict[str, pd.DataFrame],
-                                      ms2query_model_file_name: str
-                                      ) -> Dict[str, pd.DataFrame]:
+    def get_ms2query_model_prediction(
+            matches_info: Dict[str, Union[pd.DataFrame, None]],
+            ms2query_model_file_name: str
+            ) -> Dict[str, pd.DataFrame]:
         """Adds ms2query predictions to dataframes
 
         matches_info:
@@ -326,6 +353,8 @@ class MS2Library:
 
         for query_spectrum_id in matches_info:
             current_query_matches_info = matches_info[query_spectrum_id]
+            if current_query_matches_info is None:
+                continue
             predictions = ms2query_nn_model.predict(current_query_matches_info)
 
             # Add prediction to dataframe
