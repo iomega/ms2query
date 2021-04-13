@@ -4,7 +4,7 @@ Functions to obtain data from sqlite files.
 
 import ast
 import io
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -287,7 +287,8 @@ def get_parent_mass_within_range(sqlite_file_name: str,
                                  lower_bound: Union[float, int],
                                  upper_bound: Union[float, int],
                                  spectrum_id_storage_name: str = "spectrumid",
-                                 table_name: str = "spectrum_data"):
+                                 table_name: str = "spectrum_data"
+                                 ) -> List[Tuple[str, float]]:
     """Returns spectrum_ids with parent mass between lower and upper bound
 
     Args:
@@ -307,9 +308,9 @@ def get_parent_mass_within_range(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
-        f"""SELECT {spectrum_id_storage_name} FROM {table_name} 
-        WHERE parent_mass > {lower_bound} and parent_mass < {upper_bound}"""
+        f"""SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name} 
+        WHERE parent_mass BETWEEN {lower_bound} and {upper_bound}"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
     spectrum_ids_within_range = cur.fetchall()
-    return [spectrum_id[0] for spectrum_id in spectrum_ids_within_range]
+    return spectrum_ids_within_range
