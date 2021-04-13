@@ -307,11 +307,15 @@ class MS2Library:
                            for spectrum in preselected_spectra_list]
 
         # Get s2v_scores
-        s2v_scores = Spec2Vec(self.s2v_model,
-                              allowed_missing_percentage=100).matrix(
-            create_spectrum_documents(preselected_spectra_list),
-            create_spectrum_documents([query_spectrum]))[:, 0]
-
+        query_spectrum_document = \
+            create_spectrum_documents([query_spectrum])[0]
+        query_s2v_embedding = calc_vector(self.s2v_model,
+                                          query_spectrum_document,
+                                          allowed_missing_percentage=100)
+        preselected_s2v_embeddings = \
+            self.s2v_embeddings.loc[preselected_spectrum_ids].to_numpy()
+        s2v_scores = cosine_similarity_matrix(np.array([query_s2v_embedding]),
+                                              preselected_s2v_embeddings)[0]
         # Get ms2ds_scores
         query_ms2ds_embeddings = MS2DeepScore(
             self.ms2ds_model,
