@@ -320,7 +320,7 @@ def get_parent_mass(sqlite_file_name: str,
                     spectrum_id_storage_name: str = "spectrumid",
                     table_name: str = "spectrum_data"
                     ) -> Dict[str, float]:
-    """Returns spectrum_ids with parent mass between lower and upper bound
+    """Returns all spectrum_ids with parent mass
 
     Args:
     -----
