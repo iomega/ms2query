@@ -314,3 +314,32 @@ def get_parent_mass_within_range(sqlite_file_name: str,
     cur.execute(sqlite_command)
     spectrum_ids_within_range = cur.fetchall()
     return spectrum_ids_within_range
+
+
+def get_parent_mass(sqlite_file_name: str,
+                    spectrum_id_storage_name: str = "spectrumid",
+                    table_name: str = "spectrum_data"
+                    ) -> Dict[str, float]:
+    """Returns spectrum_ids with parent mass between lower and upper bound
+
+    Args:
+    -----
+    sqlite_file_name:
+        The sqlite file in which the spectra data is stored.
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
+    table_name:
+        The name of the table in the sqlite file in which the metadata is
+        stored. Default = "spectrum_data"
+    """
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name}"
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    results = cur.fetchall()
+    parent_mass_dict = {}
+    for result in results:
+        parent_mass_dict[result[0]] = result[1]
+    return parent_mass_dict
