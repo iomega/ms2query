@@ -11,7 +11,7 @@ from ms2deepscore import MS2DeepScore
 from spec2vec import Spec2Vec
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
-    get_parent_mass_within_range
+    get_parent_mass_within_range, get_parent_mass
 from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
@@ -111,7 +111,8 @@ class MS2Library:
 
     def select_best_matches(self,
                             query_spectra: List[Spectrum],
-                            ms2query_model_file_name: str
+                            ms2query_model_file_name: str,
+                            preselection_cut_off: int = 2000
                             ) -> Dict[str, pd.DataFrame]:
         """Returns ordered best matches with info for all query spectra
 
@@ -121,10 +122,14 @@ class MS2Library:
             List of query spectra for which the best matches should be found
         ms2query_model_file_name:
             File name of a hdf5 file containing the ms2query model.
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected. Default = 2000
         """
         # Selects top 20 best matches based on ms2ds and calculates all scores
         preselected_matches_info = \
-            self.collect_matches_data_multiple_spectra(query_spectra)
+            self.collect_matches_data_multiple_spectra(query_spectra,
+                                                       preselection_cut_off)
         # Adds the ms2query model prediction to the dataframes
         preselected_matches_with_prediction = \
             self.get_ms2query_model_prediction(preselected_matches_info,
@@ -133,7 +138,8 @@ class MS2Library:
         return preselected_matches_with_prediction
 
     def collect_matches_data_multiple_spectra(self,
-                                              query_spectra: List[Spectrum]
+                                              query_spectra: List[Spectrum],
+                                              preselection_cut_off: int
                                               ) -> Dict[str, pd.DataFrame]:
         """Returns a dataframe with info for all matches to all query spectra
 
@@ -147,9 +153,16 @@ class MS2Library:
         ------
         query_spectra:
             The spectra for which info about matches should be collected
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected
         """
+        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
         # Gets a preselection of spectra for all query_spectra
-        dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
+        dict_with_preselected_spectra = self.pre_select_spectra(
+            query_spectra,
+            ms2ds_scores,
+            preselection_cut_off)
 
         # Run neural network model over all found spectra and add the predicted
         # scores to a dict with the spectra in dataframes
@@ -168,8 +181,9 @@ class MS2Library:
 
     def pre_select_spectra(self,
                            query_spectra: List[Spectrum],
-                           nr_of_spectra: int = 20
-                           ) -> Dict[str, List[str]]:
+                           ms2ds_scores: pd.DataFrame,
+                           nr_of_spectra: int
+                           ) -> Dict[str, pd.DataFrame]:
         """Returns dict with spectrum IDs of spectra with highest ms2ds score
 
         The keys are the query spectrum_ids and the values a list of the
@@ -183,8 +197,6 @@ class MS2Library:
         nr_of_spectra:
             How many top spectra should be selected. Default = 20
         """
-        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-
         dict_with_preselected_spectra = {}
         # Select top nr of spectra
         for query_spectrum in tqdm(query_spectra,
@@ -199,17 +211,19 @@ class MS2Library:
                 -nr_of_spectra,
                 axis=0)[-nr_of_spectra:]
             # Select the spectra with the highest score
-            selected_spectra = list(ms2ds_scores[query_spectrum_id].iloc[
-                indexes_of_top_spectra].index)
+            # selected_spectra = list(ms2ds_scores[query_spectrum_id].iloc[
+            #     indexes_of_top_spectra].index)
+            selected_spectra_and_scores = ms2ds_scores[query_spectrum_id].iloc[indexes_of_top_spectra]
             # Store selected spectra in dict
-            dict_with_preselected_spectra[query_spectrum_id] = selected_spectra
+            dict_with_preselected_spectra[query_spectrum_id] = selected_spectra_and_scores
         return dict_with_preselected_spectra
 
-    def select_potential_perfect_matches(self,
-                                         query_spectra: List[Spectrum],
-                                         mass_tolerance: Union[float, int] = 1
-                                         ) -> Dict[str, List[str]]:
-        selected_spectra = {}
+    def select_potential_true_matches(self,
+                                      query_spectra: List[Spectrum],
+                                      mass_tolerance: Union[float, int] = 0.1,
+                                      s2v_score_threshold: float = 0.6
+                                      ) -> Dict[str, List[str]]:
+        found_matches_dict = {}
         for query_spectrum in tqdm(query_spectra,
                                    desc="Selecting potential perfect matches",
                                    disable=not self.settings["progress_bars"]):
@@ -221,12 +235,16 @@ class MS2Library:
                 query_parent_mass-mass_tolerance,
                 query_parent_mass+mass_tolerance,
                 self.settings["spectrum_id_column_name"])
-            # todo add selection based on ms2ds
-            # todo add more strict ms2ds selection for spectra with larger
-            #  mass_tolerance
-            selected_spectra[query_spectrum_id] = \
-                [result[0] for result in parent_masses_within_mass_tolerance]
-        return selected_spectra
+            selected_library_spectra = [result[0] for result in
+                                parent_masses_within_mass_tolerance]
+            s2v_scores = self.get_s2v_scores(query_spectrum,
+                                             selected_library_spectra)
+            found_matches = []
+            for i in range(len(selected_library_spectra)):
+                if s2v_scores[i] > s2v_score_threshold:
+                    found_matches.append(selected_library_spectra[i])
+            found_matches_dict[query_spectrum_id] = found_matches
+        return found_matches_dict
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
@@ -256,7 +274,8 @@ class MS2Library:
     def _collect_data_for_ms2query_model(
             self,
             query_spectrum: Spectrum,
-            preselected_spectrum_ids: List[str]) -> Union[pd.DataFrame, None]:
+            preselected_spectra_and_ms2ds_scores: pd.DataFrame
+            ) -> Union[pd.DataFrame, None]:
         """Returns dataframe with relevant info for ms2query nn model
 
         query_spectrum:
@@ -266,78 +285,58 @@ class MS2Library:
             query_spectrum
         """
         # pylint: disable=too-many-locals
-        if len(preselected_spectrum_ids) == 0:
-            # If there are no preselected spectra None is returned
-            return None
-        # Gets a list of all preselected spectra as Spectrum objects
-        preselected_spectra_list = get_spectra_from_sqlite(
-            self.sqlite_file_location,
-            preselected_spectrum_ids,
-            spectrum_id_storage_name=self.settings["spectrum_id_column_name"])
-        # Gets cosine similarity matrix
-        cosine_sim_matrix = CosineGreedy(
-            tolerance=self.settings["cosine_score_tolerance"]).matrix(
-                preselected_spectra_list,
-                [query_spectrum])
-        # Gets modified cosine similarity matrix
-        mod_cosine_sim_matrix = ModifiedCosine(
-            tolerance=self.settings["cosine_score_tolerance"]).matrix(
-                preselected_spectra_list,
-                [query_spectrum])
-        # Changes [[(cos_score1, cos_match1)] [(cos_score2, cos_match2)]] into
-        # [cos_score1, cos_score2], [cos_match1, cos_match2]
-        cosine_score, cosine_matches = map(list, zip(
-            *[x[0] for x in cosine_sim_matrix]))
-        mod_cosine_score, mod_cosine_matches = map(list, zip(
-            *[x[0] for x in mod_cosine_sim_matrix]))
-        # Transform cosine score and mod cosine matches to in between 0-1
-        normalized_cosine_matches = [1 - 0.93 ** i for i in cosine_matches]
-        normalized_mod_cos_matches = \
-            [1 - 0.93 ** i for i in mod_cosine_matches]
+        preselected_spectrum_ids = list(preselected_spectra_and_ms2ds_scores.index)
+        ms2ds_scores = preselected_spectra_and_ms2ds_scores.to_numpy()
 
-        parent_masses = [spectrum.get("parent_mass")
-                         for spectrum in preselected_spectra_list]
+        all_parent_masses = get_parent_mass(
+            self.sqlite_file_location,
+            self.settings["spectrum_id_column_name"])
+
+        parent_masses = [all_parent_masses[spectrum_id]
+                         for spectrum_id in preselected_spectrum_ids]
         normalized_parent_masses = \
             [parent_mass/self.settings["max_parent_mass"]
              for parent_mass in parent_masses]
 
+        query_spectrum_parent_mass = query_spectrum.get("parent_mass")
         mass_similarity = [self.settings["base_nr_mass_similarity"] **
-                           abs(spectrum.get("parent_mass") -
-                               query_spectrum.get("parent_mass"))
-                           for spectrum in preselected_spectra_list]
+                           abs(parent_mass -
+                               query_spectrum_parent_mass)
+                           for parent_mass in parent_masses]
 
-        # Get s2v_scores
+        s2v_scores = self.get_s2v_scores(query_spectrum,
+                                         preselected_spectrum_ids)
+
+        # Add info together into a dataframe
+        preselected_spectra_df = pd.DataFrame(
+            {"parent_mass": normalized_parent_masses,
+             "mass_sim": mass_similarity,
+             "s2v_scores": s2v_scores,
+             "ms2ds_scores": ms2ds_scores},
+            index=preselected_spectrum_ids)
+        return preselected_spectra_df
+
+    def get_s2v_scores(self,
+                       query_spectrum: Spectrum,
+                       preselection_of_library_ids: List[str]
+                       ) -> np.ndarray:
+        """Returns the s2v scores
+
+        query_spectrum:
+            Spectrum object
+        preselection_of_library_ids:
+            list of spectrum ids for which the s2v scores should be calcualated
+            """
         query_spectrum_document = \
             create_spectrum_documents([query_spectrum])[0]
         query_s2v_embedding = calc_vector(self.s2v_model,
                                           query_spectrum_document,
                                           allowed_missing_percentage=100)
         preselected_s2v_embeddings = \
-            self.s2v_embeddings.loc[preselected_spectrum_ids].to_numpy()
+            self.s2v_embeddings.loc[preselection_of_library_ids].to_numpy()
         s2v_scores = cosine_similarity_matrix(np.array([query_s2v_embedding]),
                                               preselected_s2v_embeddings)[0]
-        # Get ms2ds_scores
-        query_ms2ds_embeddings = MS2DeepScore(
-            self.ms2ds_model,
-            progress_bar=False).calculate_vectors([query_spectrum])
-        preselected_ms2ds_embeddings = \
-            self.ms2ds_embeddings.loc[preselected_spectrum_ids].to_numpy()
-        ms2ds_scores = cosine_similarity_matrix(query_ms2ds_embeddings,
-                                                preselected_ms2ds_embeddings
-                                                )[0]
-
-        # Add info together into a dataframe
-        preselected_spectra_df = pd.DataFrame(
-            {"cosine_score": cosine_score,
-             "cosine_matches": normalized_cosine_matches,
-             "mod_cosine_score": mod_cosine_score,
-             "mod_cosine_matches": normalized_mod_cos_matches,
-             "parent_mass": normalized_parent_masses,
-             "mass_sim": mass_similarity,
-             "s2v_scores": s2v_scores,
-             "ms2ds_scores": ms2ds_scores},
-            index=preselected_spectrum_ids)
-        return preselected_spectra_df
+        return s2v_scores
 
     @staticmethod
     def get_ms2query_model_prediction(
