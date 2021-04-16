@@ -47,14 +47,19 @@ def test_collect_matches_data_multiple_spectra():
 
     test_spectra = create_test_spectra()
 
-    result = test_library.collect_matches_data_multiple_spectra(test_spectra)
+    result = test_library.collect_matches_data_multiple_spectra(test_spectra,
+                                                                20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
+
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
+        assert_frame_equal(result[key], expected_result[key][
+            ["parent_mass", "mass_sim", "s2v_scores", "ms2ds_scores"]])
+    # todo create new test file, once final decision is made about all
+    #  scores calculated
 
 
 def test_pre_select_spectra():
@@ -135,9 +140,11 @@ def test_collect_data_for_ms2query_model():
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_matches_data.pickle')
         )[test_spectrum.get(spectrum_id_column_name)]
-
     assert isinstance(result, DataFrame), "Expected dictionary"
-    assert_frame_equal(result, expected_result)
+    assert_frame_equal(result, expected_result[["parent_mass",
+                                               "mass_sim",
+                                               "s2v_scores",
+                                               "ms2ds_scores"]])
 
 
 def test_get_ms2query_model_prediction():
