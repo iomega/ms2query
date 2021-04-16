@@ -4,14 +4,12 @@ import numpy as np
 from tqdm import tqdm
 from tensorflow.keras.models import load_model as load_nn_model
 from gensim.models import Word2Vec
-from matchms.similarity import CosineGreedy, ModifiedCosine
 from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
-from spec2vec import Spec2Vec
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
-from ms2query.query_from_sqlite_database import get_spectra_from_sqlite, \
-    get_parent_mass_within_range, get_parent_mass
+from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
+    get_parent_mass
 from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
@@ -211,11 +209,11 @@ class MS2Library:
                 -nr_of_spectra,
                 axis=0)[-nr_of_spectra:]
             # Select the spectra with the highest score
-            # selected_spectra = list(ms2ds_scores[query_spectrum_id].iloc[
-            #     indexes_of_top_spectra].index)
-            selected_spectra_and_scores = ms2ds_scores[query_spectrum_id].iloc[indexes_of_top_spectra]
+            selected_spectra_and_scores = \
+                ms2ds_scores[query_spectrum_id].iloc[indexes_of_top_spectra]
             # Store selected spectra in dict
-            dict_with_preselected_spectra[query_spectrum_id] = selected_spectra_and_scores
+            dict_with_preselected_spectra[query_spectrum_id] = \
+                selected_spectra_and_scores
         return dict_with_preselected_spectra
 
     def select_potential_true_matches(self,
@@ -236,7 +234,7 @@ class MS2Library:
                 query_parent_mass+mass_tolerance,
                 self.settings["spectrum_id_column_name"])
             selected_library_spectra = [result[0] for result in
-                                parent_masses_within_mass_tolerance]
+                                        parent_masses_within_mass_tolerance]
             s2v_scores = self.get_s2v_scores(query_spectrum,
                                              selected_library_spectra)
             found_matches = []
@@ -285,7 +283,8 @@ class MS2Library:
             query_spectrum
         """
         # pylint: disable=too-many-locals
-        preselected_spectrum_ids = list(preselected_spectra_and_ms2ds_scores.index)
+        preselected_spectrum_ids = \
+            list(preselected_spectra_and_ms2ds_scores.index)
         ms2ds_scores = preselected_spectra_and_ms2ds_scores.to_numpy()
 
         all_parent_masses = get_parent_mass(
