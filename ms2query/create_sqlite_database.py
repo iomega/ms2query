@@ -118,8 +118,8 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
         get_spectra_belonging_to_inchikey14(inchikeys_order, list_of_spectra)
 
     # Get closest related inchikey14s for each inchikey14
-    closest_related_inchikey14s = get_closest_related_inchikey14s(tanimoto_df,
-                                          inchikeys_order)
+    closest_related_inchikey14s = \
+        get_closest_related_inchikey14s(tanimoto_df, inchikeys_order)
     # Creates a sqlite table containing all tanimoto scores
     initialize_tanimoto_score_table(sqlite_file_name)
     add_tanimoto_scores_to_sqlite_table(sqlite_file_name,
@@ -289,13 +289,14 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
     conn.close()
 
 
-def create_inchikey_sqlite_table(file_name: str,
-                                 ordered_inchikey_list: List[str],
-                                 spectra_belonging_to_inchikey,
-                                 closest_related_inchikeys: Dict[str, List[Tuple[str, float]]],
-                                 table_name: str = 'inchikeys',
-                                 col_name_inchikey: str = 'inchikey',
-                                 progress_bar: bool = True):
+def create_inchikey_sqlite_table(
+        file_name: str,
+        ordered_inchikey_list: List[str],
+        spectra_belonging_to_inchikey: Dict[str, List[str]],
+        closest_related_inchikeys: Dict[str, List[Tuple[str, float]]],
+        table_name: str = 'inchikeys',
+        col_name_inchikey: str = 'inchikey',
+        progress_bar: bool = True):
     """Creates a table storing the identifiers belonging to the inchikey14s
 
     Overwrites the table if it already exists. The column specified in
@@ -311,6 +312,11 @@ def create_inchikey_sqlite_table(file_name: str,
     ordered_inchikey14_list:
         List with the first 14 symbols of inchikeys, the inchikey14s will be
         stored in sqlite in the same order.
+    spectra_belonging_to_inchikey:
+        A dictionary storing the spectra belonging to each inchikey
+    closest_related_inchikeys:
+        A dictionary storing the closest related inchikeys and the tanimoto
+        score between the two inchikeys.
     table_name:
         Name of the table in the database that should store the (order of) the
         inchikey14s. Default = inchikeys.
@@ -339,8 +345,8 @@ def create_inchikey_sqlite_table(file_name: str,
 
     # Fill table
     for inchikey14 in tqdm(ordered_inchikey_list,
-                         desc="Adding inchikey14s to sqlite table",
-                         disable=not progress_bar):
+                           desc="Adding inchikey14s to sqlite table",
+                           disable=not progress_bar):
         matching_spectrum_ids = str(spectra_belonging_to_inchikey[inchikey14])
         add_row_to_table_command = \
             f"""INSERT INTO {table_name} 
@@ -382,8 +388,10 @@ def get_closest_related_inchikey14s(tanimoto_scores: pd.DataFrame,
         closest_related_inchikey14s_dict[inchikey] = []
 
         closest_related_inchikey14s = tanimoto_scores[inchikey].nlargest(10)
-        for closest_related_inchikey14 in closest_related_inchikey14s.iteritems():
-            closest_related_inchikey14s_dict[inchikey].append(closest_related_inchikey14)
+        for closest_related_inchikey14 in \
+                closest_related_inchikey14s.iteritems():
+            closest_related_inchikey14s_dict[inchikey].append(
+                closest_related_inchikey14)
     return closest_related_inchikey14s_dict
 
 
