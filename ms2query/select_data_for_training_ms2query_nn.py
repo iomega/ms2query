@@ -20,6 +20,7 @@ class SelectDataForTraining(MS2Library):
                  pickled_ms2ds_embeddings_file_name: str,
                  training_spectra_file: str,
                  validation_spectra_file: str,
+                 preselection_cut_off: int = 20,
                  **settings):
         """Parameters
         ----------
@@ -72,6 +73,7 @@ class SelectDataForTraining(MS2Library):
             load_pickled_file(training_spectra_file))
         self.validation_spectra = minimal_processing_multiple_spectra(
             load_pickled_file(validation_spectra_file))
+        self.preselection_cut_off = preselection_cut_off
 
     def create_train_and_val_data(self,
                                   save_file_name: Union[None, str] = None
@@ -122,7 +124,8 @@ class SelectDataForTraining(MS2Library):
         """
         query_spectra_matches_info = \
             self.collect_matches_data_multiple_spectra(
-                query_spectra)
+                query_spectra,
+                self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,
