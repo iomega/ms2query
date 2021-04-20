@@ -15,6 +15,7 @@ from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite,  \
     get_metadata_from_sqlite
+from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
@@ -74,22 +75,26 @@ def test_making_sqlite_file(tmp_path):
     new_sqlite_file_name = os.path.join(tmp_path,
                                         "test_spectra_database.sqlite")
 
-    path_to_test_files_sqlite_dir = os.path.join(
+    path_to_general_test_files = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
+        'tests/test_files/general_test_files')
 
-    reference_sqlite_file = os.path.join(path_to_test_files_sqlite_dir,
-                                         "test_spectra_database.sqlite")
+    reference_sqlite_file = os.path.join(path_to_general_test_files,
+                                         "100_test_spectra.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
-        path_to_test_files_sqlite_dir, "first_10_spectra.pickle"))
+        path_to_general_test_files, "100_test_spectra.pickle"))
+    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
+
+    tanimoto_scores_file_name = os.path.join(
+        path_to_general_test_files, "100_test_spectra_tanimoto_scores.pickle")
+
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
-                         os.path.join(path_to_test_files_sqlite_dir,
-                                      "test_tanimoto_scores.pickle"),
+                         tanimoto_scores_file_name,
                          list_of_spectra,
                          columns_dict={"parent_mass": "REAL"},
-                         spectrum_id_column_name="spectrum_id")
+                         spectrum_id_column_name="spectrumid")
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
