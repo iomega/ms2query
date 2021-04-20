@@ -343,3 +343,29 @@ def get_parent_mass(sqlite_file_name: str,
     for result in results:
         parent_mass_dict[result[0]] = result[1]
     return parent_mass_dict
+
+
+def get_inchikey_information(sqlite_file_name: str
+                             ) -> Tuple[Dict[str, List[str]],
+                                        Dict[str, List[Tuple[str, float]]]]:
+    """Returns the closely related inchikeys and the matching spectrum ids
+
+    sqlite_file_name:
+        The file name of an sqlite file
+    """
+    # todo add test function
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"SELECT * FROM inchikeys"
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    results = cur.fetchall()
+    matching_spectrum_ids_dict = {}
+    closely_related_inchikeys_dict = {}
+    for row in results:
+        inchikey = row[0]
+        matching_spectrum_ids = row[1]
+        closely_related_inchikeys = row[2]
+        matching_spectrum_ids_dict[inchikey] = matching_spectrum_ids
+        closely_related_inchikeys_dict[inchikey] = closely_related_inchikeys
+    return matching_spectrum_ids_dict, closely_related_inchikeys_dict
