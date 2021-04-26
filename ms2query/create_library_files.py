@@ -16,6 +16,7 @@ from ms2query.app_helpers import load_pickled_file
 class CreateFilesForLibrary:
     def __init__(self,
                  pickled_spectra_file_name: str,
+                 output_file_sqlite: str,
                  **settings):
         """Creates files needed to run queries on a library
 
@@ -23,29 +24,27 @@ class CreateFilesForLibrary:
         ----------
         pickled_spectra_file_name:
             File name of a pickled file containing spectrum objects.
+        output_file_sqlite:
+            The file name of the new sqlite file that is created.
 
         **settings:
             The following optional parameters can be defined.
-        sqlite_file_name:
-            The file name of the new sqlite file that is created. As default
-            the pickled_spectra_file_name is used and ".pickle" is removed and
-            replaced with ".sqlite".
-        ms2ds_embeddings_file_name:
+        output_file_ms2ds_embeddings:
             The file name of the file with ms2ds embeddings that is created.
-            As default the pickled_spectra_file_name is used and ".pickle" is
+            As default the output_file_sqlite is used and ".sqlite" is
             removed and replaced with "_ms2ds_embeddings.pickle".
-        s2v_embeddings_file_name:
+        output_file_s2v_embeddings:
             The file name of the file with s2v embeddings. As default the
-            pickled_spectra_file_name is used and ".pickle" is removed and
+            output_file_sqlite is used and ".sqlite" is removed and
             replaced with "_s2v_embeddings.pickle".
-        progress_bars:
-            If True, a progress bar of the different processes is shown.
-            Default = True.
         spectrum_id_column_name:
             The name of the column or key under which the spectrum id is
             stored. Default = "spectrumid"
+        progress_bars:
+            If True, a progress bar of the different processes is shown.
+            Default = True.
         """
-        self.settings = self._set_settings(settings, pickled_spectra_file_name)
+        self.settings = self._set_settings(settings, output_file_sqlite)
 
         # Load in the spectra
         self.list_of_spectra = \
@@ -53,7 +52,7 @@ class CreateFilesForLibrary:
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
-                      pickled_spectra_file_name: str
+                      output_file_sqlite: str
                       ) -> Dict[str, Union[str, bool]]:
         """Changes default settings to new_settings and creates file names
 
@@ -63,13 +62,12 @@ class CreateFilesForLibrary:
             Dictionary with settings that should be changed. Only the
             keys given in default_settings can be used and the type has to be
             the same as the type of the values in default settings.
-        pickled_spectra_file_name:
+        output_file_sqlite:
             The name of a pickled spectra file name. Expected to end on
             '.pickle'. It is used to create 3 new file names, with different
             extensions.
         """
-        default_settings = {"sqlite_file_name": "",
-                            "ms2ds_embeddings_file_name": "",
+        default_settings = {"ms2ds_embeddings_file_name": "",
                             "s2v_embeddings_file_name": "",
                             "progress_bars": True,
                             "spectrum_id_column_name": "spectrumid"}
@@ -83,12 +81,10 @@ class CreateFilesForLibrary:
             default_settings[attribute] = new_settings[attribute]
 
         # Empty new file names are replaced with default file names.
-        assert pickled_spectra_file_name[-7:] == ".pickle", \
-            "Pickled_spectra_file_name is expected end on '.pickle'"
-        base_file_name = pickled_spectra_file_name[:-7]
-        if default_settings["sqlite_file_name"] == "":
-            default_settings["sqlite_file_name"] = \
-                pickled_spectra_file_name[:-7] + ".sqlite"
+        assert output_file_sqlite.endswith(".sqlite"), \
+            "output_file_sqlite is expected end on '.sqlite'"
+        default_settings["output_file_sqlite"] = output_file_sqlite
+        base_file_name = output_file_sqlite[:-7]
         if default_settings["ms2ds_embeddings_file_name"] == "":
             default_settings["ms2ds_embeddings_file_name"] = \
                 base_file_name + "_ms2ds_embeddings.pickle"
@@ -103,8 +99,8 @@ class CreateFilesForLibrary:
                                             ) -> List[Spectrum]:
         """Loads spectra from pickled file and does minimal processing
 
-        Args
-        ______
+        Args:
+        ------
         pickled_spectra_file_name:
             The file name of a pickled file containing a list of spectra.
         """
@@ -129,7 +125,7 @@ class CreateFilesForLibrary:
                                  calculate_new_tanimoto_scores: bool = False):
         """Creates files with embeddings and a sqlite file with spectra data
 
-        Args
+        Args:
         ------
         tanimoto_scores_file_name:
             File name of a pickled file containing a dataframe with tanimoto
@@ -144,8 +140,8 @@ class CreateFilesForLibrary:
             If True new tanimoto scores will be calculated and stored in
             tanimoto_scores_file_name.
         """
-        assert not os.path.exists(self.settings["sqlite_file_name"]), \
-            "Given sqlite_file_name already exists"
+        assert not os.path.exists(self.settings["output_file_sqlite"]), \
+            "Given output_file_sqlite already exists"
         assert not os.path.exists(self.settings[
                                       'ms2ds_embeddings_file_name']), \
             "Given ms2ds_embeddings_file_name already exists"
@@ -161,7 +157,7 @@ class CreateFilesForLibrary:
             # Todo automatically create tanimoto scores
 
         make_sqlfile_wrapper(
-            self.settings["sqlite_file_name"],
+            self.settings["output_file_sqlite"],
             tanimoto_scores_file_name,
             self.list_of_spectra,
             columns_dict={"parent_mass": "REAL"},
@@ -227,7 +223,7 @@ class CreateFilesForLibrary:
         A dataframe with as index the spectrum_ids and as columns the indexes
         of the vector is converted to pickle.
 
-        Args
+        Args:
         ------
         s2v_model_file_name:
             File name to load spec2vec model, 3 files are expected, with the
