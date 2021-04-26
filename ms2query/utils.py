@@ -1,4 +1,5 @@
 import json
+import pickle
 from typing import Dict, List, TextIO
 from matchms.importing.load_from_json import as_spectrum
 from matchms.Spectrum import Spectrum
@@ -38,3 +39,9 @@ def csv2dict(file_path: str) -> Dict[str, List[str]]:
             line = line.split(",")
             csv_dict[line[0]] = line[1:]
     return csv_dict
+
+
+def load_pickled_file(filename: str):
+    with open(filename, 'rb') as file:
+        loaded_object = pickle.load(file)
+    return loaded_object
