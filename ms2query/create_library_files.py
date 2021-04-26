@@ -48,7 +48,7 @@ class CreateFilesForLibrary:
 
         # Load in the spectra
         self.list_of_spectra = \
-            self.load_spectra_and_minimal_processing(pickled_spectra_file_name)
+            self._load_spectra_and_minimal_processing(pickled_spectra_file_name)
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -94,9 +94,9 @@ class CreateFilesForLibrary:
 
         return default_settings
 
-    def load_spectra_and_minimal_processing(self,
-                                            pickled_spectra_file_name: str
-                                            ) -> List[Spectrum]:
+    def _load_spectra_and_minimal_processing(self,
+                                             pickled_spectra_file_name: str
+                                             ) -> List[Spectrum]:
         """Loads spectra from pickled file and does minimal processing
 
         Args:
