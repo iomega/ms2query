@@ -1,6 +1,7 @@
 from typing import List, Dict, Union
-import pandas as pd
 import os
+import pickle
+import pandas as pd
 from tqdm import tqdm
 from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
@@ -10,7 +11,6 @@ from spec2vec.vector_operations import calc_vector
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
     create_spectrum_documents
-from ms2query.app_helpers import load_pickled_file
 
 
 class CreateFilesForLibrary:
@@ -94,6 +94,12 @@ class CreateFilesForLibrary:
 
         return default_settings
 
+    @staticmethod
+    def _load_pickled_file(filename):
+        with open(filename, 'rb') as file:
+            loaded_object = pickle.load(file)
+        return loaded_object
+    
     def _load_spectra_and_minimal_processing(self,
                                              pickled_spectra_file_name: str
                                              ) -> List[Spectrum]:
@@ -105,7 +111,7 @@ class CreateFilesForLibrary:
             The file name of a pickled file containing a list of spectra.
         """
         # Loads the spectra from a pickled file
-        list_of_spectra = load_pickled_file(pickled_spectra_file_name)
+        list_of_spectra = self._load_pickled_file(pickled_spectra_file_name)
         assert list_of_spectra[0].get(self.settings[
                                           "spectrum_id_column_name"]), \
             f"Expected spectra to have '" \
