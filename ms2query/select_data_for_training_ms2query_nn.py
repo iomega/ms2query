@@ -4,7 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
-from ms2query.ms2library import MS2Library
+from ms2query import MS2Library
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikey14s, get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra

@@ -13,7 +13,26 @@ from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
     create_spectrum_documents
 
 
-class CreateFilesForLibrary:
+class LibraryFilesCreator:
+    """Class to build a MS2Query library from input spectra and trained MS2DeepScore
+    as well as Spec2Vec models.
+    
+    For example:
+
+    .. code-block:: python
+
+        from ms2query import LibraryFilesCreator
+        
+        # Initiate Creator
+        library_creator = LibraryFilesCreator(spectrums_file,
+                                              output_file_sqlite="... folder and file name...",
+                                              progress_bars=True)
+        # 
+        library_creator.create_all_library_files('tanimoto_scores.pickle',
+                                                 'ms2ds_model.hdf5',
+                                                 'spec2vec_model.model')
+
+    """
     def __init__(self,
                  pickled_spectra_file_name: str,
                  output_file_sqlite: str,
@@ -191,28 +210,13 @@ class CreateFilesForLibrary:
         assert not os.path.exists(temporary_csv_file_name), \
             f"{temporary_csv_file_name} already exists"
         model = load_ms2ds_model(ms2ds_model_file_name)
-        ms2ds = MS2DeepScore(model)
+        ms2ds = MS2DeepScore(model, progress_bar=self.settings["progress_bars"])
 
-        for spectrum in tqdm(self.list_of_spectra,
-                             desc="Calculating ms2ds embeddings",
-                             disable=not self.settings["progress_bars"]):
-            binned_spec = model.spectrum_binner.transform(
-                [spectrum],
-                progress_bar=False)[0]
-            # pylint: disable=protected-access
-            embedding = model.base.predict(
-                ms2ds._create_input_vector(binned_spec))[0]
-            spectrum_id = spectrum.get(self.settings[
-                                           "spectrum_id_column_name"])
-            embedding_df = pd.DataFrame([embedding], index=[spectrum_id])
-            embedding_df.to_csv(temporary_csv_file_name,
-                                index=True,
-                                mode="a",
-                                header=False)
-        all_embeddings_df = pd.read_csv(temporary_csv_file_name,
-                                        index_col=0,
-                                        header=None,
-                                        names=list(range(400)))
+        # Compute spectral embeddings
+        embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
+        spectrum_ids = [s.get(self.settings["spectrum_id_column_name"])
+                        for s in self.list_of_spectra]
+        all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
         all_embeddings_df.to_pickle(self.settings[
                                         'ms2ds_embeddings_file_name'])
         os.remove(temporary_csv_file_name)

@@ -2,7 +2,7 @@ import os
 import numpy as np
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import MS2Library
+from ms2query.MS2Library import MS2Library
 from ms2query.app_helpers import load_pickled_file
 from pandas import DataFrame
 
