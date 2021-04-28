@@ -1,7 +1,7 @@
 import logging
 from .__version__ import __version__
 from .library_files_creator import LibraryFilesCreator
-from .ms2lLibrary import MS2Library
+from .ms2library import MS2Library
 
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
