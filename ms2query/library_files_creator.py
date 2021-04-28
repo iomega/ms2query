@@ -16,18 +16,18 @@ from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
 class LibraryFilesCreator:
     """Class to build a MS2Query library from input spectra and trained MS2DeepScore
     as well as Spec2Vec models.
-    
+
     For example:
 
     .. code-block:: python
 
         from ms2query import LibraryFilesCreator
-        
+
         # Initiate Creator
         library_creator = LibraryFilesCreator(spectrums_file,
                                               output_file_sqlite="... folder and file name...",
                                               progress_bars=True)
-        # 
+        #
         library_creator.create_all_library_files('tanimoto_scores.pickle',
                                                  'ms2ds_model.hdf5',
                                                  'spec2vec_model.model')
@@ -64,6 +64,7 @@ class LibraryFilesCreator:
             Default = True.
         """
         self.settings = self._set_settings(settings, output_file_sqlite)
+        self._check_for_existing_files()
 
         # Load in the spectra
         self.list_of_spectra = \
@@ -113,6 +114,16 @@ class LibraryFilesCreator:
 
         return default_settings
 
+    def _check_for_existing_files(self):
+        assert not os.path.exists(self.settings["output_file_sqlite"]), \
+            "Given output_file_sqlite already exists"
+        assert not os.path.exists(self.settings[
+                                      'ms2ds_embeddings_file_name']), \
+            "Given ms2ds_embeddings_file_name already exists"
+        assert not os.path.exists(self.settings[
+            "s2v_embeddings_file_name"]), \
+            "Given s2v_embeddings_file_name already exists"
+
     def _load_spectra_and_minimal_processing(self,
                                              pickled_spectra_file_name: str
                                              ) -> List[Spectrum]:
@@ -159,15 +170,6 @@ class LibraryFilesCreator:
             If True new tanimoto scores will be calculated and stored in
             tanimoto_scores_file_name.
         """
-        assert not os.path.exists(self.settings["output_file_sqlite"]), \
-            "Given output_file_sqlite already exists"
-        assert not os.path.exists(self.settings[
-                                      'ms2ds_embeddings_file_name']), \
-            "Given ms2ds_embeddings_file_name already exists"
-        assert not os.path.exists(self.settings[
-            "s2v_embeddings_file_name"]), \
-            "Given s2v_embeddings_file_name already exists"
-
         if calculate_new_tanimoto_scores:
             assert not os.path.exists(tanimoto_scores_file_name),\
                 "Tanimoto scores file already exists, " \

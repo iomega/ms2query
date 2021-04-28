@@ -91,7 +91,7 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
                                             "new_test_ms2ds_embeddings.pickle")
     test_create_files = LibraryFilesCreator(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        os.path.join(path_to_general_test_files, '100_test_spectra.sqlite'),
+        os.path.join(path_to_general_test_files, '100_test_spectra1.sqlite'),
         ms2ds_embeddings_file_name=new_embeddings_file_name)
     test_create_files.store_ms2ds_embeddings(os.path.join(
         path_to_general_test_files,
@@ -112,7 +112,7 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
                                             "new_test_s2v_embeddings.pickle")
     test_create_files = LibraryFilesCreator(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        os.path.join(path_to_general_test_files, '100_test_spectra.sqlite'),
+        os.path.join(path_to_general_test_files, '100_test_spectra2.sqlite'),
         s2v_embeddings_file_name=new_embeddings_file_name)
     test_create_files.store_s2v_embeddings(os.path.join(
         path_to_general_test_files,
