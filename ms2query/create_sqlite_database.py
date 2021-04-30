@@ -97,31 +97,38 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
     # todo instead of creating a real file and than deleting make a temporary
     #  file, not yet implemented since numpy memmap is not able to access the
     #  file in this case.
+
     temporary_tanimoto_file_name = os.path.join(os.getcwd(),
                                                 temporary_tanimoto_file_name)
     assert not os.path.exists(temporary_tanimoto_file_name + ".npy"), \
         "A file already exists with the temporary file name you want to create"
 
-    if progress_bars:
-        print("Loading tanimoto scores in memory")
     tanimoto_df = load_pickled_file(tanimoto_scores_pickled_dataframe_file)
-
-    assert not tanimoto_df.isnull().values.any(), \
-        "No NaN values were expected in tanimoto scores"
-    if progress_bars:
-        print("Saving tanimoto scores to temporary .npy file")
-    np.save(temporary_tanimoto_file_name, tanimoto_df.to_numpy())
-    inchikeys_order = tanimoto_df.index
 
     # Get spectra belonging to each inchikey14
     spectra_belonging_to_inchikey14 = \
-        get_spectra_belonging_to_inchikey14(inchikeys_order, list_of_spectra)
+        get_spectra_belonging_to_inchikey14(list_of_spectra)
+
+    inchikeys_with_spectra = list(spectra_belonging_to_inchikey14.keys())
+    inchikeys_with_spectra.sort()
+    # Remove all inchikeys that do not have any matching spectra
+    filtered_tanimoto_df = tanimoto_df.loc[inchikeys_with_spectra][
+        inchikeys_with_spectra]
+
+    inchikeys_order = filtered_tanimoto_df.index
 
     # Get closest related inchikey14s for each inchikey14
     closest_related_inchikey14s = \
-        get_closest_related_inchikey14s(tanimoto_df, inchikeys_order)
+        get_closest_related_inchikey14s(filtered_tanimoto_df, inchikeys_order)
     # Creates a sqlite table containing all tanimoto scores
     initialize_tanimoto_score_table(sqlite_file_name)
+
+    assert not filtered_tanimoto_df.isnull().values.any(), \
+        "No NaN values were expected in tanimoto scores"
+    if progress_bars:
+        print("Saving tanimoto scores to temporary .npy file")
+    np.save(temporary_tanimoto_file_name, filtered_tanimoto_df.to_numpy())
+
     add_tanimoto_scores_to_sqlite_table(sqlite_file_name,
                                         temporary_tanimoto_file_name + ".npy",
                                         progress_bar=progress_bars)
@@ -358,8 +365,7 @@ def create_inchikey_sqlite_table(
     conn.close()
 
 
-def get_spectra_belonging_to_inchikey14(inchikey14s: List[str],
-                                        spectra: List[Spectrum]
+def get_spectra_belonging_to_inchikey14(spectra: List[Spectrum]
                                         ) -> Dict[str, List[str]]:
     """Returns a dictionary with the spectrum_ids belonging to each inchikey14
 
@@ -371,12 +377,13 @@ def get_spectra_belonging_to_inchikey14(inchikey14s: List[str],
         List of spectrum objects
     """
     spectra_belonging_to_inchikey14 = {}
-    for inchikey14 in inchikey14s:
-        spectra_belonging_to_inchikey14[inchikey14] = []
     for spectrum in spectra:
         inchikey14_of_spectrum = spectrum.get("inchikey")[:14]
         spectrum_id = spectrum.get("spectrumid")
-        spectra_belonging_to_inchikey14[inchikey14_of_spectrum].append(spectrum_id)
+        if inchikey14_of_spectrum in spectra_belonging_to_inchikey14:
+            spectra_belonging_to_inchikey14[inchikey14_of_spectrum].append(spectrum_id)
+        else:
+            spectra_belonging_to_inchikey14[inchikey14_of_spectrum] = [spectrum_id]
     return spectra_belonging_to_inchikey14
 
 
