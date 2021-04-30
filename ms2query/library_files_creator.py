@@ -26,7 +26,7 @@ class LibraryFilesCreator:
         # Initiate Creator
         library_creator = LibraryFilesCreator(
             spectrums_file,
-            output_file_sqlite="... folder and file name...",
+            output_file_sqlite="... folder and file name base...",
             progress_bars=True)
         #
         library_creator.create_all_library_files('tanimoto_scores.pickle',
@@ -110,13 +110,16 @@ class LibraryFilesCreator:
 
     def _check_for_existing_files(self):
         assert not os.path.exists(self.settings["output_file_sqlite"]), \
-            "Given output_file_sqlite already exists"
+            f"The file {self.settings['output_file_sqlite']} already exists," \
+            f" choose a different output_base_filename"
         assert not os.path.exists(self.settings[
                                       'ms2ds_embeddings_file_name']), \
-            "Given ms2ds_embeddings_file_name already exists"
+            f"The file {self.settings['ms2ds_embeddings_file_name']} " \
+            f"already exists, choose a different output_base_filename"
         assert not os.path.exists(self.settings[
             "s2v_embeddings_file_name"]), \
-            "Given s2v_embeddings_file_name already exists"
+            f"The file {self.settings['s2v_embeddings_file_name']} " \
+            f"already exists, choose a different output_base_filename"
 
     def _load_spectra_and_minimal_processing(self,
                                              pickled_spectra_file_name: str
