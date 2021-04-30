@@ -56,7 +56,7 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
             rows_2 = cur2.execute(f"SELECT {column} FROM " +
                                   table_name1).fetchall()
             error_msg = f"Different data was expected in column {column} " \
-                f"in table {table_name1}. The wrong value is:"
+                f"in table {table_name1}. \n Expected {rows_2} \n got {rows_1}"
             if column == "parent_mass":
                 np.testing.assert_almost_equal(rows_1,
                                                rows_2,
