@@ -364,8 +364,8 @@ def get_inchikey_information(sqlite_file_name: str
     closely_related_inchikeys_dict = {}
     for row in results:
         inchikey = row[0]
-        matching_spectrum_ids = row[1]
-        closely_related_inchikeys = row[2]
+        matching_spectrum_ids = ast.literal_eval(row[1])
+        closely_related_inchikeys = ast.literal_eval(row[2])
         matching_spectrum_ids_dict[inchikey] = matching_spectrum_ids
         closely_related_inchikeys_dict[inchikey] = closely_related_inchikeys
     return matching_spectrum_ids_dict, closely_related_inchikeys_dict
