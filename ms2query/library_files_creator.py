@@ -14,8 +14,8 @@ from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
 
 
 class LibraryFilesCreator:
-    """Class to build a MS2Query library from input spectra and trained MS2DeepScore
-    as well as Spec2Vec models.
+    """Class to build a MS2Query library from input spectra and trained
+    MS2DeepScore as well as Spec2Vec models.
 
     For example:
 
@@ -24,9 +24,10 @@ class LibraryFilesCreator:
         from ms2query import LibraryFilesCreator
 
         # Initiate Creator
-        library_creator = LibraryFilesCreator(spectrums_file,
-                                              output_file_sqlite="... folder and file name...",
-                                              progress_bars=True)
+        library_creator = LibraryFilesCreator(
+            spectrums_file,
+            output_file_sqlite="... folder and file name...",
+            progress_bars=True)
         #
         library_creator.create_all_library_files('tanimoto_scores.pickle',
                                                  'ms2ds_model.hdf5',
@@ -68,7 +69,8 @@ class LibraryFilesCreator:
 
         # Load in the spectra
         self.list_of_spectra = \
-            self._load_spectra_and_minimal_processing(pickled_spectra_file_name)
+            self._load_spectra_and_minimal_processing(
+                pickled_spectra_file_name)
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -210,7 +212,8 @@ class LibraryFilesCreator:
             "Given ms2ds_embeddings_file_name already exists"
 
         model = load_ms2ds_model(ms2ds_model_file_name)
-        ms2ds = MS2DeepScore(model, progress_bar=self.settings["progress_bars"])
+        ms2ds = MS2DeepScore(model,
+                             progress_bar=self.settings["progress_bars"])
 
         # Compute spectral embeddings
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
