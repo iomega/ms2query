@@ -20,7 +20,8 @@ class SelectDataForTraining(MS2Library):
                  pickled_ms2ds_embeddings_file_name: str,
                  training_spectra_file: str,
                  validation_spectra_file: str,
-                 preselection_cut_off: int = 20,
+                 tanimoto_scores_df_file,
+                 preselection_cut_off: int = 10,
                  **settings):
         """Parameters
         ----------
@@ -69,6 +70,8 @@ class SelectDataForTraining(MS2Library):
                          pickled_s2v_embeddings_file_name,
                          pickled_ms2ds_embeddings_file_name,
                          **settings)
+        self.tanimoto_scores: pd.DataFrame = \
+            load_pickled_file(tanimoto_scores_df_file)
         self.training_spectra = minimal_processing_multiple_spectra(
             load_pickled_file(training_spectra_file))
         self.validation_spectra = minimal_processing_multiple_spectra(
@@ -194,18 +197,14 @@ class SelectDataForTraining(MS2Library):
             # no inchikey it is stored as "", so it will not be stored.
             if len(inchikey14) == 14:
                 inchikey14s_dict[spectrum_id] = inchikey14
-        inchikey14s_list = list(inchikey14s_dict.values())
-        # Returns tanimoto score for each unique inchikey14.
-        tanimoto_scores_inchikey14s = get_tanimoto_score_for_inchikey14s(
-            inchikey14s_list, [query_inchikey14], self.sqlite_file_location)
-        # Add tanimoto scores to dataframe.
+
         tanimoto_scores_spectra_ids = pd.DataFrame(
             columns=["Tanimoto_score"],
             index=list(inchikey14s_dict.keys()))
         for spectrum_id in inchikey14s_dict:
             inchikey14 = inchikey14s_dict[spectrum_id]
-            tanimoto_score = tanimoto_scores_inchikey14s.loc[inchikey14,
-                                                             query_inchikey14]
+            tanimoto_score = self.tanimoto_scores.loc[inchikey14,
+                                                      query_inchikey14]
             tanimoto_scores_spectra_ids.at[spectrum_id, "Tanimoto_score"] = \
                 tanimoto_score
         return tanimoto_scores_spectra_ids
