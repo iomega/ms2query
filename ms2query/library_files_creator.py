@@ -36,7 +36,7 @@ class LibraryFilesCreator:
     """
     def __init__(self,
                  pickled_spectra_file_name: str,
-                 output_file_sqlite: str,
+                 output_base_filename: str,
                  **settings):
         """Creates files needed to run queries on a library
 
@@ -44,19 +44,15 @@ class LibraryFilesCreator:
         ----------
         pickled_spectra_file_name:
             File name of a pickled file containing spectrum objects.
-        output_file_sqlite:
-            The file name of the new sqlite file that is created.
+        output_base_filename:
+            The file name used as base for new files that are created.
+            The following extensions are added to the output_base_filename
+            For sqlite file: ".sqlite"
+            For ms2ds_embeddings: "_ms2ds_embeddings.pickle"
+            For s2v_embeddings: "_s2v_embeddings.pickle"
 
         **settings:
             The following optional parameters can be defined.
-        output_file_ms2ds_embeddings:
-            The file name of the file with ms2ds embeddings that is created.
-            As default the output_file_sqlite is used and ".sqlite" is
-            removed and replaced with "_ms2ds_embeddings.pickle".
-        output_file_s2v_embeddings:
-            The file name of the file with s2v embeddings. As default the
-            output_file_sqlite is used and ".sqlite" is removed and
-            replaced with "_s2v_embeddings.pickle".
         spectrum_id_column_name:
             The name of the column or key under which the spectrum id is
             stored. Default = "spectrumid"
@@ -64,7 +60,7 @@ class LibraryFilesCreator:
             If True, a progress bar of the different processes is shown.
             Default = True.
         """
-        self.settings = self._set_settings(settings, output_file_sqlite)
+        self.settings = self._set_settings(settings, output_base_filename)
         self._check_for_existing_files()
 
         # Load in the spectra
@@ -74,7 +70,7 @@ class LibraryFilesCreator:
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
-                      output_file_sqlite: str
+                      output_base_filename: str
                       ) -> Dict[str, Union[str, bool]]:
         """Changes default settings to new_settings and creates file names
 
@@ -84,14 +80,14 @@ class LibraryFilesCreator:
             Dictionary with settings that should be changed. Only the
             keys given in default_settings can be used and the type has to be
             the same as the type of the values in default settings.
-        output_file_sqlite:
-            The name of a pickled spectra file name. Expected to end on
-            '.pickle'. It is used to create 3 new file names, with different
-            extensions.
+        output_base_filename:
+            The file name used as base for new files that are created.
+            The following extensions are added to the output_base_filename
+            For sqlite file: ".sqlite"
+            For ms2ds_embeddings: "_ms2ds_embeddings.pickle"
+            For s2v_embeddings: "_s2v_embeddings.pickle"
         """
-        default_settings = {"ms2ds_embeddings_file_name": "",
-                            "s2v_embeddings_file_name": "",
-                            "progress_bars": True,
+        default_settings = {"progress_bars": True,
                             "spectrum_id_column_name": "spectrumid"}
 
         for attribute in new_settings:
@@ -102,17 +98,13 @@ class LibraryFilesCreator:
                 f"Different type is expected for argument: {attribute}"
             default_settings[attribute] = new_settings[attribute]
 
-        # Empty new file names are replaced with default file names.
-        assert output_file_sqlite.endswith(".sqlite"), \
-            "output_file_sqlite is expected end on '.sqlite'"
-        default_settings["output_file_sqlite"] = output_file_sqlite
-        base_file_name = output_file_sqlite[:-7]
-        if default_settings["ms2ds_embeddings_file_name"] == "":
-            default_settings["ms2ds_embeddings_file_name"] = \
-                base_file_name + "_ms2ds_embeddings.pickle"
-        if default_settings["s2v_embeddings_file_name"] == "":
-            default_settings["s2v_embeddings_file_name"] = \
-                base_file_name + "_s2v_embeddings.pickle"
+        # Set file names of new file
+        default_settings["output_file_sqlite"] = \
+            output_base_filename + ".sqlite"
+        default_settings["ms2ds_embeddings_file_name"] = \
+            output_base_filename + "_ms2ds_embeddings.pickle"
+        default_settings["s2v_embeddings_file_name"] = \
+            output_base_filename + "_s2v_embeddings.pickle"
 
         return default_settings
 
