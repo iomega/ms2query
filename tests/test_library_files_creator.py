@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 from .test_sqlite import check_sqlite_files_are_equal
 from ms2query.library_files_creator import LibraryFilesCreator
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 
 
 @pytest.fixture
@@ -42,6 +42,19 @@ def test_set_settings_wrong():
     pytest.raises(AssertionError, LibraryFilesCreator,
                   pickled_spectra_file_name, "output_filename",
                   not_recognized_attribute="test_value")
+
+
+def test_give_already_used_file_name(tmp_path):
+    base_file_name = os.path.join(tmp_path, "base_file_name")
+    already_existing_file = base_file_name + ".sqlite"
+    with open(already_existing_file, "w") as file:
+        file.write("test")
+
+    pickled_spectra_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/100_test_spectra.pickle')
+    pytest.raises(AssertionError, LibraryFilesCreator,
+                  pickled_spectra_file_name, base_file_name)
 
 
 def test_create_all_library_files(tmp_path, path_to_general_test_files):
