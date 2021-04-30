@@ -17,7 +17,7 @@ import sqlite3
 import os
 import gc
 from matchms import Spectrum
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
