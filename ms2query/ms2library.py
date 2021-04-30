@@ -131,7 +131,7 @@ class MS2Library:
                                                        preselection_cut_off)
         # Adds the ms2query model prediction to the dataframes
         preselected_matches_with_prediction = \
-            self.get_ms2query_model_prediction(preselected_matches_info,
+            get_ms2query_model_prediction(preselected_matches_info,
                                                ms2query_model_file_name)
         # todo decide for a good filtering method e.g. below certain threshold
         return preselected_matches_with_prediction
@@ -276,7 +276,7 @@ class MS2Library:
         """
         # pylint: disable=too-many-locals
         average_ms2ds_scores = \
-            self.get_average_ms2ds_for_inchikey14(ms2ds_scores,
+            get_average_ms2ds_for_inchikey14(ms2ds_scores,
                                                   spectra_belonging_to_inchikey14s)
         # Activate code below to do a selection based on highest ms2ds score,
         #  instead of average ms2ds score.
@@ -286,7 +286,7 @@ class MS2Library:
         # selected_inchikeys = average_ms2ds_scores
 
         selected_inchikeys, selected_spectrum_ids = \
-            self.preselect_best_matching_inchikeys(
+            preselect_best_matching_inchikeys(
                 average_ms2ds_scores,
                 spectra_belonging_to_inchikey14s,
                 preselection_cut_off)
@@ -306,7 +306,7 @@ class MS2Library:
         closely_related_scores, \
             nr_of_spectra_used_for_closely_related_scores, \
             average_tanimoto_of_closely_related_scores = \
-            self.get_closely_related_scores(
+            get_closely_related_scores(
                 average_ms2ds_scores,
                 closely_related_inchikey14s,
                 selected_inchikeys,
@@ -368,104 +368,103 @@ class MS2Library:
                                               preselected_s2v_embeddings)[0]
         return s2v_scores
 
-    def get_average_ms2ds_for_inchikey14(self,
-                                         ms2ds_scores: pd.DataFrame,
-                                         spectra_belonging_to_inchikey14s):
-        inchikey14_scores = {}
-        for inchikey14 in spectra_belonging_to_inchikey14s:
-            sum_of_ms2ds_scores = 0
-            for spectrum_id in spectra_belonging_to_inchikey14s[inchikey14]:
-                sum_of_ms2ds_scores += ms2ds_scores.loc[spectrum_id]
-            nr_of_spectra = len(spectra_belonging_to_inchikey14s[inchikey14])
-            if nr_of_spectra > 0:
-                avg_ms2ds_score = sum_of_ms2ds_scores / nr_of_spectra
-                inchikey14_scores[inchikey14] = (avg_ms2ds_score, nr_of_spectra)
-        return inchikey14_scores
+def get_average_ms2ds_for_inchikey14(ms2ds_scores: pd.DataFrame,
+                                     spectra_belonging_to_inchikey14s):
+    inchikey14_scores = {}
+    for inchikey14 in spectra_belonging_to_inchikey14s:
+        sum_of_ms2ds_scores = 0
+        for spectrum_id in spectra_belonging_to_inchikey14s[inchikey14]:
+            sum_of_ms2ds_scores += ms2ds_scores.loc[spectrum_id]
+        nr_of_spectra = len(spectra_belonging_to_inchikey14s[inchikey14])
+        if nr_of_spectra > 0:
+            avg_ms2ds_score = sum_of_ms2ds_scores / nr_of_spectra
+            inchikey14_scores[inchikey14] = (avg_ms2ds_score, nr_of_spectra)
+    return inchikey14_scores
 
-    def preselect_best_matching_inchikeys(self,
-                                          average_ms2ds_scores_per_inchikey14,
-                                          spectra_belonging_to_inchikey,
-                                          top_nr_of_inchikeys):
-        top_inchikeys = nlargest(top_nr_of_inchikeys,
-                                 average_ms2ds_scores_per_inchikey14,
-                                 key=average_ms2ds_scores_per_inchikey14.get)
-        top_spectrum_ids = []
-        top_inchikeys_with_scores = {}
-        for inchikey in top_inchikeys:
-            top_spectrum_ids += spectra_belonging_to_inchikey[inchikey]
-            top_inchikeys_with_scores[inchikey] = average_ms2ds_scores_per_inchikey14[inchikey]
-        return top_inchikeys_with_scores, top_spectrum_ids
 
-    def get_closely_related_scores(self,
-                                   average_inchikey_scores,
-                                   best_matching_inchis,
-                                   selected_inchikeys,
-                                   selected_spectra,
-                                   inchikey14s_corresponding_to_spectrum_ids):
-        related_inchikey_score_dict = {}
-        for inchikey in selected_inchikeys:
-            best_matches_with_scores = best_matching_inchis[inchikey]
-            related_inchikey_score = 0
-            total_weight_of_spectra_used = 0
-            total_nr_of_spectra_used = 0
-            for closely_related_inchi, tanimoto_score in best_matches_with_scores:
-                closely_related_ms2ds, nr_of_spectra_for_this_inchi = \
-                    average_inchikey_scores[closely_related_inchi]
-                related_inchikey_score += closely_related_ms2ds * nr_of_spectra_for_this_inchi * tanimoto_score
-                total_weight_of_spectra_used += nr_of_spectra_for_this_inchi * tanimoto_score
-                total_nr_of_spectra_used += nr_of_spectra_for_this_inchi
+def preselect_best_matching_inchikeys(average_ms2ds_scores_per_inchikey14,
+                                      spectra_belonging_to_inchikey,
+                                      top_nr_of_inchikeys):
+    top_inchikeys = nlargest(top_nr_of_inchikeys,
+                             average_ms2ds_scores_per_inchikey14,
+                             key=average_ms2ds_scores_per_inchikey14.get)
+    top_spectrum_ids = []
+    top_inchikeys_with_scores = {}
+    for inchikey in top_inchikeys:
+        top_spectrum_ids += spectra_belonging_to_inchikey[inchikey]
+        top_inchikeys_with_scores[inchikey] = average_ms2ds_scores_per_inchikey14[inchikey]
+    return top_inchikeys_with_scores, top_spectrum_ids
 
-            average_tanimoto_score_used = total_weight_of_spectra_used/total_nr_of_spectra_used
-            related_inchikey_score_dict[
-                inchikey] = \
-                (related_inchikey_score / total_weight_of_spectra_used,
-                 total_nr_of_spectra_used,
-                 average_tanimoto_score_used)
 
-        selected_closely_related_scores = []
-        nr_of_spectra_used_for_closely_related_score = []
-        average_tanimoto_score_for_closely_related_score = []
-        for spectrum_id in selected_spectra:
-            matching_inchikey14 = \
-                inchikey14s_corresponding_to_spectrum_ids[spectrum_id]
-            selected_closely_related_scores.append(
-                related_inchikey_score_dict[matching_inchikey14][0])
-            # Devide by 100 for normalization
-            nr_of_spectra_used_for_closely_related_score.append(
-                related_inchikey_score_dict[matching_inchikey14][1]/100)
-            # Devide by 10 for normalization
-            average_tanimoto_score_for_closely_related_score.append(
-                related_inchikey_score_dict[matching_inchikey14][2])
-        return selected_closely_related_scores, \
-            nr_of_spectra_used_for_closely_related_score, \
-            average_tanimoto_score_for_closely_related_score
+def get_closely_related_scores(average_inchikey_scores,
+                               best_matching_inchis,
+                               selected_inchikeys,
+                               selected_spectra,
+                               inchikey14s_corresponding_to_spectrum_ids):
+    related_inchikey_score_dict = {}
+    for inchikey in selected_inchikeys:
+        best_matches_with_scores = best_matching_inchis[inchikey]
+        related_inchikey_score = 0
+        total_weight_of_spectra_used = 0
+        total_nr_of_spectra_used = 0
+        for closely_related_inchi, tanimoto_score in best_matches_with_scores:
+            closely_related_ms2ds, nr_of_spectra_for_this_inchi = \
+                average_inchikey_scores[closely_related_inchi]
+            related_inchikey_score += closely_related_ms2ds * nr_of_spectra_for_this_inchi * tanimoto_score
+            total_weight_of_spectra_used += nr_of_spectra_for_this_inchi * tanimoto_score
+            total_nr_of_spectra_used += nr_of_spectra_for_this_inchi
 
-    @staticmethod
-    def get_ms2query_model_prediction(
-            matches_info: Dict[str, Union[pd.DataFrame, None]],
-            ms2query_model_file_name: str
-            ) -> Dict[str, pd.DataFrame]:
-        """Adds ms2query predictions to dataframes
+        average_tanimoto_score_used = total_weight_of_spectra_used/total_nr_of_spectra_used
+        related_inchikey_score_dict[
+            inchikey] = \
+            (related_inchikey_score / total_weight_of_spectra_used,
+             total_nr_of_spectra_used,
+             average_tanimoto_score_used)
 
-        matches_info:
-            A dictionary with as keys the query spectrum ids and as values
-            pd.DataFrames containing the top 20 preselected matches and all
-            info needed about these matches to run the ms2query model.
-        ms2query_model_file_name:
-            File name of a hdf5 name containing the ms2query model.
-        """
-        ms2query_nn_model = load_nn_model(ms2query_model_file_name)
+    selected_closely_related_scores = []
+    nr_of_spectra_used_for_closely_related_score = []
+    average_tanimoto_score_for_closely_related_score = []
+    for spectrum_id in selected_spectra:
+        matching_inchikey14 = \
+            inchikey14s_corresponding_to_spectrum_ids[spectrum_id]
+        selected_closely_related_scores.append(
+            related_inchikey_score_dict[matching_inchikey14][0])
+        # Devide by 100 for normalization
+        nr_of_spectra_used_for_closely_related_score.append(
+            related_inchikey_score_dict[matching_inchikey14][1]/100)
+        # Devide by 10 for normalization
+        average_tanimoto_score_for_closely_related_score.append(
+            related_inchikey_score_dict[matching_inchikey14][2])
+    return selected_closely_related_scores, \
+        nr_of_spectra_used_for_closely_related_score, \
+        average_tanimoto_score_for_closely_related_score
 
-        for query_spectrum_id in matches_info:
-            current_query_matches_info = matches_info[query_spectrum_id]
-            if current_query_matches_info is None:
-                continue
-            predictions = ms2query_nn_model.predict(current_query_matches_info)
 
-            # Add prediction to dataframe
-            current_query_matches_info[
-                "ms2query_model_prediction"] = predictions
-            matches_info[query_spectrum_id] = \
-                current_query_matches_info.sort_values(
-                    by=["ms2query_model_prediction"], ascending=False)
-        return matches_info
+def get_ms2query_model_prediction(
+        matches_info: Dict[str, Union[pd.DataFrame, None]],
+        ms2query_model_file_name: str
+        ) -> Dict[str, pd.DataFrame]:
+    """Adds ms2query predictions to dataframes
+
+    matches_info:
+        A dictionary with as keys the query spectrum ids and as values
+        pd.DataFrames containing the top 20 preselected matches and all
+        info needed about these matches to run the ms2query model.
+    ms2query_model_file_name:
+        File name of a hdf5 name containing the ms2query model.
+    """
+    ms2query_nn_model = load_nn_model(ms2query_model_file_name)
+
+    for query_spectrum_id in matches_info:
+        current_query_matches_info = matches_info[query_spectrum_id]
+        if current_query_matches_info is None:
+            continue
+        predictions = ms2query_nn_model.predict(current_query_matches_info)
+
+        # Add prediction to dataframe
+        current_query_matches_info[
+            "ms2query_model_prediction"] = predictions
+        matches_info[query_spectrum_id] = \
+            current_query_matches_info.sort_values(
+                by=["ms2query_model_prediction"], ascending=False)
+    return matches_info

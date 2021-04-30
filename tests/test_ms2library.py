@@ -2,7 +2,7 @@ import os
 import numpy as np
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import MS2Library
+from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
 from ms2query.app_helpers import load_pickled_file
 from pandas import DataFrame
 
@@ -153,25 +153,14 @@ def test_collect_data_for_ms2query_model():
 
 def test_get_ms2query_model_prediction():
     """Test get_ms2query_model_prediction method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-
     matches_info = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/general_test_files/ms2query_model.hdf5')
-    result = test_library.get_ms2query_model_prediction(matches_info,
-                                                        ms2q_model_file_name)
+    result = get_ms2query_model_prediction(matches_info,
+                                           ms2q_model_file_name)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library',
@@ -248,4 +237,3 @@ def create_test_spectra():
                                    'parent_mass': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N'})
     return [spectrum1, spectrum2]
-test_collect_matches_data_multiple_spectra()
