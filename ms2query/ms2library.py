@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -277,7 +277,7 @@ class MS2Library:
         # pylint: disable=too-many-locals
         average_ms2ds_scores = \
             get_average_ms2ds_for_inchikey14(ms2ds_scores,
-                                                  spectra_belonging_to_inchikey14s)
+                                             spectra_belonging_to_inchikey14s)
         # Activate code below to do a selection based on highest ms2ds score,
         #  instead of average ms2ds score.
         # selected_spectrum_ids, selection_of_ms2ds_scores = \
@@ -294,24 +294,22 @@ class MS2Library:
         # Select spectra belonging to ms2ds_scores
         selection_of_ms2ds_scores = ms2ds_scores.loc[selected_spectrum_ids].to_numpy()
 
-        selected_average_ms2ds_scores = []
-        nr_of_spectra_with_same_inchikey14 = []
-        for spectrum_id in selected_spectrum_ids:
-            matching_inchikey14 = inchikey14s_belonging_to_spectra[spectrum_id]
-            selected_average_ms2ds_scores.append(
-                average_ms2ds_scores[matching_inchikey14][0])
-            nr_of_spectra_with_same_inchikey14.append(
-                average_ms2ds_scores[matching_inchikey14][1])
+        related_inchikey_scores = get_closely_related_scores(
+            selected_inchikeys,
+            closely_related_inchikey14s,
+            average_ms2ds_scores)
 
-        closely_related_scores, \
-            nr_of_spectra_used_for_closely_related_scores, \
-            average_tanimoto_of_closely_related_scores = \
-            get_closely_related_scores(
-                average_ms2ds_scores,
-                closely_related_inchikey14s,
-                selected_inchikeys,
-                selected_spectrum_ids,
-                inchikey14s_belonging_to_spectra)
+        scores_for_selected_spectra = select_scores_for_selected_spectra(
+            selected_spectrum_ids,
+            inchikey14s_belonging_to_spectra,
+            related_inchikey_scores,
+            average_ms2ds_scores)
+
+        closely_related_scores = scores_for_selected_spectra[0]
+        nr_of_spectra_used_for_closely_related_scores = scores_for_selected_spectra[1]
+        average_tanimoto_of_closely_related_scores = scores_for_selected_spectra[2]
+        selected_average_ms2ds_scores = scores_for_selected_spectra[3]
+        nr_of_spectra_with_same_inchikey14 = [4]
 
         all_parent_masses = get_parent_mass(
             self.sqlite_file_location,
@@ -368,8 +366,10 @@ class MS2Library:
                                               preselected_s2v_embeddings)[0]
         return s2v_scores
 
+
 def get_average_ms2ds_for_inchikey14(ms2ds_scores: pd.DataFrame,
                                      spectra_belonging_to_inchikey14s):
+
     inchikey14_scores = {}
     for inchikey14 in spectra_belonging_to_inchikey14s:
         sum_of_ms2ds_scores = 0
@@ -396,34 +396,26 @@ def preselect_best_matching_inchikeys(average_ms2ds_scores_per_inchikey14,
     return top_inchikeys_with_scores, top_spectrum_ids
 
 
-def get_closely_related_scores(average_inchikey_scores,
-                               best_matching_inchis,
-                               selected_inchikeys,
-                               selected_spectra,
-                               inchikey14s_corresponding_to_spectrum_ids):
-    related_inchikey_score_dict = {}
-    for inchikey in selected_inchikeys:
-        best_matches_with_scores = best_matching_inchis[inchikey]
-        related_inchikey_score = 0
-        total_weight_of_spectra_used = 0
-        total_nr_of_spectra_used = 0
-        for closely_related_inchi, tanimoto_score in best_matches_with_scores:
-            closely_related_ms2ds, nr_of_spectra_for_this_inchi = \
-                average_inchikey_scores[closely_related_inchi]
-            related_inchikey_score += closely_related_ms2ds * nr_of_spectra_for_this_inchi * tanimoto_score
-            total_weight_of_spectra_used += nr_of_spectra_for_this_inchi * tanimoto_score
-            total_nr_of_spectra_used += nr_of_spectra_for_this_inchi
+def select_scores_for_selected_spectra(
+        selected_spectra: List[Spectrum],
+        inchikey14s_corresponding_to_spectrum_ids,
+        related_inchikey_score_dict,
+        average_ms2ds_scores):
+    """Returns list of scores for the selected spectra
 
-        average_tanimoto_score_used = total_weight_of_spectra_used/total_nr_of_spectra_used
-        related_inchikey_score_dict[
-            inchikey] = \
-            (related_inchikey_score / total_weight_of_spectra_used,
-             total_nr_of_spectra_used,
-             average_tanimoto_score_used)
 
+    Args:
+    -----
+    selected_spectra:
+    inchikey14s_corresponding_to_spectrum_ids:
+    related_inchikey_score_dict:
+    average_ms2ds_scores:
+    """
     selected_closely_related_scores = []
     nr_of_spectra_used_for_closely_related_score = []
     average_tanimoto_score_for_closely_related_score = []
+    selected_average_ms2ds_scores = []
+    nr_of_spectra_with_same_inchikey14 = []
     for spectrum_id in selected_spectra:
         matching_inchikey14 = \
             inchikey14s_corresponding_to_spectrum_ids[spectrum_id]
@@ -431,13 +423,84 @@ def get_closely_related_scores(average_inchikey_scores,
             related_inchikey_score_dict[matching_inchikey14][0])
         # Devide by 100 for normalization
         nr_of_spectra_used_for_closely_related_score.append(
-            related_inchikey_score_dict[matching_inchikey14][1]/100)
+            related_inchikey_score_dict[matching_inchikey14][1] / 100)
         # Devide by 10 for normalization
         average_tanimoto_score_for_closely_related_score.append(
             related_inchikey_score_dict[matching_inchikey14][2])
+        matching_inchikey14 = inchikey14s_corresponding_to_spectrum_ids[spectrum_id]
+        selected_average_ms2ds_scores.append(
+            average_ms2ds_scores[matching_inchikey14][0])
+        nr_of_spectra_with_same_inchikey14.append(
+            average_ms2ds_scores[matching_inchikey14][1])
+
     return selected_closely_related_scores, \
         nr_of_spectra_used_for_closely_related_score, \
-        average_tanimoto_score_for_closely_related_score
+        average_tanimoto_score_for_closely_related_score, \
+        selected_average_ms2ds_scores, nr_of_spectra_with_same_inchikey14
+
+
+def get_closely_related_scores(
+        selected_inchikey14s,
+        closest_related_inchikey14s: Dict[str, List[Tuple[str, float]]],
+        average_inchikey_scores: Dict[str, Tuple[float, int]]
+        ) -> Dict[str, Tuple[float, int, float]]:
+    """Returns the related inchikey scores for the selected inchikeys
+
+
+
+    Args:
+    ------
+    selected_inchikey14s:
+
+
+    average_inchikey_score:
+        Dictionary containing the average MS2Deepscore scores for each inchikey
+        and the number of spectra belonging to this inchikey.
+    """
+
+    related_inchikey_score_dict = {}
+    for inchikey in selected_inchikey14s:
+        # For each inchikey a list with the top 10 closest related inchikeys
+        #  and the corresponding tanimoto score is stored
+        best_matches_and_tanimoto_scores = \
+            closest_related_inchikey14s[inchikey]
+
+        # Count the weight, nr and sum of tanimoto scores to calculate the
+        #  average tanimoto score.
+        sum_related_inchikey_tanimoto_scores = 0
+        total_weight_of_spectra_used = 0
+        total_nr_of_spectra_used = 0
+        for closely_related_inchikey14, tanimoto_score in \
+                best_matches_and_tanimoto_scores:
+            # Get the ms2ds score for this closely related inchikey14 and the
+            # nr of spectra for this related inchikey.
+            closely_related_ms2ds, nr_of_spectra_related_inchikey14 = \
+                average_inchikey_scores[closely_related_inchikey14]
+            # todo think of different weighting based on tanimoto score,
+            #  e.g. nr_of_spectra^tanimoto_score or return all individual
+            #  scores, nr and tanimoto score for each closely related inchikey
+            #  (so 30 in total) to MS2Query
+            # The weight of closely related spectra is based on the tanimoto
+            # score and the nr of spectra this inchikey has.
+            weight_of_closely_related_inchikey_score = \
+                nr_of_spectra_related_inchikey14 * tanimoto_score
+
+            sum_related_inchikey_tanimoto_scores += \
+                closely_related_ms2ds * \
+                weight_of_closely_related_inchikey_score
+            total_weight_of_spectra_used += \
+                weight_of_closely_related_inchikey_score
+            total_nr_of_spectra_used += nr_of_spectra_related_inchikey14
+
+        average_tanimoto_score_used = \
+            total_weight_of_spectra_used/total_nr_of_spectra_used
+
+        related_inchikey_score_dict[
+            inchikey] = \
+            (sum_related_inchikey_tanimoto_scores/total_weight_of_spectra_used,
+             total_nr_of_spectra_used,
+             average_tanimoto_score_used)
+    return related_inchikey_score_dict
 
 
 def get_ms2query_model_prediction(
