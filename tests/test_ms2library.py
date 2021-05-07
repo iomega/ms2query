@@ -51,13 +51,11 @@ def test_collect_matches_data_multiple_spectra():
                                                                 20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
-
+        "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        # assert_frame_equal(result[key], expected_result[key][
-        #     ["parent_mass", "mass_sim", "s2v_scores", "ms2ds_scores"]])
+        assert_frame_equal(result[key], expected_result[key])
     # todo create new test file, once final decision is made about all
     #  scores calculated
 
