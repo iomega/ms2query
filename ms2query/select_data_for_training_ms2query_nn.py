@@ -126,9 +126,8 @@ class SelectDataForTraining(MS2Library):
             List of Spectrum objects
         """
         query_spectra_matches_info = \
-            self.collect_matches_data_multiple_spectra(
-                query_spectra,
-                self.preselection_cut_off)
+            self.get_analog_search_scores(query_spectra,
+                                          self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,

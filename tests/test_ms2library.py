@@ -47,12 +47,12 @@ def test_collect_matches_data_multiple_spectra():
 
     test_spectra = create_test_spectra()
 
-    result = test_library.collect_matches_data_multiple_spectra(test_spectra,
-                                                                20)
+    result = test_library.get_analog_search_scores(test_spectra, 20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
     assert isinstance(result, dict), "Expected dictionary"
+    print(result)
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
@@ -235,3 +235,9 @@ def create_test_spectra():
                                    'parent_mass': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N'})
     return [spectrum1, spectrum2]
+
+import pandas as pd
+pd.set_option("display.max_columns", 15)
+pd.set_option("display.width", 1000)
+
+test_collect_matches_data_multiple_spectra()
