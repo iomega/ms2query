@@ -294,9 +294,9 @@ class MS2Library:
         ms2ds_scores:
             A pandas series with the ms2ds scores between all library spectra
             and the query spectrum.
-        preselected_spectrum_ids:
-            List of spectrum ids that have the highest ms2ds scores with the
-            query_spectrum
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected.
         sort_on_average_ms2ds:
             If true the preselection is done based on the average ms2ds scores
             per inchikey, if false the selection is done based on ms2ds scores
