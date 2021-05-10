@@ -337,15 +337,15 @@ class MS2Library:
         average_ms2ds_scores:
         """
         selected_and_normalized_scores = \
-            {"parent_mass_divided_by_1000": [],
+            {"parent_mass*0.001": [],
              "mass_similarity": [],
              "s2v_score": s2v_scores,
              "ms2ds_score": [],
              "average_ms2ds_score_for_inchikey14": [],
-             "nr_of_spectra_with_same_inchikey14_divided_by_100": [],
-             "average_ms2ds_score_for_closely_related_inchikey14s": [],
-             "average_tanimoto_score_used_for_closely_related_score": [],
-             "nr_of_spectra_for_closely_related_score_divided_by_100": []}
+             "nr_of_spectra_with_same_inchikey14*0.01": [],
+             "closely_related_inchikey14s_score": [],
+             "average_tanimoto_for_closely_related_score": [],
+             "nr_of_spectra_for_closely_related_score*0.01": []}
         for spectrum_id in selected_spectrum_ids:
             selected_and_normalized_scores["ms2ds_score"].append(
                 ms2ds_scores.loc[spectrum_id])
@@ -353,14 +353,14 @@ class MS2Library:
             matching_inchikey14 = \
                 self.inchikey14s_of_spectra[spectrum_id]
             selected_and_normalized_scores[
-                "average_ms2ds_score_for_closely_related_inchikey14s"].append(
+                "closely_related_inchikey14s_score"].append(
                 closely_related_inchikey_scores[matching_inchikey14][0])
             # Devide by 100 for normalization
             selected_and_normalized_scores[
-                "nr_of_spectra_for_closely_related_score_divided_by_100"].append(
+                "nr_of_spectra_for_closely_related_score*0.01"].append(
                 closely_related_inchikey_scores[matching_inchikey14][1] / 100)
             selected_and_normalized_scores[
-                "average_tanimoto_score_used_for_closely_related_score"].append(
+                "average_tanimoto_for_closely_related_score"].append(
                 closely_related_inchikey_scores[matching_inchikey14][2])
 
             matching_inchikey14 = \
@@ -369,11 +369,11 @@ class MS2Library:
                 "average_ms2ds_score_for_inchikey14"].append(
                 average_ms2ds_scores[matching_inchikey14][0])
             selected_and_normalized_scores[
-                "nr_of_spectra_with_same_inchikey14_divided_by_100"].append(
+                "nr_of_spectra_with_same_inchikey14*0.01"].append(
                 average_ms2ds_scores[matching_inchikey14][1] / 100)
 
             selected_and_normalized_scores[
-                "parent_mass_divided_by_1000"].append(
+                "parent_mass*0.001"].append(
                 self.parent_masses_library[spectrum_id] / 1000)
             selected_and_normalized_scores["mass_similarity"].append(
                 self.settings["base_nr_mass_similarity"] **
@@ -465,6 +465,14 @@ class MS2Library:
             average_inchikey_scores: Dict[str, Tuple[float, int]]
             ) -> Dict[str, Tuple[float, int, float]]:
         """Returns the closely related inchikey scores for selected inchikey14s
+
+        A dictionary is returned with as keys the inchikeys and als value a
+        tuple with the closely related inchikey score, the number of spectra
+        used for this score and the weight used for this score.
+        The closely related score is calculated by taking the average inchikey
+        score times the nr of spectra with this inchikey times the tanimoto
+        score of this spectrum devided by the total weight of all scores
+        combined.
 
         Args:
         ------
