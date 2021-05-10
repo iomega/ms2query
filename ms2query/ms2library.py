@@ -16,7 +16,22 @@ from ms2query.spectrum_processing import create_spectrum_documents
 
 
 class MS2Library:
-    """Calculates scores of spectra in library and selects best matches"""
+    """Calculates scores of spectra in library and selects best matches
+
+    For example
+
+    .. code-block:: python
+
+        from ms2query import MS2Library
+
+        ms2library = MS2Library(sqlite_file_loc,
+                                spec2vec_model_file_loc,
+                                ms2ds_model_file_name,
+                                s2v_pickled_embeddings_file,
+                                ms2ds_embeddings_file_name,
+                                spectrum_id_column_name)
+
+    """
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
@@ -136,6 +151,7 @@ class MS2Library:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
         """
+        # TODO: remove file_name from input parameters
         # Selects top 20 best matches based on ms2ds and calculates all scores
         analog_search_scores = \
             self.get_analog_search_scores(query_spectra, preselection_cut_off)
@@ -185,7 +201,7 @@ class MS2Library:
                 self.settings["spectrum_id_column_name"])
             selected_library_spectra = [result[0] for result in
                                         parent_masses_within_mass_tolerance]
-            s2v_scores = self.get_s2v_scores(query_spectrum,
+            s2v_scores = self._get_s2v_scores(query_spectrum,
                                              selected_library_spectra)
             found_matches = []
             for i, selected_spectrum in enumerate(selected_library_spectra):
@@ -228,15 +244,15 @@ class MS2Library:
             # query spectrum and calculate the average and related ms2ds scores
             selected_spectrum_ids, average_ms2ds_scores, \
                 closely_related_inchikey_scores = \
-                self.calculate_averages_and_preselection(
+                self._calculate_averages_and_preselection(
                     ms2ds_scores[spectrum_id],
                     preselection_cut_off)
 
-            s2v_scores = self.get_s2v_scores(query_spectrum,
-                                             selected_spectrum_ids)
+            s2v_scores = self._get_s2v_scores(query_spectrum,
+                                              selected_spectrum_ids)
 
             dict_with_preselected_spectra_info[spectrum_id] = \
-                self.select_and_normalize_scores_for_selected_spectra(
+                self._select_and_normalize_scores_for_selected_spectra(
                     selected_spectrum_ids, ms2ds_scores[spectrum_id],
                     s2v_scores, closely_related_inchikey_scores,
                     average_ms2ds_scores, query_spectrum_parent_mass)
@@ -267,7 +283,7 @@ class MS2Library:
                 for query_spectrum in query_spectra])
         return similarity_matrix_dataframe
 
-    def calculate_averages_and_preselection(
+    def _calculate_averages_and_preselection(
             self,
             ms2ds_scores: pd.Series,
             preselection_cut_off: int,
@@ -290,13 +306,13 @@ class MS2Library:
         #  ms2ds scores for all spectra at once, so it can be moved to the
         #  start of get_analog_search_scores.
         average_ms2ds_scores = \
-            self.get_average_ms2ds_for_inchikey14(ms2ds_scores)
+            self._get_average_ms2ds_for_inchikey14(ms2ds_scores)
 
         if sort_on_average_ms2ds:
             # select on highest average ms2ds score
             selected_inchikeys, selected_spectrum_ids = \
-                self.preselect_best_matching_inchikeys(average_ms2ds_scores,
-                                                       preselection_cut_off)
+                self._preselect_best_matching_inchikeys(average_ms2ds_scores,
+                                                        preselection_cut_off)
         else:
             # Select spectra based on the ms2ds scores
             selected_spectrum_ids = list(ms2ds_scores.nlargest(
@@ -305,13 +321,13 @@ class MS2Library:
             selected_inchikeys = {self.inchikey14s_of_spectra[spectrum] for
                                   spectrum in selected_spectrum_ids}
 
-        closely_related_inchikey_scores = self.get_closely_related_scores(
+        closely_related_inchikey_scores = self._get_closely_related_scores(
             selected_inchikeys,
             average_ms2ds_scores)
         return selected_spectrum_ids, average_ms2ds_scores, \
             closely_related_inchikey_scores
 
-    def select_and_normalize_scores_for_selected_spectra(
+    def _select_and_normalize_scores_for_selected_spectra(
             self,
             selected_spectrum_ids: List[str],
             ms2ds_scores: pd.Series,
@@ -384,10 +400,10 @@ class MS2Library:
         return pd.DataFrame(selected_and_normalized_scores,
                             index=selected_spectrum_ids)
 
-    def get_s2v_scores(self,
-                       query_spectrum: Spectrum,
-                       preselection_of_library_ids: List[str]
-                       ) -> np.ndarray:
+    def _get_s2v_scores(self,
+                        query_spectrum: Spectrum,
+                        preselection_of_library_ids: List[str]
+                        ) -> np.ndarray:
         """Returns the s2v scores
 
         query_spectrum:
@@ -408,9 +424,9 @@ class MS2Library:
         #  errors
         return s2v_scores
 
-    def get_average_ms2ds_for_inchikey14(self,
-                                         ms2ds_scores: pd.Series
-                                         ) -> Dict[str, Tuple[float, int]]:
+    def _get_average_ms2ds_for_inchikey14(self,
+                                          ms2ds_scores: pd.Series
+                                          ) -> Dict[str, Tuple[float, int]]:
         """Returns the average ms2ds score per inchikey
 
         Args:
@@ -431,7 +447,7 @@ class MS2Library:
                                                  nr_of_spectra)
         return inchikey14_scores
 
-    def preselect_best_matching_inchikeys(
+    def _preselect_best_matching_inchikeys(
             self,
             average_ms2ds_scores_per_inchikey14: Dict[str, Tuple[float, int]],
             nr_of_top_inchikey14s_to_select: int
@@ -461,7 +477,7 @@ class MS2Library:
 
         return top_inchikeys, top_spectrum_ids
 
-    def get_closely_related_scores(
+    def _get_closely_related_scores(
             self,
             selected_inchikey14s: List[str],
             average_inchikey_scores: Dict[str, Tuple[float, int]]
