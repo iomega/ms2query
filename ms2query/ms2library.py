@@ -188,9 +188,9 @@ class MS2Library:
             s2v_scores = self.get_s2v_scores(query_spectrum,
                                              selected_library_spectra)
             found_matches = []
-            for i in range(len(selected_library_spectra)):
+            for i, selected_spectrum in enumerate(selected_library_spectra):
                 if s2v_scores[i] > s2v_score_threshold:
-                    found_matches.append(selected_library_spectra[i])
+                    found_matches.append(selected_spectrum)
             found_matches_dict[query_spectrum_id] = found_matches
         return found_matches_dict
 
@@ -302,8 +302,8 @@ class MS2Library:
             selected_spectrum_ids = list(ms2ds_scores.nlargest(
                 preselection_cut_off).index)
             # Select inchikeys that correspond to the selected spectra
-            selected_inchikeys = set([self.inchikey14s_of_spectra[spectrum] for
-                                      spectrum in selected_spectrum_ids])
+            selected_inchikeys = {self.inchikey14s_of_spectra[spectrum] for
+                                  spectrum in selected_spectrum_ids}
 
         closely_related_inchikey_scores = self.get_closely_related_scores(
             selected_inchikeys,
@@ -336,6 +336,8 @@ class MS2Library:
             A np.ndarray
         average_ms2ds_scores:
         """
+        # pylint: disable=too-many-arguments
+
         selected_and_normalized_scores = \
             {"parent_mass*0.001": [],
              "mass_similarity": [],

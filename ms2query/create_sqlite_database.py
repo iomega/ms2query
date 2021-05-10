@@ -301,8 +301,6 @@ def create_inchikey_sqlite_table(
         ordered_inchikey_list: List[str],
         spectra_belonging_to_inchikey: Dict[str, List[str]],
         closest_related_inchikeys: Dict[str, List[Tuple[str, float]]],
-        table_name: str = 'inchikeys',
-        col_name_inchikey: str = 'inchikey',
         progress_bar: bool = True):
     """Creates a table storing the identifiers belonging to the inchikey14s
 
@@ -333,6 +331,8 @@ def create_inchikey_sqlite_table(
     progress_bar:
         If True a progress bar is shown.
     """
+    table_name = 'inchikeys'
+    col_name_inchikey = 'inchikey'
 
     conn = sqlite3.connect(file_name)
 

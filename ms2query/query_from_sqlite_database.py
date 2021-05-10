@@ -355,8 +355,7 @@ def get_inchikey_information(sqlite_file_name: str
     """
     # todo add test function
     conn = sqlite3.connect(sqlite_file_name)
-    sqlite_command = \
-        f"SELECT * FROM inchikeys"
+    sqlite_command = "SELECT * FROM inchikeys"
     cur = conn.cursor()
     cur.execute(sqlite_command)
     results = cur.fetchall()
