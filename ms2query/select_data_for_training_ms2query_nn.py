@@ -5,8 +5,7 @@ from tqdm import tqdm
 from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
 from ms2query import MS2Library
-from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikey14s, get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
@@ -20,7 +19,7 @@ class SelectDataForTraining(MS2Library):
                  pickled_ms2ds_embeddings_file_name: str,
                  training_spectra_file: str,
                  validation_spectra_file: str,
-                 tanimoto_scores_df_file,
+                 tanimoto_scores_df_file_name: str,
                  preselection_cut_off: int = 10,
                  **settings):
         """Parameters
@@ -45,6 +44,11 @@ class SelectDataForTraining(MS2Library):
             Pickled file with training spectra.
         validation_spectra_file:
             Pickled file with validation spectra.
+        tanimoto_scores_df_file_name:
+            A pickled file containing a dataframe with the tanimoto scores
+            between all inchikeys. The tanimoto scores in SQLite cannot be
+            used, since these do not contain the inchikeys for the training
+            spectra.
 
 
         **settings:
@@ -71,7 +75,7 @@ class SelectDataForTraining(MS2Library):
                          pickled_ms2ds_embeddings_file_name,
                          **settings)
         self.tanimoto_scores: pd.DataFrame = \
-            load_pickled_file(tanimoto_scores_df_file)
+            load_pickled_file(tanimoto_scores_df_file_name)
         self.training_spectra = minimal_processing_multiple_spectra(
             load_pickled_file(training_spectra_file))
         self.validation_spectra = minimal_processing_multiple_spectra(
