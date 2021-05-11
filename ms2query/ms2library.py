@@ -11,7 +11,7 @@ from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
     get_parent_mass, get_inchikey_information
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
 
