@@ -251,11 +251,16 @@ class MS2Library:
                     results_table,
                     ms2ds_scores[spectrum_id],
                     preselection_cut_off)
+            print(results_table.data['spectrum_ids'])
+            #results_table = results_table.set_index('spectrum_ids')
+            results_table.data = results_table.data.set_index('spectrum_ids')
+            print(results_table.data.columns, results_table.data.index)
+            print(results_table.data.index.values)
 
-            results_table["s2v_scores"] = self._get_s2v_scores(query_spectrum,
-                                              results_table["spectrum_ids"])
+            results_table.data["s2v_scores"] = self._get_s2v_scores(query_spectrum,
+                                                                    results_table.index.values)
 
-            parent_masses = np.array([self.parent_masses_library[x] for x in results_table["spectrum_ids"]])
+            parent_masses = np.array([self.parent_masses_library[x] for x in results_table.data.index])
             results_table.add_parent_masses(parent_masses,
                                             self.settings["base_nr_mass_similarity"])
 
@@ -325,10 +330,14 @@ class MS2Library:
                                   spectrum in selected_spectrum_ids}
 
         # Populate results table
-        results_table["spectrum_ids"] = selected_spectrum_ids
-        results_table["inchikey"] = \
+        print(selected_spectrum_ids)
+        print(results_table.data.shape)
+        print(results_table.data.columns)
+        print(len(selected_spectrum_ids))
+        results_table.data["spectrum_ids"] = pd.Series(selected_spectrum_ids)
+        results_table.data["inchikey"] = \
             [self.inchikey14s_of_spectra[x] for x in selected_spectrum_ids]
-        results_table["ms2ds_score"] = ms2ds_scores.loc[selected_spectrum_ids]
+        results_table.data["ms2ds_score"] = ms2ds_scores.loc[selected_spectrum_ids]
 
         closely_related_inchikey_scores = self._get_closely_related_scores(
             selected_inchikeys,
