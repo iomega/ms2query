@@ -4,7 +4,7 @@ Functions to obtain data from sqlite files.
 
 import ast
 import io
-from typing import Dict, List
+from typing import Dict, List, Union, Tuple
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -281,3 +281,90 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
         assert spectrum_id in results_dict, \
             f"{spectrum_id_storage_name} {spectrum_id} not found in database"
     return results_dict
+
+
+def get_parent_mass_within_range(sqlite_file_name: str,
+                                 lower_bound: Union[float, int],
+                                 upper_bound: Union[float, int],
+                                 spectrum_id_storage_name: str = "spectrumid",
+                                 table_name: str = "spectrum_data"
+                                 ) -> List[Tuple[str, float]]:
+    """Returns spectrum_ids with parent mass between lower and upper bound
+
+    Args:
+    -----
+    sqlite_file_name:
+        The sqlite file in which the spectra data is stored.
+    lower_bound:
+        The lower bound of the allowed parent mass
+    upper_bound:
+        The upper bound of the allowed parent mass
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
+    table_name:
+        The name of the table in the sqlite file in which the metadata is
+        stored. Default = "spectrum_data"
+    """
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"""SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name} 
+        WHERE parent_mass BETWEEN {lower_bound} and {upper_bound}"""
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    spectrum_ids_within_range = cur.fetchall()
+    return spectrum_ids_within_range
+
+
+def get_parent_mass(sqlite_file_name: str,
+                    spectrum_id_storage_name: str = "spectrumid",
+                    table_name: str = "spectrum_data"
+                    ) -> Dict[str, float]:
+    """Returns all spectrum_ids with parent mass
+
+    Args:
+    -----
+    sqlite_file_name:
+        The sqlite file in which the spectra data is stored.
+    spectrum_id_storage_name:
+        The name under which the spectrum ids are stored in the metadata.
+        Default = 'spectrumid'
+    table_name:
+        The name of the table in the sqlite file in which the metadata is
+        stored. Default = "spectrum_data"
+    """
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name}"
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    results = cur.fetchall()
+    parent_mass_dict = {}
+    for result in results:
+        parent_mass_dict[result[0]] = result[1]
+    return parent_mass_dict
+
+
+def get_inchikey_information(sqlite_file_name: str
+                             ) -> Tuple[Dict[str, List[str]],
+                                        Dict[str, List[Tuple[str, float]]]]:
+    """Returns the closely related inchikeys and the matching spectrum ids
+
+    sqlite_file_name:
+        The file name of an sqlite file
+    """
+    # todo add test function
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = "SELECT * FROM inchikeys"
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    results = cur.fetchall()
+    matching_spectrum_ids_dict = {}
+    closely_related_inchikeys_dict = {}
+    for row in results:
+        inchikey = row[0]
+        matching_spectrum_ids = ast.literal_eval(row[1])
+        closely_related_inchikeys = ast.literal_eval(row[2])
+        matching_spectrum_ids_dict[inchikey] = matching_spectrum_ids
+        closely_related_inchikeys_dict[inchikey] = closely_related_inchikeys
+    return matching_spectrum_ids_dict, closely_related_inchikeys_dict

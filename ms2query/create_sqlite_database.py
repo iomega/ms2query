@@ -10,7 +10,7 @@ corresponding indexes in the tanimoto_scores table.
 
 import io
 from tqdm import tqdm
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 import sqlite3
@@ -59,6 +59,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     # pylint: disable=too-many-arguments
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
                                   tanimoto_scores_pickled_dataframe_file,
+                                  list_of_spectra,
                                   progress_bars=progress_bars)
     create_table_structure(sqlite_file_name,
                            additional_columns_dict=columns_dict,
@@ -70,6 +71,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
 
 def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
                                   tanimoto_scores_pickled_dataframe_file: str,
+                                  list_of_spectra: List[Spectrum],
                                   temporary_tanimoto_file_name: str
                                   = "temporary_tanimoto_scores",
                                   progress_bars: bool = True):
@@ -82,6 +84,8 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
     tanimoto_scores_pickled_dataframe_file:
         A pickled file with tanimoto scores. The column names and indexes are
         inchikey14s.
+    list_of_spectra:
+        List of spectrum objects
     temporary_tanimoto_file_name:
         The file name of a temporary .npy file that is created to memory
         efficiently read out the tanimoto scores. The file is deleted after
@@ -93,24 +97,38 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
     # todo instead of creating a real file and than deleting make a temporary
     #  file, not yet implemented since numpy memmap is not able to access the
     #  file in this case.
+
     temporary_tanimoto_file_name = os.path.join(os.getcwd(),
                                                 temporary_tanimoto_file_name)
     assert not os.path.exists(temporary_tanimoto_file_name + ".npy"), \
         "A file already exists with the temporary file name you want to create"
 
-    if progress_bars:
-        print("Loading tanimoto scores in memory")
     tanimoto_df = load_pickled_file(tanimoto_scores_pickled_dataframe_file)
 
-    assert not tanimoto_df.isnull().values.any(), \
+    # Get spectra belonging to each inchikey14
+    spectra_belonging_to_inchikey14 = \
+        get_spectra_belonging_to_inchikey14(list_of_spectra)
+
+    inchikeys_with_spectra = list(spectra_belonging_to_inchikey14.keys())
+    inchikeys_with_spectra.sort()
+    # Remove all inchikeys that do not have any matching spectra
+    filtered_tanimoto_df = tanimoto_df.loc[inchikeys_with_spectra][
+        inchikeys_with_spectra]
+
+    inchikeys_order = filtered_tanimoto_df.index
+
+    # Get closest related inchikey14s for each inchikey14
+    closest_related_inchikey14s = \
+        get_closest_related_inchikey14s(filtered_tanimoto_df, inchikeys_order)
+    # Creates a sqlite table containing all tanimoto scores
+    initialize_tanimoto_score_table(sqlite_file_name)
+
+    assert not filtered_tanimoto_df.isnull().values.any(), \
         "No NaN values were expected in tanimoto scores"
     if progress_bars:
         print("Saving tanimoto scores to temporary .npy file")
-    np.save(temporary_tanimoto_file_name, tanimoto_df.to_numpy())
-    inchikeys_order = tanimoto_df.index
+    np.save(temporary_tanimoto_file_name, filtered_tanimoto_df.to_numpy())
 
-    # Creates a sqlite table containing all tanimoto scores
-    initialize_tanimoto_score_table(sqlite_file_name)
     add_tanimoto_scores_to_sqlite_table(sqlite_file_name,
                                         temporary_tanimoto_file_name + ".npy",
                                         progress_bar=progress_bars)
@@ -119,6 +137,8 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
     # These identifiers correspond to the identifiers in tanimoto_scores
     create_inchikey_sqlite_table(sqlite_file_name,
                                  inchikeys_order,
+                                 spectra_belonging_to_inchikey14,
+                                 closest_related_inchikey14s,
                                  progress_bar=progress_bars)
 
 
@@ -276,11 +296,12 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
     conn.close()
 
 
-def create_inchikey_sqlite_table(file_name: str,
-                                 ordered_inchikey_list: List[str],
-                                 table_name: str = 'inchikeys',
-                                 col_name_inchikey: str = 'inchikey',
-                                 progress_bar: bool = True):
+def create_inchikey_sqlite_table(
+        file_name: str,
+        ordered_inchikey_list: List[str],
+        spectra_belonging_to_inchikey: Dict[str, List[str]],
+        closest_related_inchikeys: Dict[str, List[Tuple[str, float]]],
+        progress_bar: bool = True):
     """Creates a table storing the identifiers belonging to the inchikey14s
 
     Overwrites the table if it already exists. The column specified in
@@ -296,6 +317,11 @@ def create_inchikey_sqlite_table(file_name: str,
     ordered_inchikey14_list:
         List with the first 14 symbols of inchikeys, the inchikey14s will be
         stored in sqlite in the same order.
+    spectra_belonging_to_inchikey:
+        A dictionary storing the spectra belonging to each inchikey
+    closest_related_inchikeys:
+        A dictionary storing the closest related inchikeys and the tanimoto
+        score between the two inchikeys.
     table_name:
         Name of the table in the database that should store the (order of) the
         inchikey14s. Default = inchikeys.
@@ -305,6 +331,8 @@ def create_inchikey_sqlite_table(file_name: str,
     progress_bar:
         If True a progress bar is shown.
     """
+    table_name = 'inchikeys'
+    col_name_inchikey = 'inchikey'
 
     conn = sqlite3.connect(file_name)
 
@@ -313,6 +341,8 @@ def create_inchikey_sqlite_table(file_name: str,
     DROP TABLE IF EXISTS {table_name};
     CREATE TABLE {table_name} (
         {col_name_inchikey} TEXT,
+        spectrum_ids_belonging_to_inchikey14 TEXT,
+        closest_related_inchikeys TEXT,
         PRIMARY KEY ({col_name_inchikey})
         );
     """
@@ -322,13 +352,54 @@ def create_inchikey_sqlite_table(file_name: str,
 
     # Fill table
     for inchikey14 in tqdm(ordered_inchikey_list,
-                         desc="Adding inchikey14s to sqlite table",
-                         disable=not progress_bar):
-        add_row_to_table_command = f"""INSERT INTO {table_name} 
-                                    values ('{inchikey14}');"""
+                           desc="Adding inchikey14s to sqlite table",
+                           disable=not progress_bar):
+        matching_spectrum_ids = str(spectra_belonging_to_inchikey[inchikey14])
+        add_row_to_table_command = \
+            f"""INSERT INTO {table_name} 
+            values ("{inchikey14}", 
+            "{matching_spectrum_ids}",
+            "{str(closest_related_inchikeys[inchikey14])}");"""
         cur.execute(add_row_to_table_command)
     conn.commit()
     conn.close()
+
+
+def get_spectra_belonging_to_inchikey14(spectra: List[Spectrum]
+                                        ) -> Dict[str, List[str]]:
+    """Returns a dictionary with the spectrum_ids belonging to each inchikey14
+
+    Args:
+    -----
+    inchikey14s:
+        List of inchikey14s
+    spectra:
+        List of spectrum objects
+    """
+    spectra_belonging_to_inchikey14 = {}
+    for spectrum in spectra:
+        inchikey14_of_spectrum = spectrum.get("inchikey")[:14]
+        spectrum_id = spectrum.get("spectrumid")
+        if inchikey14_of_spectrum in spectra_belonging_to_inchikey14:
+            spectra_belonging_to_inchikey14[inchikey14_of_spectrum].append(spectrum_id)
+        else:
+            spectra_belonging_to_inchikey14[inchikey14_of_spectrum] = [spectrum_id]
+    return spectra_belonging_to_inchikey14
+
+
+def get_closest_related_inchikey14s(tanimoto_scores: pd.DataFrame,
+                                    ordered_inchikeys):
+    """Returns the closest related inchikeys based on tanimoto scores"""
+    closest_related_inchikey14s_dict = {}
+    for inchikey in ordered_inchikeys:
+        closest_related_inchikey14s_dict[inchikey] = []
+
+        closest_related_inchikey14s = tanimoto_scores[inchikey].nlargest(10)
+        for closest_related_inchikey14 in \
+                closest_related_inchikey14s.iteritems():
+            closest_related_inchikey14s_dict[inchikey].append(
+                closest_related_inchikey14)
+    return closest_related_inchikey14s_dict
 
 
 def initialize_tanimoto_score_table(sqlite_file_name: str,

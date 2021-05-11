@@ -1,177 +1,15 @@
 import os
 import numpy as np
+import pytest
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import MS2Library
+from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
 from ms2query.app_helpers import load_pickled_file
 from pandas import DataFrame
 
 
-def test_ms2library_set_settings():
-    """Tests creating a ms2library object"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name,
-                              cosine_score_tolerance=0.2)
-
-    assert test_library.settings["cosine_score_tolerance"] == 0.2, \
-        "Different value for attribute was expected"
-    assert test_library.settings["base_nr_mass_similarity"] == 0.8, \
-        "Different value for attribute was expected"
-
-
-def test_select_best_matches():
-    # todo add this testfunction, once the best filter step has been selected
-    pass
-
-
-def test_collect_matches_data_multiple_spectra():
-    """Test collect_matches_data_multiple_spectra method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-
-    test_spectra = create_test_spectra()
-
-    result = test_library.collect_matches_data_multiple_spectra(test_spectra)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
-    assert isinstance(result, dict), "Expected dictionary"
-    for key in result:
-        assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
-
-
-def test_pre_select_spectra():
-    """Test pre_select_spectra method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-
-    test_spectra = create_test_spectra()
-
-    preselected_spectra = test_library.pre_select_spectra(test_spectra)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library',
-        'expected_preselected_spectra.pickle'))
-    assert isinstance(preselected_spectra, dict), "Expected a dictionary"
-    assert isinstance(list(preselected_spectra.values())[0], list), \
-        "Expected a dict with list as values"
-    assert isinstance(list(preselected_spectra.values())[0][0], str), \
-        "Expected a dictionary with list with string"
-    assert isinstance(list(preselected_spectra.keys())[0], str), \
-        "Expected dict with as keys str"
-    assert preselected_spectra == expected_result, \
-        "Expected different preselected spectra"
-
-
-def test_get_all_ms2ds_scores():
-    """Test get_all_ms2ds_scores method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-    test_spectra = create_test_spectra()
-    result = test_library._get_all_ms2ds_scores(test_spectra)
-
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
-    assert isinstance(result, DataFrame), "Expected dictionary"
-    assert_frame_equal(result, expected_result)
-
-
-def test_collect_data_for_ms2query_model():
-    """Test collect_data_for_ms2query_model method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-
-    test_spectrum = create_test_spectra()[0]
-    preselected_spectra = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library',
-        'expected_preselected_spectra.pickle'))
-    result = test_library._collect_data_for_ms2query_model(
-        test_spectrum,
-        preselected_spectra[test_spectrum.get(spectrum_id_column_name)])
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_matches_data.pickle')
-        )[test_spectrum.get(spectrum_id_column_name)]
-
-    assert isinstance(result, DataFrame), "Expected dictionary"
-    assert_frame_equal(result, expected_result)
-
-
-def test_get_ms2query_model_prediction():
-    """Test get_ms2query_model_prediction method of ms2library"""
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = get_test_file_names()
-
-    test_library = MS2Library(sqlite_file_loc,
-                              spec2vec_model_file_loc,
-                              ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file,
-                              ms2ds_embeddings_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name)
-
-    matches_info = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
-    ms2q_model_file_name = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/ms2query_model.hdf5')
-    result = test_library.get_ms2query_model_prediction(matches_info,
-                                                        ms2q_model_file_name)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library',
-        'expected_ms2query_model_scores.pickle'))
-    assert isinstance(result, dict), "Expected dictionary"
-    for key in result:
-        assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
-
-
-def get_test_file_names():
+@pytest.fixture
+def file_names():
     """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -197,7 +35,8 @@ def get_test_file_names():
         ms2ds_embeddings_file_name, spectrum_id_column_name
 
 
-def create_test_spectra():
+@pytest.fixture
+def test_spectra():
     """Returns a list with two spectra
 
     The spectra are created by using peaks from the first two spectra in
@@ -237,3 +76,167 @@ def create_test_spectra():
                                    'parent_mass': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N'})
     return [spectrum1, spectrum2]
+
+
+def test_ms2library_set_settings(file_names):
+    """Tests creating a ms2library object"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name,
+                              cosine_score_tolerance=0.2)
+
+    assert test_library.settings["cosine_score_tolerance"] == 0.2, \
+        "Different value for attribute was expected"
+    assert test_library.settings["base_nr_mass_similarity"] == 0.8, \
+        "Different value for attribute was expected"
+
+
+def test_select_best_matches():
+    # todo add this testfunction, once the best filter step has been selected
+    pass
+
+
+def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
+    """Test collect_matches_data_multiple_spectra method of ms2library"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+
+    result = test_library.get_analog_search_scores(test_spectra, 20)
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
+    assert isinstance(result, dict), "Expected dictionary"
+    for key in result:
+        assert isinstance(key, str), "Expected keys of dict to be string"
+        assert_frame_equal(result[key], expected_result[key])
+    # todo create new test file, once final decision is made about all
+    #  scores calculated
+
+
+def test_pre_select_spectra():
+    """Test pre_select_spectra method of ms2library"""
+    pass
+    # todo change test, so it works with new splitted workflow
+    # sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+    #     ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+    #     spectrum_id_column_name = get_test_file_names()
+    #
+    # test_library = MS2Library(sqlite_file_loc,
+    #                           spec2vec_model_file_loc,
+    #                           ms2ds_model_file_name,
+    #                           s2v_pickled_embeddings_file,
+    #                           ms2ds_embeddings_file_name,
+    #                           spectrum_id_column_name=spectrum_id_column_name)
+    #
+    # test_spectra = create_test_spectra()
+    #
+    # preselected_spectra = test_library.pre_select_spectra(test_spectra)
+    # expected_result = load_pickled_file(os.path.join(
+    #     os.path.split(os.path.dirname(__file__))[0],
+    #     'tests/test_files/test_files_ms2library',
+    #     'expected_preselected_spectra.pickle'))
+    # assert isinstance(preselected_spectra, dict), "Expected a dictionary"
+    # assert isinstance(list(preselected_spectra.values())[0], list), \
+    #     "Expected a dict with list as values"
+    # assert isinstance(list(preselected_spectra.values())[0][0], str), \
+    #     "Expected a dictionary with list with string"
+    # assert isinstance(list(preselected_spectra.keys())[0], str), \
+    #     "Expected dict with as keys str"
+    # assert preselected_spectra == expected_result, \
+    #     "Expected different preselected spectra"
+
+
+def test_get_all_ms2ds_scores(file_names, test_spectra):
+    """Test get_all_ms2ds_scores method of ms2library"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+
+    result = test_library._get_all_ms2ds_scores(test_spectra)
+
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
+    assert isinstance(result, DataFrame), "Expected dictionary"
+    assert_frame_equal(result, expected_result)
+
+
+def test_collect_data_for_ms2query_model():
+    pass
+    # todo rewrite test for new splitted workflow
+    # """Test collect_data_for_ms2query_model method of ms2library"""
+    # sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+    #     ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+    #     spectrum_id_column_name = get_test_file_names()
+    #
+    # test_library = MS2Library(sqlite_file_loc,
+    #                           spec2vec_model_file_loc,
+    #                           ms2ds_model_file_name,
+    #                           s2v_pickled_embeddings_file,
+    #                           ms2ds_embeddings_file_name,
+    #                           spectrum_id_column_name=spectrum_id_column_name)
+    #
+    # test_spectrum = create_test_spectra()[0]
+    # preselected_spectra = load_pickled_file(os.path.join(
+    #     os.path.split(os.path.dirname(__file__))[0],
+    #     'tests/test_files/test_files_ms2library',
+    #     'expected_preselected_spectra.pickle'))
+    # result = test_library._collect_data_for_ms2query_model(
+    #     test_spectrum,
+    #     preselected_spectra[test_spectrum.get(spectrum_id_column_name)])
+    # expected_result = load_pickled_file(os.path.join(
+    #     os.path.split(os.path.dirname(__file__))[0],
+    #     'tests/test_files/test_files_ms2library/expected_matches_data.pickle')
+    #     )[test_spectrum.get(spectrum_id_column_name)]
+    # assert isinstance(result, DataFrame), "Expected dictionary"
+    # assert_frame_equal(result, expected_result[["parent_mass",
+    #                                            "mass_sim",
+    #                                            "s2v_scores",
+    #                                            "ms2ds_scores"]])
+
+
+def test_get_ms2query_model_prediction():
+    """Test get_ms2query_model_prediction method of ms2library"""
+    matches_info = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
+    ms2q_model_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/general_test_files/ms2query_model.hdf5')
+    result = get_ms2query_model_prediction(matches_info,
+                                           ms2q_model_file_name)
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library',
+        'expected_ms2query_model_scores.pickle'))
+    assert isinstance(result, dict), "Expected dictionary"
+    for key in result:
+        assert isinstance(key, str), "Expected keys of dict to be string"
+        assert_frame_equal(result[key], expected_result[key])
+
+
+import pandas as pd
+pd.set_option("display.max_columns", 15)
+pd.set_option("display.width", 1000)

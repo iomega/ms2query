@@ -1,22 +1,37 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from heapq import nlargest
 from tensorflow.keras.models import load_model as load_nn_model
 from gensim.models import Word2Vec
-from matchms.similarity import CosineGreedy, ModifiedCosine
 from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
-from spec2vec import Spec2Vec
-from spec2vec.vector_operations import cosine_similarity_matrix
-from ms2query.query_from_sqlite_database import get_spectra_from_sqlite
+from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
+from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
+    get_parent_mass, get_inchikey_information
 from ms2query.app_helpers import load_pickled_file
 from ms2query.spectrum_processing import create_spectrum_documents
 
 
 class MS2Library:
-    """Calculates scores of spectra in library and selects best matches"""
+    """Calculates scores of spectra in library and selects best matches
+
+    For example
+
+    .. code-block:: python
+
+        from ms2query import MS2Library
+
+        ms2library = MS2Library(sqlite_file_loc,
+                                spec2vec_model_file_loc,
+                                ms2ds_model_file_name,
+                                s2v_pickled_embeddings_file,
+                                ms2ds_embeddings_file_name,
+                                spectrum_id_column_name)
+
+    """
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
@@ -62,9 +77,6 @@ class MS2Library:
             If True progress bars will be shown of all methods. Default = True
         """
         # pylint: disable=too-many-arguments
-        # todo create a ms2query model class that stores the model but also the
-        #  settings used, since the settings used should always be the same as
-        #  when the model was trained
 
         # Change default settings to values given in **settings
         self.settings = self._set_settings(settings)
@@ -79,6 +91,21 @@ class MS2Library:
             pickled_s2v_embeddings_file_name)
         self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
             pickled_ms2ds_embeddings_file_name)
+
+        # load parent masses
+        self.parent_masses_library = get_parent_mass(
+            self.sqlite_file_location,
+            self.settings["spectrum_id_column_name"])
+
+        # Load inchikey information into memory
+        self.spectra_of_inchikey14s, \
+            self.closely_related_inchikey14s = \
+            get_inchikey_information(self.sqlite_file_location)
+        self.inchikey14s_of_spectra = {}
+        for inchikey, list_of_spectrum_ids in \
+                self.spectra_of_inchikey14s.items():
+            for spectrum_id in list_of_spectrum_ids:
+                self.inchikey14s_of_spectra[spectrum_id] = inchikey
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -96,7 +123,6 @@ class MS2Library:
         default_settings = {"spectrum_id_column_name": "spectrumid",
                             "cosine_score_tolerance": 0.1,
                             "base_nr_mass_similarity": 0.8,
-                            "max_parent_mass": 13418.370894192036,
                             "progress_bars": True}
         # todo make new model that has a fixed basic mass
         for attribute in new_settings:
@@ -110,7 +136,8 @@ class MS2Library:
 
     def select_best_matches(self,
                             query_spectra: List[Spectrum],
-                            ms2query_model_file_name: str
+                            ms2query_model_file_name: str,
+                            preselection_cut_off: int = 2000
                             ) -> Dict[str, pd.DataFrame]:
         """Returns ordered best matches with info for all query spectra
 
@@ -120,21 +147,74 @@ class MS2Library:
             List of query spectra for which the best matches should be found
         ms2query_model_file_name:
             File name of a hdf5 file containing the ms2query model.
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected. Default = 2000
         """
+        # TODO: remove file_name from input parameters
         # Selects top 20 best matches based on ms2ds and calculates all scores
-        preselected_matches_info = \
-            self.collect_matches_data_multiple_spectra(query_spectra)
+        analog_search_scores = \
+            self.get_analog_search_scores(query_spectra, preselection_cut_off)
         # Adds the ms2query model prediction to the dataframes
-        preselected_matches_with_prediction = \
-            self.get_ms2query_model_prediction(preselected_matches_info,
-                                               ms2query_model_file_name)
-        # todo decide for a good filtering method e.g. below certain threshold
-        return preselected_matches_with_prediction
+        results_analog_search = \
+            get_ms2query_model_prediction(analog_search_scores,
+                                          ms2query_model_file_name)
 
-    def collect_matches_data_multiple_spectra(self,
-                                              query_spectra: List[Spectrum]
-                                              ) -> Dict[str, pd.DataFrame]:
-        """Returns a dataframe with info for all matches to all query spectra
+        # todo decide for a good filtering method e.g. below certain threshold
+        # todo add select_potential_true_matches and choose suitable output
+        return results_analog_search
+
+    def select_potential_true_matches(self,
+                                      query_spectra: List[Spectrum],
+                                      mass_tolerance: Union[float, int] = 0.1,
+                                      s2v_score_threshold: float = 0.6
+                                      ) -> Dict[str, List[str]]:
+        """Returns potential true matches for query spectra
+
+        The spectra are selected that fall within the mass_tolerance and have a
+        s2v score higher than s2v_score_threshold.
+
+        Args:
+        ------
+        query_spectra:
+            A list with spectrum objects for which the potential true matches
+            are returned
+        mass_tolerance:
+            The mass difference between query spectrum and library spectrum,
+            that is allowed.
+        s2v_score_threshold:
+            The minimal s2v score to be considered a potential true match
+        """
+
+        found_matches_dict = {}
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Selecting potential perfect matches",
+                                   disable=not self.settings["progress_bars"]):
+            query_parent_mass = query_spectrum.get("parent_mass")
+            query_spectrum_id = query_spectrum.get(
+                self.settings["spectrum_id_column_name"])
+            # Preselection based on parent mass
+            parent_masses_within_mass_tolerance = get_parent_mass_within_range(
+                self.sqlite_file_location,
+                query_parent_mass - mass_tolerance,
+                query_parent_mass + mass_tolerance,
+                self.settings["spectrum_id_column_name"])
+            selected_library_spectra = [result[0] for result in
+                                        parent_masses_within_mass_tolerance]
+            s2v_scores = self._get_s2v_scores(query_spectrum,
+                                             selected_library_spectra)
+            found_matches = []
+            for i, selected_spectrum in enumerate(selected_library_spectra):
+                if s2v_scores[i] > s2v_score_threshold:
+                    found_matches.append(selected_spectrum)
+            found_matches_dict[query_spectrum_id] = found_matches
+        return found_matches_dict
+
+    def get_analog_search_scores(self,
+                                 query_spectra: List[Spectrum],
+                                 preselection_cut_off: int
+                                 ) -> Dict[str, pd.DataFrame]:
+        """Does preselection and returns scores for MS2Query model prediction
 
         This is stored in a dictionary with as keys the spectrum_ids and as
         values a pd.Dataframe with on each row the information for one spectrum
@@ -146,63 +226,38 @@ class MS2Library:
         ------
         query_spectra:
             The spectra for which info about matches should be collected
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected
         """
-        # Gets a preselection of spectra for all query_spectra
-        dict_with_preselected_spectra = self.pre_select_spectra(query_spectra)
+        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
 
-        # Run neural network model over all found spectra and add the predicted
-        # scores to a dict with the spectra in dataframes
         dict_with_preselected_spectra_info = {}
         for query_spectrum in tqdm(query_spectra,
                                    desc="collecting matches info",
                                    disable=not self.settings["progress_bars"]):
             spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
-            matches_with_info = \
-                self._collect_data_for_ms2query_model(
-                    query_spectrum,
-                    dict_with_preselected_spectra[spectrum_id])
-            dict_with_preselected_spectra_info[spectrum_id] = matches_with_info
+            query_spectrum_parent_mass = query_spectrum.get("parent_mass")
+
+            # Select the library spectra that have the highest ms2ds with the
+            # query spectrum and calculate the average and related ms2ds scores
+            selected_spectrum_ids, average_ms2ds_scores, \
+                closely_related_inchikey_scores = \
+                self._calculate_averages_and_preselection(
+                    ms2ds_scores[spectrum_id],
+                    preselection_cut_off)
+
+            s2v_scores = self._get_s2v_scores(query_spectrum,
+                                              selected_spectrum_ids)
+
+            dict_with_preselected_spectra_info[spectrum_id] = \
+                self._select_and_normalize_scores_for_selected_spectra(
+                    selected_spectrum_ids, ms2ds_scores[spectrum_id],
+                    s2v_scores, closely_related_inchikey_scores,
+                    average_ms2ds_scores, query_spectrum_parent_mass)
+
         return dict_with_preselected_spectra_info
-
-    def pre_select_spectra(self,
-                           query_spectra: List[Spectrum],
-                           nr_of_spectra: int = 20
-                           ) -> Dict[str, List[str]]:
-        """Returns dict with spectrum IDs of spectra with highest ms2ds score
-
-        The keys are the query spectrum_ids and the values a list of the
-        preselected spectrum_ids for each query spectrum.
-
-        Args:
-        ------
-        query_spectra:
-            spectra for which a preselection of possible library matches should
-            be done
-        nr_of_spectra:
-            How many top spectra should be selected. Default = 20
-        """
-        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-
-        dict_with_preselected_spectra = {}
-        # Select top nr of spectra
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="Preselecting spectra",
-                                   disable=not self.settings["progress_bars"]):
-            query_spectrum_id = query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
-            ms2ds_scores_np = ms2ds_scores[query_spectrum_id].to_numpy()
-            # Get the indexes of the spectra with the highest ms2ds scores
-            indexes_of_top_spectra = np.argpartition(
-                ms2ds_scores_np,
-                -nr_of_spectra,
-                axis=0)[-nr_of_spectra:]
-            # Select the spectra with the highest score
-            selected_spectra = list(ms2ds_scores[query_spectrum_id].iloc[
-                indexes_of_top_spectra].index)
-            # Store selected spectra in dict
-            dict_with_preselected_spectra[query_spectrum_id] = selected_spectra
-        return dict_with_preselected_spectra
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
@@ -218,7 +273,6 @@ class MS2Library:
         ms2ds = MS2DeepScore(self.ms2ds_model, progress_bar=False)
         query_embeddings = ms2ds.calculate_vectors(query_spectra)
         library_ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
-
         ms2ds_scores = cosine_similarity_matrix(library_ms2ds_embeddings_numpy,
                                                 query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
@@ -229,109 +283,295 @@ class MS2Library:
                 for query_spectrum in query_spectra])
         return similarity_matrix_dataframe
 
-    def _collect_data_for_ms2query_model(
+    def _calculate_averages_and_preselection(
             self,
-            query_spectrum: Spectrum,
-            preselected_spectrum_ids: List[str]) -> pd.DataFrame:
-        """Returns dataframe with relevant info for ms2query nn model
+            ms2ds_scores: pd.Series,
+            preselection_cut_off: int,
+            sort_on_average_ms2ds: bool = False
+            ):
+        """Returns preselected spectra and average and closely related ms2ds
+
+        ms2ds_scores:
+            A pandas series with the ms2ds scores between all library spectra
+            and the query spectrum.
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected.
+        sort_on_average_ms2ds:
+            If true the preselection is done based on the average ms2ds scores
+            per inchikey, if false the selection is done based on ms2ds scores
+            of single spectra.
+        """
+        # todo It is an option to make this function calculate the average
+        #  ms2ds scores for all spectra at once, so it can be moved to the
+        #  start of get_analog_search_scores.
+        average_ms2ds_scores = \
+            self._get_average_ms2ds_for_inchikey14(ms2ds_scores)
+
+        if sort_on_average_ms2ds:
+            # select on highest average ms2ds score
+            selected_inchikeys, selected_spectrum_ids = \
+                self._preselect_best_matching_inchikeys(average_ms2ds_scores,
+                                                        preselection_cut_off)
+        else:
+            # Select spectra based on the ms2ds scores
+            selected_spectrum_ids = list(ms2ds_scores.nlargest(
+                preselection_cut_off).index)
+            # Select inchikeys that correspond to the selected spectra
+            selected_inchikeys = {self.inchikey14s_of_spectra[spectrum] for
+                                  spectrum in selected_spectrum_ids}
+
+        closely_related_inchikey_scores = self._get_closely_related_scores(
+            selected_inchikeys,
+            average_ms2ds_scores)
+        return selected_spectrum_ids, average_ms2ds_scores, \
+            closely_related_inchikey_scores
+
+    def _select_and_normalize_scores_for_selected_spectra(
+            self,
+            selected_spectrum_ids: List[str],
+            ms2ds_scores: pd.Series,
+            s2v_scores: np.ndarray,
+            closely_related_inchikey_scores: Dict[str,
+                                                  Tuple[float, int, float]],
+            average_ms2ds_scores,
+            query_spectrum_parent_mass: float) -> pd.DataFrame:
+        """Returns the normalized scores for the selected spectra
+
+        The normalized scores are returned as a panda dataframe, with as index
+        the spectrum ids and as columns the different scores
+
+        Args:
+        -----
+        selected_spectrum_ids:
+            The spectrum ids for which the scores should be added
+        ms2ds_scores:
+            A pandas series containing the ms2ds scores, the indexes are the
+            spectrum_ids and the values are the ms2ds scores.
+        s2v_scores:
+            A np.ndarray
+        average_ms2ds_scores:
+        """
+        # pylint: disable=too-many-arguments
+
+        selected_and_normalized_scores = \
+            {"parent_mass*0.001": [],
+             "mass_similarity": [],
+             "s2v_score": s2v_scores,
+             "ms2ds_score": [],
+             "average_ms2ds_score_for_inchikey14": [],
+             "nr_of_spectra_with_same_inchikey14*0.01": [],
+             "closely_related_inchikey14s_score": [],
+             "average_tanimoto_for_closely_related_score": [],
+             "nr_of_spectra_for_closely_related_score*0.01": []}
+        for spectrum_id in selected_spectrum_ids:
+            selected_and_normalized_scores["ms2ds_score"].append(
+                ms2ds_scores.loc[spectrum_id])
+
+            matching_inchikey14 = \
+                self.inchikey14s_of_spectra[spectrum_id]
+            selected_and_normalized_scores[
+                "closely_related_inchikey14s_score"].append(
+                closely_related_inchikey_scores[matching_inchikey14][0])
+            # Devide by 100 for normalization
+            selected_and_normalized_scores[
+                "nr_of_spectra_for_closely_related_score*0.01"].append(
+                closely_related_inchikey_scores[matching_inchikey14][1] / 100)
+            selected_and_normalized_scores[
+                "average_tanimoto_for_closely_related_score"].append(
+                closely_related_inchikey_scores[matching_inchikey14][2])
+
+            matching_inchikey14 = \
+                self.inchikey14s_of_spectra[spectrum_id]
+            selected_and_normalized_scores[
+                "average_ms2ds_score_for_inchikey14"].append(
+                average_ms2ds_scores[matching_inchikey14][0])
+            selected_and_normalized_scores[
+                "nr_of_spectra_with_same_inchikey14*0.01"].append(
+                average_ms2ds_scores[matching_inchikey14][1] / 100)
+
+            selected_and_normalized_scores[
+                "parent_mass*0.001"].append(
+                self.parent_masses_library[spectrum_id] / 1000)
+            selected_and_normalized_scores["mass_similarity"].append(
+                self.settings["base_nr_mass_similarity"] **
+                abs(self.parent_masses_library[spectrum_id] -
+                    query_spectrum_parent_mass))
+        return pd.DataFrame(selected_and_normalized_scores,
+                            index=selected_spectrum_ids)
+
+    def _get_s2v_scores(self,
+                        query_spectrum: Spectrum,
+                        preselection_of_library_ids: List[str]
+                        ) -> np.ndarray:
+        """Returns the s2v scores
 
         query_spectrum:
-            Spectrum for which all relevant data is collected
-        preselected_spectrum_ids:
-            List of spectrum ids that have the highest ms2ds scores with the
-            query_spectrum
+            Spectrum object
+        preselection_of_library_ids:
+            list of spectrum ids for which the s2v scores should be calcualated
+            """
+        query_spectrum_document = \
+            create_spectrum_documents([query_spectrum])[0]
+        query_s2v_embedding = calc_vector(self.s2v_model,
+                                          query_spectrum_document,
+                                          allowed_missing_percentage=100)
+        preselected_s2v_embeddings = \
+            self.s2v_embeddings.loc[preselection_of_library_ids].to_numpy()
+        s2v_scores = cosine_similarity_matrix(np.array([query_s2v_embedding]),
+                                              preselected_s2v_embeddings)[0]
+        # todo convert to dataframe, so there is less chance of introducing
+        #  errors
+        return s2v_scores
+
+    def _get_average_ms2ds_for_inchikey14(self,
+                                          ms2ds_scores: pd.Series
+                                          ) -> Dict[str, Tuple[float, int]]:
+        """Returns the average ms2ds score per inchikey
+
+        Args:
+        ------
+        ms2ds_scores:
+            The ms2ds scores with as index the library spectrum ids and as
+            values the ms2ds scores.
         """
-        # pylint: disable=too-many-locals
+        inchikey14_scores = {}
+        for inchikey14 in self.spectra_of_inchikey14s:
+            sum_of_ms2ds_scores = 0
+            for spectrum_id in self.spectra_of_inchikey14s[inchikey14]:
+                sum_of_ms2ds_scores += ms2ds_scores.loc[spectrum_id]
+            nr_of_spectra = len(self.spectra_of_inchikey14s[inchikey14])
+            if nr_of_spectra > 0:
+                avg_ms2ds_score = sum_of_ms2ds_scores / nr_of_spectra
+                inchikey14_scores[inchikey14] = (avg_ms2ds_score,
+                                                 nr_of_spectra)
+        return inchikey14_scores
 
-        # Gets a list of all preselected spectra as Spectrum objects
-        preselected_spectra_list = get_spectra_from_sqlite(
-            self.sqlite_file_location,
-            preselected_spectrum_ids,
-            spectrum_id_storage_name=self.settings["spectrum_id_column_name"])
-        # Gets cosine similarity matrix
-        cosine_sim_matrix = CosineGreedy(
-            tolerance=self.settings["cosine_score_tolerance"]).matrix(
-                preselected_spectra_list,
-                [query_spectrum])
-        # Gets modified cosine similarity matrix
-        mod_cosine_sim_matrix = ModifiedCosine(
-            tolerance=self.settings["cosine_score_tolerance"]).matrix(
-                preselected_spectra_list,
-                [query_spectrum])
-        # Changes [[(cos_score1, cos_match1)] [(cos_score2, cos_match2)]] into
-        # [cos_score1, cos_score2], [cos_match1, cos_match2]
-        cosine_score, cosine_matches = map(list, zip(
-            *[x[0] for x in cosine_sim_matrix]))
-        mod_cosine_score, mod_cosine_matches = map(list, zip(
-            *[x[0] for x in mod_cosine_sim_matrix]))
-        # Transform cosine score and mod cosine matches to in between 0-1
-        normalized_cosine_matches = [1 - 0.93 ** i for i in cosine_matches]
-        normalized_mod_cos_matches = \
-            [1 - 0.93 ** i for i in mod_cosine_matches]
+    def _preselect_best_matching_inchikeys(
+            self,
+            average_ms2ds_scores_per_inchikey14: Dict[str, Tuple[float, int]],
+            nr_of_top_inchikey14s_to_select: int
+            ) -> Tuple[List[str], List[str]]:
+        """Does a preselection based on the average_ms2ds_scores
 
-        parent_masses = [spectrum.get("parent_mass")
-                         for spectrum in preselected_spectra_list]
-        normalized_parent_masses = \
-            [parent_mass/self.settings["max_parent_mass"]
-             for parent_mass in parent_masses]
+        Returns the inchikeys with the highest average ms2ds score and returns
+        all spectra belonging to these inchikeys
 
-        mass_similarity = [self.settings["base_nr_mass_similarity"] **
-                           abs(spectrum.get("parent_mass") -
-                               query_spectrum.get("parent_mass"))
-                           for spectrum in preselected_spectra_list]
-
-        # Get s2v_scores
-        s2v_scores = Spec2Vec(self.s2v_model,
-                              allowed_missing_percentage=100).matrix(
-            create_spectrum_documents(preselected_spectra_list),
-            create_spectrum_documents([query_spectrum]))[:, 0]
-
-        # Get ms2ds_scores
-        query_ms2ds_embeddings = MS2DeepScore(
-            self.ms2ds_model,
-            progress_bar=False).calculate_vectors([query_spectrum])
-        preselected_ms2ds_embeddings = \
-            self.ms2ds_embeddings.loc[preselected_spectrum_ids].to_numpy()
-        ms2ds_scores = cosine_similarity_matrix(query_ms2ds_embeddings,
-                                                preselected_ms2ds_embeddings
-                                                )[0]
-
-        # Add info together into a dataframe
-        preselected_spectra_df = pd.DataFrame(
-            {"cosine_score": cosine_score,
-             "cosine_matches": normalized_cosine_matches,
-             "mod_cosine_score": mod_cosine_score,
-             "mod_cosine_matches": normalized_mod_cos_matches,
-             "parent_mass": normalized_parent_masses,
-             "mass_sim": mass_similarity,
-             "s2v_scores": s2v_scores,
-             "ms2ds_scores": ms2ds_scores},
-            index=preselected_spectrum_ids)
-        return preselected_spectra_df
-
-    @staticmethod
-    def get_ms2query_model_prediction(matches_info: Dict[str, pd.DataFrame],
-                                      ms2query_model_file_name: str
-                                      ) -> Dict[str, pd.DataFrame]:
-        """Adds ms2query predictions to dataframes
-
-        matches_info:
-            A dictionary with as keys the query spectrum ids and as values
-            pd.DataFrames containing the top 20 preselected matches and all
-            info needed about these matches to run the ms2query model.
-        ms2query_model_file_name:
-            File name of a hdf5 name containing the ms2query model.
+        Args:
+        ------
+        average_ms2ds_scores_per_inchikey14:
+            The average ms2ds scores per inchikey, the keys of the dictionary
+            are the inchikeys and the values are a tuple containing the
+            average ms2ds score and the number of spectra belonging to this
+            inchikey.
+        nr_of_top_inchikey14s_to_select:
+            The number of inchikeys that are selected
         """
-        ms2query_nn_model = load_nn_model(ms2query_model_file_name)
+        # Selects the inchikeys with the highest average ms2ds scores
+        top_inchikeys = nlargest(nr_of_top_inchikey14s_to_select,
+                                 average_ms2ds_scores_per_inchikey14,
+                                 key=average_ms2ds_scores_per_inchikey14.get)
+        top_spectrum_ids = []
+        for inchikey in top_inchikeys:
+            top_spectrum_ids += self.spectra_of_inchikey14s[inchikey]
 
-        for query_spectrum_id in matches_info:
-            current_query_matches_info = matches_info[query_spectrum_id]
-            predictions = ms2query_nn_model.predict(current_query_matches_info)
+        return top_inchikeys, top_spectrum_ids
 
-            # Add prediction to dataframe
-            current_query_matches_info[
-                "ms2query_model_prediction"] = predictions
-            matches_info[query_spectrum_id] = \
-                current_query_matches_info.sort_values(
-                    by=["ms2query_model_prediction"], ascending=False)
-        return matches_info
+    def _get_closely_related_scores(
+            self,
+            selected_inchikey14s: List[str],
+            average_inchikey_scores: Dict[str, Tuple[float, int]]
+            ) -> Dict[str, Tuple[float, int, float]]:
+        """Returns the closely related inchikey scores for selected inchikey14s
+
+        A dictionary is returned with as keys the inchikeys and als value a
+        tuple with the closely related inchikey score, the number of spectra
+        used for this score and the weight used for this score.
+        The closely related score is calculated by taking the average inchikey
+        score times the nr of spectra with this inchikey times the tanimoto
+        score of this spectrum devided by the total weight of all scores
+        combined.
+
+        Args:
+        ------
+        selected_inchikey14s:
+            The inchikeys for which the closely related scores are calculated
+        average_inchikey_scores:
+            Dictionary containing the average MS2Deepscore scores for each
+            inchikey and the number of spectra belonging to this inchikey.
+        """
+
+        related_inchikey_score_dict = {}
+        for inchikey in selected_inchikey14s:
+            # For each inchikey a list with the top 10 closest related inchikeys
+            #  and the corresponding tanimoto score is stored
+            best_matches_and_tanimoto_scores = \
+                self.closely_related_inchikey14s[inchikey]
+
+            # Count the weight, nr and sum of tanimoto scores to calculate the
+            #  average tanimoto score.
+            sum_related_inchikey_tanimoto_scores = 0
+            total_weight_of_spectra_used = 0
+            total_nr_of_spectra_used = 0
+            for closely_related_inchikey14, tanimoto_score in \
+                    best_matches_and_tanimoto_scores:
+                # Get the ms2ds score for this closely related inchikey14 and the
+                # nr of spectra for this related inchikey.
+                closely_related_ms2ds, nr_of_spectra_related_inchikey14 = \
+                    average_inchikey_scores[closely_related_inchikey14]
+                # todo think of different weighting based on tanimoto score,
+                #  e.g. nr_of_spectra^tanimoto_score or return all individual
+                #  scores, nr and tanimoto score for each closely related inchikey
+                #  (so 30 in total) to MS2Query
+                # The weight of closely related spectra is based on the tanimoto
+                # score and the nr of spectra this inchikey has.
+                weight_of_closely_related_inchikey_score = \
+                    nr_of_spectra_related_inchikey14 * tanimoto_score
+
+                sum_related_inchikey_tanimoto_scores += \
+                    closely_related_ms2ds * \
+                    weight_of_closely_related_inchikey_score
+                total_weight_of_spectra_used += \
+                    weight_of_closely_related_inchikey_score
+                total_nr_of_spectra_used += nr_of_spectra_related_inchikey14
+
+            average_tanimoto_score_used = \
+                total_weight_of_spectra_used/total_nr_of_spectra_used
+
+            related_inchikey_score_dict[
+                inchikey] = \
+                (sum_related_inchikey_tanimoto_scores/total_weight_of_spectra_used,
+                 total_nr_of_spectra_used,
+                 average_tanimoto_score_used)
+        return related_inchikey_score_dict
+
+
+def get_ms2query_model_prediction(
+        matches_info: Dict[str, Union[pd.DataFrame, None]],
+        ms2query_model_file_name: str
+        ) -> Dict[str, pd.DataFrame]:
+    """Adds ms2query predictions to dataframes
+
+    matches_info:
+        A dictionary with as keys the query spectrum ids and as values
+        pd.DataFrames containing the top 20 preselected matches and all
+        info needed about these matches to run the ms2query model.
+    ms2query_model_file_name:
+        File name of a hdf5 name containing the ms2query model.
+    """
+    ms2query_nn_model = load_nn_model(ms2query_model_file_name)
+    ms2query_results = {}
+
+    for query_spectrum_id in matches_info:
+        current_query_matches_info = matches_info[query_spectrum_id].copy()
+        if current_query_matches_info is None:
+            continue
+        predictions = ms2query_nn_model.predict(current_query_matches_info)
+
+        # Add prediction to dataframe
+        current_query_matches_info[
+            "ms2query_model_prediction"] = predictions
+        ms2query_results[query_spectrum_id] = \
+            current_query_matches_info.sort_values(
+                by=["ms2query_model_prediction"], ascending=False)
+    return ms2query_results

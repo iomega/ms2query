@@ -5,8 +5,7 @@ from tqdm import tqdm
 from matchms.typing import SpectrumType
 from ms2query.app_helpers import load_pickled_file
 from ms2query import MS2Library
-from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikey14s, get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
@@ -20,6 +19,8 @@ class SelectDataForTraining(MS2Library):
                  pickled_ms2ds_embeddings_file_name: str,
                  training_spectra_file: str,
                  validation_spectra_file: str,
+                 tanimoto_scores_df_file_name: str,
+                 preselection_cut_off: int = 10,
                  **settings):
         """Parameters
         ----------
@@ -43,6 +44,11 @@ class SelectDataForTraining(MS2Library):
             Pickled file with training spectra.
         validation_spectra_file:
             Pickled file with validation spectra.
+        tanimoto_scores_df_file_name:
+            A pickled file containing a dataframe with the tanimoto scores
+            between all inchikeys. The tanimoto scores in SQLite cannot be
+            used, since these do not contain the inchikeys for the training
+            spectra.
 
 
         **settings:
@@ -68,10 +74,13 @@ class SelectDataForTraining(MS2Library):
                          pickled_s2v_embeddings_file_name,
                          pickled_ms2ds_embeddings_file_name,
                          **settings)
+        self.tanimoto_scores: pd.DataFrame = \
+            load_pickled_file(tanimoto_scores_df_file_name)
         self.training_spectra = minimal_processing_multiple_spectra(
             load_pickled_file(training_spectra_file))
         self.validation_spectra = minimal_processing_multiple_spectra(
             load_pickled_file(validation_spectra_file))
+        self.preselection_cut_off = preselection_cut_off
 
     def create_train_and_val_data(self,
                                   save_file_name: Union[None, str] = None
@@ -121,8 +130,8 @@ class SelectDataForTraining(MS2Library):
             List of Spectrum objects
         """
         query_spectra_matches_info = \
-            self.collect_matches_data_multiple_spectra(
-                query_spectra)
+            self.get_analog_search_scores(query_spectra,
+                                          self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,
@@ -191,18 +200,14 @@ class SelectDataForTraining(MS2Library):
             # no inchikey it is stored as "", so it will not be stored.
             if len(inchikey14) == 14:
                 inchikey14s_dict[spectrum_id] = inchikey14
-        inchikey14s_list = list(inchikey14s_dict.values())
-        # Returns tanimoto score for each unique inchikey14.
-        tanimoto_scores_inchikey14s = get_tanimoto_score_for_inchikey14s(
-            inchikey14s_list, [query_inchikey14], self.sqlite_file_location)
-        # Add tanimoto scores to dataframe.
+
         tanimoto_scores_spectra_ids = pd.DataFrame(
             columns=["Tanimoto_score"],
             index=list(inchikey14s_dict.keys()))
         for spectrum_id in inchikey14s_dict:
             inchikey14 = inchikey14s_dict[spectrum_id]
-            tanimoto_score = tanimoto_scores_inchikey14s.loc[inchikey14,
-                                                             query_inchikey14]
+            tanimoto_score = self.tanimoto_scores.loc[inchikey14,
+                                                      query_inchikey14]
             tanimoto_scores_spectra_ids.at[spectrum_id, "Tanimoto_score"] = \
                 tanimoto_score
         return tanimoto_scores_spectra_ids
