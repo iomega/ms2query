@@ -4,7 +4,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
 from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 from pandas import DataFrame
 
 

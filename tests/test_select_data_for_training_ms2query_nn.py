@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from ms2query.select_data_for_training_ms2query_nn import SelectDataForTraining
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 
 
 def test_select_data_for_training():
