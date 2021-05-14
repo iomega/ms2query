@@ -9,7 +9,7 @@ from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
-class SelectDataForTraining(MS2Library):
+class DataCollectorForTraining(MS2Library):
     """Class to collect data needed to train a ms2query neural network"""
     def __init__(self,
                  sqlite_file_location: str,
@@ -20,7 +20,7 @@ class SelectDataForTraining(MS2Library):
                  training_spectra_file: str,
                  validation_spectra_file: str,
                  tanimoto_scores_df_file_name: str,
-                 preselection_cut_off: int = 10,
+                 preselection_cut_off: int = 2000,
                  **settings):
         """Parameters
         ----------
