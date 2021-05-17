@@ -89,7 +89,7 @@ def train_ms2query_nn(nn_model: Sequential,
                         callbacks=callbacks)
     history = hist.history
 
-    if save_name and not os.path.exists(save_name):
+    if save_name and not os.path.exists(save_name + '_train_hist.pickle'):
         with open(save_name + '_train_hist.pickle', 'wb') as hist_outf:
             pickle.dump(history, hist_outf)
     return nn_model, history
