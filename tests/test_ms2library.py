@@ -116,7 +116,7 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    result = test_library.get_analog_search_scores(test_spectra, 20)
+    result = test_library._get_analog_search_scores(test_spectra, 20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))

@@ -124,7 +124,6 @@ class MS2Library:
                             "cosine_score_tolerance": 0.1,
                             "base_nr_mass_similarity": 0.8,
                             "progress_bars": True}
-        # todo make new model that has a fixed basic mass
         for attribute in new_settings:
             assert attribute in default_settings, \
                 f"Invalid argument in constructor:{attribute}"
@@ -134,12 +133,12 @@ class MS2Library:
             default_settings[attribute] = new_settings[attribute]
         return default_settings
 
-    def select_best_matches(self,
-                            query_spectra: List[Spectrum],
-                            ms2query_model_file_name: str,
-                            preselection_cut_off: int = 2000
-                            ) -> Dict[str, pd.DataFrame]:
-        """Returns ordered best matches with info for all query spectra
+    def analog_search(self,
+                      query_spectra: List[Spectrum],
+                      ms2query_model_file_name: str,
+                      preselection_cut_off: int = 2000
+                      ) -> Dict[str, pd.DataFrame]:
+        """Returns per query spectrum a df with matches sorted on MS2Query score
 
         Args
         ----
@@ -151,17 +150,14 @@ class MS2Library:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
         """
-        # TODO: remove file_name from input parameters
+        # TODO: remove ms2query_model_file_name from input parameters
         # Selects top 20 best matches based on ms2ds and calculates all scores
         analog_search_scores = \
-            self.get_analog_search_scores(query_spectra, preselection_cut_off)
+            self._get_analog_search_scores(query_spectra, preselection_cut_off)
         # Adds the ms2query model prediction to the dataframes
         results_analog_search = \
             get_ms2query_model_prediction(analog_search_scores,
                                           ms2query_model_file_name)
-
-        # todo decide for a good filtering method e.g. below certain threshold
-        # todo add select_potential_true_matches and choose suitable output
         return results_analog_search
 
     def select_potential_true_matches(self,
@@ -202,7 +198,7 @@ class MS2Library:
             selected_library_spectra = [result[0] for result in
                                         parent_masses_within_mass_tolerance]
             s2v_scores = self._get_s2v_scores(query_spectrum,
-                                             selected_library_spectra)
+                                              selected_library_spectra)
             found_matches = []
             for i, selected_spectrum in enumerate(selected_library_spectra):
                 if s2v_scores[i] > s2v_score_threshold:
@@ -210,7 +206,7 @@ class MS2Library:
             found_matches_dict[query_spectrum_id] = found_matches
         return found_matches_dict
 
-    def get_analog_search_scores(self,
+    def _get_analog_search_scores(self,
                                  query_spectra: List[Spectrum],
                                  preselection_cut_off: int
                                  ) -> Dict[str, pd.DataFrame]:
