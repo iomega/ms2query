@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Set
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -301,21 +301,31 @@ class MS2Library:
         # todo It is an option to make this function calculate the average
         #  ms2ds scores for all spectra at once, so it can be moved to the
         #  start of get_analog_search_scores.
-        average_ms2ds_scores = \
-            self._get_average_ms2ds_for_inchikey14(ms2ds_scores)
 
-        if sort_on_average_ms2ds:
-            # select on highest average ms2ds score
-            selected_inchikeys, selected_spectrum_ids = \
-                self._preselect_best_matching_inchikeys(average_ms2ds_scores,
-                                                        preselection_cut_off)
-        else:
-            # Select spectra based on the ms2ds scores
-            selected_spectrum_ids = list(ms2ds_scores.nlargest(
-                preselection_cut_off).index)
-            # Select inchikeys that correspond to the selected spectra
-            selected_inchikeys = {self.inchikey14s_of_spectra[spectrum] for
-                                  spectrum in selected_spectrum_ids}
+        # if sort_on_average_ms2ds:
+        #     # select on highest average ms2ds score
+        #     selected_inchikeys, selected_spectrum_ids = \
+        #         self._preselect_best_matching_inchikeys(average_ms2ds_scores,
+        #                                                 preselection_cut_off)
+        # else:
+        # Select spectra based on the ms2ds scores
+        selected_spectrum_ids = list(ms2ds_scores.nlargest(
+            preselection_cut_off).index)
+        # Select inchikeys that correspond to the selected spectra
+        selected_inchikeys = {self.inchikey14s_of_spectra[spectrum] for
+                              spectrum in selected_spectrum_ids}
+
+        # Select inchikeys for which the average ms2ds scores should be
+        # calculated
+        selected_closely_related_inchikeys = []
+        for inchikey in selected_inchikeys:
+            selected_closely_related_inchikeys += \
+                [scores[0] for scores in self.closely_related_inchikey14s[inchikey]]
+        inchikeys_to_calc_average_for = \
+            set(selected_closely_related_inchikeys) | selected_inchikeys
+
+        average_ms2ds_scores = \
+            self._get_average_ms2ds_for_inchikey14(ms2ds_scores, inchikeys_to_calc_average_for)
 
         closely_related_inchikey_scores = self._get_closely_related_scores(
             selected_inchikeys,
@@ -421,7 +431,8 @@ class MS2Library:
         return s2v_scores
 
     def _get_average_ms2ds_for_inchikey14(self,
-                                          ms2ds_scores: pd.Series
+                                          ms2ds_scores: pd.Series,
+                                          inchikey14s: Set[str]
                                           ) -> Dict[str, Tuple[float, int]]:
         """Returns the average ms2ds score per inchikey
 
@@ -432,7 +443,7 @@ class MS2Library:
             values the ms2ds scores.
         """
         inchikey14_scores = {}
-        for inchikey14 in self.spectra_of_inchikey14s:
+        for inchikey14 in inchikey14s:
             sum_of_ms2ds_scores = 0
             for spectrum_id in self.spectra_of_inchikey14s[inchikey14]:
                 sum_of_ms2ds_scores += ms2ds_scores.loc[spectrum_id]
@@ -475,7 +486,7 @@ class MS2Library:
 
     def _get_closely_related_scores(
             self,
-            selected_inchikey14s: List[str],
+            selected_inchikey14s: Set[str],
             average_inchikey_scores: Dict[str, Tuple[float, int]]
             ) -> Dict[str, Tuple[float, int, float]]:
         """Returns the closely related inchikey scores for selected inchikey14s
