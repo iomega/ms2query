@@ -267,8 +267,13 @@ class MS2Library:
             spectra in the ms2ds embeddings file.
         """
         ms2ds = MS2DeepScore(self.ms2ds_model, progress_bar=False)
+        if self.settings["progress_bars"]:
+            print("Calculating MS2Deepscore embeddings for query spectra")
         query_embeddings = ms2ds.calculate_vectors(query_spectra)
         library_ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
+        if self.settings["progress_bars"]:
+            print("Calculating MS2Deepscore between query embeddings and "
+                  "library embeddings")
         ms2ds_scores = cosine_similarity_matrix(library_ms2ds_embeddings_numpy,
                                                 query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
@@ -282,8 +287,7 @@ class MS2Library:
     def _calculate_averages_and_preselection(
             self,
             ms2ds_scores: pd.Series,
-            preselection_cut_off: int,
-            sort_on_average_ms2ds: bool = False
+            preselection_cut_off: int
             ):
         """Returns preselected spectra and average and closely related ms2ds
 
@@ -298,17 +302,6 @@ class MS2Library:
             per inchikey, if false the selection is done based on ms2ds scores
             of single spectra.
         """
-        # todo It is an option to make this function calculate the average
-        #  ms2ds scores for all spectra at once, so it can be moved to the
-        #  start of get_analog_search_scores.
-
-        # if sort_on_average_ms2ds:
-        #     # select on highest average ms2ds score
-        #     selected_inchikeys, selected_spectrum_ids = \
-        #         self._preselect_best_matching_inchikeys(average_ms2ds_scores,
-        #                                                 preselection_cut_off)
-        # else:
-        # Select spectra based on the ms2ds scores
         selected_spectrum_ids = list(ms2ds_scores.nlargest(
             preselection_cut_off).index)
         # Select inchikeys that correspond to the selected spectra
@@ -367,9 +360,9 @@ class MS2Library:
              "ms2ds_score": [],
              "average_ms2ds_score_for_inchikey14": [],
              "nr_of_spectra_with_same_inchikey14*0.01": [],
-             "closely_related_inchikey14s_score": [],
-             "average_tanimoto_for_closely_related_score": [],
-             "nr_of_spectra_for_closely_related_score*0.01": []}
+             "chemical_neighbourhood_score": [],
+             "average_tanimoto_score_for_chemical_neighbourhood_score": [],
+             "nr_of_spectra_for_chemical_neighbourhood_score*0.01": []}
         for spectrum_id in selected_spectrum_ids:
             selected_and_normalized_scores["ms2ds_score"].append(
                 ms2ds_scores.loc[spectrum_id])
@@ -377,14 +370,14 @@ class MS2Library:
             matching_inchikey14 = \
                 self.inchikey14s_of_spectra[spectrum_id]
             selected_and_normalized_scores[
-                "closely_related_inchikey14s_score"].append(
+                "chemical_neighbourhood_score"].append(
                 closely_related_inchikey_scores[matching_inchikey14][0])
             # Devide by 100 for normalization
             selected_and_normalized_scores[
-                "nr_of_spectra_for_closely_related_score*0.01"].append(
+                "nr_of_spectra_for_chemical_neighbourhood_score*0.01"].append(
                 closely_related_inchikey_scores[matching_inchikey14][1] / 100)
             selected_and_normalized_scores[
-                "average_tanimoto_for_closely_related_score"].append(
+                "average_tanimoto_score_for_chemical_neighbourhood_score"].append(
                 closely_related_inchikey_scores[matching_inchikey14][2])
 
             matching_inchikey14 = \
@@ -507,7 +500,6 @@ class MS2Library:
             Dictionary containing the average MS2Deepscore scores for each
             inchikey and the number of spectra belonging to this inchikey.
         """
-
         related_inchikey_score_dict = {}
         for inchikey in selected_inchikey14s:
             # For each inchikey a list with the top 10 closest related inchikeys
