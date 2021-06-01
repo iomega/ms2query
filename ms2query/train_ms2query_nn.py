@@ -4,7 +4,7 @@ import pandas as pd
 from typing import Union, List, Tuple, Dict
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Dropout
 from matplotlib import pyplot as plt
 
 
@@ -34,9 +34,12 @@ def create_ms2query_nn(layers: List[int],
     # add first layer
     nn_model.add(Dense(layers[0], input_dim=input_dimensions,
                        activation=activations))
+    nn_model.add(Dropout(0.2))
+
     # add other layers
     for i in range(1, len(layers) - 1):  # skip first and last one
         nn_model.add(Dense(layers[i], activation=activations))
+        nn_model.add(Dropout(0.2))
     # add last layer
     nn_model.add(Dense(layers[-1], activation=last_activation))
     # compile the keras model
