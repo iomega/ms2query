@@ -123,9 +123,7 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
-    # todo create new test file, once final decision is made about all
-    #  scores calculated
+        assert_frame_equal(result[key], expected_result[key], check_names=False)
 
 
 def test_pre_select_spectra():
