@@ -123,7 +123,7 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key], check_names=False)
+        assert_frame_equal(result[key], expected_result[key])
 
 
 def test_pre_select_spectra():
@@ -233,8 +233,3 @@ def test_get_ms2query_model_prediction():
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
-
-
-import pandas as pd
-pd.set_option("display.max_columns", 15)
-pd.set_option("display.width", 1000)
