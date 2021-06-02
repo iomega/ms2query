@@ -116,7 +116,7 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    result = test_library.get_analog_search_scores(test_spectra, 20)
+    result = test_library._get_analog_search_scores(test_spectra, 20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
@@ -124,8 +124,6 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
-    # todo create new test file, once final decision is made about all
-    #  scores calculated
 
 
 def test_pre_select_spectra():
@@ -235,8 +233,3 @@ def test_get_ms2query_model_prediction():
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
-
-
-import pandas as pd
-pd.set_option("display.max_columns", 15)
-pd.set_option("display.width", 1000)
