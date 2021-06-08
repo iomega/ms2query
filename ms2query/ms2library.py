@@ -407,7 +407,7 @@ class MS2Library:
         query_spectrum:
             Spectrum object
         preselection_of_library_ids:
-            list of spectrum ids for which the s2v scores should be calcualated
+            list of spectrum ids for which the s2v scores should be calculated
             """
         query_spectrum_document = \
             create_spectrum_documents([query_spectrum])[0]
