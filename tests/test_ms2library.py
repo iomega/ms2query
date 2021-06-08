@@ -181,8 +181,21 @@ def test_get_all_ms2ds_scores(file_names, test_spectra):
     assert_frame_equal(result, expected_result)
 
 
-def test_get_s2v_scores():
-    pass
+def test_get_s2v_scores(file_names, test_spectra):
+    """Test _get_s2v_scores method of MS2Library"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+    ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+    spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    result = test_library._get_s2v_scores(
+        test_spectra[0], ["CCMSLIB00000001572", "CCMSLIB00000001648"])
+    assert np.any(result == np.array([0.97565603, 0.97848464]))
 
 
 def test_get_average_ms2ds_for_inchikey14():
