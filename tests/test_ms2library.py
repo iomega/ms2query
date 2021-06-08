@@ -103,7 +103,40 @@ def test_select_best_matches():
     pass
 
 
-def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
+def test_select_potential_true_matches(file_names, test_spectra):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+
+    results = \
+        test_library.select_potential_true_matches(test_spectra,
+                                                   mass_tolerance=30,
+                                                   s2v_score_threshold=0.6)
+    assert isinstance(results, dict), "Expected dictionary"
+    for query_spectrum_id in results.keys():
+        assert isinstance(query_spectrum_id, str), \
+            "Expected keys of dictionary to be str"
+    test_spectrum_ids = \
+        {spectrum.get("spectrumid") for spectrum in test_spectra}
+    assert test_spectrum_ids == set(results.keys()), \
+        "Expected keys of dictionary to be the query spectrum ids"
+    assert results == {'CCMSLIB00000001760':
+                           ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                            'CCMSLIB00000001648', 'CCMSLIB00000001650'],
+                       'CCMSLIB00000001761':
+                           ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                            'CCMSLIB00000001648', 'CCMSLIB00000001650']}, \
+        "Expected different spectra to be found as true matches"
+
+
+def test_get_analog_search_scores(file_names, test_spectra):
     """Test collect_matches_data_multiple_spectra method of ms2library"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
@@ -124,41 +157,6 @@ def test_collect_matches_data_multiple_spectra(file_names, test_spectra):
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
-    # todo create new test file, once final decision is made about all
-    #  scores calculated
-
-
-def test_pre_select_spectra():
-    """Test pre_select_spectra method of ms2library"""
-    pass
-    # todo change test, so it works with new splitted workflow
-    # sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-    #     ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-    #     spectrum_id_column_name = get_test_file_names()
-    #
-    # test_library = MS2Library(sqlite_file_loc,
-    #                           spec2vec_model_file_loc,
-    #                           ms2ds_model_file_name,
-    #                           s2v_pickled_embeddings_file,
-    #                           ms2ds_embeddings_file_name,
-    #                           spectrum_id_column_name=spectrum_id_column_name)
-    #
-    # test_spectra = create_test_spectra()
-    #
-    # preselected_spectra = test_library.pre_select_spectra(test_spectra)
-    # expected_result = load_pickled_file(os.path.join(
-    #     os.path.split(os.path.dirname(__file__))[0],
-    #     'tests/test_files/test_files_ms2library',
-    #     'expected_preselected_spectra.pickle'))
-    # assert isinstance(preselected_spectra, dict), "Expected a dictionary"
-    # assert isinstance(list(preselected_spectra.values())[0], list), \
-    #     "Expected a dict with list as values"
-    # assert isinstance(list(preselected_spectra.values())[0][0], str), \
-    #     "Expected a dictionary with list with string"
-    # assert isinstance(list(preselected_spectra.keys())[0], str), \
-    #     "Expected dict with as keys str"
-    # assert preselected_spectra == expected_result, \
-    #     "Expected different preselected spectra"
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):
@@ -236,7 +234,34 @@ def test_get_ms2query_model_prediction():
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
 
-
-import pandas as pd
-pd.set_option("display.max_columns", 15)
-pd.set_option("display.width", 1000)
+def test_pre_select_spectra():
+    """Test pre_select_spectra method of ms2library"""
+    pass
+    # todo change test, so it works with new splitted workflow
+    # sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+    #     ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+    #     spectrum_id_column_name = get_test_file_names()
+    #
+    # test_library = MS2Library(sqlite_file_loc,
+    #                           spec2vec_model_file_loc,
+    #                           ms2ds_model_file_name,
+    #                           s2v_pickled_embeddings_file,
+    #                           ms2ds_embeddings_file_name,
+    #                           spectrum_id_column_name=spectrum_id_column_name)
+    #
+    # test_spectra = create_test_spectra()
+    #
+    # preselected_spectra = test_library.pre_select_spectra(test_spectra)
+    # expected_result = load_pickled_file(os.path.join(
+    #     os.path.split(os.path.dirname(__file__))[0],
+    #     'tests/test_files/test_files_ms2library',
+    #     'expected_preselected_spectra.pickle'))
+    # assert isinstance(preselected_spectra, dict), "Expected a dictionary"
+    # assert isinstance(list(preselected_spectra.values())[0], list), \
+    #     "Expected a dict with list as values"
+    # assert isinstance(list(preselected_spectra.values())[0][0], str), \
+    #     "Expected a dictionary with list with string"
+    # assert isinstance(list(preselected_spectra.keys())[0], str), \
+    #     "Expected dict with as keys str"
+    # assert preselected_spectra == expected_result, \
+    #     "Expected different preselected spectra"
