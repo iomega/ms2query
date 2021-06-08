@@ -149,7 +149,7 @@ def test_get_analog_search_scores(file_names, test_spectra):
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    result = test_library.get_analog_search_scores(test_spectra, 20)
+    result = test_library._get_analog_search_scores(test_spectra, 20)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
@@ -234,6 +234,7 @@ def test_get_ms2query_model_prediction():
         assert isinstance(key, str), "Expected keys of dict to be string"
         assert_frame_equal(result[key], expected_result[key])
 
+
 def test_pre_select_spectra():
     """Test pre_select_spectra method of ms2library"""
     pass
@@ -265,3 +266,4 @@ def test_pre_select_spectra():
     #     "Expected dict with as keys str"
     # assert preselected_spectra == expected_result, \
     #     "Expected different preselected spectra"
+
