@@ -466,6 +466,7 @@ class MS2Library:
         nr_of_top_inchikey14s_to_select:
             The number of inchikeys that are selected
         """
+        # is not used in the current workflow but might be added again later
         # Selects the inchikeys with the highest average ms2ds scores
         top_inchikeys = nlargest(nr_of_top_inchikey14s_to_select,
                                  average_ms2ds_scores_per_inchikey14,

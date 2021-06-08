@@ -1,11 +1,12 @@
 import os
+import math
 import numpy as np
 import pytest
+import pandas as pd
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
 from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
 from ms2query.utils import load_pickled_file
-from pandas import DataFrame
 
 
 @pytest.fixture
@@ -127,13 +128,12 @@ def test_select_potential_true_matches(file_names, test_spectra):
         {spectrum.get("spectrumid") for spectrum in test_spectra}
     assert test_spectrum_ids == set(results.keys()), \
         "Expected keys of dictionary to be the query spectrum ids"
-    assert results == {'CCMSLIB00000001760':
-                           ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                            'CCMSLIB00000001648', 'CCMSLIB00000001650'],
-                       'CCMSLIB00000001761':
-                           ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                            'CCMSLIB00000001648', 'CCMSLIB00000001650']}, \
-        "Expected different spectra to be found as true matches"
+    assert results == \
+           {'CCMSLIB00000001760': ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                                   'CCMSLIB00000001648', 'CCMSLIB00000001650'],
+            'CCMSLIB00000001761': ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                                   'CCMSLIB00000001648', 'CCMSLIB00000001650']
+            }, "Expected different spectra to be found as true matches"
 
 
 def test_get_analog_search_scores(file_names, test_spectra):
@@ -177,15 +177,15 @@ def test_get_all_ms2ds_scores(file_names, test_spectra):
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
-    assert isinstance(result, DataFrame), "Expected dictionary"
+    assert isinstance(result, pd.DataFrame), "Expected dictionary"
     assert_frame_equal(result, expected_result)
 
 
 def test_get_s2v_scores(file_names, test_spectra):
     """Test _get_s2v_scores method of MS2Library"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-    ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-    spectrum_id_column_name = file_names
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
@@ -195,19 +195,68 @@ def test_get_s2v_scores(file_names, test_spectra):
                               spectrum_id_column_name=spectrum_id_column_name)
     result = test_library._get_s2v_scores(
         test_spectra[0], ["CCMSLIB00000001572", "CCMSLIB00000001648"])
-    assert np.any(result == np.array([0.97565603, 0.97848464]))
+    assert np.allclose(result, np.array([0.97565603, 0.97848464])), \
+        "Expected different Spec2Vec scores"
 
 
-def test_get_average_ms2ds_for_inchikey14():
-    pass
+def test_get_average_ms2ds_for_inchikey14(file_names):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    inchickey14s = {"BKUKTJSDOUXYFL", "BTVYFIMKUHNOBZ"}
+    ms2ds_scores = pd.Series(
+        [0.1, 0.8, 0.3],
+        index=['CCMSLIB00000001678',
+               'CCMSLIB00000001651', 'CCMSLIB00000001653'])
+    results = test_library._get_average_ms2ds_for_inchikey14(
+        ms2ds_scores, inchickey14s)
+    assert results == \
+           {'BKUKTJSDOUXYFL': (0.1, 1), 'BTVYFIMKUHNOBZ': (0.55, 2)}, \
+           "Expected different results"
 
 
-def test_preselect_best_matching_inchikeys():
-    pass
+def test_get_chemical_neighbourhood_scores(file_names):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
 
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    average_inchickey_scores = \
+        {'BKUKTJSDOUXYFL': (0.8, 3),
+         'UZMVEOVJASEKLP': (0.8, 2),
+         'QWSYKJZSJYRUSS': (0.8, 2),
+         'GRVRRAOIXXYICO': (0.8, 7),
+         'WXDBUBIFYCCNLE': (0.8, 2),
+         'ORRFIXSGNXBETO': (0.8, 2),
+         'LLWMPGSQZXZZAE': (0.8, 4),
+         'CTBBEXWJRAPJIZ': (0.8, 2),
+         'YQLQWGVOWKPLFR': (0.8, 2),
+         'BTVYFIMKUHNOBZ': (0.8, 2)}
 
-def test_get_chemical_neighbourhood_scores():
-    pass
+    results = test_library._get_chemical_neighbourhood_scores(
+        {"BKUKTJSDOUXYFL"}, average_inchickey_scores)
+    assert isinstance(results, dict), "expected a dictionary"
+    assert len(results) == 1, "Expected different number of results in " \
+                              "dictionary"
+    assert 'BKUKTJSDOUXYFL' in results
+    scores = results['BKUKTJSDOUXYFL']
+    assert isinstance(scores, tuple)
+    assert len(scores) == 3, "Expected three scores for each InChiKey"
+    assert math.isclose(scores[0], 0.8)
+    assert scores[1] == 28
+    assert math.isclose(scores[2], 0.46646038479969587)
 
 
 def test_get_ms2query_model_prediction():
