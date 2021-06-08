@@ -320,9 +320,8 @@ class MS2Library:
         average_ms2ds_scores = \
             self._get_average_ms2ds_for_inchikey14(ms2ds_scores, inchikeys_to_calc_average_for)
 
-        closely_related_inchikey_scores = self._get_closely_related_scores(
-            selected_inchikeys,
-            average_ms2ds_scores)
+        closely_related_inchikey_scores = self._get_chemical_neighbourhood_scores(
+            selected_inchikeys, average_ms2ds_scores)
         return selected_spectrum_ids, average_ms2ds_scores, \
             closely_related_inchikey_scores
 
@@ -477,15 +476,15 @@ class MS2Library:
 
         return top_inchikeys, top_spectrum_ids
 
-    def _get_closely_related_scores(
+    def _get_chemical_neighbourhood_scores(
             self,
             selected_inchikey14s: Set[str],
             average_inchikey_scores: Dict[str, Tuple[float, int]]
             ) -> Dict[str, Tuple[float, int, float]]:
-        """Returns the closely related inchikey scores for selected inchikey14s
+        """Returns the chemical neighbourhood scores for selected inchikey14s
 
         A dictionary is returned with as keys the inchikeys and als value a
-        tuple with the closely related inchikey score, the number of spectra
+        tuple with the chemical neighbourhood score, the number of spectra
         used for this score and the weight used for this score.
         The closely related score is calculated by taking the average inchikey
         score times the nr of spectra with this inchikey times the tanimoto
@@ -495,7 +494,8 @@ class MS2Library:
         Args:
         ------
         selected_inchikey14s:
-            The inchikeys for which the closely related scores are calculated
+            The inchikeys for which the chemical neighbourhood scores are
+            calculated
         average_inchikey_scores:
             Dictionary containing the average MS2Deepscore scores for each
             inchikey and the number of spectra belonging to this inchikey.
