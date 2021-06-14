@@ -6,7 +6,7 @@
 <img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="280">
 
 ### MS2Query - machine learning assisted library querying of MS/MS spectra.
-MS2Query is a tool for searching for chemically related compounds based on only MS/MS spectra information. 
+MS2Query is a tool for fast library searching for both analogs and true matches.
 
 ## Local installation of MS2Query
 ### Prepare environmnent
@@ -24,10 +24,4 @@ git clone https://github.com/iomega/ms2query.git
 And then install the required dependencies, e.g. by running the following from within the cloned directory
 ```
 pip install -e .
-```
-  
-## Run app locally
-Enter in terminal:
-```
-streamlit run ms2query_app.py
 ```
