@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
-- Refactored library matching [#65][https://github.com/iomega/ms2query/pull/65]
+- Refactored library matching [#65](https://github.com/iomega/ms2query/pull/65)
 - Split workflow into true matches and analog search [#72](https://github.com/iomega/ms2query/pull/72)
 - Refactored library files creation [#74](https://github.com/iomega/ms2query/pull/74)
 
