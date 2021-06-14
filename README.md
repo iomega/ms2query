@@ -28,7 +28,7 @@ pip install -e .
 
 ## Contributing
 
-If you want to contribute to the development of spec2vec,
+If you want to contribute to the development of ms2query,
 have a look at the [contribution guidelines](CONTRIBUTING.md).
 
 ## License
