@@ -29,12 +29,8 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         "matchms>=0.6.1",
-        "streamlit",
         "numpy",
         "spec2vec",
-        "pydot",
-        "networkx",
-        "plotly",
         "h5py<3.0.0",
         "tensorflow",
         "ms2deepscore",
