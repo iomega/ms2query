@@ -3,13 +3,13 @@ from typing import List, Tuple, Union
 import pandas as pd
 from tqdm import tqdm
 from matchms.typing import SpectrumType
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 from ms2query import MS2Library
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
 
-class SelectDataForTraining(MS2Library):
+class DataCollectorForTraining(MS2Library):
     """Class to collect data needed to train a ms2query neural network"""
     def __init__(self,
                  sqlite_file_location: str,
@@ -20,7 +20,7 @@ class SelectDataForTraining(MS2Library):
                  training_spectra_file: str,
                  validation_spectra_file: str,
                  tanimoto_scores_df_file_name: str,
-                 preselection_cut_off: int = 10,
+                 preselection_cut_off: int = 2000,
                  **settings):
         """Parameters
         ----------
@@ -130,8 +130,8 @@ class SelectDataForTraining(MS2Library):
             List of Spectrum objects
         """
         query_spectra_matches_info = \
-            self.get_analog_search_scores(query_spectra,
-                                          self.preselection_cut_off)
+            self._get_analog_search_scores(query_spectra,
+                                           self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,

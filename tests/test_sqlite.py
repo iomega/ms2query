@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import sqlite3
 from matchms import Spectrum
-from ms2query.app_helpers import load_pickled_file
+from ms2query.utils import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import \
     get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite,  \
