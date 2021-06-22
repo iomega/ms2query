@@ -247,11 +247,7 @@ class MS2Library:
                     results_table,
                     ms2ds_scores[spectrum_id],
                     preselection_cut_off)
-            #print(results_table.data['spectrum_ids'])
-            #results_table = results_table.set_index('spectrum_ids')
             results_table.data = results_table.data.set_index('spectrum_ids')
-            #print(results_table.data.columns, results_table.data.index)
-            #print(results_table.data.index.values)
 
             results_table.data["s2v_scores"] = self._get_s2v_scores(query_spectrum,
                                                                     results_table.data.index.values)
@@ -347,10 +343,6 @@ class MS2Library:
                                   spectrum in selected_spectrum_ids}
 
         # Populate results table
-        #print(selected_spectrum_ids)
-        #print(results_table.data.shape)
-        #print(results_table.data.columns)
-        #print(len(selected_spectrum_ids))
         results_table.data["spectrum_ids"] = pd.Series(selected_spectrum_ids)
         results_table.data["inchikey"] = \
             [self.inchikey14s_of_spectra[x] for x in selected_spectrum_ids]
