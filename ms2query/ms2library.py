@@ -247,14 +247,14 @@ class MS2Library:
                     results_table,
                     ms2ds_scores[spectrum_id],
                     preselection_cut_off)
-            print(results_table.data['spectrum_ids'])
+            #print(results_table.data['spectrum_ids'])
             #results_table = results_table.set_index('spectrum_ids')
             results_table.data = results_table.data.set_index('spectrum_ids')
-            print(results_table.data.columns, results_table.data.index)
-            print(results_table.data.index.values)
+            #print(results_table.data.columns, results_table.data.index)
+            #print(results_table.data.index.values)
 
             results_table.data["s2v_scores"] = self._get_s2v_scores(query_spectrum,
-                                                                    results_table.index.values)
+                                                                    results_table.data.index.values)
 
             parent_masses = np.array([self.parent_masses_library[x] for x in results_table.data.index])
             results_table.add_parent_masses(parent_masses,
@@ -327,11 +327,11 @@ class MS2Library:
         for inchikey in selected_inchikeys:
             selected_closely_related_inchikeys += \
                 [scores[0] for scores in self.closely_related_inchikey14s[inchikey]]
-        #inchikeys_to_calc_average_for = \
-        #    set(selected_closely_related_inchikeys) | selected_inchikeys
+        inchikeys_to_calc_average_for = \
+            set(selected_closely_related_inchikeys) | selected_inchikeys
 
         average_ms2ds_scores = \
-            self._get_average_ms2ds_for_inchikey14(ms2ds_scores)
+            self._get_average_ms2ds_for_inchikey14(ms2ds_scores, inchikeys_to_calc_average_for)
 
         if sort_on_average_ms2ds:
             # select on highest average ms2ds score
@@ -347,10 +347,10 @@ class MS2Library:
                                   spectrum in selected_spectrum_ids}
 
         # Populate results table
-        print(selected_spectrum_ids)
-        print(results_table.data.shape)
-        print(results_table.data.columns)
-        print(len(selected_spectrum_ids))
+        #print(selected_spectrum_ids)
+        #print(results_table.data.shape)
+        #print(results_table.data.columns)
+        #print(len(selected_spectrum_ids))
         results_table.data["spectrum_ids"] = pd.Series(selected_spectrum_ids)
         results_table.data["inchikey"] = \
             [self.inchikey14s_of_spectra[x] for x in selected_spectrum_ids]
@@ -472,6 +472,8 @@ class MS2Library:
         ms2ds_scores:
             The ms2ds scores with as index the library spectrum ids and as
             values the ms2ds scores.
+        inchikey14s:
+            Set of inchikeys to average over.
         """
         inchikey14_scores = {}
         for inchikey14 in inchikey14s:
