@@ -13,17 +13,13 @@ MS2Query is a tool for fast library searching for both analogs and true matches.
 We recommend to create an Anaconda environment with
 
 ```
-conda create --name ms2query python=3.7
+conda create --name ms2query python=3.8
 conda activate ms2query
 ```
-### Clone repository
-Clone the present repository, e.g. by running
+### Pip install MS2Query
+MS2Query can simply be installed by running:
 ```
-git clone https://github.com/iomega/ms2query.git
-```
-And then install the required dependencies, e.g. by running the following from within the cloned directory
-```
-pip install -e .
+pip install ms2query
 ```
 
 ## Contributing
