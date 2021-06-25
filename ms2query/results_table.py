@@ -11,28 +11,30 @@ class ResultsTable():
                        "ms2ds_score",
                        "average_ms2ds_score_for_inchikey14",
                        "nr_of_spectra_with_same_inchikey14*0.01",
-                       "closely_related_inchikey14s_score",
-                       "average_tanimoto_for_closely_related_score",
-                       "nr_of_spectra_for_closely_related_score*0.01"]
+                       "chemical_neighbourhood_score",
+                       "average_tanimoto_score_for_chemical_neighbourhood_score",
+                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]
 
     def __init__(self, preselection_cut_off: int,
                  spectrum_id: str,
                  parent_mass: float,
+                 ms2deepscores: pd.DataFrame,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.preselection_cut_off = preselection_cut_off
         self.spectrum_id = spectrum_id
-        self.parent_mass = parent_mass        
+        self.parent_mass = parent_mass
+        self.ms2deepscores = ms2deepscores
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
 
     def add_related_inchikey_scores(self, related_inchikey_scores):
-        self.data["closely_related_inchikey14s_score"] = \
+        self.data["chemical_neighbourhood_score"] = \
             [related_inchikey_scores[x][0] for x in self.data["inchikey"]]
-        self.data["nr_of_spectra_for_closely_related_score*0.01"] = \
+        self.data["nr_of_spectra_for_chemical_neighbourhood_score*0.01"] = \
             [related_inchikey_scores[x][1] / 100 for x in self.data["inchikey"]]
-        self.data["average_tanimoto_for_closely_related_score"] = \
+        self.data["average_tanimoto_score_for_chemical_neighbourhood_score"] = \
             [related_inchikey_scores[x][2] for x in self.data["inchikey"]]
 
     def add_average_ms2ds_scores(self, average_ms2ds_scores):
@@ -47,3 +49,29 @@ class ResultsTable():
 
         self.data["mass_similarity"] = base_nr_mass_similarity ** \
             (np.abs(parent_masses - self.parent_mass))
+
+    def preselect_on_ms2deepscore(self):
+        selected_spectrum_ids = list(self.ms2deepscores.nlargest(
+            self.preselection_cut_off).index)
+        self.data["spectrum_ids"] = pd.Series(selected_spectrum_ids)
+        self.data["ms2ds_score"] = \
+            np.array(self.ms2deepscores.loc[selected_spectrum_ids])
+
+    def add_ms2query_meta_score(self,
+                                predictions):
+        """Add MS2Query meta score to data and sort on this score
+
+        Args:
+        ------
+        predictions:
+            An iterable containing the ms2query model meta scores
+        """
+        self.data["ms2query_model_prediction"] = predictions
+        self.data.sort_values(by=["ms2query_model_prediction"],
+                              ascending=False,
+                              inplace=True)
+
+    def get_training_data(self) -> pd.DataFrame:
+        return self.data.drop("inchikey", axis=1)
+
+
