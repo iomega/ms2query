@@ -234,12 +234,11 @@ class MS2Library:
                 tqdm(enumerate(query_spectra),
                      desc="collecting matches info",
                      disable=not self.settings["progress_bars"]):
-            query_spectrum_parent_mass = query_spectrum.get("parent_mass")
-            #todo add query spectrum to results table as well
+
             results_table = ResultsTable(
                 preselection_cut_off=preselection_cut_off,
-                parent_mass=query_spectrum_parent_mass,
-                ms2deepscores=ms2ds_scores.iloc[:, i])
+                ms2deepscores=ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum)
 
             # Select the library spectra that have the highest MS2Deepscore
             results_table.preselect_on_ms2deepscore()
