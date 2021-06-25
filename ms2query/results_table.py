@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-class ResultsTable():
+class ResultsTable:
     default_columns = ["spectrum_ids",
                        "inchikey",
                        "parent_mass*0.001",
@@ -73,5 +73,3 @@ class ResultsTable():
 
     def get_training_data(self) -> pd.DataFrame:
         return self.data.drop("inchikey", axis=1)
-
-
