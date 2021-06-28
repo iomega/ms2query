@@ -138,21 +138,22 @@ class DataCollectorForTraining(MS2Library):
                                  desc="Get tanimoto scores",
                                  disable=not self.settings["progress_bars"]):
             query_spectrum = result_table.query_spectrum
-            query_spectrum_id = query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
-            match_spectrum_ids = list(result_table.data.index)
+            library_spectrum_ids = list(result_table.data.index)
+            # Select the features (remove inchikey, since this should not be
+            # used for training
+            features_dataframe = result_table.get_training_data()
             # Get tanimoto scores, spectra that do not have an inchikey are not
             # returned.
             tanimoto_scores_for_query_spectrum = \
                 self.get_tanimoto_for_spectrum_ids(query_spectrum,
-                                                   match_spectrum_ids)
+                                                   library_spectrum_ids)
             all_tanimoto_scores = \
                 all_tanimoto_scores.append(tanimoto_scores_for_query_spectrum,
                                            ignore_index=True)
 
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = \
-                result_table.data.loc[tanimoto_scores_for_query_spectrum.index]
+                features_dataframe.loc[tanimoto_scores_for_query_spectrum.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
