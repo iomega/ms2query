@@ -139,8 +139,8 @@ class DataCollectorForTraining(MS2Library):
                                    disable=not self.settings["progress_bars"]):
             query_spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
-            match_info_df = query_spectra_matches_info[query_spectrum_id]
-            match_spectrum_ids = list(match_info_df.index)
+            match_info_table = query_spectra_matches_info[query_spectrum_id]
+            match_spectrum_ids = list(match_info_table.data.index)
             # Get tanimoto scores, spectra that do not have an inchikey are not
             # returned.
             tanimoto_scores_for_query_spectrum = \
@@ -152,13 +152,12 @@ class DataCollectorForTraining(MS2Library):
 
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = \
-                match_info_df.loc[tanimoto_scores_for_query_spectrum.index]
+                match_info_table.data.loc[tanimoto_scores_for_query_spectrum.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
         # Converted to float32 since keras model cannot read float64
-        return info_of_matches_with_tanimoto.astype("float32"), \
-            all_tanimoto_scores.astype("float32")
+        return info_of_matches_with_tanimoto, all_tanimoto_scores
 
     def get_tanimoto_for_spectrum_ids(self,
                                       query_spectrum: SpectrumType,

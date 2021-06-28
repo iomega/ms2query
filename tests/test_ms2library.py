@@ -7,6 +7,7 @@ from pandas.testing import assert_frame_equal
 from matchms import Spectrum
 from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
 from ms2query.utils import load_pickled_file
+from ms2query.results_table import ResultsTable
 
 
 @pytest.fixture
@@ -149,14 +150,26 @@ def test_get_analog_search_scores(file_names, test_spectra):
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    result = test_library._get_analog_search_scores(test_spectra, 20)
+    cutoff = 20
+    result = test_library._get_analog_search_scores(test_spectra, cutoff)
+    pd.set_option("display.max_columns", 15)
+    pd.set_option("display.width", 1000)
+
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
+        assert isinstance(result[key], ResultsTable), "Expected ResultsTable"
+        assert result[key].data.shape == (cutoff, 10), "Expected different data shape"
+        assert result[key].preselection_cut_off == cutoff, "Expected different cutoff"
+        assert_frame_equal(result[key].get_training_data(), expected_result[key], check_names=False)
+
+    np.testing.assert_almost_equal(result['CCMSLIB00000001760'].parent_mass,
+                                   905.99272348, decimal=5)
+    np.testing.assert_almost_equal(result['CCMSLIB00000001761'].parent_mass,
+                                   905.010782, decimal=5)
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):
@@ -261,19 +274,18 @@ def test_get_chemical_neighbourhood_scores(file_names):
 
 def test_get_ms2query_model_prediction():
     """Test get_ms2query_model_prediction method of ms2library"""
-    matches_info = load_pickled_file(os.path.join(
+    result_tables = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_matches_data.pickle'))
+        "tests/test_files/test_files_ms2library/expected_result_tables.pickle"))
+
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/ms2query_model.hdf5')
-    result = get_ms2query_model_prediction(matches_info,
+        'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
+    result = get_ms2query_model_prediction(result_tables,
                                            ms2q_model_file_name)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library',
-        'expected_ms2query_model_scores.pickle'))
     assert isinstance(result, dict), "Expected dictionary"
     for key in result:
         assert isinstance(key, str), "Expected keys of dict to be string"
-        assert_frame_equal(result[key], expected_result[key])
+        assert isinstance(result[key], ResultsTable)
+        assert isinstance(result[key].data, pd.DataFrame)
+        assert len(result[key].data.columns) == 11

@@ -4,6 +4,44 @@ from ms2query.select_data_for_training_ms2query_nn import DataCollectorForTraini
 from ms2query.utils import load_pickled_file
 
 
+def get_test_file_names():
+    """Returns file names of the files needed to create MS2Library object"""
+    path_to_tests_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/')
+    sqlite_file_loc = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/100_test_spectra.sqlite")
+    spec2vec_model_file_loc = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/100_test_spectra_s2v_model.model")
+    s2v_pickled_embeddings_file = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/100_test_spectra_s2v_embeddings.pickle")
+    ms2ds_model_file_name = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/ms2ds_siamese_210301_5000_500_400.hdf5")
+    ms2ds_embeddings_file_name = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
+    spectrum_id_column_name = "spectrumid"
+    training_spectra_file_name = os.path.join(
+        path_to_tests_dir,
+        "test_files_train_ms2query_nn/20_training_spectra.pickle")
+    validation_spectra_file_name = os.path.join(
+        path_to_tests_dir,
+        "test_files_train_ms2query_nn/20_validation_spectra.pickle")
+    tanimoto_scores_file_name = os.path.join(
+        path_to_tests_dir,
+        "general_test_files/100_test_spectra_tanimoto_scores.pickle"
+        )
+    return sqlite_file_loc, spec2vec_model_file_loc, \
+        s2v_pickled_embeddings_file, ms2ds_model_file_name, \
+        ms2ds_embeddings_file_name, spectrum_id_column_name, \
+        training_spectra_file_name, validation_spectra_file_name, \
+        tanimoto_scores_file_name
+
+
 def test_select_data_for_training():
     """Tests if an object DataCollectorForTraining can be created"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
@@ -120,40 +158,3 @@ def test_get_tanimoto_for_spectrum_ids():
     assert isinstance(result, pd.DataFrame), "Expected a pd.Dataframe"
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
 
-
-def get_test_file_names():
-    """Returns file names of the files needed to create MS2Library object"""
-    path_to_tests_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/')
-    sqlite_file_loc = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/100_test_spectra.sqlite")
-    spec2vec_model_file_loc = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/100_test_spectra_s2v_model.model")
-    s2v_pickled_embeddings_file = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/100_test_spectra_s2v_embeddings.pickle")
-    ms2ds_model_file_name = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/ms2ds_siamese_210301_5000_500_400.hdf5")
-    ms2ds_embeddings_file_name = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
-    spectrum_id_column_name = "spectrumid"
-    training_spectra_file_name = os.path.join(
-        path_to_tests_dir,
-        "test_files_train_ms2query_nn/20_training_spectra.pickle")
-    validation_spectra_file_name = os.path.join(
-        path_to_tests_dir,
-        "test_files_train_ms2query_nn/20_validation_spectra.pickle")
-    tanimoto_scores_file_name = os.path.join(
-        path_to_tests_dir,
-        "general_test_files/100_test_spectra_tanimoto_scores.pickle"
-        )
-    return sqlite_file_loc, spec2vec_model_file_loc, \
-        s2v_pickled_embeddings_file, ms2ds_model_file_name, \
-        ms2ds_embeddings_file_name, spectrum_id_column_name, \
-        training_spectra_file_name, validation_spectra_file_name, \
-        tanimoto_scores_file_name
