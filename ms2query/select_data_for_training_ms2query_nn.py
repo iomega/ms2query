@@ -152,8 +152,8 @@ class DataCollectorForTraining(MS2Library):
                                            ignore_index=True)
 
             # Add matches for which a tanimoto score could be calculated
-            matches_with_tanimoto = \
-                features_dataframe.loc[tanimoto_scores_for_query_spectrum.index]
+            matches_with_tanimoto = features_dataframe.loc[
+                tanimoto_scores_for_query_spectrum.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
