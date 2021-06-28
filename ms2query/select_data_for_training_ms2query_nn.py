@@ -134,31 +134,31 @@ class DataCollectorForTraining(MS2Library):
                                            self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="Get tanimoto scores",
-                                   disable=not self.settings["progress_bars"]):
-            query_spectrum_id = query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
-            match_info_df = query_spectra_matches_info[query_spectrum_id]
-            match_spectrum_ids = list(match_info_df.index)
+        for result_table in tqdm(query_spectra_matches_info,
+                                 desc="Get tanimoto scores",
+                                 disable=not self.settings["progress_bars"]):
+            query_spectrum = result_table.query_spectrum
+            library_spectrum_ids = list(result_table.data.index)
+            # Select the features (remove inchikey, since this should not be
+            # used for training
+            features_dataframe = result_table.get_training_data()
             # Get tanimoto scores, spectra that do not have an inchikey are not
             # returned.
             tanimoto_scores_for_query_spectrum = \
                 self.get_tanimoto_for_spectrum_ids(query_spectrum,
-                                                   match_spectrum_ids)
+                                                   library_spectrum_ids)
             all_tanimoto_scores = \
                 all_tanimoto_scores.append(tanimoto_scores_for_query_spectrum,
                                            ignore_index=True)
 
             # Add matches for which a tanimoto score could be calculated
-            matches_with_tanimoto = \
-                match_info_df.loc[tanimoto_scores_for_query_spectrum.index]
+            matches_with_tanimoto = features_dataframe.loc[
+                tanimoto_scores_for_query_spectrum.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
         # Converted to float32 since keras model cannot read float64
-        return info_of_matches_with_tanimoto.astype("float32"), \
-            all_tanimoto_scores.astype("float32")
+        return info_of_matches_with_tanimoto, all_tanimoto_scores
 
     def get_tanimoto_for_spectrum_ids(self,
                                       query_spectrum: SpectrumType,
