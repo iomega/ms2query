@@ -134,13 +134,13 @@ class DataCollectorForTraining(MS2Library):
                                            self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="Get tanimoto scores",
-                                   disable=not self.settings["progress_bars"]):
+        for result_table in tqdm(query_spectra_matches_info,
+                                 desc="Get tanimoto scores",
+                                 disable=not self.settings["progress_bars"]):
+            query_spectrum = result_table.query_spectrum
             query_spectrum_id = query_spectrum.get(
                 self.settings["spectrum_id_column_name"])
-            match_info_table = query_spectra_matches_info[query_spectrum_id]
-            match_spectrum_ids = list(match_info_table.data.index)
+            match_spectrum_ids = list(result_table.data.index)
             # Get tanimoto scores, spectra that do not have an inchikey are not
             # returned.
             tanimoto_scores_for_query_spectrum = \
@@ -152,7 +152,7 @@ class DataCollectorForTraining(MS2Library):
 
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = \
-                match_info_table.data.loc[tanimoto_scores_for_query_spectrum.index]
+                result_table.data.loc[tanimoto_scores_for_query_spectrum.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
