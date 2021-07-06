@@ -16,15 +16,14 @@ class ResultsTable:
                        "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]
 
     def __init__(self, preselection_cut_off: int,
-                 spectrum_id: str,
-                 parent_mass: float,
                  ms2deepscores: pd.DataFrame,
+                 query_spectrum,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.preselection_cut_off = preselection_cut_off
-        self.spectrum_id = spectrum_id
-        self.parent_mass = parent_mass
         self.ms2deepscores = ms2deepscores
+        self.query_spectrum = query_spectrum
+        self.parent_mass = query_spectrum.get("parent_mass")
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)

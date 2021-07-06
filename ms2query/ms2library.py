@@ -138,7 +138,7 @@ class MS2Library:
                       query_spectra: List[Spectrum],
                       ms2query_model_file_name: str,
                       preselection_cut_off: int = 2000
-                      ) -> Dict[str, ResultsTable]:
+                      ) -> List[ResultsTable]:
         """Returns a dictionary with a ResultTable for each query spectrum
 
         Args
@@ -182,7 +182,7 @@ class MS2Library:
         s2v_score_threshold:
             The minimal s2v score to be considered a potential true match
         """
-
+        # todo remove spectrum_id and replace with i
         found_matches_dict = {}
         for query_spectrum in tqdm(query_spectra,
                                    desc="Selecting potential perfect matches",
@@ -210,7 +210,7 @@ class MS2Library:
     def _get_analog_search_scores(self,
                                   query_spectra: List[Spectrum],
                                   preselection_cut_off: int
-                                  ) -> Dict[str, ResultsTable]:
+                                  ) -> List[ResultsTable]:
         """Does preselection and returns scores for MS2Query model prediction
 
         This is stored in a dictionary with as keys the spectrum_ids and as
@@ -229,31 +229,28 @@ class MS2Library:
         """
         ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
 
-        dict_with_preselected_spectra_info = {}
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="collecting matches info",
-                                   disable=not self.settings["progress_bars"]):
-            spectrum_id = query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
-            query_spectrum_parent_mass = query_spectrum.get("parent_mass")
+        result_tables = []
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
+                     desc="collecting matches info",
+                     disable=not self.settings["progress_bars"]):
 
             results_table = ResultsTable(
                 preselection_cut_off=preselection_cut_off,
-                spectrum_id=spectrum_id,
-                parent_mass=query_spectrum_parent_mass,
-                ms2deepscores=ms2ds_scores[spectrum_id])
+                ms2deepscores=ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum)
 
             # Select the library spectra that have the highest MS2Deepscore
             results_table.preselect_on_ms2deepscore()
-
             # Calculate the average ms2ds scores and neigbourhood score
             results_table = \
                 self._calculate_averages_and_chemical_neigbhourhood_score(
                     results_table)
             results_table.data = results_table.data.set_index('spectrum_ids')
 
-            results_table.data["s2v_score"] = self._get_s2v_scores(query_spectrum,
-                                                                    results_table.data.index.values)
+            results_table.data["s2v_score"] = self._get_s2v_scores(
+                query_spectrum,
+                results_table.data.index.values)
 
             parent_masses = np.array(
                 [self.parent_masses_library[x]
@@ -262,9 +259,9 @@ class MS2Library:
                 parent_masses,
                 self.settings["base_nr_mass_similarity"])
 
-            dict_with_preselected_spectra_info[spectrum_id] = results_table
+            result_tables.append(results_table)
 
-        return dict_with_preselected_spectra_info
+        return result_tables
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
@@ -289,10 +286,7 @@ class MS2Library:
                                                 query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
             ms2ds_scores,
-            index=self.ms2ds_embeddings.index,
-            columns=[query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
-                for query_spectrum in query_spectra])
+            index=self.ms2ds_embeddings.index)
         return similarity_matrix_dataframe
 
     def _calculate_averages_and_chemical_neigbhourhood_score(
@@ -306,7 +300,6 @@ class MS2Library:
         """
         selected_spectrum_ids = list(results_table.data["spectrum_ids"])
         ms2ds_scores = results_table.ms2deepscores
-
         selected_inchikeys = \
             [self.inchikey14s_of_spectra[x] for x in selected_spectrum_ids]
         # Populate results table
@@ -484,9 +477,9 @@ class MS2Library:
 
 
 def get_ms2query_model_prediction(
-        matches_info: Dict[str, Union[ResultsTable, None]],
+        matches_info: List[Union[ResultsTable, None]],
         ms2query_model_file_name: str
-        ) -> Dict[str, ResultsTable]:
+        ) -> List[ResultsTable]:
     """Adds ms2query predictions to dataframes
 
     matches_info:
@@ -497,12 +490,8 @@ def get_ms2query_model_prediction(
         File name of a hdf5 name containing the ms2query model.
     """
     ms2query_nn_model = load_nn_model(ms2query_model_file_name)
-
-    for query_spectrum_id in matches_info:
-        result_table = matches_info[query_spectrum_id]
+    for result_table in matches_info:
         current_query_matches_info = result_table.get_training_data().copy()
-        if current_query_matches_info is None:
-            continue
         predictions = ms2query_nn_model.predict(current_query_matches_info)
 
         result_table.add_ms2query_meta_score(predictions)
