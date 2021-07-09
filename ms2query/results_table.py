@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
-
+from typing import Union, List
+from ms2query.utils import add_classifiers_to_df
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 class ResultsTable:
     default_columns = ["spectrum_ids",
@@ -18,12 +20,14 @@ class ResultsTable:
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
                  query_spectrum,
+                 sqlite_file_name,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.preselection_cut_off = preselection_cut_off
         self.ms2deepscores = ms2deepscores
         self.query_spectrum = query_spectrum
         self.parent_mass = query_spectrum.get("parent_mass")
+        self.sqlite_file_name = sqlite_file_name
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
@@ -72,3 +76,23 @@ class ResultsTable:
 
     def get_training_data(self) -> pd.DataFrame:
         return self.data.drop("inchikey", axis=1)
+
+    def create_dataframe_with_compound_classification(
+            self,
+            nr_of_top_spectra,
+            classifiers_file_name,
+            add_selection: Union[bool, List[str]] = False):
+        selected_results = \
+            self.data.iloc[:nr_of_top_spectra, :].copy()
+        metadata_list = list(get_metadata_from_sqlite(self.sqlite_file_name,
+                                       list(selected_results.index)).values())
+        compound_names = [metadata["compound_name"] for metadata in metadata_list]
+        selected_results["compound_name"] = compound_names
+        selected_results = add_classifiers_to_df(classifiers_file_name,
+                                                 selected_results)
+        if add_selection is not False:
+            selected_results = selected_results[add_selection]
+        selected_results.sort_values(
+            by=["ms2query_model_prediction"], ascending=False, inplace=True)
+        selected_results.set_index("spectrum_ids", inplace=True)
+        return selected_results
