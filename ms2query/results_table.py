@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import nan as Nan
 import pandas as pd
-from typing import Union, List
+from typing import Union, List, Set
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 
@@ -99,8 +99,20 @@ class ResultsTable:
         return selected_results
 
 
-def get_classifier_from_csv_file(csv_file, list_of_inchikeys):
-    classifiers_df = pd.read_csv(csv_file, sep="\t")
+def get_classifier_from_csv_file(classifier_file_name: str,
+                                 list_of_inchikeys: Set[str]):
+    """Returns a dataframe with the classifiers for a selection of inchikeys
+
+    Args:
+    ------
+    csv_file_name:
+        File name of text file with tap separated columns, with classifier
+        information.
+    list_of_inchikeys:
+        list with the first 14 letters of inchikeys, that are selected from
+        the classifier file.
+    """
+    classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
     columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
                        "cf_superclass", "cf_class", "cf_subclass",
                        "cf_direct_parent", "npc_class_results",
@@ -120,7 +132,7 @@ def get_classifier_from_csv_file(csv_file, list_of_inchikeys):
     if len(list_of_classifiers) == 0:
         results = pd.DataFrame(columns=columns_to_keep)
     else:
-        results = pd.concat(list_of_classifiers, axis=0)
+        results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
 
     results["inchi_key"] = list_of_inchikeys
     results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
