@@ -12,6 +12,20 @@ from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
 from matchms.filtering.require_precursor_mz import require_precursor_mz
+from matchms.filtering.default_filters import default_filters
+from matchms.filtering.add_parent_mass import add_parent_mass
+from matchms.filtering.derive_adduct_from_name import derive_adduct_from_name
+
+
+def clean_metadata(spectrum_list: List[SpectrumType]):
+    spectra_cleaned_metadata = []
+    for s in spectrum_list:
+        s = default_filters(s)
+        s = add_parent_mass(s,
+                            estimate_from_adduct=False,
+                            overwrite_existing_entry=True)
+        spectra_cleaned_metadata.append(s)
+    return spectra_cleaned_metadata
 
 
 def minimal_processing_multiple_spectra(spectrum_list: List[SpectrumType],
