@@ -12,7 +12,8 @@ from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
     get_parent_mass, get_inchikey_information
 from ms2query.utils import load_pickled_file
-from ms2query.spectrum_processing import create_spectrum_documents
+from ms2query.spectrum_processing import create_spectrum_documents, \
+    clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
 
 
@@ -152,6 +153,9 @@ class MS2Library:
             selected. Default = 2000
         """
         # TODO: remove ms2query_model_file_name from input parameters
+        query_spectra = clean_metadata(query_spectra)
+        query_spectra = minimal_processing_multiple_spectra(query_spectra)
+
         # Selects top 20 best matches based on ms2ds and calculates all scores
         analog_search_scores = \
             self._get_analog_search_scores(query_spectra, preselection_cut_off)
@@ -165,7 +169,7 @@ class MS2Library:
                                       query_spectra: List[Spectrum],
                                       mass_tolerance: Union[float, int] = 0.1,
                                       s2v_score_threshold: float = 0.6
-                                      ) -> Dict[str, List[str]]:
+                                      ) -> List[pd.DataFrame]:
         """Returns potential true matches for query spectra
 
         The spectra are selected that fall within the mass_tolerance and have a
@@ -182,14 +186,14 @@ class MS2Library:
         s2v_score_threshold:
             The minimal s2v score to be considered a potential true match
         """
-        # todo remove spectrum_id and replace with i
-        found_matches_dict = {}
+        query_spectra = clean_metadata(query_spectra)
+        query_spectra = minimal_processing_multiple_spectra(query_spectra)
+
+        found_matches_list = []
         for query_spectrum in tqdm(query_spectra,
                                    desc="Selecting potential perfect matches",
                                    disable=not self.settings["progress_bars"]):
             query_parent_mass = query_spectrum.get("parent_mass")
-            query_spectrum_id = query_spectrum.get(
-                self.settings["spectrum_id_column_name"])
             # Preselection based on parent mass
             parent_masses_within_mass_tolerance = get_parent_mass_within_range(
                 self.sqlite_file_location,
@@ -200,12 +204,18 @@ class MS2Library:
                                         parent_masses_within_mass_tolerance]
             s2v_scores = self._get_s2v_scores(query_spectrum,
                                               selected_library_spectra)
-            found_matches = []
-            for i, selected_spectrum in enumerate(selected_library_spectra):
+            found_matches = pd.DataFrame(columns=["spectrum_id", "s2v_score"])
+            for i, spectrum_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
                 if s2v_scores[i] > s2v_score_threshold:
-                    found_matches.append(selected_spectrum)
-            found_matches_dict[query_spectrum_id] = found_matches
-        return found_matches_dict
+                    found_matches = \
+                        found_matches.append(
+                            {"spectrum_id": spectrum_and_parent_mass[0],
+                             "s2v_score": s2v_scores[i],
+                             "parent_mass_difference": spectrum_and_parent_mass[1]},
+                            ignore_index=True)
+            found_matches.set_index("spectrum_id", inplace=True)
+            found_matches_list.append(found_matches)
+        return found_matches_list
 
     def _get_analog_search_scores(self,
                                   query_spectra: List[Spectrum],
@@ -238,7 +248,8 @@ class MS2Library:
             results_table = ResultsTable(
                 preselection_cut_off=preselection_cut_off,
                 ms2deepscores=ms2ds_scores.iloc[:, i],
-                query_spectrum=query_spectrum)
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_location)
 
             # Select the library spectra that have the highest MS2Deepscore
             results_table.preselect_on_ms2deepscore()
