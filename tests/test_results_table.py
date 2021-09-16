@@ -20,7 +20,7 @@ def dummy_data():
     return ms2deepscores, query_spectrum
 
 
-def test_table_init():
+def test_table_init(dummy_data):
     ms2deepscores, query_spectrum = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
@@ -32,7 +32,8 @@ def test_table_init():
         "Expected different parent mass"
 
 
-def test_table_preselect_ms2deepscore():
+def test_table_preselect_ms2deepscore(dummy_data):
+    ms2deepscores, query_spectrum = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
@@ -47,7 +48,8 @@ def test_table_preselect_ms2deepscore():
         "Expected different scores or order"
 
 
-def test_add_parent_masses:
+def test_add_parent_masses(dummy_data):
+    ms2deepscores, query_spectrum = dummy_data
     preselection_cut_off = 2
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
