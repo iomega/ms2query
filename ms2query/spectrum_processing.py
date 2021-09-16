@@ -104,9 +104,9 @@ def set_minimal_processing_defaults(**settings: Union[int, float]
                 }
 
     # Set default parameters or replace by **settings input
-    for key in defaults:
+    for key, value in defaults.items():
         if key not in settings:
-            settings[key] = defaults[key]
+            settings[key] = value
     return settings
 
 
@@ -199,9 +199,9 @@ def set_spec2vec_defaults(**settings: Union[int, float]
                 "loss_mz_to": 200.0,
                 }
     # Set default parameters or replace by **settings input
-    for key in defaults:
+    for key, value in defaults.items():
         if key not in settings:
-            settings[key] = defaults[key]
+            settings[key] = value
     return settings
 
 
