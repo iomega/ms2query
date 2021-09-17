@@ -207,12 +207,11 @@ class MS2Library:
             found_matches = pd.DataFrame(columns=["spectrum_id", "s2v_score"])
             for i, spectrum_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
                 if s2v_scores[i] > s2v_score_threshold:
-                    found_matches = \
-                        found_matches.append(
-                            {"spectrum_id": spectrum_and_parent_mass[0],
-                             "s2v_score": s2v_scores[i],
-                             "parent_mass_difference": spectrum_and_parent_mass[1]},
-                            ignore_index=True)
+                    found_matches.append(
+                        {"spectrum_id": spectrum_and_parent_mass[0],
+                         "s2v_score": s2v_scores[i],
+                         "parent_mass_difference": spectrum_and_parent_mass[1]},
+                        ignore_index=True)
             found_matches.set_index("spectrum_id", inplace=True)
             found_matches_list.append(found_matches)
         return found_matches_list
