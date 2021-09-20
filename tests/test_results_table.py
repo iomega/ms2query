@@ -4,31 +4,31 @@ import pytest
 import pandas as pd
 from matchms import Spectrum
 from ms2query import ResultsTable
-from ms2query.results_table import get_classifier_from_csv_file, \
-    add_classifiers_to_df
+from ms2query.results_table import get_classifier_from_csv_file
 
 
 @pytest.fixture
 def dummy_data():
     ms2deepscores = pd.DataFrame(np.array([0.2, 0.7, 0.99, 0.4]),
-                                 index = ["XXXXXXXXXXXXXA",
+                                 index=["XXXXXXXXXXXXXA",
                                           "XXXXXXXXXXXXXB",
                                           "XXXXXXXXXXXXXC",
                                           "XXXXXXXXXXXXXD"])
 
-    query_spectrum = Spectrum(mz = np.array([100.0]),
-                              intensities = np.array([1.0]),
-                              metadata = {"parent_mass": 205.0})
-
-    return ms2deepscores, query_spectrum
+    query_spectrum = Spectrum(mz=np.array([100.0]),
+                              intensities=np.array([1.0]),
+                              metadata={"parent_mass": 205.0})
+    sqlite_test_file = "test_files/general_test_files/100_test_spectra.sqlite"
+    return ms2deepscores, query_spectrum, sqlite_test_file
 
 
 def test_table_init(dummy_data):
-    ms2deepscores, query_spectrum = dummy_data
+    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
-                         query_spectrum)
+                         query_spectrum,
+                         sqlite_test_file)
     assert table.data.shape == (0, 11), \
         "Should have an empty data attribute"
     assert table.parent_mass == 205.0, \
@@ -36,11 +36,12 @@ def test_table_init(dummy_data):
 
 
 def test_table_preselect_ms2deepscore(dummy_data):
-    ms2deepscores, query_spectrum = dummy_data
+    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
-                         query_spectrum)
+                         query_spectrum,
+                         sqlite_test_file)
     table.preselect_on_ms2deepscore()
     assert table.data.shape == (3, 11), "Should have different data table"
     assert np.all(table.data.spectrum_ids.values == \
@@ -52,11 +53,12 @@ def test_table_preselect_ms2deepscore(dummy_data):
 
 
 def test_add_parent_masses(dummy_data):
-    ms2deepscores, query_spectrum = dummy_data
+    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
     preselection_cut_off = 2
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
-                         query_spectrum)
+                         query_spectrum,
+                         sqlite_test_file)
     table.add_parent_masses(np.array([190.0, 199.2, 200.0, 201.0]), 0.8)
     expected = np.array([0.03518437, 0.27410813, 0.32768, 0.4096])
 
@@ -93,7 +95,7 @@ def test_get_classifier_from_csv_file(tmp_path):
     pd.testing.assert_frame_equal(
         output[output["inchikey"] == "BBBBBBBBBBBBBB"].reset_index(drop=True),
         pd.DataFrame(np.array(
-            [["BBBBBBBBBBBBBB"] + [Nan] * 9]), columns=expected_columns)
+            [["BBBBBBBBBBBBBB"] + [np.nan] * 9]), columns=expected_columns)
     )
     pd.testing.assert_frame_equal(
         output[output["inchikey"] == "IYDKWWDUBYWQGF"].reset_index(drop=True),
