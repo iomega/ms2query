@@ -59,7 +59,8 @@ def test_spectra():
                                    'spectrumid': 'CCMSLIB00000001760',
                                    'precursor_mz': 907.0,
                                    'parent_mass': 905.9927235480093,
-                                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N'})
+                                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
+                                   'charge': 1})
     spectrum2 = Spectrum(mz=np.array([538.003174, 539.217773, 556.030396,
                                       599.352783, 851.380859, 852.370605,
                                       909.424438, 953.396606, 963.686768,
@@ -76,7 +77,8 @@ def test_spectra():
                                    'spectrumid': 'CCMSLIB00000001761',
                                    'precursor_mz': 928.0,
                                    'parent_mass': 905.010782,
-                                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N'})
+                                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
+                                   'charge': 1})
     return [spectrum1, spectrum2]
 
 
@@ -121,20 +123,24 @@ def test_select_potential_true_matches(file_names, test_spectra):
         test_library.select_potential_true_matches(test_spectra,
                                                    mass_tolerance=30,
                                                    s2v_score_threshold=0.6)
-    assert isinstance(results, dict), "Expected dictionary"
-    for query_spectrum_id in results.keys():
-        assert isinstance(query_spectrum_id, str), \
-            "Expected keys of dictionary to be str"
-    test_spectrum_ids = \
-        {spectrum.get("spectrumid") for spectrum in test_spectra}
-    assert test_spectrum_ids == set(results.keys()), \
-        "Expected keys of dictionary to be the query spectrum ids"
-    assert results == \
-           {'CCMSLIB00000001760': ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                                   'CCMSLIB00000001648', 'CCMSLIB00000001650'],
-            'CCMSLIB00000001761': ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                                   'CCMSLIB00000001648', 'CCMSLIB00000001650']
-            }, "Expected different spectra to be found as true matches"
+    assert isinstance(results, list), "Expected List"
+    for df in results:
+        assert isinstance(df, pd.DataFrame), "Expected a list with dataframes"
+        print(df)
+    expected_df_1 = pd.DataFrame(
+        data={"spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                               'CCMSLIB00000001648', 'CCMSLIB00000001650'],
+              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844],
+              "parent_mass_difference":
+                  [878.453724,878.453782,878.332724,878.410782]})
+    expected_df_2 = pd.DataFrame(
+        data={"spectrum_id": ["CCMSLIB00000001548"],
+              "s2v_score": [0.995251],
+              "parent_mass_difference": [939.242724]})
+    pd.testing.assert_frame_equal(results[0],
+                                  expected_df_1.set_index("spectrum_id"))
+    pd.testing.assert_frame_equal(results[1],
+                                  expected_df_2.set_index("spectrum_id"))
 
 
 def test_get_analog_search_scores(file_names, test_spectra):

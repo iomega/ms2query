@@ -204,8 +204,7 @@ class DataCollectorForTraining(MS2Library):
         tanimoto_scores_spectra_ids = pd.DataFrame(
             columns=["Tanimoto_score"],
             index=list(inchikey14s_dict.keys()))
-        for spectrum_id in inchikey14s_dict:
-            inchikey14 = inchikey14s_dict[spectrum_id]
+        for spectrum_id, inchikey14 in inchikey14s_dict.items():
             tanimoto_score = self.tanimoto_scores.loc[inchikey14,
                                                       query_inchikey14]
             tanimoto_scores_spectra_ids.at[spectrum_id, "Tanimoto_score"] = \

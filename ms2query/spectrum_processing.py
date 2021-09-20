@@ -12,6 +12,19 @@ from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
 from matchms.filtering.require_precursor_mz import require_precursor_mz
+from matchms.filtering.default_filters import default_filters
+from matchms.filtering.add_parent_mass import add_parent_mass
+
+
+def clean_metadata(spectrum_list: List[SpectrumType]):
+    spectra_cleaned_metadata = []
+    for s in spectrum_list:
+        s = default_filters(s)
+        s = add_parent_mass(s,
+                            estimate_from_adduct=False,
+                            overwrite_existing_entry=True)
+        spectra_cleaned_metadata.append(s)
+    return spectra_cleaned_metadata
 
 
 def minimal_processing_multiple_spectra(spectrum_list: List[SpectrumType],
@@ -104,9 +117,9 @@ def set_minimal_processing_defaults(**settings: Union[int, float]
                 }
 
     # Set default parameters or replace by **settings input
-    for key in defaults:
+    for key, default_value in defaults.items():
         if key not in settings:
-            settings[key] = defaults[key]
+            settings[key] = default_value
     return settings
 
 
@@ -199,9 +212,9 @@ def set_spec2vec_defaults(**settings: Union[int, float]
                 "loss_mz_to": 200.0,
                 }
     # Set default parameters or replace by **settings input
-    for key in defaults:
+    for key, default_value in defaults.items():
         if key not in settings:
-            settings[key] = defaults[key]
+            settings[key] = default_value
     return settings
 
 

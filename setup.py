@@ -34,7 +34,7 @@ setup(
         "h5py<3.0.0",
         "tensorflow",
         "ms2deepscore",
-        "gensim==3.8.0",
+        "gensim>=4.0.0",
         "pandas==1.2.5"
     ],
     extras_require={"dev": ["bump2version",
