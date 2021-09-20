@@ -29,7 +29,6 @@ def test_get_classifier_from_csv_file(tmp_path):
         "IYDKWWDUBYWQGF was expected in column inchikey"
     assert "BBBBBBBBBBBBBB" in list(output["inchikey"]), \
         "BBBBBBBBBBBBBB was expected in column inchikey"
-    print(output[output["inchikey"] == "BBBBBBBBBBBBBB"].reset_index(drop=True))
     pd.testing.assert_frame_equal(
         output[output["inchikey"] == "BBBBBBBBBBBBBB"].reset_index(drop=True),
         pd.DataFrame(np.array(
@@ -70,5 +69,3 @@ def test_get_classifier_from_csv_file_empty(tmp_path):
     pd.testing.assert_frame_equal(output,
                                   pd.DataFrame(columns=expected_columns),
                                   check_dtype=False)
-
-test_get_classifier_from_csv_file("../ms2query")
