@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1]  - 2021-06-14
+
+## Changed
+
+- Changed release workflow, so pip package is also updated.
+
 ## [0.2.0] - 2021-06-14
 
 ## Added
@@ -37,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First test workflow and basic batches.
 - Licence.
 
-[Unreleased]: https://github.com/iomega/ms2query/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/iomega/ms2query/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/iomega/ms2query/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/iomega/ms2query/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/iomega/ms2query/releases/tag/0.1.0
