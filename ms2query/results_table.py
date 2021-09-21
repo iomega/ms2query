@@ -141,7 +141,7 @@ def get_classifier_from_csv_file(classifier_file_name: str,
 def add_classifiers_to_df(classifier_csv_file, features_df):
     classifiers_df = \
         get_classifier_from_csv_file(classifier_csv_file,
-                                     set(features_df["inchikey"]))
+                                     features_df["inchikey"].unique())
     data = features_df.reset_index()
     data_with_added_classifiers = pd.merge(data,
                                            classifiers_df,
