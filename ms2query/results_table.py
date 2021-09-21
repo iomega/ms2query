@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import Union, List, Set
+from typing import Union, List
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 
@@ -99,7 +99,7 @@ class ResultsTable:
 
 
 def get_classifier_from_csv_file(classifier_file_name: str,
-                                 list_of_inchikeys: Set[str]):
+                                 list_of_inchikeys: List[str]):
     """Returns a dataframe with the classifiers for a selection of inchikeys
 
     Args:
