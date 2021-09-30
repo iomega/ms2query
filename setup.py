@@ -35,7 +35,7 @@ setup(
         "tensorflow",
         "ms2deepscore",
         "gensim>=4.0.0",
-        "pandas==1.2.5"
+        "pandas>=1.2.5"
     ],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",
