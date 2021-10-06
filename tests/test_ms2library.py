@@ -1,11 +1,15 @@
 import os
 import math
+import pickle
+
 import numpy as np
 import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
+from tensorflow.keras.models import load_model as load_nn_model
+from ms2query.ms2library import MS2Library
+from ms2query.ms2library import get_ms2query_model_prediction_single_spectrum
 from ms2query.utils import load_pickled_file
 from ms2query.results_table import ResultsTable
 
@@ -126,7 +130,6 @@ def test_select_potential_true_matches(file_names, test_spectra):
     assert isinstance(results, list), "Expected List"
     for df in results:
         assert isinstance(df, pd.DataFrame), "Expected a list with dataframes"
-        print(df)
     expected_df_1 = pd.DataFrame(
         data={"spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
                                'CCMSLIB00000001648', 'CCMSLIB00000001650'],
@@ -143,7 +146,32 @@ def test_select_potential_true_matches(file_names, test_spectra):
                                   expected_df_2.set_index("spectrum_id"))
 
 
-def test_get_analog_search_scores(file_names, test_spectra):
+def test_analog_search(file_names, test_spectra):
+    """Test analog search"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    ms2q_model_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
+    cutoff = 20
+    result = test_library.analog_search(test_spectra, ms2q_model_file_name, cutoff)
+
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
+    for i in range(len(expected_result)):
+        assert expected_result[i].__eq__(result[i]), "different result table was expected"
+
+
+def test_calculate_scores_for_metadata(file_names, test_spectra):
     """Test collect_matches_data_multiple_spectra method of ms2library"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
@@ -156,30 +184,20 @@ def test_get_analog_search_scores(file_names, test_spectra):
                               ms2ds_embeddings_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    cutoff = 20
-    result = test_library._get_analog_search_scores(test_spectra, cutoff)
-    print(result)
-    pd.set_option("display.max_columns", 15)
-    pd.set_option("display.width", 1000)
+    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
+    results_table = ResultsTable(
+        preselection_cut_off=20,
+        ms2deepscores=ms2dscores.iloc[:, 0],
+        query_spectrum=test_spectra[0],
+        sqlite_file_name=sqlite_file_loc)
+    results_table = test_library._calculate_scores_for_metascore(results_table)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
-    assert isinstance(result, list), "Expected list"
-    for result_table in result:
-        assert isinstance(result_table, ResultsTable), "Expected ResultsTable"
-        assert result_table.data.shape == (cutoff, 10), "Expected different data shape"
-        assert result_table.preselection_cut_off == cutoff, "Expected different cutoff"
-    assert_frame_equal(result[0].get_training_data(),
-                       expected_result['CCMSLIB00000001760'],
-                       check_names=False)
-    assert_frame_equal(result[1].get_training_data(),
-                       expected_result['CCMSLIB00000001761'],
-                       check_names=False)
-    np.testing.assert_almost_equal(result[0].parent_mass,
-                                   905.99272348, decimal=5)
-    np.testing.assert_almost_equal(result[1].parent_mass,
-                                   905.010782, decimal=5)
+        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
+    results_table.__eq__(expected_result)
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):
@@ -282,19 +300,17 @@ def test_get_chemical_neighbourhood_scores(file_names):
     assert math.isclose(scores[2], 0.46646038479969587)
 
 
-def test_get_ms2query_model_prediction():
-    """Test get_ms2query_model_prediction method of ms2library"""
-    result_tables = load_pickled_file(os.path.join(
+def test_get_ms2query_model_prediction_single_spectrum():
+    results_table = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_result_tables.pickle"))
-
+        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
-    result = get_ms2query_model_prediction(result_tables,
-                                           ms2q_model_file_name)
-    assert isinstance(result, list), "Expected dictionary"
-    for result_table in result:
-        assert isinstance(result_table, ResultsTable)
-        assert isinstance(result_table.data, pd.DataFrame)
-        assert len(result_table.data.columns) == 11
+    ms2query_nn_model = load_nn_model(ms2q_model_file_name)
+    results = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))[0]
+    expected_result.assert_results_table_equal(results)
