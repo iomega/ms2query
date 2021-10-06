@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Union, List, Set
+from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 
@@ -19,15 +20,38 @@ class ResultsTable:
 
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
-                 query_spectrum,
-                 sqlite_file_name,
+                 query_spectrum: Spectrum,
+                 sqlite_file_name: str,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
-        self.preselection_cut_off = preselection_cut_off
         self.ms2deepscores = ms2deepscores
+        self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
         self.parent_mass = query_spectrum.get("parent_mass")
         self.sqlite_file_name = sqlite_file_name
+
+    def __eq__(self, other):
+        if not isinstance(other, ResultsTable):
+            return False
+
+        # Round is used to prevent returning float for float rounding errors
+        return other.preselection_cut_off == self.preselection_cut_off and \
+            other.parent_mass == self.parent_mass and \
+            self.data.round(5).equals(other.data.round(5)) and \
+            self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
+            self.query_spectrum.__eq__(other.query_spectrum) and \
+            self.sqlite_file_name == other.sqlite_file_name
+
+    def assert_results_table_equal(self, other):
+        """Assert if results tables are equal except for the spectrum metadata"""
+        assert isinstance(other, ResultsTable), "Expected ResultsTable"
+        assert other.preselection_cut_off == self.preselection_cut_off
+        assert other.parent_mass == self.parent_mass
+        assert self.data.round(5).equals(other.data.round(5))
+        assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5))
+        assert self.sqlite_file_name == other.sqlite_file_name
+        assert self.query_spectrum.peaks == other.query_spectrum.peaks
+        assert self.query_spectrum.losses == other.query_spectrum.losses
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
@@ -75,7 +99,15 @@ class ResultsTable:
                               inplace=True)
 
     def get_training_data(self) -> pd.DataFrame:
-        return self.data.drop("inchikey", axis=1)
+        return self.data[["parent_mass*0.001",
+                       "mass_similarity",
+                       "s2v_score",
+                       "ms2ds_score",
+                       "average_ms2ds_score_for_inchikey14",
+                       "nr_of_spectra_with_same_inchikey14*0.01",
+                       "chemical_neighbourhood_score",
+                       "average_tanimoto_score_for_chemical_neighbourhood_score",
+                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]]
 
     def create_dataframe_with_compound_classification(
             self,
@@ -147,3 +179,4 @@ def add_classifiers_to_df(classifier_csv_file, features_df):
                                            classifiers_df,
                                            on="inchikey")
     return data_with_added_classifiers
+
