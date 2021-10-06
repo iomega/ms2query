@@ -140,7 +140,7 @@ class MS2Library:
                       ms2query_model_file_name: str,
                       preselection_cut_off: int = 2000
                       ) -> List[ResultsTable]:
-        """Returns a dictionary with a ResultTable for each query spectrum
+        """Returns a list with a ResultTable for each query spectrum
 
         Args
         ----
@@ -152,12 +152,12 @@ class MS2Library:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
         """
-        # TODO: remove ms2query_model_file_name from input parameters
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+        # TODO: remove ms2query_model_file_name from input parameters
         ms2query_nn_model = load_nn_model(ms2query_model_file_name)
 
         result_tables = []
@@ -165,11 +165,14 @@ class MS2Library:
                 tqdm(enumerate(query_spectra),
                      desc="collecting matches info",
                      disable=not self.settings["progress_bars"]):
-            ms2ds_scores_single_spectrum = all_ms2ds_scores.iloc[:, i]
+            # Initialize result table
+            results_table = ResultsTable(
+                preselection_cut_off=preselection_cut_off,
+                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_location)
             results_table = \
-                self._analog_search_single_spectrum(query_spectrum,
-                                                    ms2ds_scores_single_spectrum,
-                                                    preselection_cut_off)
+                self._calculate_scores_for_metascore(results_table)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
             result_tables.append(results_table)
         return result_tables
@@ -226,33 +229,16 @@ class MS2Library:
             found_matches_list.append(found_matches)
         return found_matches_list
 
-    def _analog_search_single_spectrum(self,
-                                       query_spectrum: Spectrum,
-                                       ms2ds_scores: pd.DataFrame,
-                                       preselection_cut_off: int
-                                       ) -> ResultsTable:
-        """Does preselection and returns scores for MS2Query model prediction
-
-        This is stored in a dictionary with as keys the spectrum_ids and as
-        values a pd.Dataframe with on each row the information for one spectrum
-        that was found in the preselection. The column names tell the info that
-        is stored. Which column names/info is stored can be found in
-        collect_data_for_tanimoto_prediction_model.
+    def _calculate_scores_for_metascore(self,
+                                        results_table: ResultsTable
+                                        ) -> ResultsTable:
+        """Calculate the needed scores for metascore for selected spectra
 
         Args:
         ------
-        query_spectra:
-            The spectra for which info about matches should be collected
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected
+        results_table:
+            ResultsTable object for which no scores have been selected yet.
         """
-        results_table = ResultsTable(
-            preselection_cut_off=preselection_cut_off,
-            ms2deepscores=ms2ds_scores,
-            query_spectrum=query_spectrum,
-            sqlite_file_name=self.sqlite_file_location)
-
         # Select the library spectra that have the highest MS2Deepscore
         results_table.preselect_on_ms2deepscore()
         # Calculate the average ms2ds scores and neigbourhood score
@@ -262,7 +248,7 @@ class MS2Library:
         results_table.data = results_table.data.set_index('spectrum_ids')
 
         results_table.data["s2v_score"] = self._get_s2v_scores(
-            query_spectrum,
+            results_table.query_spectrum,
             results_table.data.index.values)
 
         parent_masses = np.array(
@@ -271,7 +257,6 @@ class MS2Library:
         results_table.add_parent_masses(
             parent_masses,
             self.settings["base_nr_mass_similarity"])
-
         return results_table
 
     def _get_analog_search_scores(self,
