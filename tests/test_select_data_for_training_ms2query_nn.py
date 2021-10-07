@@ -103,7 +103,6 @@ def test_create_train_and_val_data_with_saving(tmp_path):
         pd.testing.assert_frame_equal(result, expected_result[i])
 
 
-
 def test_get_matches_info_and_tanimoto():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \

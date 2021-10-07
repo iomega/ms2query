@@ -40,6 +40,7 @@ class MS2Library:
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
+                 ms2query_model_file_name: Union[str, None],
                  **settings):
         """
         Parameters
@@ -85,6 +86,7 @@ class MS2Library:
 
         # Load models and set sqlite_file_location
         self.sqlite_file_location = sqlite_file_location
+        self.ms2query_model_file_location = ms2query_model_file_name
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
@@ -137,7 +139,6 @@ class MS2Library:
 
     def analog_search(self,
                       query_spectra: List[Spectrum],
-                      ms2query_model_file_name: str,
                       preselection_cut_off: int = 2000
                       ) -> List[ResultsTable]:
         """Returns a list with a ResultTable for each query spectrum
@@ -157,8 +158,7 @@ class MS2Library:
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-        # TODO: remove ms2query_model_file_name from input parameters
-        ms2query_nn_model = load_nn_model(ms2query_model_file_name)
+        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
 
         result_tables = []
         for i, query_spectrum in \
@@ -258,63 +258,6 @@ class MS2Library:
             parent_masses,
             self.settings["base_nr_mass_similarity"])
         return results_table
-
-    def _get_analog_search_scores(self,
-                                  query_spectra: List[Spectrum],
-                                  preselection_cut_off: int
-                                  ) -> List[ResultsTable]:
-        """Does preselection and returns scores for MS2Query model prediction
-
-        This is stored in a dictionary with as keys the spectrum_ids and as
-        values a pd.Dataframe with on each row the information for one spectrum
-        that was found in the preselection. The column names tell the info that
-        is stored. Which column names/info is stored can be found in
-        collect_data_for_tanimoto_prediction_model.
-
-        Args:
-        ------
-        query_spectra:
-            The spectra for which info about matches should be collected
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected
-        """
-        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-
-        result_tables = []
-        for i, query_spectrum in \
-                tqdm(enumerate(query_spectra),
-                     desc="collecting matches info",
-                     disable=not self.settings["progress_bars"]):
-
-            results_table = ResultsTable(
-                preselection_cut_off=preselection_cut_off,
-                ms2deepscores=ms2ds_scores.iloc[:, i],
-                query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location)
-
-            # Select the library spectra that have the highest MS2Deepscore
-            results_table.preselect_on_ms2deepscore()
-            # Calculate the average ms2ds scores and neigbourhood score
-            results_table = \
-                self._calculate_averages_and_chemical_neigbhourhood_score(
-                    results_table)
-            results_table.data = results_table.data.set_index('spectrum_ids')
-
-            results_table.data["s2v_score"] = self._get_s2v_scores(
-                query_spectrum,
-                results_table.data.index.values)
-
-            parent_masses = np.array(
-                [self.parent_masses_library[x]
-                 for x in results_table.data.index])
-            results_table.add_parent_masses(
-                parent_masses,
-                self.settings["base_nr_mass_similarity"])
-
-            result_tables.append(results_table)
-
-        return result_tables
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
