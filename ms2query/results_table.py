@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import Union, List, Set
+from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
