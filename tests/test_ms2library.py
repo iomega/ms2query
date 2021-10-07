@@ -202,7 +202,7 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
-    assert results_table.__eq__(expected_result)
+    results_table.assert_results_table_equal(expected_result)
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):

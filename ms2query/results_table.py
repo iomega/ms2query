@@ -43,13 +43,12 @@ class ResultsTable:
             self.sqlite_file_name == other.sqlite_file_name
 
     def assert_results_table_equal(self, other):
-        """Assert if results tables are equal except for the spectrum metadata"""
+        """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
         assert isinstance(other, ResultsTable), "Expected ResultsTable"
         assert other.preselection_cut_off == self.preselection_cut_off
         assert other.parent_mass == self.parent_mass
         assert self.data.round(5).equals(other.data.round(5))
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5))
-        assert self.sqlite_file_name == other.sqlite_file_name
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses
 
