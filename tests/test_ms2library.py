@@ -172,7 +172,7 @@ def test_analog_search(file_names, test_spectra):
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
     for i in range(len(expected_result)):
-        assert expected_result[i].__eq__(result[i]), "different result table was expected"
+        result[i].assert_results_table_equal(expected_result[i])
 
 
 def test_calculate_scores_for_metadata(file_names, test_spectra):
@@ -202,7 +202,7 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
-    results_table.__eq__(expected_result)
+    assert results_table.__eq__(expected_result)
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):
