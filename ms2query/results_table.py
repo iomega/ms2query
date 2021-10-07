@@ -178,4 +178,3 @@ def add_classifiers_to_df(classifier_csv_file, features_df):
                                            classifiers_df,
                                            on="inchikey")
     return data_with_added_classifiers
-
