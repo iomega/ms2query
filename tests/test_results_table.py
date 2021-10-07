@@ -78,7 +78,7 @@ def test_get_classifier_from_csv_file(tmp_path):
             "WXDBUBIFYCCNLE-NSCMQRKRSA-N	CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC	Organic compounds	Organoheterocyclic compounds	Oxepanes		Oxepanes	Lipopeptides	Oligopeptides	Amino acids and Peptides	0")
     output = get_classifier_from_csv_file(
         os.path.join(tmp_path, "test_csv_file"),
-        {"IYDKWWDUBYWQGF", "BBBBBBBBBBBBBB"})
+        ["IYDKWWDUBYWQGF", "BBBBBBBBBBBBBB"])
     assert isinstance(output, pd.DataFrame), "Expected pandas DataFrame"
     expected_columns = ["inchikey", "smiles", "cf_kingdom", "cf_superclass",
                         "cf_class", "cf_subclass", "cf_direct_parent",
@@ -122,7 +122,7 @@ def test_get_classifier_from_csv_file_empty(tmp_path):
             "WXDBUBIFYCCNLE-NSCMQRKRSA-N	CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC	Organic compounds	Organoheterocyclic compounds	Oxepanes		Oxepanes	Lipopeptides	Oligopeptides	Amino acids and Peptides	0")
     output = get_classifier_from_csv_file(
         os.path.join(tmp_path, "test_csv_file"),
-        set())
+        [])
     assert isinstance(output, pd.DataFrame), "Expected pandas DataFrame"
     expected_columns = ["inchikey", "smiles", "cf_kingdom", "cf_superclass",
                         "cf_class", "cf_subclass", "cf_direct_parent",
