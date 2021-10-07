@@ -1,4 +1,6 @@
 import os
+import pickle
+
 import pandas as pd
 from ms2query.select_data_for_training_ms2query_nn import DataCollectorForTraining
 from ms2query.utils import load_pickled_file
@@ -42,7 +44,7 @@ def get_test_file_names():
         tanimoto_scores_file_name
 
 
-def test_select_data_for_training():
+def test_data_collector_for_training_init():
     """Tests if an object DataCollectorForTraining can be created"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
@@ -83,7 +85,7 @@ def test_create_train_and_val_data_with_saving(tmp_path):
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_train_ms2query_nn",
-        "test_training_and_validation_set_and_labels"))
+        "expected_train_and_val_data.pickle"))
     result_in_file = load_pickled_file(save_file_name)
     # Test if the right result is returned
     assert isinstance(returned_results, tuple), \
@@ -91,16 +93,14 @@ def test_create_train_and_val_data_with_saving(tmp_path):
     assert len(returned_results) == 4, "Expected a tuple with length 4"
     for i, result in enumerate(returned_results):
         assert isinstance(result, pd.DataFrame)
-        # todo make new file with correct expected results
-        # pd.testing.assert_frame_equal(result, expected_result[i])
+        pd.testing.assert_frame_equal(result, expected_result[i])
     # Test if right information is stored in file
     assert isinstance(result_in_file, tuple), \
         "Expected a tuple to be returned"
     assert len(result_in_file) == 4, "Expected a tuple with length 4"
     for i, result in enumerate(returned_results):
         assert isinstance(result, pd.DataFrame)
-        # pd.testing.assert_frame_equal(result, expected_result[i])
-        # todo make new file with correct expected results
+        pd.testing.assert_frame_equal(result, expected_result[i])
 
 
 
@@ -117,19 +117,19 @@ def test_get_matches_info_and_tanimoto():
         training_spectra_file_name, validation_spectra_file_name,
         tanimoto_scores_file_name,
         spectrum_id_column_name=spectrum_id_column_name)
+
     query_spectra = load_pickled_file(training_spectra_file_name)
+
     result = select_data_for_training.get_matches_info_and_tanimoto(
         query_spectra)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_train_ms2query_nn",
-        "test_training_and_validation_set_and_labels"))[:2]
+        "expected_train_and_val_data.pickle"))[:2]
     assert isinstance(result, tuple), "Expected tuple to be returned"
     assert len(result) == 2, "Expected tuple to be returned"
-    # todo make new file with correct expected results
-
-    # pd.testing.assert_frame_equal(result[0], expected_result[0])
-    # pd.testing.assert_frame_equal(result[1], expected_result[1])
+    pd.testing.assert_frame_equal(result[0], expected_result[0])
+    pd.testing.assert_frame_equal(result[1], expected_result[1])
 
 
 def test_get_tanimoto_for_spectrum_ids():
