@@ -99,14 +99,14 @@ class ResultsTable:
 
     def get_training_data(self) -> pd.DataFrame:
         return self.data[["parent_mass*0.001",
-                       "mass_similarity",
-                       "s2v_score",
-                       "ms2ds_score",
-                       "average_ms2ds_score_for_inchikey14",
-                       "nr_of_spectra_with_same_inchikey14*0.01",
-                       "chemical_neighbourhood_score",
-                       "average_tanimoto_score_for_chemical_neighbourhood_score",
-                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]]
+                          "mass_similarity",
+                          "s2v_score",
+                          "ms2ds_score",
+                          "average_ms2ds_score_for_inchikey14",
+                          "nr_of_spectra_with_same_inchikey14*0.01",
+                          "chemical_neighbourhood_score",
+                          "average_tanimoto_score_for_chemical_neighbourhood_score",
+                          "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]]
 
     def create_dataframe_with_compound_classification(
             self,
@@ -116,7 +116,7 @@ class ResultsTable:
         selected_results = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
         metadata_list = list(get_metadata_from_sqlite(self.sqlite_file_name,
-                                       list(selected_results.index)).values())
+                                                      list(selected_results.index)).values())
         compound_names = [metadata["compound_name"] for metadata in metadata_list]
         selected_results["compound_name"] = compound_names
         selected_results = add_classifiers_to_df(classifiers_file_name,
@@ -150,11 +150,11 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     list_of_classifiers = []
     for inchikey in list_of_inchikeys:
         classifiers = classifiers_df.loc[
-            classifiers_df["inchi_key"].str.startswith(inchikey)] # pylint: disable=unsubscriptable-object
+            classifiers_df["inchi_key"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
         if classifiers.empty:
             list_of_classifiers.append(pd.DataFrame(np.array(
-                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)])
-                , columns=columns_to_keep))
+                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
+                columns=columns_to_keep))
         else:
             classifiers = classifiers[columns_to_keep].iloc[:1]
 
