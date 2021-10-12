@@ -135,11 +135,11 @@ def test_get_classifier_from_csv_file_empty(tmp_path):
 
 def test_export_to_dataframe(dummy_data, tmp_path):
     create_test_classifier_csv_file(tmp_path)
-    test_table: ResultsTable = \
-        load_pickled_file("test_files/test_files_ms2library/expected_analog_search_results.pickle")[0]
-
-    returned_dataframe = test_table.export_to_dataframe(
-        5, os.path.join(tmp_path, "test_csv_file"))
+    test_table: ResultsTable = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+    test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
+    returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
     assert list(returned_dataframe.columns) == ['parent_mass_query_spectrum', 'ms2query_model_prediction',
        'parent_mass_analog', 'inchikey', 'spectrum_ids',
