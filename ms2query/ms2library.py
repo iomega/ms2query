@@ -1,3 +1,4 @@
+import os.path
 from typing import List, Dict, Union, Tuple, Set
 import pandas as pd
 import numpy as np
@@ -41,6 +42,7 @@ class MS2Library:
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None],
+                 classifier_csv_file: Union[str, None] = None,
                  **settings):
         """
         Parameters
@@ -61,6 +63,10 @@ class MS2Library:
         pickled_ms2ds_embeddings_file_name:
             File location of a pickled file with ms2ds embeddings in a
             pd.Dataframe with as index the spectrum id.
+        ms2query_model_file_name:
+            File location of ms2query model with .hdf5 extension.
+        classifier_csv_file:
+            Csv file location containing classifier annotations per inchikey
 
         **settings:
             As additional parameters predefined settings can be changed.
@@ -84,7 +90,8 @@ class MS2Library:
         # Change default settings to values given in **settings
         self.settings = self._set_settings(settings)
 
-        # Load models and set sqlite_file_location
+        # Load models and set file locations
+        self.classifier_file_location = classifier_csv_file
         self.sqlite_file_location = sqlite_file_location
         self.ms2query_model_file_location = ms2query_model_file_name
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
@@ -137,18 +144,16 @@ class MS2Library:
             default_settings[attribute] = new_settings[attribute]
         return default_settings
 
-    def analog_search(self,
-                      query_spectra: List[Spectrum],
-                      preselection_cut_off: int = 2000
-                      ) -> List[ResultsTable]:
+    def analog_search_return_results_tables(self,
+                                            query_spectra: List[Spectrum],
+                                            preselection_cut_off: int = 2000
+                                            ) -> List[ResultsTable]:
         """Returns a list with a ResultTable for each query spectrum
 
         Args
         ----
         query_spectra:
             List of query spectra for which the best matches should be found
-        ms2query_model_file_name:
-            File name of a hdf5 file containing the ms2query model.
         preselection_cut_off:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
@@ -170,12 +175,63 @@ class MS2Library:
                 preselection_cut_off=preselection_cut_off,
                 ms2deepscores=all_ms2ds_scores.iloc[:, i],
                 query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location)
+                sqlite_file_name=self.sqlite_file_location,
+                classifier_csv_file_name=self.classifier_file_location)
             results_table = \
                 self._calculate_scores_for_metascore(results_table)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
             result_tables.append(results_table)
         return result_tables
+
+    def analog_search_store_in_csv(self,
+                                   query_spectra: List[Spectrum],
+                                   results_csv_file_location: str,
+                                   preselection_cut_off: int = 2000,
+                                   nr_of_top_analogs_to_save: int = 1
+                                   ) -> None:
+        """Stores the results of an analog in csv files.
+
+        This method is less memory intensive than analog_search_return_results_table,
+        since the results tables do not have to be kept in memory, since they are directly
+        stored in a csv file.
+
+        Args
+        ----
+        query_spectra:
+            List of query spectra for which the best matches should be found
+        results_csv_file_location:
+            file location were a csv file is created that stores the results
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected. Default = 2000
+        """
+        # Create csv file if it does not exist already
+        assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
+
+        # preprocess spectra
+        query_spectra = clean_metadata(query_spectra)
+        query_spectra = minimal_processing_multiple_spectra(query_spectra)
+
+        # Calculate all ms2ds scores between all query and library spectra
+        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
+
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
+                     desc="collecting matches info",
+                     disable=not self.settings["progress_bars"]):
+            # Initialize result table
+            results_table = ResultsTable(
+                preselection_cut_off=preselection_cut_off,
+                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_location,
+                classifier_csv_file_name=self.classifier_file_location)
+            results_table = \
+                self._calculate_scores_for_metascore(results_table)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save)
+            results_df.to_csv(results_csv_file_location, mode="a")
 
     def select_potential_true_matches(self,
                                       query_spectra: List[Spectrum],

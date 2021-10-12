@@ -166,7 +166,7 @@ def test_analog_search(file_names, test_spectra):
                               spectrum_id_column_name=spectrum_id_column_name)
 
     cutoff = 20
-    result = test_library.analog_search(test_spectra, cutoff)
+    result = test_library.analog_search_return_results_tables(test_spectra, cutoff)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -323,3 +323,27 @@ def test_get_ms2query_model_prediction_single_spectrum():
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))[0]
     expected_result.assert_results_table_equal(results)
+
+
+def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    results_csv_file = os.path.join(tmp_path, "test_csv_analog_search")
+    test_library.analog_search_store_in_csv(test_spectra, results_csv_file)
+    assert os.path.exists(results_csv_file)
+    with open(results_csv_file, "r") as test_file:
+        assert test_file.readlines() == [
+            ',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+            '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
+            ',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+            '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
+            "Expected different results to be stored in csv file"
