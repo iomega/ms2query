@@ -23,6 +23,7 @@ class ResultsTable:
                  ms2deepscores: pd.DataFrame,
                  query_spectrum: Spectrum,
                  sqlite_file_name: str,
+                 classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.ms2deepscores = ms2deepscores
@@ -30,6 +31,7 @@ class ResultsTable:
         self.query_spectrum = query_spectrum
         self.parent_mass = query_spectrum.get("parent_mass")
         self.sqlite_file_name = sqlite_file_name
+        self.classifier_csv_file_name = classifier_csv_file_name
 
     def __eq__(self, other):
         if not isinstance(other, ResultsTable):
@@ -111,8 +113,8 @@ class ResultsTable:
 
     def export_to_dataframe(
             self,
-            nr_of_top_spectra: int,
-            classifiers_file_name: Union[None, str] = None):
+            nr_of_top_spectra: int
+            ) -> pd.DataFrame:
         """Returns a dataframe with relevant info from results table
 
         Args:
@@ -147,9 +149,9 @@ class ResultsTable:
         results_df.reset_index(inplace=True)
         results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
         # Add classifiers to dataframe
-        if classifiers_file_name is not None:
+        if self.classifier_csv_file_name is not None:
             classifiers_df = \
-                get_classifier_from_csv_file(classifiers_file_name,
+                get_classifier_from_csv_file(self.classifier_csv_file_name,
                                              results_df["inchikey"].unique())
             # data = results_df.reset_index()
             results_df = pd.merge(results_df,
