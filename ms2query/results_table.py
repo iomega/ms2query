@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
@@ -108,25 +109,54 @@ class ResultsTable:
                           "average_tanimoto_score_for_chemical_neighbourhood_score",
                           "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]]
 
-    def create_dataframe_with_compound_classification(
+    def export_to_dataframe(
             self,
-            nr_of_top_spectra,
-            classifiers_file_name,
-            add_selection: Union[bool, List[str]] = False):
-        selected_results = \
+            nr_of_top_spectra: int,
+            classifiers_file_name: Union[None, str] = None):
+        """Returns a dataframe with relevant info from results table
+
+        Args:
+        ------
+        nr_of_top_spectra:
+            Number of spectra that should be returned.
+            The best spectra are selected based on highest MS2QUery meta score
+        classifiers_file_name:
+            If not None, the classifiers file is used to extract classifiers information
+            for found library matches.
+        """
+        # Select top results
+        selected_data: pd.DataFrame = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
+
+        # Add inchikey and ms2query model prediction to results df
+        results_df = selected_data.loc[:, ["ms2query_model_prediction",
+                                           "inchikey"]]
+
+        # Add the parent masses of the analogs
+        results_df.insert(1, "parent_mass_analog", selected_data["parent_mass*0.001"] * 1000)
+        # Add the parent mass of the query spectrum
+        results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
+
+        # For each analog the compound name is selected from sqlite
         metadata_list = list(get_metadata_from_sqlite(self.sqlite_file_name,
-                                                      list(selected_results.index)).values())
+                                                      list(results_df.index)).values())
         compound_names = [metadata["compound_name"] for metadata in metadata_list]
-        selected_results["compound_name"] = compound_names
-        selected_results = add_classifiers_to_df(classifiers_file_name,
-                                                 selected_results)
-        if add_selection is not False:
-            selected_results = selected_results[add_selection]
-        selected_results.sort_values(
-            by=["ms2query_model_prediction"], ascending=False, inplace=True)
-        selected_results.set_index("spectrum_ids", inplace=True)
-        return selected_results
+        results_df["analog_compound_name"] = compound_names
+
+        # Removes index and reorders columns so spectrum_id is not the first column
+        results_df.reset_index(inplace=True)
+        results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
+        # Add classifiers to dataframe
+        if classifiers_file_name is not None:
+            classifiers_df = \
+                get_classifier_from_csv_file(classifiers_file_name,
+                                             results_df["inchikey"].unique())
+            # data = results_df.reset_index()
+            results_df = pd.merge(results_df,
+                                  classifiers_df,
+                                  on="inchikey")
+
+        return results_df
 
 
 def get_classifier_from_csv_file(classifier_file_name: str,
@@ -167,14 +197,3 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     results["inchi_key"] = list_of_inchikeys
     results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
     return results
-
-
-def add_classifiers_to_df(classifier_csv_file, features_df):
-    classifiers_df = \
-        get_classifier_from_csv_file(classifier_csv_file,
-                                     features_df["inchikey"].unique())
-    data = features_df.reset_index()
-    data_with_added_classifiers = pd.merge(data,
-                                           classifiers_df,
-                                           on="inchikey")
-    return data_with_added_classifiers
