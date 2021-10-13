@@ -245,7 +245,7 @@ class MS2Library:
                                       query_spectra: List[Spectrum],
                                       mass_tolerance: Union[float, int] = 0.1,
                                       s2v_score_threshold: float = 0.6
-                                      ) -> List[pd.DataFrame]:
+                                      ) -> pd.DataFrame:
         """Returns potential true matches for query spectra
 
         The spectra are selected that fall within the mass_tolerance and have a
@@ -265,10 +265,15 @@ class MS2Library:
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        found_matches_list = []
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="Selecting potential perfect matches",
-                                   disable=not self.settings["progress_bars"]):
+        found_matches = pd.DataFrame(columns=["query_spectrum_nr",
+                                              "query_spectrum_parent_mass",
+                                              "s2v_score",
+                                              "match_spectrum_id",
+                                              "match_parent_mass",
+                                              "match_inchikey"])
+        for query_spectrum_nr, query_spectrum in tqdm(enumerate(query_spectra),
+                                                      desc="Selecting potential perfect matches",
+                                                      disable=not self.settings["progress_bars"]):
             query_parent_mass = query_spectrum.get("parent_mass")
             # Preselection based on parent mass
             parent_masses_within_mass_tolerance = get_parent_mass_within_range(
@@ -280,18 +285,20 @@ class MS2Library:
                                         parent_masses_within_mass_tolerance]
             s2v_scores = self._get_s2v_scores(query_spectrum,
                                               selected_library_spectra)
-            found_matches = pd.DataFrame(columns=["spectrum_id", "s2v_score"])
-            for i, spectrum_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
+
+            for i, spectrum_id_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
+                match_spectrum_id, match_parent_mass = spectrum_id_and_parent_mass
                 if s2v_scores[i] > s2v_score_threshold:
                     found_matches = \
                         found_matches.append(
-                            {"spectrum_id": spectrum_and_parent_mass[0],
+                            {"query_spectrum_nr": query_spectrum_nr,
+                             "query_spectrum_parent_mass": query_parent_mass,
                              "s2v_score": s2v_scores[i],
-                             "parent_mass_difference": spectrum_and_parent_mass[1]},
+                             "match_spectrum_id": match_spectrum_id,
+                             "match_parent_mass": match_parent_mass,
+                             "match_inchikey": self.inchikey14s_of_spectra[match_spectrum_id]},
                             ignore_index=True)
-            found_matches.set_index("spectrum_id", inplace=True)
-            found_matches_list.append(found_matches)
-        return found_matches_list
+        return found_matches
 
     def _calculate_scores_for_metascore(self,
                                         results_table: ResultsTable

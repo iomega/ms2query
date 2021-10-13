@@ -132,23 +132,24 @@ def test_select_potential_true_matches(file_names, test_spectra):
         test_library.select_potential_true_matches(test_spectra,
                                                    mass_tolerance=30,
                                                    s2v_score_threshold=0.6)
-    assert isinstance(results, list), "Expected List"
-    for df in results:
-        assert isinstance(df, pd.DataFrame), "Expected a list with dataframes"
-    expected_df_1 = pd.DataFrame(
-        data={"spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                               'CCMSLIB00000001648', 'CCMSLIB00000001650'],
-              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844],
-              "parent_mass_difference":
-                  [878.453724,878.453782,878.332724,878.410782]})
-    expected_df_2 = pd.DataFrame(
-        data={"spectrum_id": ["CCMSLIB00000001548"],
-              "s2v_score": [0.995251],
-              "parent_mass_difference": [939.242724]})
-    pd.testing.assert_frame_equal(results[0],
-                                  expected_df_1.set_index("spectrum_id"))
-    pd.testing.assert_frame_equal(results[1],
-                                  expected_df_2.set_index("spectrum_id"))
+    assert isinstance(results, pd.DataFrame), "Expected DataFrame"
+    expected_df = pd.DataFrame(
+        data={"query_spectrum_nr": [0, 0, 0, 0, 1],
+              "query_spectrum_parent_mass": [905.992724, 905.992724, 905.992724,
+                                             905.992724, 926.992723],
+              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844, 0.995251],
+              "match_spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                                    'CCMSLIB00000001648', 'CCMSLIB00000001650',
+                                    "CCMSLIB00000001548"],
+              "match_parent_mass":
+                  [878.453724, 878.453782, 878.332724, 878.410782, 939.242724],
+              "match_inchikey": ["SATIISJKSAELDC", "SATIISJKSAELDC",
+                                 "JXOFEBNJOOEXJY", "JXOFEBNJOOEXJY",
+                                 "KNGPFNUOXXLKCN"]})
+
+    pd.testing.assert_frame_equal(results,
+                                  expected_df,
+                                  check_dtype=False)
 
 
 def test_analog_search(file_names, test_spectra):
