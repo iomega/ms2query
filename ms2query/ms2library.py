@@ -187,7 +187,8 @@ class MS2Library:
                                    query_spectra: List[Spectrum],
                                    results_csv_file_location: str,
                                    preselection_cut_off: int = 2000,
-                                   nr_of_top_analogs_to_save: int = 1
+                                   nr_of_top_analogs_to_save: int = 1,
+                                   minimal_ms2query_metascore: Union[float, int] = 0.0
                                    ) -> None:
         """Stores the results of an analog in csv files.
 
@@ -204,6 +205,12 @@ class MS2Library:
         preselection_cut_off:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
+        nr_of_top_analogs_to_save:
+            The number of returned analogs that are stored.
+        minimal_ms2query_metascore:
+            The minimal ms2query metascore needed to be stored in the csv file.
+            Spectra for which no analog with this minimal metascore was found,
+            will not be stored in the csv file.
         """
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
@@ -230,8 +237,9 @@ class MS2Library:
             results_table = \
                 self._calculate_scores_for_metascore(results_table)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
-            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save)
-            results_df.to_csv(results_csv_file_location, mode="a")
+            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save, minimal_ms2query_metascore)
+            if results_df is not None:
+                results_df.to_csv(results_csv_file_location, mode="a")
 
     def select_potential_true_matches(self,
                                       query_spectra: List[Spectrum],

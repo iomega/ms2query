@@ -113,29 +113,35 @@ class ResultsTable:
 
     def export_to_dataframe(
             self,
-            nr_of_top_spectra: int
-            ) -> pd.DataFrame:
-        """Returns a dataframe with relevant info from results table
+            nr_of_top_spectra: int,
+            minimal_ms2query_score: Union[float, int] = 0.0
+            ) -> Union[None, pd.DataFrame]:
+        """Returns a dataframe with analogs results from results table
 
         Args:
         ------
         nr_of_top_spectra:
             Number of spectra that should be returned.
             The best spectra are selected based on highest MS2QUery meta score
-        classifiers_file_name:
-            If not None, the classifiers file is used to extract classifiers information
-            for found library matches.
+        minimal_ms2query_score:
+            The minimal ms2query metascore needed to be returned in the dataframe
         """
         # Select top results
-        selected_data: pd.DataFrame = \
+        selected_analogs: pd.DataFrame = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
 
+        # Remove analogs that do not have a high enough ms2query score
+        selected_analogs = selected_analogs[
+            (selected_analogs["ms2query_model_prediction"] > minimal_ms2query_score)]
+        # Return None if know analogs are selected.
+        if selected_analogs.empty:
+            return None
         # Add inchikey and ms2query model prediction to results df
-        results_df = selected_data.loc[:, ["ms2query_model_prediction",
+        results_df = selected_analogs.loc[:, ["ms2query_model_prediction",
                                            "inchikey"]]
 
         # Add the parent masses of the analogs
-        results_df.insert(1, "parent_mass_analog", selected_data["parent_mass*0.001"] * 1000)
+        results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
         # Add the parent mass of the query spectrum
         results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
 
