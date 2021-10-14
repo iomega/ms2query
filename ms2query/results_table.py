@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-import os
-from typing import Union, List
+from typing import Union
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.utils import get_classifier_from_csv_file
 
 
 class ResultsTable:
@@ -138,19 +138,19 @@ class ResultsTable:
             return None
         # Add inchikey and ms2query model prediction to results df
         results_df = selected_analogs.loc[:, ["ms2query_model_prediction",
-                                           "inchikey"]]
+                                              "inchikey"]]
 
         # Add the parent masses of the analogs
         results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
         # Add the parent mass of the query spectrum
         results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
-
         # For each analog the compound name is selected from sqlite
-        metadata_list = list(get_metadata_from_sqlite(self.sqlite_file_name,
-                                                      list(results_df.index)).values())
-        compound_names = [metadata["compound_name"] for metadata in metadata_list]
-        results_df["analog_compound_name"] = compound_names
-
+        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
+                                                 list(results_df.index))
+        compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
+                              for analog_spectrum_id
+                              in list(results_df.index)]
+        results_df["analog_compound_name"] = compound_name_list
         # Removes index and reorders columns so spectrum_id is not the first column
         results_df.reset_index(inplace=True)
         results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
@@ -165,43 +165,3 @@ class ResultsTable:
                                   on="inchikey")
 
         return results_df
-
-
-def get_classifier_from_csv_file(classifier_file_name: str,
-                                 list_of_inchikeys: List[str]):
-    """Returns a dataframe with the classifiers for a selection of inchikeys
-
-    Args:
-    ------
-    csv_file_name:
-        File name of text file with tap separated columns, with classifier
-        information.
-    list_of_inchikeys:
-        list with the first 14 letters of inchikeys, that are selected from
-        the classifier file.
-    """
-    classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
-                       "cf_superclass", "cf_class", "cf_subclass",
-                       "cf_direct_parent", "npc_class_results",
-                       "npc_superclass_results", "npc_pathway_results"]
-    list_of_classifiers = []
-    for inchikey in list_of_inchikeys:
-        classifiers = classifiers_df.loc[
-            classifiers_df["inchi_key"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
-        if classifiers.empty:
-            list_of_classifiers.append(pd.DataFrame(np.array(
-                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
-                columns=columns_to_keep))
-        else:
-            classifiers = classifiers[columns_to_keep].iloc[:1]
-
-            list_of_classifiers.append(classifiers)
-    if len(list_of_classifiers) == 0:
-        results = pd.DataFrame(columns=columns_to_keep)
-    else:
-        results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
-
-    results["inchi_key"] = list_of_inchikeys
-    results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
-    return results
