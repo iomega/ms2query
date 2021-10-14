@@ -302,8 +302,7 @@ class MS2Library:
 
     def store_potential_true_matches(self,
                                      query_spectra: List[Spectrum],
-                                     results_file_location,
-                                     classifier_file: str = None,
+                                     results_file_location: str,
                                      mass_tolerance: Union[float, int] = 0.1,
                                      s2v_score_threshold: float = 0.6
                                      ) -> None:
@@ -317,6 +316,8 @@ class MS2Library:
         query_spectra:
             A list with spectrum objects for which the potential true matches
             are returned
+        results_file_location:
+            File location in which a csv file is created containing the results
         mass_tolerance:
             The mass difference between query spectrum and library spectrum,
             that is allowed.
@@ -335,12 +336,11 @@ class MS2Library:
                               for match_spectrum_id
                               in list(found_matches["match_spectrum_id"])]
         found_matches["match_compound_name"] = compound_name_list
-        if classifier_file is not None:
-            classifier_data = get_classifier_from_csv_file(classifier_file,
+        if self.classifier_file_location is not None and not found_matches.empty:
+            classifier_data = get_classifier_from_csv_file(self.classifier_file_location,
                                                            list(found_matches["match_inchikey"].unique()))
             classifier_data.rename(columns={"inchikey": "match_inchikey"}, inplace=True)
             found_matches = found_matches.merge(classifier_data, on="match_inchikey")
-
         found_matches.to_csv(results_file_location, mode="w", index=False)
 
     def _calculate_scores_for_metascore(self,

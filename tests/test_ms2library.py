@@ -157,6 +157,7 @@ def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name, ms2q_model_file_name = file_names
+    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
@@ -164,11 +165,10 @@ def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
                               ms2q_model_file_name,
+                              classifier_csv_file=classifiers_file_location,
                               spectrum_id_column_name=spectrum_id_column_name)
-    create_test_classifier_csv_file(tmp_path)
     test_library.store_potential_true_matches(test_spectra,
                                               os.path.join(tmp_path, "results"),
-                                              classifier_file=os.path.join(tmp_path, "test_csv_file"),
                                               mass_tolerance=30,
                                               s2v_score_threshold=0.6)
     with open(os.path.join(tmp_path, "results"), "r") as results_file:
@@ -181,6 +181,30 @@ def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
                                 '1,926.9927235480093,0.9952514653551044,CCMSLIB00000001548,939.242724,KNGPFNUOXXLKCN,Hoiamide B,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n'], \
             "Expected different results in csv file"
 
+
+def test_store_potential_true_matches_no_matches_found(file_names, test_spectra, tmp_path):
+    """Test if a csv file with only columns is returned, if no matches are found"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              classifier_csv_file=classifiers_file_location,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    test_library.store_potential_true_matches(test_spectra,
+                                              os.path.join(tmp_path, "results"),
+                                              mass_tolerance=1,
+                                              s2v_score_threshold=0.6)
+    with open(os.path.join(tmp_path, "results"), "r") as results_file:
+        results_list = results_file.readlines()
+        assert results_list == ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name\n'], \
+            "Expected different results in csv file"
 
 def test_analog_search(file_names, test_spectra):
     """Test analog search"""
