@@ -1,10 +1,9 @@
 import os
 from typing import List, Union, Dict
 from tqdm import tqdm
-from matchms.importing.load_from_mzml import load_from_mzml
-from matchms.Spectrum import Spectrum
 from ms2query.ms2library import MS2Library
-from ms2query.utils import load_pickled_file
+from ms2query.utils import add_unknown_charges_to_spectra
+from ms2query.utils import convert_files_to_matchms_files
 from urllib.request import urlretrieve
 
 
@@ -51,8 +50,7 @@ def create_default_library_object(directory: str,
 
 
 def automatically_download_models(dir_to_store_files: str,
-                                  file_name_dict: Dict[str, str]
-                                  ):
+                                  file_name_dict: Dict[str, str]):
     """Downloads files from Zenodo
 
     Args:
@@ -76,32 +74,63 @@ def automatically_download_models(dir_to_store_files: str,
             print(f"file with the name {file_location} already exists, so was not downloaded")
 
 
-def run_analog_for_complete_folder(ms2library: MS2Library,
-                                   folder_with_spectra,
-                                   analog_results_folder
-                                   ) -> None:
-    """Stores a csv file with analog search results for all spectra in folder"""
-    for file in os.listdir(folder_with_spectra):
-        spectra = convert_files_to_matchms_files(file)
-        ms2library.analog_search_store_in_csv(spectra, )
+def run_complete_folder(ms2library: MS2Library,
+                        folder_with_spectra: str,
+                        results_folder: str,
+                        nr_of_analogs_to_store: int = 1,
+                        minimal_ms2query_score: Union[int, float] = 0.0,
+                        analog_search: bool = True,
+                        library_search: bool = True
+                        ) -> None:
+    """Stores analog and library search results for all spectra files in folder
+
+    Args:
+    ------
+    ms2library:
+        MS2Library object
+    folder_with_spectra:
+        Path to folder containing spectra on which analog search should be run.
+    results_folder:
+        Path to folder in which the results are stored, folder does not have to exist yet.
+        In this folder new folders are created called "analog_search" and "library_search"
+        containing the csv files with results.
+    nr_of_top_analogs_to_store:
+        The number of returned analogs that are stored.
+    minimal_ms2query_score:
+        The minimal ms2query metascore needed to be stored in the csv file.
+        Spectra for which no analog with this minimal metascore was found,
+        will not be stored in the csv file.
+    analog_search:
+        If True an analog search is performed and the results are stored
+    library_search:
+        If True a library search (Finding true matches) is performed
+    """
     # check if there is a results folder otherwise create one
-
-
-def convert_files_to_matchms_files(file_location
-                                   ) -> Union[List[Spectrum], None]:
-    if file_location.endswith(".mzML"):
-        spectra = list(load_from_mzml(file_location))
-        return spectra
-    #todo add options for loading other spectra. Also include pickled matchms files
-    # todo add needed filtering steps? like set charge
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
+    # Go through spectra files in directory
+    for file_name in os.listdir(folder_with_spectra):
+        file_path = os.path.join(folder_with_spectra, file_name)
+        # skip folders
+        if os.path.isfile(file_path):
+            spectra = convert_files_to_matchms_files(os.path.join(folder_with_spectra, file_name))[:2]
+            add_unknown_charges_to_spectra(spectra)
+            if analog_search:
+                if not os.path.exists(os.path.join(results_folder, "analog_search")):
+                    os.mkdir(os.path.join(results_folder, "analog_search"))
+                analogs_results_file_name = os.path.join(results_folder, "analog_search", os.path.splitext(file_name)[0] + ".csv")
+                ms2library.analog_search_store_in_csv(spectra,
+                                                      analogs_results_file_name,
+                                                      nr_of_top_analogs_to_save=nr_of_analogs_to_store,
+                                                      minimal_ms2query_metascore=minimal_ms2query_score)
+            if library_search:
+                if not os.path.exists(os.path.join(results_folder, "library_search")):
+                    os.mkdir(os.path.join(results_folder, "library_search"))
+                library_results_file_name = os.path.join(results_folder, "library_search", os.path.splitext(file_name)[0] + ".csv")
+                ms2library.store_potential_true_matches(spectra,
+                                                        library_results_file_name)
 
 
 if __name__ == "__main__":
-    # spectra = load_pickled_file("../data/case_studies/Huali/correct_files_BN/positive/1d-BN-2.pickle")[:2]
-    # library = create_default_library_object("../data/models_embeddings_files/", default_library_file_names())
-    automatically_download_models("../data/test_dir/", {"classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"})
-    # print(library)
-    # library.analog_search_store_in_csv(spectra, "../tests/test_files/can_be_deleted.csv", 2)
-    # classifiers_file = os.path.join("../data/models_embeddings_files/",
-    #                                 "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt")
-    # result_df = result[0].export_to_dataframe(2, classifiers_file)
+    library = create_default_library_object("../data/models_embeddings_files", default_library_file_names())
+    run_complete_folder(library, "../data/test_dir/test_spectra", "../data/test_dir/results")
