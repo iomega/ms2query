@@ -1,5 +1,5 @@
 import os
-from typing import List, Union, Dict
+from typing import Union, Dict
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
 from ms2query.utils import add_unknown_charges_to_spectra

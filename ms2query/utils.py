@@ -4,7 +4,7 @@ import pickle
 import pandas as pd
 import numpy as np
 from spec2vec.Spec2Vec import Spectrum
-import matchms.importing as importing
+from matchms import importing
 
 
 def load_pickled_file(filename: str):
@@ -32,20 +32,19 @@ def convert_files_to_matchms_files(file_location
     file_extension = os.path.splitext(file_location)[1].lower()
     if file_extension == ".mzml":
         return list(importing.load_from_mzml(file_location))
-    elif file_extension == ".json":
+    if file_extension == ".json":
         return list(importing.load_from_json(file_location))
-    elif file_extension == ".mgf":
+    if file_extension == ".mgf":
         return list(importing.load_from_mgf(file_location))
-    elif file_extension == ".msp":
+    if file_extension == ".msp":
         return list(importing.load_from_msp(file_location))
-    elif file_extension == ".mzxml":
+    if file_extension == ".mzxml":
         return list(importing.load_from_mzxml(file_location))
-    elif file_extension == ".usi":
+    if file_extension == ".usi":
         return list(importing.load_from_usi(file_location))
-    elif file_extension == ".pickle":
+    if file_extension == ".pickle":
         return load_pickled_file(file_location)
-    else:
-        print(f"File extension of file file location is not recognized")
+    print(f"File extension of file file location is not recognized")
 
 
 def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
