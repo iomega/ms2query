@@ -11,8 +11,8 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
-    get_parent_mass, get_inchikey_information
-from ms2query.utils import load_pickled_file
+    get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
+from ms2query.utils import load_pickled_file, get_classifier_from_csv_file
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -299,6 +299,49 @@ class MS2Library:
                              "match_inchikey": self.inchikey14s_of_spectra[match_spectrum_id]},
                             ignore_index=True)
         return found_matches
+
+    def store_potential_true_matches(self,
+                                     query_spectra: List[Spectrum],
+                                     results_file_location,
+                                     classifier_file: str = None,
+                                     mass_tolerance: Union[float, int] = 0.1,
+                                     s2v_score_threshold: float = 0.6
+                                     ) -> None:
+        """Stores the results of a library search in a csv file
+
+        The spectra are selected that fall within the mass_tolerance and have a
+        s2v score higher than s2v_score_threshold.
+
+        Args:
+        ------
+        query_spectra:
+            A list with spectrum objects for which the potential true matches
+            are returned
+        mass_tolerance:
+            The mass difference between query spectrum and library spectrum,
+            that is allowed.
+        s2v_score_threshold:
+            The minimal s2v score to be considered a potential true match
+        """
+        assert not os.path.exists(results_file_location), "Results file already exists"
+        found_matches = self.select_potential_true_matches(query_spectra,
+                                                           mass_tolerance,
+                                                           s2v_score_threshold)
+        pd.set_option("display.max_rows", None, "display.max_columns", None)
+        # For each analog the compound name is selected from sqlite
+        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_location,
+                                                 list(found_matches["match_spectrum_id"]))
+        compound_name_list = [metadata_dict[match_spectrum_id]["compound_name"]
+                              for match_spectrum_id
+                              in list(found_matches["match_spectrum_id"])]
+        found_matches["match_compound_name"] = compound_name_list
+        if classifier_file is not None:
+            classifier_data = get_classifier_from_csv_file(classifier_file,
+                                                           list(found_matches["match_inchikey"].unique()))
+            classifier_data.rename(columns={"inchikey": "match_inchikey"}, inplace=True)
+            found_matches = found_matches.merge(classifier_data, on="match_inchikey")
+
+        found_matches.to_csv(results_file_location, mode="w", index=False)
 
     def _calculate_scores_for_metascore(self,
                                         results_table: ResultsTable
