@@ -75,6 +75,8 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     test_table: ResultsTable = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+    test_table.sqlite_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
@@ -93,5 +95,3 @@ def test_export_to_dataframe(dummy_data, tmp_path):
         5)
     assert np.all(list(returned_dataframe.iloc[0, 3:10]) ==
                        ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
-
-
