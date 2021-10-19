@@ -132,5 +132,13 @@ def run_complete_folder(ms2library: MS2Library,
 
 
 if __name__ == "__main__":
-    library = create_default_library_object("../data/models_embeddings_files", default_library_file_names())
-    run_complete_folder(library, "../data/test_dir/test_spectra", "../data/test_dir/results")
+    models_dir = os.path.join(
+        os.path.dirname(__file__), "../data/models_embeddings_files")
+    library = create_default_library_object(models_dir, default_library_file_names())
+
+    run_complete_folder(
+        library,
+        os.path.join(os.path.dirname(__file__),
+                     "../data/test_dir/test_spectra"),
+        os.path.join(os.path.dirname(__file__),
+                     "../data/test_dir/results"))
