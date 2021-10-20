@@ -93,6 +93,7 @@ class MS2Library:
         # Load models and set file locations
         self.classifier_file_location = classifier_csv_file
         self.sqlite_file_location = sqlite_file_location
+        assert os.path.isfile(sqlite_file_location), f"The given sqlite file does not exist: {sqlite_file_location}"
         self.ms2query_model_file_location = ms2query_model_file_name
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
@@ -215,8 +216,10 @@ class MS2Library:
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         with open(results_csv_file_location, "w") as csv_file:
-            csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
-
+            if self.classifier_file_location is None:
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n")
+            else:
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
