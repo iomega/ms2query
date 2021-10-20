@@ -214,6 +214,8 @@ class MS2Library:
         """
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
+        with open(results_csv_file_location, "w") as csv_file:
+            csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
 
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
@@ -239,7 +241,7 @@ class MS2Library:
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
             results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save, minimal_ms2query_metascore)
             if results_df is not None:
-                results_df.to_csv(results_csv_file_location, mode="a")
+                results_df.to_csv(results_csv_file_location, mode="a", header=False)
 
     def select_potential_true_matches(self,
                                       query_spectra: List[Spectrum],
