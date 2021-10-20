@@ -78,7 +78,7 @@ def run_complete_folder(ms2library: MS2Library,
                         folder_with_spectra: str,
                         results_folder: str,
                         nr_of_analogs_to_store: int = 1,
-                        minimal_ms2query_score: Union[int, float] = 0.0,
+                        minimal_ms2query_score: Union[int, float] = 0.7,
                         analog_search: bool = True,
                         library_search: bool = True
                         ) -> None:
@@ -129,16 +129,3 @@ def run_complete_folder(ms2library: MS2Library,
                 library_results_file_name = os.path.join(results_folder, "library_search", os.path.splitext(file_name)[0] + ".csv")
                 ms2library.store_potential_true_matches(spectra,
                                                         library_results_file_name)
-
-
-if __name__ == "__main__":
-    models_dir = os.path.join(
-        os.path.dirname(__file__), "../data/models_embeddings_files")
-    library = create_default_library_object(models_dir, default_library_file_names())
-
-    run_complete_folder(
-        library,
-        os.path.join(os.path.dirname(__file__),
-                     "../data/test_dir/test_spectra"),
-        os.path.join(os.path.dirname(__file__),
-                     "../data/test_dir/results"))
