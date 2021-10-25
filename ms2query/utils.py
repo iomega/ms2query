@@ -13,8 +13,8 @@ def load_pickled_file(filename: str):
     return loaded_object
 
 
-def convert_files_to_matchms_files(file_location
-                                   ) -> Union[List[Spectrum], None]:
+def convert_files_to_matchms_spectrum_objects(file_location
+                                              ) -> Union[List[Spectrum], None]:
     """Loads spectra from your spectrum file into memory as matchms Spectrum object
 
     The following file extensions can be loaded in with this function:
