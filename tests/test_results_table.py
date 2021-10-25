@@ -4,16 +4,17 @@ import pytest
 import pandas as pd
 from matchms import Spectrum
 from ms2query import ResultsTable
-from ms2query.results_table import get_classifier_from_csv_file
+from ms2query.utils import load_pickled_file
+from tests.test_utils import create_test_classifier_csv_file
 
 
 @pytest.fixture
 def dummy_data():
     ms2deepscores = pd.DataFrame(np.array([0.2, 0.7, 0.99, 0.4]),
                                  index=["XXXXXXXXXXXXXA",
-                                          "XXXXXXXXXXXXXB",
-                                          "XXXXXXXXXXXXXC",
-                                          "XXXXXXXXXXXXXD"])
+                                        "XXXXXXXXXXXXXB",
+                                        "XXXXXXXXXXXXXC",
+                                        "XXXXXXXXXXXXXD"])
 
     query_spectrum = Spectrum(mz=np.array([100.0]),
                               intensities=np.array([1.0]),
@@ -44,10 +45,10 @@ def test_table_preselect_ms2deepscore(dummy_data):
                          sqlite_test_file)
     table.preselect_on_ms2deepscore()
     assert table.data.shape == (3, 11), "Should have different data table"
-    assert np.all(table.data.spectrum_ids.values == \
+    assert np.all(table.data.spectrum_ids.values ==
                   ['XXXXXXXXXXXXXC', 'XXXXXXXXXXXXXB', 'XXXXXXXXXXXXXD']), \
         "Expected different spectrum IDs or order"
-    assert np.all(table.data.ms2ds_score.values == \
+    assert np.all(table.data.ms2ds_score.values ==
                   [0.99, 0.7, 0.4]), \
         "Expected different scores or order"
 
@@ -68,67 +69,29 @@ def test_add_parent_masses(dummy_data):
                              expected, atol=1e-7)), \
         "Expected different scores or order"
 
-    
-def test_get_classifier_from_csv_file(tmp_path):
-    with open(os.path.join(tmp_path, "test_csv_file"), "w") as test_file:
-        test_file.write(
-            "inchi_key	smiles	cf_kingdom	cf_superclass	cf_class	cf_subclass	cf_direct_parent	npc_class_results	npc_superclass_results	npc_pathway_results	npc_isglycoside\n"
-            "IYDKWWDUBYWQGF-NNAZGLEUSA-N	CC(C)CC1NC(=O)C(C)NC(=O)C(=C)N(C)C(=O)CCC(NC(=O)C(C)C(NC(=O)C(CCCNC(N)=N)NC(=O)C(C)C(NC1=O)C(O)=O)\C=C\C(\C)=C\C(C)C(O)Cc1ccccc1)C(O)=O	Organic compounds	Organic acids and derivatives	Peptidomimetics	Hybrid peptides	Hybrid peptides	Cyclic peptides; Microcystins	Oligopeptides	Amino acids and Peptides	0\n"
-            "KNGPFNUOXXLKCN-ZNCJFREWSA-N	CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O	Organic compounds	Organic acids and derivatives	Peptidomimetics	Depsipeptides	Cyclic depsipeptides	Cyclic peptides	Oligopeptides	Amino acids and Peptides	0\n"
-            "WXDBUBIFYCCNLE-NSCMQRKRSA-N	CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC	Organic compounds	Organoheterocyclic compounds	Oxepanes		Oxepanes	Lipopeptides	Oligopeptides	Amino acids and Peptides	0")
-    output = get_classifier_from_csv_file(
-        os.path.join(tmp_path, "test_csv_file"),
-        ["IYDKWWDUBYWQGF", "BBBBBBBBBBBBBB"])
-    assert isinstance(output, pd.DataFrame), "Expected pandas DataFrame"
-    expected_columns = ["inchikey", "smiles", "cf_kingdom", "cf_superclass",
-                        "cf_class", "cf_subclass", "cf_direct_parent",
-                        "npc_class_results", "npc_superclass_results",
-                        "npc_pathway_results"]
-    assert all([column_name in output.columns
-                for column_name in expected_columns]), \
-        "Expected different column names"
-    assert output.shape == (2, 10), "Expected different shape of dataframe"
-    assert "IYDKWWDUBYWQGF" in list(output["inchikey"]), \
-        "IYDKWWDUBYWQGF was expected in column inchikey"
-    assert "BBBBBBBBBBBBBB" in list(output["inchikey"]), \
-        "BBBBBBBBBBBBBB was expected in column inchikey"
-    pd.testing.assert_frame_equal(
-        output[output["inchikey"] == "BBBBBBBBBBBBBB"].reset_index(drop=True),
-        pd.DataFrame(np.array(
-            [["BBBBBBBBBBBBBB"] + [np.nan] * 9]), columns=expected_columns)
-    )
-    pd.testing.assert_frame_equal(
-        output[output["inchikey"] == "IYDKWWDUBYWQGF"].reset_index(drop=True),
-        pd.DataFrame(np.array(["IYDKWWDUBYWQGF",
-                               "CC(C)CC1NC(=O)C(C)NC(=O)C(=C)N(C)C(=O)CCC(NC(=O)C(C)C(NC(=O)C(CCCNC(N)=N)NC(=O)C(C)C(NC1=O)C(O)=O)\C=C\C(\C)=C\C(C)C(O)Cc1ccccc1)C(O)=O",
-                               "Organic compounds",
-                               "Organic acids and derivatives",
-                               "Peptidomimetics", "Hybrid peptides",
-                               "Hybrid peptides",
-                               "Cyclic peptides; Microcystins",
-                               "Oligopeptides",
-                               "Amino acids and Peptides"]).reshape(-1, 10),
-                     columns=expected_columns)
-    )
 
-
-def test_get_classifier_from_csv_file_empty(tmp_path):
-    """Test if empty dataframe is returned, when no inchikeys are given"""
-    with open(os.path.join(tmp_path, "test_csv_file"), "w") as test_file:
-        test_file.write(
-            "inchi_key	smiles	cf_kingdom	cf_superclass	cf_class	cf_subclass	cf_direct_parent	npc_class_results	npc_superclass_results	npc_pathway_results	npc_isglycoside\n"
-            "IYDKWWDUBYWQGF-NNAZGLEUSA-N	CC(C)CC1NC(=O)C(C)NC(=O)C(=C)N(C)C(=O)CCC(NC(=O)C(C)C(NC(=O)C(CCCNC(N)=N)NC(=O)C(C)C(NC1=O)C(O)=O)\C=C\C(\C)=C\C(C)C(O)Cc1ccccc1)C(O)=O	Organic compounds	Organic acids and derivatives	Peptidomimetics	Hybrid peptides	Hybrid peptides	Cyclic peptides; Microcystins	Oligopeptides	Amino acids and Peptides	0\n"
-            "KNGPFNUOXXLKCN-ZNCJFREWSA-N	CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O	Organic compounds	Organic acids and derivatives	Peptidomimetics	Depsipeptides	Cyclic depsipeptides	Cyclic peptides	Oligopeptides	Amino acids and Peptides	0\n"
-            "WXDBUBIFYCCNLE-NSCMQRKRSA-N	CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC	Organic compounds	Organoheterocyclic compounds	Oxepanes		Oxepanes	Lipopeptides	Oligopeptides	Amino acids and Peptides	0")
-    output = get_classifier_from_csv_file(
-        os.path.join(tmp_path, "test_csv_file"),
-        [])
-    assert isinstance(output, pd.DataFrame), "Expected pandas DataFrame"
-    expected_columns = ["inchikey", "smiles", "cf_kingdom", "cf_superclass",
-                        "cf_class", "cf_subclass", "cf_direct_parent",
-                        "npc_class_results", "npc_superclass_results",
-                        "npc_pathway_results"]
-    # Test if empty dataset with correct columns is created
-    pd.testing.assert_frame_equal(output,
-                                  pd.DataFrame(columns=expected_columns),
-                                  check_dtype=False)
+def test_export_to_dataframe(dummy_data, tmp_path):
+    create_test_classifier_csv_file(tmp_path)
+    test_table: ResultsTable = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+    test_table.sqlite_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
+    test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
+    returned_dataframe = test_table.export_to_dataframe(5)
+    assert isinstance(returned_dataframe, pd.DataFrame)
+    assert list(returned_dataframe.columns) == ['parent_mass_query_spectrum', 'ms2query_model_prediction',
+       'parent_mass_analog', 'inchikey', 'spectrum_ids',
+       'analog_compound_name', 'smiles', 'cf_kingdom', 'cf_superclass',
+       'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results',
+       'npc_superclass_results', 'npc_pathway_results']
+    # Check if one of the classifiers is filled in
+    assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
+    assert len(returned_dataframe.index) == 5
+    # Test if first row is correct
+    np.testing.assert_array_almost_equal(
+        list(returned_dataframe.iloc[0, :3]),
+        [905.9927235480093, 0.5706255, 466.200724],
+        5)
+    assert np.all(list(returned_dataframe.iloc[0, 3:10]) ==
+                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])

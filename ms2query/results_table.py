@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
-from typing import Union, List
+from typing import Union
+from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.utils import get_classifier_from_csv_file
 
 
 class ResultsTable:
@@ -19,15 +21,39 @@ class ResultsTable:
 
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
-                 query_spectrum,
-                 sqlite_file_name,
+                 query_spectrum: Spectrum,
+                 sqlite_file_name: str,
+                 classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
-        self.preselection_cut_off = preselection_cut_off
         self.ms2deepscores = ms2deepscores
+        self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
         self.parent_mass = query_spectrum.get("parent_mass")
         self.sqlite_file_name = sqlite_file_name
+        self.classifier_csv_file_name = classifier_csv_file_name
+
+    def __eq__(self, other):
+        if not isinstance(other, ResultsTable):
+            return False
+
+        # Round is used to prevent returning float for float rounding errors
+        return other.preselection_cut_off == self.preselection_cut_off and \
+            other.parent_mass == self.parent_mass and \
+            self.data.round(5).equals(other.data.round(5)) and \
+            self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
+            self.query_spectrum.__eq__(other.query_spectrum) and \
+            self.sqlite_file_name == other.sqlite_file_name
+
+    def assert_results_table_equal(self, other):
+        """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
+        assert isinstance(other, ResultsTable), "Expected ResultsTable"
+        assert other.preselection_cut_off == self.preselection_cut_off
+        assert other.parent_mass == self.parent_mass
+        assert self.data.round(5).equals(other.data.round(5))
+        assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5))
+        assert self.query_spectrum.peaks == other.query_spectrum.peaks
+        assert self.query_spectrum.losses == other.query_spectrum.losses
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
@@ -75,75 +101,67 @@ class ResultsTable:
                               inplace=True)
 
     def get_training_data(self) -> pd.DataFrame:
-        return self.data.drop("inchikey", axis=1)
+        return self.data[["parent_mass*0.001",
+                          "mass_similarity",
+                          "s2v_score",
+                          "ms2ds_score",
+                          "average_ms2ds_score_for_inchikey14",
+                          "nr_of_spectra_with_same_inchikey14*0.01",
+                          "chemical_neighbourhood_score",
+                          "average_tanimoto_score_for_chemical_neighbourhood_score",
+                          "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]]
 
-    def create_dataframe_with_compound_classification(
+    def export_to_dataframe(
             self,
-            nr_of_top_spectra,
-            classifiers_file_name,
-            add_selection: Union[bool, List[str]] = False):
-        selected_results = \
+            nr_of_top_spectra: int,
+            minimal_ms2query_score: Union[float, int] = 0.0
+            ) -> Union[None, pd.DataFrame]:
+        """Returns a dataframe with analogs results from results table
+
+        Args:
+        ------
+        nr_of_top_spectra:
+            Number of spectra that should be returned.
+            The best spectra are selected based on highest MS2QUery meta score
+        minimal_ms2query_score:
+            The minimal ms2query metascore needed to be returned in the dataframe
+        """
+        # Select top results
+        selected_analogs: pd.DataFrame = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
-        metadata_list = list(get_metadata_from_sqlite(self.sqlite_file_name,
-                                       list(selected_results.index)).values())
-        compound_names = [metadata["compound_name"] for metadata in metadata_list]
-        selected_results["compound_name"] = compound_names
-        selected_results = add_classifiers_to_df(classifiers_file_name,
-                                                 selected_results)
-        if add_selection is not False:
-            selected_results = selected_results[add_selection]
-        selected_results.sort_values(
-            by=["ms2query_model_prediction"], ascending=False, inplace=True)
-        selected_results.set_index("spectrum_ids", inplace=True)
-        return selected_results
 
+        # Remove analogs that do not have a high enough ms2query score
+        selected_analogs = selected_analogs[
+            (selected_analogs["ms2query_model_prediction"] > minimal_ms2query_score)]
+        # Return None if know analogs are selected.
+        if selected_analogs.empty:
+            return None
+        # Add inchikey and ms2query model prediction to results df
+        results_df = selected_analogs.loc[:, ["ms2query_model_prediction",
+                                              "inchikey"]]
 
-def get_classifier_from_csv_file(classifier_file_name: str,
-                                 list_of_inchikeys: List[str]):
-    """Returns a dataframe with the classifiers for a selection of inchikeys
+        # Add the parent masses of the analogs
+        results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
+        # Add the parent mass of the query spectrum
+        results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
+        # For each analog the compound name is selected from sqlite
+        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
+                                                 list(results_df.index))
+        compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
+                              for analog_spectrum_id
+                              in list(results_df.index)]
+        results_df["analog_compound_name"] = compound_name_list
+        # Removes index and reorders columns so spectrum_id is not the first column
+        results_df.reset_index(inplace=True)
+        results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
+        # Add classifiers to dataframe
+        if self.classifier_csv_file_name is not None:
+            classifiers_df = \
+                get_classifier_from_csv_file(self.classifier_csv_file_name,
+                                             results_df["inchikey"].unique())
+            # data = results_df.reset_index()
+            results_df = pd.merge(results_df,
+                                  classifiers_df,
+                                  on="inchikey")
 
-    Args:
-    ------
-    csv_file_name:
-        File name of text file with tap separated columns, with classifier
-        information.
-    list_of_inchikeys:
-        list with the first 14 letters of inchikeys, that are selected from
-        the classifier file.
-    """
-    classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
-                       "cf_superclass", "cf_class", "cf_subclass",
-                       "cf_direct_parent", "npc_class_results",
-                       "npc_superclass_results", "npc_pathway_results"]
-    list_of_classifiers = []
-    for inchikey in list_of_inchikeys:
-        classifiers = classifiers_df.loc[
-            classifiers_df["inchi_key"].str.startswith(inchikey)] # pylint: disable=unsubscriptable-object
-        if classifiers.empty:
-            list_of_classifiers.append(pd.DataFrame(np.array(
-                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)])
-                , columns=columns_to_keep))
-        else:
-            classifiers = classifiers[columns_to_keep].iloc[:1]
-
-            list_of_classifiers.append(classifiers)
-    if len(list_of_classifiers) == 0:
-        results = pd.DataFrame(columns=columns_to_keep)
-    else:
-        results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
-
-    results["inchi_key"] = list_of_inchikeys
-    results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
-    return results
-
-
-def add_classifiers_to_df(classifier_csv_file, features_df):
-    classifiers_df = \
-        get_classifier_from_csv_file(classifier_csv_file,
-                                     features_df["inchikey"].unique())
-    data = features_df.reset_index()
-    data_with_added_classifiers = pd.merge(data,
-                                           classifiers_df,
-                                           on="inchikey")
-    return data_with_added_classifiers
+        return results_df

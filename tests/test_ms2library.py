@@ -1,12 +1,16 @@
 import os
 import math
+import re
 import numpy as np
 import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from ms2query.ms2library import MS2Library, get_ms2query_model_prediction
+from tensorflow.keras.models import load_model as load_nn_model
+from ms2query.ms2library import MS2Library
+from ms2query.ms2library import get_ms2query_model_prediction_single_spectrum
 from ms2query.utils import load_pickled_file
+from tests.test_utils import create_test_classifier_csv_file
 from ms2query.results_table import ResultsTable
 
 
@@ -32,9 +36,12 @@ def file_names():
         path_to_tests_dir,
         "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
     spectrum_id_column_name = "spectrumid"
+    ms2q_model_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
     return sqlite_file_loc, spec2vec_model_file_loc, \
         s2v_pickled_embeddings_file, ms2ds_model_file_name, \
-        ms2ds_embeddings_file_name, spectrum_id_column_name
+        ms2ds_embeddings_file_name, spectrum_id_column_name, ms2q_model_file_name
 
 
 @pytest.fixture
@@ -86,13 +93,14 @@ def test_ms2library_set_settings(file_names):
     """Tests creating a ms2library object"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name,
                               cosine_score_tolerance=0.2)
 
@@ -110,89 +118,170 @@ def test_select_best_matches():
 def test_select_potential_true_matches(file_names, test_spectra):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
     results = \
         test_library.select_potential_true_matches(test_spectra,
                                                    mass_tolerance=30,
                                                    s2v_score_threshold=0.6)
-    assert isinstance(results, list), "Expected List"
-    for df in results:
-        assert isinstance(df, pd.DataFrame), "Expected a list with dataframes"
-        print(df)
-    expected_df_1 = pd.DataFrame(
-        data={"spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                               'CCMSLIB00000001648', 'CCMSLIB00000001650'],
-              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844],
-              "parent_mass_difference":
-                  [878.453724,878.453782,878.332724,878.410782]})
-    expected_df_2 = pd.DataFrame(
-        data={"spectrum_id": ["CCMSLIB00000001548"],
-              "s2v_score": [0.995251],
-              "parent_mass_difference": [939.242724]})
-    pd.testing.assert_frame_equal(results[0],
-                                  expected_df_1.set_index("spectrum_id"))
-    pd.testing.assert_frame_equal(results[1],
-                                  expected_df_2.set_index("spectrum_id"))
+    assert isinstance(results, pd.DataFrame), "Expected DataFrame"
+    expected_df = pd.DataFrame(
+        data={"query_spectrum_nr": [0, 0, 0, 0, 1],
+              "query_spectrum_parent_mass": [905.992724, 905.992724, 905.992724,
+                                             905.992724, 926.992723],
+              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844, 0.995251],
+              "match_spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
+                                    'CCMSLIB00000001648', 'CCMSLIB00000001650',
+                                    "CCMSLIB00000001548"],
+              "match_parent_mass":
+                  [878.453724, 878.453782, 878.332724, 878.410782, 939.242724],
+              "match_inchikey": ["SATIISJKSAELDC", "SATIISJKSAELDC",
+                                 "JXOFEBNJOOEXJY", "JXOFEBNJOOEXJY",
+                                 "KNGPFNUOXXLKCN"]})
+
+    pd.testing.assert_frame_equal(results,
+                                  expected_df,
+                                  check_dtype=False)
 
 
-def test_get_analog_search_scores(file_names, test_spectra):
-    """Test collect_matches_data_multiple_spectra method of ms2library"""
+def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              classifier_csv_file=classifiers_file_location,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    test_library.store_potential_true_matches(test_spectra,
+                                              os.path.join(tmp_path, "results"),
+                                              mass_tolerance=30,
+                                              s2v_score_threshold=0.6)
+    expected_results = ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
+                                '0,905.9927235480093,0.910426948299387,CCMSLIB00000001631,878.453724,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                                '0,905.9927235480093,0.9738527174501868,CCMSLIB00000001633,878.4537819999999,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                                '0,905.9927235480093,0.9784846351429164,CCMSLIB00000001648,878.332724,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                                '0,905.9927235480093,0.9798438405143981,CCMSLIB00000001650,878.4107819999999,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                                '1,926.9927235480093,0.9952514653551044,CCMSLIB00000001548,939.242724,KNGPFNUOXXLKCN,Hoiamide B,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n']
+    with open(os.path.join(tmp_path, "results"), "r") as results_file:
+        results_list = results_file.readlines()
+        for row_nr, result_row in enumerate(results_list):
+            expected_result_row_split = expected_results[row_nr].split(sep=",")
+            result_row_split = result_row.split(sep=",")
+            assert len(expected_result_row_split) == len(result_row_split), "Different number of columns expected"
+            for column_nr, expected_value in enumerate(expected_result_row_split):
+                # To prevent rounding errors the string representation of floats have to be converted to float
+                if re.match(r'^-?\d+(?:\.\d+)$', expected_value) is not None:
+                    np.testing.assert_almost_equal(float(expected_value), float(result_row_split[column_nr])), \
+                        f"Expected different value: {expected_value} got: {result_row_split[column_nr]}"
+                else:
+                    assert expected_value == result_row_split[column_nr], \
+                        f"Expected different value: {expected_value} got: {result_row_split[column_nr]}"
+
+
+def test_store_potential_true_matches_no_matches_found(file_names, test_spectra, tmp_path):
+    """Test if a csv file with only columns is returned, if no matches are found"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              classifier_csv_file=classifiers_file_location,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    test_library.store_potential_true_matches(test_spectra,
+                                              os.path.join(tmp_path, "results"),
+                                              mass_tolerance=1,
+                                              s2v_score_threshold=0.6)
+    with open(os.path.join(tmp_path, "results"), "r") as results_file:
+        results_list = results_file.readlines()
+        assert results_list == ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name\n'], \
+            "Expected different results in csv file"
+
+def test_analog_search(file_names, test_spectra):
+    """Test analog search"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
     cutoff = 20
-    result = test_library._get_analog_search_scores(test_spectra, cutoff)
-    print(result)
-    pd.set_option("display.max_columns", 15)
-    pd.set_option("display.width", 1000)
+    result = test_library.analog_search_return_results_tables(test_spectra, cutoff)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_matches_with_averages.pickle"))
-    assert isinstance(result, list), "Expected list"
-    for result_table in result:
-        assert isinstance(result_table, ResultsTable), "Expected ResultsTable"
-        assert result_table.data.shape == (cutoff, 10), "Expected different data shape"
-        assert result_table.preselection_cut_off == cutoff, "Expected different cutoff"
-    assert_frame_equal(result[0].get_training_data(),
-                       expected_result['CCMSLIB00000001760'],
-                       check_names=False)
-    assert_frame_equal(result[1].get_training_data(),
-                       expected_result['CCMSLIB00000001761'],
-                       check_names=False)
-    np.testing.assert_almost_equal(result[0].parent_mass,
-                                   905.99272348, decimal=5)
-    np.testing.assert_almost_equal(result[1].parent_mass,
-                                   905.010782, decimal=5)
+        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
+    for i in range(len(expected_result)):
+        result[i].assert_results_table_equal(expected_result[i])
+
+
+def test_calculate_scores_for_metadata(file_names, test_spectra):
+    """Test collect_matches_data_multiple_spectra method of ms2library"""
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+
+    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
+    results_table = ResultsTable(
+        preselection_cut_off=20,
+        ms2deepscores=ms2dscores.iloc[:, 0],
+        query_spectrum=test_spectra[0],
+        sqlite_file_name=sqlite_file_loc)
+    results_table = test_library._calculate_scores_for_metascore(results_table)
+
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
+    results_table.assert_results_table_equal(expected_result)
 
 
 def test_get_all_ms2ds_scores(file_names, test_spectra):
     """Test get_all_ms2ds_scores method of ms2library"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
     result = test_library._get_all_ms2ds_scores(test_spectra)
@@ -208,13 +297,14 @@ def test_get_s2v_scores(file_names, test_spectra):
     """Test _get_s2v_scores method of MS2Library"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     result = test_library._get_s2v_scores(
         test_spectra[0], ["CCMSLIB00000001572", "CCMSLIB00000001648"])
@@ -225,13 +315,14 @@ def test_get_s2v_scores(file_names, test_spectra):
 def test_get_average_ms2ds_for_inchikey14(file_names):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     inchickey14s = {"BKUKTJSDOUXYFL", "BTVYFIMKUHNOBZ"}
     ms2ds_scores = pd.Series(
@@ -248,13 +339,14 @@ def test_get_average_ms2ds_for_inchikey14(file_names):
 def test_get_chemical_neighbourhood_scores(file_names):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name = file_names
+        spectrum_id_column_name, ms2q_model_file_name = file_names
 
     test_library = MS2Library(sqlite_file_loc,
                               spec2vec_model_file_loc,
                               ms2ds_model_file_name,
                               s2v_pickled_embeddings_file,
                               ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     average_inchickey_scores = \
         {'BKUKTJSDOUXYFL': (0.8, 3),
@@ -282,19 +374,40 @@ def test_get_chemical_neighbourhood_scores(file_names):
     assert math.isclose(scores[2], 0.46646038479969587)
 
 
-def test_get_ms2query_model_prediction():
-    """Test get_ms2query_model_prediction method of ms2library"""
-    result_tables = load_pickled_file(os.path.join(
+def test_get_ms2query_model_prediction_single_spectrum():
+    results_table = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_result_tables.pickle"))
-
+        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
-    result = get_ms2query_model_prediction(result_tables,
-                                           ms2q_model_file_name)
-    assert isinstance(result, list), "Expected dictionary"
-    for result_table in result:
-        assert isinstance(result_table, ResultsTable)
-        assert isinstance(result_table.data, pd.DataFrame)
-        assert len(result_table.data.columns) == 11
+    ms2query_nn_model = load_nn_model(ms2q_model_file_name)
+    results = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))[0]
+    expected_result.assert_results_table_equal(results)
+
+
+def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+
+    test_library = MS2Library(sqlite_file_loc,
+                              spec2vec_model_file_loc,
+                              ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file,
+                              ms2ds_embeddings_file_name,
+                              ms2q_model_file_name,
+                              spectrum_id_column_name=spectrum_id_column_name)
+    results_csv_file = os.path.join(tmp_path, "test_csv_analog_search")
+    test_library.analog_search_store_in_csv(test_spectra, results_csv_file)
+    assert os.path.exists(results_csv_file)
+    with open(results_csv_file, "r") as test_file:
+        assert test_file.readlines() == [
+            ',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+            '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
+            '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
+            "Expected different results to be stored in csv file"

@@ -5,6 +5,7 @@ from tqdm import tqdm
 from matchms.typing import SpectrumType
 from ms2query.utils import load_pickled_file
 from ms2query import MS2Library
+from ms2query import ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 
@@ -73,6 +74,7 @@ class DataCollectorForTraining(MS2Library):
                          ms2ds_model_file_name,
                          pickled_s2v_embeddings_file_name,
                          pickled_ms2ds_embeddings_file_name,
+                         None,
                          **settings)
         self.tanimoto_scores: pd.DataFrame = \
             load_pickled_file(tanimoto_scores_df_file_name)
@@ -129,19 +131,23 @@ class DataCollectorForTraining(MS2Library):
         query_spectra:
             List of Spectrum objects
         """
-        query_spectra_matches_info = \
-            self._get_analog_search_scores(query_spectra,
-                                           self.preselection_cut_off)
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        for result_table in tqdm(query_spectra_matches_info,
-                                 desc="Get tanimoto scores",
-                                 disable=not self.settings["progress_bars"]):
-            query_spectrum = result_table.query_spectrum
-            library_spectrum_ids = list(result_table.data.index)
+        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+        for i, query_spectrum in tqdm(enumerate(query_spectra),
+                                      desc="Get scores and tanimoto scores",
+                                      disable=not self.settings["progress_bars"]):
+            results_table = ResultsTable(
+                preselection_cut_off=self.preselection_cut_off,
+                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_location)
+
+            results_table = self._calculate_scores_for_metascore(results_table)
+            library_spectrum_ids = list(results_table.data.index)
             # Select the features (remove inchikey, since this should not be
             # used for training
-            features_dataframe = result_table.get_training_data()
+            features_dataframe = results_table.get_training_data()
             # Get tanimoto scores, spectra that do not have an inchikey are not
             # returned.
             tanimoto_scores_for_query_spectrum = \
