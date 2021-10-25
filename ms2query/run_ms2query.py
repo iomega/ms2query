@@ -3,7 +3,7 @@ from typing import Union, Dict
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
 from ms2query.utils import add_unknown_charges_to_spectra
-from ms2query.utils import convert_files_to_matchms_files
+from ms2query.utils import convert_files_to_matchms_spectrum_objects
 from urllib.request import urlretrieve
 
 
@@ -113,7 +113,7 @@ def run_complete_folder(ms2library: MS2Library,
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            spectra = convert_files_to_matchms_files(os.path.join(folder_with_spectra, file_name))[:2]
+            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
             add_unknown_charges_to_spectra(spectra)
             if analog_search:
                 if not os.path.exists(os.path.join(results_folder, "analog_search")):
