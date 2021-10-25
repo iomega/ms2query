@@ -30,10 +30,9 @@ This default library is trained on the GNPS library of 2021-04-09.
 After downloading it runs a search on 
 ```python
 import os
-from ms2query.run_ms2query import automatically_download_models
-from ms2query.run_ms2query import default_library_file_names
-from ms2query.run_ms2query import run_complete_folder
-from ms2query.run_ms2query import create_default_library_object
+from ms2query.run_ms2query import automatically_download_models, \
+    default_library_file_names, run_complete_folder, create_default_library_object
+
 
 # Set the location where all your downloaded model files are stored
 ms2query_library_files_directory = "./ms2query_library_files"
