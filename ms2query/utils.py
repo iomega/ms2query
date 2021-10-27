@@ -44,7 +44,8 @@ def convert_files_to_matchms_spectrum_objects(file_location
         return list(importing.load_from_usi(file_location))
     if file_extension == ".pickle":
         return load_pickled_file(file_location)
-    print(f"File extension of file file location is not recognized")
+    print(f"File extension of file: {file_location} is not recognized")
+    return None
 
 
 def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
