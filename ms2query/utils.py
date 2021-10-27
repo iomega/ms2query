@@ -27,7 +27,7 @@ def convert_files_to_matchms_spectrum_objects(file_location
         Path to file containing spectra, with file extension "mzML", "json", "mgf", "msp",
         "mzxml", "usi" or "pickle"
     """
-    assert os.path.exists(file_location), "The specified file does not exists"
+    assert os.path.exists(file_location), f"The specified file: {file_location} does not exists"
 
     file_extension = os.path.splitext(file_location)[1].lower()
     if file_extension == ".mzml":
