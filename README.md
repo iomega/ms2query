@@ -27,23 +27,23 @@ Below an example script is given.
 This script will first download files for a default MS2Query library.
 This default library is trained on the GNPS library of 2021-04-09.
 
-After downloading it runs a search on 
+After downloading it runs a search on
+
 ```python
 import os
-from ms2query.run_ms2query import automatically_download_models, \
-    default_library_file_names, run_complete_folder, create_default_library_object
-
+from ms2query.run_ms2query import download_default_models, \
+    default_library_file_base_names, run_complete_folder
+from ms2query.ms2library import create_library_object_from_one_dir
 
 # Set the location where all your downloaded model files are stored
 ms2query_library_files_directory = "./ms2query_library_files"
 
 # Downloads pretrained models and files for MS2Query (>10GB download)
-automatically_download_models(ms2query_library_files_directory, default_library_file_names())
+download_default_models(ms2query_library_files_directory, default_library_file_base_names())
 
 # Create a MS2Library object 
-ms2library = create_default_library_object(
-    ms2query_library_files_directory, default_library_file_names())
-
+ms2library = create_library_object_from_one_dir(
+    ms2query_library_files_directory, default_library_file_base_names())
 
 # define the folder in which your spectra are stored.
 # Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
