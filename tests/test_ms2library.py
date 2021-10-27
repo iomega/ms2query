@@ -7,8 +7,8 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
 from tensorflow.keras.models import load_model as load_nn_model
-from ms2query.ms2library import MS2Library
-from ms2query.ms2library import get_ms2query_model_prediction_single_spectrum
+from ms2query.ms2library import MS2Library, get_ms2query_model_prediction_single_spectrum, \
+    create_library_object_from_one_dir
 from ms2query.utils import load_pickled_file
 from tests.test_utils import create_test_classifier_csv_file
 from ms2query.results_table import ResultsTable
@@ -411,3 +411,20 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
             '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
             '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
             "Expected different results to be stored in csv file"
+
+
+def test_create_library_object_from_one_dir():
+    """Test creating a MS2Library object with create_library_object_from_one_dir"""
+    path_to_tests_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/')
+    file_names_dict = {"sqlite": "general_test_files/100_test_spectra.sqlite",
+                       "classifiers": None,
+                       "s2v_model": "general_test_files/100_test_spectra_s2v_model.model",
+                       "ms2ds_model": "general_test_files/ms2ds_siamese_210301_5000_500_400.hdf5",
+                       "ms2query_model": "test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5",
+                       "s2v_embeddings": "general_test_files/100_test_spectra_s2v_embeddings.pickle",
+                       "ms2ds_embeddings": "general_test_files/100_test_spectra_ms2ds_embeddings.pickle"}
+    library = create_library_object_from_one_dir(path_to_tests_dir,
+                                                 file_names_dict)
+    assert isinstance(library, MS2Library)

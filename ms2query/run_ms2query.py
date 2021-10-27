@@ -7,8 +7,8 @@ from ms2query.utils import convert_files_to_matchms_spectrum_objects
 from urllib.request import urlretrieve
 
 
-def default_library_file_names() -> Dict[str, str]:
-    """Returns a dictionary with the file names of default files for a MS2Library"""
+def default_library_file_base_names() -> Dict[str, str]:
+    """Returns a dictionary with the base names of default files for a MS2Library"""
     return {"sqlite": "ALL_GNPS_210409_train_split.sqlite",
             "classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt",
             "s2v_model": "ALL_GNPS_210409_Spec2Vec_ms2query.model",
@@ -18,39 +18,8 @@ def default_library_file_names() -> Dict[str, str]:
             "ms2ds_embeddings": "ms2ds_embeddings_train_spectra_210426.pickle"}
 
 
-def create_default_library_object(directory: str,
-                                  file_name_dictionary: Dict[str, str]
-                                  ) -> MS2Library:
-    """Creates a library object for specified directory and file names
-
-    For default file names the function default_library_file_names can be run.
-
-    Args:
-    ------
-    directory:
-        Path to the directory in which the files are stored
-    file_name_dictionary:
-        A dictionary with as keys the type of file and as values the file names
-    """
-    sqlite_file = os.path.join(directory, file_name_dictionary["sqlite"])
-    classifiers_file = os.path.join(directory, file_name_dictionary["classifiers"])
-
-    # Models
-    s2v_model_file = os.path.join(directory, file_name_dictionary["s2v_model"])
-    ms2ds_model_file = os.path.join(directory, file_name_dictionary["ms2ds_model"])
-    ms2query_model = os.path.join(directory, file_name_dictionary["ms2query_model"])
-
-    # Embeddings
-    s2v_embeddings_file = os.path.join(directory, file_name_dictionary["s2v_embeddings"])
-    ms2ds_embeddings_file = os.path.join(directory, file_name_dictionary["ms2ds_embeddings"])
-
-    return MS2Library(sqlite_file, s2v_model_file, ms2ds_model_file,
-                      s2v_embeddings_file, ms2ds_embeddings_file,
-                      ms2query_model, classifiers_file)
-
-
-def automatically_download_models(dir_to_store_files: str,
-                                  file_name_dict: Dict[str, str]):
+def download_default_models(dir_to_store_files: str,
+                            file_name_dict: Dict[str, str]):
     """Downloads files from Zenodo
 
     Args:
@@ -67,7 +36,7 @@ def automatically_download_models(dir_to_store_files: str,
     for file_name in tqdm(file_name_dict.values(),
                           "Downloading library files"):
         complete_url = zenodo_files_location + file_name + "?download=1"
-        file_location = dir_to_store_files + file_name
+        file_location = os.path.join(dir_to_store_files, file_name)
         if not os.path.exists(file_location):
             urlretrieve(complete_url, file_location)
         else:

@@ -612,3 +612,37 @@ def get_ms2query_model_prediction_single_spectrum(
     result_table.add_ms2query_meta_score(predictions)
 
     return result_table
+
+
+def create_library_object_from_one_dir(directory: str,
+                                       file_name_dictionary: Dict[str, str]
+                                       ) -> MS2Library:
+    """Creates a library object for specified directory and file names
+
+    For default file names the function run_ms2query.default_library_file_names can be used
+
+    Args:
+    ------
+    directory:
+        Path to the directory in which the files are stored
+    file_name_dictionary:
+        A dictionary with as keys the type of file and as values the base names of the files
+    """
+    sqlite_file_name = os.path.join(directory, file_name_dictionary["sqlite"])
+    if file_name_dictionary["classifiers"] is not None:
+        classifiers_file_name = os.path.join(directory, file_name_dictionary["classifiers"])
+    else:
+        classifiers_file_name = None
+
+    # Models
+    s2v_model_file_name = os.path.join(directory, file_name_dictionary["s2v_model"])
+    ms2ds_model_file_name = os.path.join(directory, file_name_dictionary["ms2ds_model"])
+    ms2query_model_file_name = os.path.join(directory, file_name_dictionary["ms2query_model"])
+
+    # Embeddings
+    s2v_embeddings_file_name = os.path.join(directory, file_name_dictionary["s2v_embeddings"])
+    ms2ds_embeddings_file_name = os.path.join(directory, file_name_dictionary["ms2ds_embeddings"])
+
+    return MS2Library(sqlite_file_name, s2v_model_file_name, ms2ds_model_file_name,
+                      s2v_embeddings_file_name, ms2ds_embeddings_file_name,
+                      ms2query_model_file_name, classifiers_file_name)
