@@ -108,24 +108,28 @@ def run_complete_folder(ms2library: MS2Library,
     # check if there is a results folder otherwise create one
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
+    if analog_search:
+        if not os.path.exists(os.path.join(results_folder, "analog_search")):
+            os.mkdir(os.path.join(results_folder, "analog_search"))
+    if library_search:
+        if not os.path.exists(os.path.join(results_folder, "library_search")):
+            os.mkdir(os.path.join(results_folder, "library_search"))
+
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
             spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
-            add_unknown_charges_to_spectra(spectra)
-            if analog_search:
-                if not os.path.exists(os.path.join(results_folder, "analog_search")):
-                    os.mkdir(os.path.join(results_folder, "analog_search"))
-                analogs_results_file_name = os.path.join(results_folder, "analog_search", os.path.splitext(file_name)[0] + ".csv")
-                ms2library.analog_search_store_in_csv(spectra,
-                                                      analogs_results_file_name,
-                                                      nr_of_top_analogs_to_save=nr_of_analogs_to_store,
-                                                      minimal_ms2query_metascore=minimal_ms2query_score)
-            if library_search:
-                if not os.path.exists(os.path.join(results_folder, "library_search")):
-                    os.mkdir(os.path.join(results_folder, "library_search"))
-                library_results_file_name = os.path.join(results_folder, "library_search", os.path.splitext(file_name)[0] + ".csv")
-                ms2library.store_potential_true_matches(spectra,
-                                                        library_results_file_name)
+            if spectra is not None:
+                add_unknown_charges_to_spectra(spectra)
+                if analog_search:
+                    analogs_results_file_name = os.path.join(results_folder, "analog_search", os.path.splitext(file_name)[0] + ".csv")
+                    ms2library.analog_search_store_in_csv(spectra,
+                                                          analogs_results_file_name,
+                                                          nr_of_top_analogs_to_save=nr_of_analogs_to_store,
+                                                          minimal_ms2query_metascore=minimal_ms2query_score)
+                if library_search:
+                    library_results_file_name = os.path.join(results_folder, "library_search", os.path.splitext(file_name)[0] + ".csv")
+                    ms2library.store_potential_true_matches(spectra,
+                                                            library_results_file_name)
