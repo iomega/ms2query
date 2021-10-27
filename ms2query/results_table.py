@@ -126,7 +126,7 @@ class ResultsTable:
             Number of spectra that should be returned.
             The best spectra are selected based on highest MS2Query meta score
         minimal_ms2query_score:
-            The minimal ms2query metascore needed to be returned in the dataframe
+            Only results with ms2query metascore >= minimal_ms2query_score will be returned.
         """
         # Select top results
         selected_analogs: pd.DataFrame = \
