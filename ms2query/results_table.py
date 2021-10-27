@@ -25,6 +25,8 @@ class ResultsTable:
                  sqlite_file_name: str,
                  classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
+        # pylint: disable=too-many-arguments
+
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.ms2deepscores = ms2deepscores
         self.preselection_cut_off = preselection_cut_off

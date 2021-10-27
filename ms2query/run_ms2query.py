@@ -105,6 +105,8 @@ def run_complete_folder(ms2library: MS2Library,
     library_search:
         If True a library search (Finding true matches) is performed
     """
+    # pylint: disable=too-many-arguments
+
     # check if there is a results folder otherwise create one
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)

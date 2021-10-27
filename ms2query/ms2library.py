@@ -94,7 +94,7 @@ class MS2Library:
         self.classifier_file_location = classifier_csv_file
         self.sqlite_file_location = sqlite_file_location
         assert os.path.isfile(sqlite_file_location), f"The given sqlite file does not exist: {sqlite_file_location}"
-        self.ms2query_model_file_location = ms2query_model_file_name
+        self.ms2query_model_file_name = ms2query_model_file_name
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
@@ -164,7 +164,7 @@ class MS2Library:
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
+        ms2query_nn_model = load_nn_model(self.ms2query_model_file_name)
 
         result_tables = []
         for i, query_spectrum in \
@@ -213,20 +213,25 @@ class MS2Library:
             Spectra for which no analog with this minimal metascore was found,
             will not be stored in the csv file.
         """
+        # pylint: disable=too-many-arguments
+
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
-        with open(results_csv_file_location, "w") as csv_file:
+        with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_location is None:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n")
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name\n")
             else:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,"
+                               "cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
+        ms2query_nn_model = load_nn_model(self.ms2query_model_file_name)
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
