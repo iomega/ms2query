@@ -24,10 +24,13 @@ pip install ms2query
 
 ### Run MS2Query
 Below an example script is given.
+Before running place the variables ms2query_library_files_directory and ms2_spectra_directory with the correct directories.
+
 This script will first download files for a default MS2Query library.
 This default library is trained on the GNPS library of 2021-04-09.
 
-After downloading it runs a search on
+After downloading a library search and analog search is performed on the query spectra in your directory
+The results are stored as csv files in a results directory within the same directory as your query spectra
 
 ```python
 import os
@@ -37,6 +40,9 @@ from ms2query.ms2library import create_library_object_from_one_dir
 
 # Set the location where all your downloaded model files are stored
 ms2query_library_files_directory = "./ms2query_library_files"
+# define the folder in which your query spectra are stored.
+# Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
+ms2_spectra_directory = "specify_directory"
 
 # Downloads pretrained models and files for MS2Query (>10GB download)
 download_default_models(ms2query_library_files_directory, default_library_file_base_names())
@@ -45,9 +51,6 @@ download_default_models(ms2query_library_files_directory, default_library_file_b
 ms2library = create_library_object_from_one_dir(
     ms2query_library_files_directory, default_library_file_base_names())
 
-# define the folder in which your spectra are stored.
-# Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
-ms2_spectra_directory = "specify_directory"
 folder_to_store_results = os.path.join(ms2_spectra_directory, "results")
 
 # Run library search and analog search on your files. 
