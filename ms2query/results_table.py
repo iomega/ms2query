@@ -124,7 +124,7 @@ class ResultsTable:
         ------
         nr_of_top_spectra:
             Number of spectra that should be returned.
-            The best spectra are selected based on highest MS2QUery meta score
+            The best spectra are selected based on highest MS2Query meta score
         minimal_ms2query_score:
             The minimal ms2query metascore needed to be returned in the dataframe
         """
