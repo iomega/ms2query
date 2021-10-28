@@ -69,13 +69,8 @@ class DataCollectorForTraining(MS2Library):
         progress_bars:
             If True progress bars will be shown. Default = True"""
         # pylint: disable=too-many-arguments
-        super().__init__(sqlite_file_location,
-                         s2v_model_file_name,
-                         ms2ds_model_file_name,
-                         pickled_s2v_embeddings_file_name,
-                         pickled_ms2ds_embeddings_file_name,
-                         None,
-                         **settings)
+        super().__init__(sqlite_file_location, s2v_model_file_name, ms2ds_model_file_name,
+                         pickled_s2v_embeddings_file_name, pickled_ms2ds_embeddings_file_name, None, **settings)
         self.tanimoto_scores: pd.DataFrame = \
             load_pickled_file(tanimoto_scores_df_file_name)
         self.training_spectra = minimal_processing_multiple_spectra(
@@ -141,7 +136,7 @@ class DataCollectorForTraining(MS2Library):
                 preselection_cut_off=self.preselection_cut_off,
                 ms2deepscores=all_ms2ds_scores.iloc[:, i],
                 query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location)
+                sqlite_file_name=self.sqlite_file_name)
 
             results_table = self._calculate_scores_for_metascore(results_table)
             library_spectrum_ids = list(results_table.data.index)
@@ -175,8 +170,6 @@ class DataCollectorForTraining(MS2Library):
         Spectra in spectra_ids_list without inchikey are removed.
         Args:
         ------
-        sqlite_file_location:
-            location of sqlite file with spectrum info
         query_spectrum:
             Single Spectrum, the tanimoto scores are calculated between this
             spectrum and the spectra in match_spectrum_ids.
@@ -191,7 +184,7 @@ class DataCollectorForTraining(MS2Library):
 
         # Get inchikeys belonging to spectra ids
         metadata_dict = get_metadata_from_sqlite(
-            self.sqlite_file_location,
+            self.sqlite_file_name,
             spectra_ids_list,
             self.settings["spectrum_id_column_name"])
         unfiltered_inchikeys = [metadata_dict[spectrum_id]["inchikey"]

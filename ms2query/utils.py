@@ -13,7 +13,7 @@ def load_pickled_file(filename: str):
     return loaded_object
 
 
-def convert_files_to_matchms_spectrum_objects(file_location
+def convert_files_to_matchms_spectrum_objects(file_name
                                               ) -> Union[List[Spectrum], None]:
     """Loads spectra from your spectrum file into memory as matchms Spectrum object
 
@@ -23,28 +23,28 @@ def convert_files_to_matchms_spectrum_objects(file_location
 
     Args:
     -----
-    file_location:
+    file_name:
         Path to file containing spectra, with file extension "mzML", "json", "mgf", "msp",
         "mzxml", "usi" or "pickle"
     """
-    assert os.path.exists(file_location), f"The specified file: {file_location} does not exists"
+    assert os.path.exists(file_name), f"The specified file: {file_name} does not exists"
 
-    file_extension = os.path.splitext(file_location)[1].lower()
+    file_extension = os.path.splitext(file_name)[1].lower()
     if file_extension == ".mzml":
-        return list(importing.load_from_mzml(file_location))
+        return list(importing.load_from_mzml(file_name))
     if file_extension == ".json":
-        return list(importing.load_from_json(file_location))
+        return list(importing.load_from_json(file_name))
     if file_extension == ".mgf":
-        return list(importing.load_from_mgf(file_location))
+        return list(importing.load_from_mgf(file_name))
     if file_extension == ".msp":
-        return list(importing.load_from_msp(file_location))
+        return list(importing.load_from_msp(file_name))
     if file_extension == ".mzxml":
-        return list(importing.load_from_mzxml(file_location))
+        return list(importing.load_from_mzxml(file_name))
     if file_extension == ".usi":
-        return list(importing.load_from_usi(file_location))
+        return list(importing.load_from_usi(file_name))
     if file_extension == ".pickle":
-        return load_pickled_file(file_location)
-    print(f"File extension of file: {file_location} is not recognized")
+        return load_pickled_file(file_name)
+    print(f"File extension of file: {file_name} is not recognized")
     return None
 
 
@@ -81,6 +81,8 @@ def get_classifier_from_csv_file(classifier_file_name: str,
         list with the first 14 letters of inchikeys, that are selected from
         the classifier file.
     """
+    assert os.path.isfile(classifier_file_name), \
+        f"The given classifier csv file does not exist: {classifier_file_name}"
     classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
     columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
                        "cf_superclass", "cf_class", "cf_subclass",
