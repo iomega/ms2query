@@ -1,3 +1,4 @@
+import os.path
 from typing import List, Dict, Union, Tuple, Set
 import pandas as pd
 import numpy as np
@@ -10,8 +11,8 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
-    get_parent_mass, get_inchikey_information
-from ms2query.utils import load_pickled_file
+    get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
+from ms2query.utils import load_pickled_file, get_classifier_from_csv_file
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -35,16 +36,18 @@ class MS2Library:
 
     """
     def __init__(self,
-                 sqlite_file_location: str,
+                 sqlite_file_name: str,
                  s2v_model_file_name: str,
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
+                 ms2query_model_file_name: Union[str, None],
+                 classifier_csv_file_name: Union[str, None] = None,
                  **settings):
         """
         Parameters
         ----------
-        sqlite_file_location:
+        sqlite_file_name:
             The location at which the sqlite_file_is_stored. The file is
             expected to have 3 tables: tanimoto_scores, inchikeys and
             spectra_data.
@@ -60,6 +63,10 @@ class MS2Library:
         pickled_ms2ds_embeddings_file_name:
             File location of a pickled file with ms2ds embeddings in a
             pd.Dataframe with as index the spectrum id.
+        ms2query_model_file_name:
+            File location of ms2query model with .hdf5 extension.
+        classifier_csv_file_name:
+            Csv file location containing classifier annotations per inchikey
 
         **settings:
             As additional parameters predefined settings can be changed.
@@ -83,8 +90,15 @@ class MS2Library:
         # Change default settings to values given in **settings
         self.settings = self._set_settings(settings)
 
-        # Load models and set sqlite_file_location
-        self.sqlite_file_location = sqlite_file_location
+        # Load models and set file locations
+        self.classifier_file_name = classifier_csv_file_name
+        assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
+        self.sqlite_file_name = sqlite_file_name
+        if ms2query_model_file_name is not None:
+            self.ms2query_model = load_nn_model(ms2query_model_file_name)
+        else:
+            self.ms2query_model = None
+
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
@@ -96,13 +110,13 @@ class MS2Library:
 
         # load parent masses
         self.parent_masses_library = get_parent_mass(
-            self.sqlite_file_location,
+            self.sqlite_file_name,
             self.settings["spectrum_id_column_name"])
 
         # Load inchikey information into memory
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
-            get_inchikey_information(self.sqlite_file_location)
+            get_inchikey_information(self.sqlite_file_name)
         self.inchikey14s_of_spectra = {}
         for inchikey, list_of_spectrum_ids in \
                 self.spectra_of_inchikey14s.items():
@@ -135,41 +149,120 @@ class MS2Library:
             default_settings[attribute] = new_settings[attribute]
         return default_settings
 
-    def analog_search(self,
-                      query_spectra: List[Spectrum],
-                      ms2query_model_file_name: str,
-                      preselection_cut_off: int = 2000
-                      ) -> List[ResultsTable]:
-        """Returns a dictionary with a ResultTable for each query spectrum
+    def analog_search_return_results_tables(self,
+                                            query_spectra: List[Spectrum],
+                                            preselection_cut_off: int = 2000
+                                            ) -> List[ResultsTable]:
+        """Returns a list with a ResultTable for each query spectrum
 
         Args
         ----
         query_spectra:
             List of query spectra for which the best matches should be found
-        ms2query_model_file_name:
-            File name of a hdf5 file containing the ms2query model.
         preselection_cut_off:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
         """
-        # TODO: remove ms2query_model_file_name from input parameters
+        assert self.ms2query_model is not None, \
+            "MS2Query model should be given when creating ms2library object"
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        # Selects top 20 best matches based on ms2ds and calculates all scores
-        analog_search_scores = \
-            self._get_analog_search_scores(query_spectra, preselection_cut_off)
-        # Adds the ms2query model prediction to the dataframes
-        results_analog_search = \
-            get_ms2query_model_prediction(analog_search_scores,
-                                          ms2query_model_file_name)
-        return results_analog_search
+        # Calculate all ms2ds scores between all query and library spectra
+        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+
+        result_tables = []
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
+                     desc="collecting matches info",
+                     disable=not self.settings["progress_bars"]):
+            # Initialize result table
+            results_table = ResultsTable(
+                preselection_cut_off=preselection_cut_off,
+                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_name,
+                classifier_csv_file_name=self.classifier_file_name)
+            results_table = \
+                self._calculate_scores_for_metascore(results_table)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+            result_tables.append(results_table)
+        return result_tables
+
+    def analog_search_store_in_csv(self,
+                                   query_spectra: List[Spectrum],
+                                   results_csv_file_location: str,
+                                   preselection_cut_off: int = 2000,
+                                   nr_of_top_analogs_to_save: int = 1,
+                                   minimal_ms2query_metascore: Union[float, int] = 0.0
+                                   ) -> None:
+        """Stores the results of an analog in csv files.
+
+        This method is less memory intensive than analog_search_return_results_table,
+        since the results tables do not have to be kept in memory, since they are directly
+        stored in a csv file.
+
+        Args
+        ----
+        query_spectra:
+            List of query spectra for which the best matches should be found
+        results_csv_file_location:
+            file location were a csv file is created that stores the results
+        preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected. Default = 2000
+        nr_of_top_analogs_to_save:
+            The number of returned analogs that are stored.
+        minimal_ms2query_metascore:
+            The minimal ms2query metascore needed to be stored in the csv file.
+            Spectra for which no analog with this minimal metascore was found,
+            will not be stored in the csv file.
+        """
+        # pylint: disable=too-many-arguments
+
+        # Create csv file if it does not exist already
+        assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
+        assert self.ms2query_model is not None, \
+            "MS2Query model should be given when creating ms2library object"
+
+        with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
+            if self.classifier_file_name is None:
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name\n")
+            else:
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,"
+                               "cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
+        # preprocess spectra
+        query_spectra = clean_metadata(query_spectra)
+        query_spectra = minimal_processing_multiple_spectra(query_spectra)
+
+        # Calculate all ms2ds scores between all query and library spectra
+        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
+                     desc="collecting matches info",
+                     disable=not self.settings["progress_bars"]):
+            # Initialize result table
+            results_table = ResultsTable(
+                preselection_cut_off=preselection_cut_off,
+                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                query_spectrum=query_spectrum,
+                sqlite_file_name=self.sqlite_file_name,
+                classifier_csv_file_name=self.classifier_file_name)
+            results_table = \
+                self._calculate_scores_for_metascore(results_table)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save, minimal_ms2query_metascore)
+            if results_df is not None:
+                results_df.to_csv(results_csv_file_location, mode="a", header=False)
 
     def select_potential_true_matches(self,
                                       query_spectra: List[Spectrum],
                                       mass_tolerance: Union[float, int] = 0.1,
                                       s2v_score_threshold: float = 0.6
-                                      ) -> List[pd.DataFrame]:
+                                      ) -> pd.DataFrame:
         """Returns potential true matches for query spectra
 
         The spectra are selected that fall within the mass_tolerance and have a
@@ -189,14 +282,19 @@ class MS2Library:
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        found_matches_list = []
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="Selecting potential perfect matches",
-                                   disable=not self.settings["progress_bars"]):
+        found_matches = pd.DataFrame(columns=["query_spectrum_nr",
+                                              "query_spectrum_parent_mass",
+                                              "s2v_score",
+                                              "match_spectrum_id",
+                                              "match_parent_mass",
+                                              "match_inchikey"])
+        for query_spectrum_nr, query_spectrum in tqdm(enumerate(query_spectra),
+                                                      desc="Selecting potential perfect matches",
+                                                      disable=not self.settings["progress_bars"]):
             query_parent_mass = query_spectrum.get("parent_mass")
             # Preselection based on parent mass
             parent_masses_within_mass_tolerance = get_parent_mass_within_range(
-                self.sqlite_file_location,
+                self.sqlite_file_name,
                 query_parent_mass - mass_tolerance,
                 query_parent_mass + mass_tolerance,
                 self.settings["spectrum_id_column_name"])
@@ -204,75 +302,93 @@ class MS2Library:
                                         parent_masses_within_mass_tolerance]
             s2v_scores = self._get_s2v_scores(query_spectrum,
                                               selected_library_spectra)
-            found_matches = pd.DataFrame(columns=["spectrum_id", "s2v_score"])
-            for i, spectrum_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
+
+            for i, spectrum_id_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
+                match_spectrum_id, match_parent_mass = spectrum_id_and_parent_mass
                 if s2v_scores[i] > s2v_score_threshold:
                     found_matches = \
                         found_matches.append(
-                            {"spectrum_id": spectrum_and_parent_mass[0],
+                            {"query_spectrum_nr": query_spectrum_nr,
+                             "query_spectrum_parent_mass": query_parent_mass,
                              "s2v_score": s2v_scores[i],
-                             "parent_mass_difference": spectrum_and_parent_mass[1]},
+                             "match_spectrum_id": match_spectrum_id,
+                             "match_parent_mass": match_parent_mass,
+                             "match_inchikey": self.inchikey14s_of_spectra[match_spectrum_id]},
                             ignore_index=True)
-            found_matches.set_index("spectrum_id", inplace=True)
-            found_matches_list.append(found_matches)
-        return found_matches_list
+        return found_matches
 
-    def _get_analog_search_scores(self,
-                                  query_spectra: List[Spectrum],
-                                  preselection_cut_off: int
-                                  ) -> List[ResultsTable]:
-        """Does preselection and returns scores for MS2Query model prediction
+    def store_potential_true_matches(self,
+                                     query_spectra: List[Spectrum],
+                                     results_file_location: str,
+                                     mass_tolerance: Union[float, int] = 0.1,
+                                     s2v_score_threshold: float = 0.6
+                                     ) -> None:
+        """Stores the results of a library search in a csv file
 
-        This is stored in a dictionary with as keys the spectrum_ids and as
-        values a pd.Dataframe with on each row the information for one spectrum
-        that was found in the preselection. The column names tell the info that
-        is stored. Which column names/info is stored can be found in
-        collect_data_for_tanimoto_prediction_model.
+        The spectra are selected that fall within the mass_tolerance and have a
+        s2v score higher than s2v_score_threshold.
 
         Args:
         ------
         query_spectra:
-            The spectra for which info about matches should be collected
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected
+            A list with spectrum objects for which the potential true matches
+            are returned
+        results_file_location:
+            File location in which a csv file is created containing the results
+        mass_tolerance:
+            The mass difference between query spectrum and library spectrum,
+            that is allowed.
+        s2v_score_threshold:
+            The minimal s2v score to be considered a potential true match
         """
-        ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+        assert not os.path.exists(results_file_location), "Results file already exists"
+        found_matches = self.select_potential_true_matches(query_spectra,
+                                                           mass_tolerance,
+                                                           s2v_score_threshold)
+        pd.set_option("display.max_rows", None, "display.max_columns", None)
+        # For each analog the compound name is selected from sqlite
+        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
+                                                 list(found_matches["match_spectrum_id"]))
+        compound_name_list = [metadata_dict[match_spectrum_id]["compound_name"]
+                              for match_spectrum_id
+                              in list(found_matches["match_spectrum_id"])]
+        found_matches["match_compound_name"] = compound_name_list
+        if self.classifier_file_name is not None and not found_matches.empty:
+            classifier_data = get_classifier_from_csv_file(self.classifier_file_name,
+                                                           list(found_matches["match_inchikey"].unique()))
+            classifier_data.rename(columns={"inchikey": "match_inchikey"}, inplace=True)
+            found_matches = found_matches.merge(classifier_data, on="match_inchikey")
+        found_matches.to_csv(results_file_location, mode="w", index=False)
 
-        result_tables = []
-        for i, query_spectrum in \
-                tqdm(enumerate(query_spectra),
-                     desc="collecting matches info",
-                     disable=not self.settings["progress_bars"]):
+    def _calculate_scores_for_metascore(self,
+                                        results_table: ResultsTable
+                                        ) -> ResultsTable:
+        """Calculate the needed scores for metascore for selected spectra
 
-            results_table = ResultsTable(
-                preselection_cut_off=preselection_cut_off,
-                ms2deepscores=ms2ds_scores.iloc[:, i],
-                query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location)
+        Args:
+        ------
+        results_table:
+            ResultsTable object for which no scores have been selected yet.
+        """
+        # Select the library spectra that have the highest MS2Deepscore
+        results_table.preselect_on_ms2deepscore()
+        # Calculate the average ms2ds scores and neigbourhood score
+        results_table = \
+            self._calculate_averages_and_chemical_neigbhourhood_score(
+                results_table)
+        results_table.data = results_table.data.set_index('spectrum_ids')
 
-            # Select the library spectra that have the highest MS2Deepscore
-            results_table.preselect_on_ms2deepscore()
-            # Calculate the average ms2ds scores and neigbourhood score
-            results_table = \
-                self._calculate_averages_and_chemical_neigbhourhood_score(
-                    results_table)
-            results_table.data = results_table.data.set_index('spectrum_ids')
+        results_table.data["s2v_score"] = self._get_s2v_scores(
+            results_table.query_spectrum,
+            results_table.data.index.values)
 
-            results_table.data["s2v_score"] = self._get_s2v_scores(
-                query_spectrum,
-                results_table.data.index.values)
-
-            parent_masses = np.array(
-                [self.parent_masses_library[x]
-                 for x in results_table.data.index])
-            results_table.add_parent_masses(
-                parent_masses,
-                self.settings["base_nr_mass_similarity"])
-
-            result_tables.append(results_table)
-
-        return result_tables
+        parent_masses = np.array(
+            [self.parent_masses_library[x]
+             for x in results_table.data.index])
+        results_table.add_parent_masses(
+            parent_masses,
+            self.settings["base_nr_mass_similarity"])
+        return results_table
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
                               ) -> pd.DataFrame:
@@ -487,24 +603,52 @@ class MS2Library:
         return related_inchikey_score_dict
 
 
-def get_ms2query_model_prediction(
-        matches_info: List[Union[ResultsTable, None]],
-        ms2query_model_file_name: str
-        ) -> List[ResultsTable]:
-    """Adds ms2query predictions to dataframes
+def get_ms2query_model_prediction_single_spectrum(
+        result_table: Union[ResultsTable, None],
+        ms2query_nn_model
+        ) -> ResultsTable:
+    """Adds ms2query predictions to result table
 
-    matches_info:
-        A dictionary with as keys the query spectrum ids and as values
-        pd.DataFrames containing the top 20 preselected matches and all
-        info needed about these matches to run the ms2query model.
+    result_table:
     ms2query_model_file_name:
         File name of a hdf5 name containing the ms2query model.
     """
-    ms2query_nn_model = load_nn_model(ms2query_model_file_name)
-    for result_table in matches_info:
-        current_query_matches_info = result_table.get_training_data().copy()
-        predictions = ms2query_nn_model.predict(current_query_matches_info)
+    current_query_matches_info = result_table.get_training_data().copy()
+    predictions = ms2query_nn_model.predict(current_query_matches_info)
 
-        result_table.add_ms2query_meta_score(predictions)
+    result_table.add_ms2query_meta_score(predictions)
 
-    return matches_info
+    return result_table
+
+
+def create_library_object_from_one_dir(directory: str,
+                                       file_name_dictionary: Dict[str, str]
+                                       ) -> MS2Library:
+    """Creates a library object for specified directory and file names
+
+    For default file names the function run_ms2query.default_library_file_names can be used
+
+    Args:
+    ------
+    directory:
+        Path to the directory in which the files are stored
+    file_name_dictionary:
+        A dictionary with as keys the type of file and as values the base names of the files
+    """
+    sqlite_file_name = os.path.join(directory, file_name_dictionary["sqlite"])
+    if file_name_dictionary["classifiers"] is not None:
+        classifiers_file_name = os.path.join(directory, file_name_dictionary["classifiers"])
+    else:
+        classifiers_file_name = None
+
+    # Models
+    s2v_model_file_name = os.path.join(directory, file_name_dictionary["s2v_model"])
+    ms2ds_model_file_name = os.path.join(directory, file_name_dictionary["ms2ds_model"])
+    ms2query_model_file_name = os.path.join(directory, file_name_dictionary["ms2query_model"])
+
+    # Embeddings
+    s2v_embeddings_file_name = os.path.join(directory, file_name_dictionary["s2v_embeddings"])
+    ms2ds_embeddings_file_name = os.path.join(directory, file_name_dictionary["ms2ds_embeddings"])
+
+    return MS2Library(sqlite_file_name, s2v_model_file_name, ms2ds_model_file_name, s2v_embeddings_file_name,
+                      ms2ds_embeddings_file_name, ms2query_model_file_name, classifiers_file_name)
