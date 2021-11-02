@@ -17,6 +17,7 @@ setup(
     name="ms2query",
     version=version["__version__"],
     description="Tool to query MS/MS spectra against GNPS library data.",
+    long_description_content_type="text/markdown",
     long_description=readme,
     author="Netherlands eScience Center",
     author_email="",
