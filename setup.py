@@ -13,7 +13,6 @@ with open(os.path.join(here, "ms2query", "__version__.py")) as f:
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-
 setup(
     name="ms2query",
     version=version["__version__"],
