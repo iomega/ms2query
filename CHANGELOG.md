@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3]  - 2021-02-11
+- Added run_ms2query to make it more user friendly
+- Refactored code to process spectrum per spectrum instead of list of spectra
+
 ## [0.2.2]  - 2021-09-30
 - Refactored code to use results table
 - Made compatible with newer pandas and gensim versions
