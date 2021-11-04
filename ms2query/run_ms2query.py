@@ -10,6 +10,8 @@ from urllib.request import urlretrieve
 def default_library_file_base_names() -> Dict[str, str]:
     """Returns a dictionary with the base names of default files for a MS2Library"""
     return {"sqlite": "ALL_GNPS_210409_train_split.sqlite",
+            "sqlite_trainables": "ALL_GNPS_210409_Spec2Vec_ms2query.model.trainables.syn1neg.npy",
+            "sqlite_vectors": "ALL_GNPS_210409_Spec2Vec_ms2query.model.wv.vectors.npy",
             "classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt",
             "s2v_model": "ALL_GNPS_210409_Spec2Vec_ms2query.model",
             "ms2ds_model": "ms2ds_20210420-141937_data210409_10k_500_500_200.hdf5",
@@ -32,7 +34,7 @@ def download_default_models(dir_to_store_files: str,
     """
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
-    zenodo_files_location = "https://zenodo.org/record/5564815/files/"
+    zenodo_files_location = "https://zenodo.org/record/5645246/files/"
     for file_name in tqdm(file_name_dict.values(),
                           "Downloading library files"):
         complete_url = zenodo_files_location + file_name + "?download=1"
