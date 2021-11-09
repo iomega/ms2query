@@ -45,26 +45,17 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
                               classifier_csv_file_name=None, spectrum_id_column_name=spectrum_id_column_name)
 
-    results_directory = os.path.join(tmp_path, "results")
+    folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
+    results_directory = os.path.join(folder_with_spectra, "results")
+
     run_complete_folder(ms2library=test_library,
-                        folder_with_spectra=create_test_folder_with_spectra_files(tmp_path, test_spectra),
-                        results_folder=results_directory,
+                        folder_with_spectra=folder_with_spectra,
                         minimal_ms2query_score=0)
     assert os.path.exists(results_directory), "Expected results directory to be created"
-    assert os.path.exists(os.path.join(results_directory, "analog_search")), \
-        "Expected analog search directory to be created"
-    assert os.path.exists(os.path.join(results_directory, "library_search")), \
-        "Expected library search directory to be created"
-    assert os.listdir(os.path.join(results_directory, "analog_search")).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
-    assert os.listdir(os.path.join(results_directory, "library_search")).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
 
-    with open(os.path.join(os.path.join(results_directory, "analog_search", 'spectra_file_1.csv')), "r") as file:
+    assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
+
+    with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
         assert file.readlines() == [',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n', '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n', '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
-    with open(os.path.join(os.path.join(results_directory, "analog_search", 'spectra_file_2.csv')), "r") as file:
+    with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
         assert file.readlines() == [',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n', '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n', '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
-
-    with open(os.path.join(os.path.join(results_directory, "library_search", 'spectra_file_1.csv')), "r") as file:
-        assert file.readlines() == ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name\n']
-    with open(os.path.join(os.path.join(results_directory, "library_search", 'spectra_file_2.csv')), "r") as file:
-        assert file.readlines() == ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name\n']
-

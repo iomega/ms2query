@@ -47,11 +47,9 @@ def download_default_models(dir_to_store_files: str,
 
 def run_complete_folder(ms2library: MS2Library,
                         folder_with_spectra: str,
-                        results_folder: str,
+                        results_folder: Union[str, None] = None,
                         nr_of_analogs_to_store: int = 1,
-                        minimal_ms2query_score: Union[int, float] = 0.7,
-                        analog_search: bool = True,
-                        library_search: bool = True
+                        minimal_ms2query_score: Union[int, float] = 0.0
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder
 
@@ -71,38 +69,30 @@ def run_complete_folder(ms2library: MS2Library,
         The minimal ms2query metascore needed to be stored in the csv file.
         Spectra for which no analog with this minimal metascore was found,
         will not be stored in the csv file.
-    analog_search:
-        If True an analog search is performed and the results are stored
-    library_search:
-        If True a library search (Finding true matches) is performed
     """
     # pylint: disable=too-many-arguments
 
+    if results_folder is None:
+        results_folder = os.path.join(folder_with_spectra, "results")
     # check if there is a results folder otherwise create one
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
-    if analog_search:
-        if not os.path.exists(os.path.join(results_folder, "analog_search")):
-            os.mkdir(os.path.join(results_folder, "analog_search"))
-    if library_search:
-        if not os.path.exists(os.path.join(results_folder, "library_search")):
-            os.mkdir(os.path.join(results_folder, "library_search"))
+    # if not os.path.exists(os.path.join(results_folder, "analog_search")):
+    #     os.mkdir(os.path.join(results_folder, "analog_search"))
 
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
+            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))[:5]
             if spectra is not None:
+                # Adds the charge 1 to spectra that do not have a specified charge. This is important for determining
+                #  the parent mass from the precursor mass.
                 add_unknown_charges_to_spectra(spectra)
-                if analog_search:
-                    analogs_results_file_name = os.path.join(results_folder, "analog_search", os.path.splitext(file_name)[0] + ".csv")
-                    ms2library.analog_search_store_in_csv(spectra,
-                                                          analogs_results_file_name,
-                                                          nr_of_top_analogs_to_save=nr_of_analogs_to_store,
-                                                          minimal_ms2query_metascore=minimal_ms2query_score)
-                if library_search:
-                    library_results_file_name = os.path.join(results_folder, "library_search", os.path.splitext(file_name)[0] + ".csv")
-                    ms2library.store_potential_true_matches(spectra,
-                                                            library_results_file_name)
+                analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
+                ms2library.analog_search_store_in_csv(spectra,
+                                                      analogs_results_file_name,
+                                                      nr_of_top_analogs_to_save=nr_of_analogs_to_store,
+                                                      minimal_ms2query_metascore=minimal_ms2query_score)
+                print(f"Results stored in {analogs_results_file_name}")
