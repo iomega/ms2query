@@ -17,6 +17,7 @@ setup(
     name="ms2query",
     version=version["__version__"],
     description="Tool to query MS/MS spectra against GNPS library data.",
+    long_description_content_type="text/markdown",
     long_description=readme,
     author="Netherlands eScience Center",
     author_email="",
@@ -35,8 +36,7 @@ setup(
         "tensorflow",
         "ms2deepscore",
         "gensim>=4.0.0",
-        "pandas>=1.2.5"
-    ],
+        "pandas>=1.2.5",],
     extras_require={"dev": ["bump2version",
                             "isort>=4.2.5,<5",
                             "prospector[with_pyroma]",

@@ -25,6 +25,8 @@ class ResultsTable:
                  sqlite_file_name: str,
                  classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
+        # pylint: disable=too-many-arguments
+
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.ms2deepscores = ms2deepscores
         self.preselection_cut_off = preselection_cut_off
@@ -122,9 +124,9 @@ class ResultsTable:
         ------
         nr_of_top_spectra:
             Number of spectra that should be returned.
-            The best spectra are selected based on highest MS2QUery meta score
+            The best spectra are selected based on highest MS2Query meta score
         minimal_ms2query_score:
-            The minimal ms2query metascore needed to be returned in the dataframe
+            Only results with ms2query metascore >= minimal_ms2query_score will be returned.
         """
         # Select top results
         selected_analogs: pd.DataFrame = \

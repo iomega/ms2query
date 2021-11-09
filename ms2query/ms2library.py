@@ -36,18 +36,18 @@ class MS2Library:
 
     """
     def __init__(self,
-                 sqlite_file_location: str,
+                 sqlite_file_name: str,
                  s2v_model_file_name: str,
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None],
-                 classifier_csv_file: Union[str, None] = None,
+                 classifier_csv_file_name: Union[str, None] = None,
                  **settings):
         """
         Parameters
         ----------
-        sqlite_file_location:
+        sqlite_file_name:
             The location at which the sqlite_file_is_stored. The file is
             expected to have 3 tables: tanimoto_scores, inchikeys and
             spectra_data.
@@ -65,7 +65,7 @@ class MS2Library:
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
-        classifier_csv_file:
+        classifier_csv_file_name:
             Csv file location containing classifier annotations per inchikey
 
         **settings:
@@ -91,10 +91,14 @@ class MS2Library:
         self.settings = self._set_settings(settings)
 
         # Load models and set file locations
-        self.classifier_file_location = classifier_csv_file
-        self.sqlite_file_location = sqlite_file_location
-        assert os.path.isfile(sqlite_file_location), f"The given sqlite file does not exist: {sqlite_file_location}"
-        self.ms2query_model_file_location = ms2query_model_file_name
+        self.classifier_file_name = classifier_csv_file_name
+        assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
+        self.sqlite_file_name = sqlite_file_name
+        if ms2query_model_file_name is not None:
+            self.ms2query_model = load_nn_model(ms2query_model_file_name)
+        else:
+            self.ms2query_model = None
+
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
@@ -106,13 +110,13 @@ class MS2Library:
 
         # load parent masses
         self.parent_masses_library = get_parent_mass(
-            self.sqlite_file_location,
+            self.sqlite_file_name,
             self.settings["spectrum_id_column_name"])
 
         # Load inchikey information into memory
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
-            get_inchikey_information(self.sqlite_file_location)
+            get_inchikey_information(self.sqlite_file_name)
         self.inchikey14s_of_spectra = {}
         for inchikey, list_of_spectrum_ids in \
                 self.spectra_of_inchikey14s.items():
@@ -159,12 +163,13 @@ class MS2Library:
             The number of spectra with the highest ms2ds that should be
             selected. Default = 2000
         """
+        assert self.ms2query_model is not None, \
+            "MS2Query model should be given when creating ms2library object"
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
 
         result_tables = []
         for i, query_spectrum in \
@@ -176,11 +181,11 @@ class MS2Library:
                 preselection_cut_off=preselection_cut_off,
                 ms2deepscores=all_ms2ds_scores.iloc[:, i],
                 query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location,
-                classifier_csv_file_name=self.classifier_file_location)
+                sqlite_file_name=self.sqlite_file_name,
+                classifier_csv_file_name=self.classifier_file_name)
             results_table = \
                 self._calculate_scores_for_metascore(results_table)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             result_tables.append(results_table)
         return result_tables
 
@@ -213,20 +218,27 @@ class MS2Library:
             Spectra for which no analog with this minimal metascore was found,
             will not be stored in the csv file.
         """
+        # pylint: disable=too-many-arguments
+
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
-        with open(results_csv_file_location, "w") as csv_file:
-            if self.classifier_file_location is None:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n")
+        assert self.ms2query_model is not None, \
+            "MS2Query model should be given when creating ms2library object"
+
+        with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
+            if self.classifier_file_name is None:
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name\n")
             else:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
+                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
+                               "spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,"
+                               "cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         # Calculate all ms2ds scores between all query and library spectra
         all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-        ms2query_nn_model = load_nn_model(self.ms2query_model_file_location)
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
@@ -237,11 +249,11 @@ class MS2Library:
                 preselection_cut_off=preselection_cut_off,
                 ms2deepscores=all_ms2ds_scores.iloc[:, i],
                 query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_location,
-                classifier_csv_file_name=self.classifier_file_location)
+                sqlite_file_name=self.sqlite_file_name,
+                classifier_csv_file_name=self.classifier_file_name)
             results_table = \
                 self._calculate_scores_for_metascore(results_table)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save, minimal_ms2query_metascore)
             if results_df is not None:
                 results_df.to_csv(results_csv_file_location, mode="a", header=False)
@@ -282,7 +294,7 @@ class MS2Library:
             query_parent_mass = query_spectrum.get("parent_mass")
             # Preselection based on parent mass
             parent_masses_within_mass_tolerance = get_parent_mass_within_range(
-                self.sqlite_file_location,
+                self.sqlite_file_name,
                 query_parent_mass - mass_tolerance,
                 query_parent_mass + mass_tolerance,
                 self.settings["spectrum_id_column_name"])
@@ -335,14 +347,14 @@ class MS2Library:
                                                            s2v_score_threshold)
         pd.set_option("display.max_rows", None, "display.max_columns", None)
         # For each analog the compound name is selected from sqlite
-        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_location,
+        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
                                                  list(found_matches["match_spectrum_id"]))
         compound_name_list = [metadata_dict[match_spectrum_id]["compound_name"]
                               for match_spectrum_id
                               in list(found_matches["match_spectrum_id"])]
         found_matches["match_compound_name"] = compound_name_list
-        if self.classifier_file_location is not None and not found_matches.empty:
-            classifier_data = get_classifier_from_csv_file(self.classifier_file_location,
+        if self.classifier_file_name is not None and not found_matches.empty:
+            classifier_data = get_classifier_from_csv_file(self.classifier_file_name,
                                                            list(found_matches["match_inchikey"].unique()))
             classifier_data.rename(columns={"inchikey": "match_inchikey"}, inplace=True)
             found_matches = found_matches.merge(classifier_data, on="match_inchikey")
@@ -607,3 +619,36 @@ def get_ms2query_model_prediction_single_spectrum(
     result_table.add_ms2query_meta_score(predictions)
 
     return result_table
+
+
+def create_library_object_from_one_dir(directory: str,
+                                       file_name_dictionary: Dict[str, str]
+                                       ) -> MS2Library:
+    """Creates a library object for specified directory and file names
+
+    For default file names the function run_ms2query.default_library_file_names can be used
+
+    Args:
+    ------
+    directory:
+        Path to the directory in which the files are stored
+    file_name_dictionary:
+        A dictionary with as keys the type of file and as values the base names of the files
+    """
+    sqlite_file_name = os.path.join(directory, file_name_dictionary["sqlite"])
+    if file_name_dictionary["classifiers"] is not None:
+        classifiers_file_name = os.path.join(directory, file_name_dictionary["classifiers"])
+    else:
+        classifiers_file_name = None
+
+    # Models
+    s2v_model_file_name = os.path.join(directory, file_name_dictionary["s2v_model"])
+    ms2ds_model_file_name = os.path.join(directory, file_name_dictionary["ms2ds_model"])
+    ms2query_model_file_name = os.path.join(directory, file_name_dictionary["ms2query_model"])
+
+    # Embeddings
+    s2v_embeddings_file_name = os.path.join(directory, file_name_dictionary["s2v_embeddings"])
+    ms2ds_embeddings_file_name = os.path.join(directory, file_name_dictionary["ms2ds_embeddings"])
+
+    return MS2Library(sqlite_file_name, s2v_model_file_name, ms2ds_model_file_name, s2v_embeddings_file_name,
+                      ms2ds_embeddings_file_name, ms2query_model_file_name, classifiers_file_name)

@@ -1,9 +1,59 @@
 import os
 import pandas as pd
 import numpy as np
-from ms2query.utils import get_classifier_from_csv_file
+import pytest
+from matchms import Spectrum
+from ms2query.utils import get_classifier_from_csv_file, convert_files_to_matchms_spectrum_objects, \
+    load_pickled_file, add_unknown_charges_to_spectra
 
-# todo add tests for convert_files_to_matchms_files and add_unknown_charges_to_spectra
+
+def test_convert_files_to_matchms_spectrum_objects_unknown_file_extension(tmp_path):
+    """Test if None is returned when the file extension is not known"""
+    test_text_file_name = os.path.join(tmp_path, "test_txt_file.txt")
+    with open(test_text_file_name, "w") as test_txt_file:
+        test_txt_file.write("test")
+    assert convert_files_to_matchms_spectrum_objects(test_text_file_name) is None, "expected None for .txt extension"
+
+
+def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
+    """Tests if unknown file raises an Assertion error"""
+    with pytest.raises(AssertionError):
+        convert_files_to_matchms_spectrum_objects(os.path.join(tmp_path, "file_that_does_not_exist.json"))
+
+
+def test_convert_files_to_matchms_spectrum_object_known_file():
+    """Test if pickled file is loaded in correctly"""
+    spectra = convert_files_to_matchms_spectrum_objects(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/general_test_files/100_test_spectra.pickle'))
+    assert isinstance(spectra, list), "expected list of spectra"
+    assert len(spectra) == 100, "expected 100 spectra"
+    for spectrum in spectra:
+        assert isinstance(spectrum, Spectrum)
+
+
+def test_add_unknown_charges_to_spectra():
+    spectra = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/general_test_files/100_test_spectra.pickle'))
+    # Set charges to predefined values
+    for spectrum in spectra[:10]:
+        spectrum.set("charge", None)
+    for spectrum in spectra[10:20]:
+        spectrum.set("charge", 1)
+    for spectrum in spectra[20:30]:
+        spectrum.set("charge", -1)
+    for spectrum in spectra[30:]:
+        spectrum.set("charge", 2)
+
+    spectra_with_charge = add_unknown_charges_to_spectra(spectra)
+    # Test if charges are set correctly
+    for spectrum in spectra_with_charge[:20]:
+        assert spectrum.get("charge") == 1, "The charge is expected to be 1"
+    for spectrum in spectra_with_charge[20:30]:
+        assert spectrum.get("charge") == -1, "The charge is expected to be -1"
+    for spectrum in spectra_with_charge[30:]:
+        assert spectrum.get("charge") == 2, "The charge is expected to be 2"
 
 
 def create_test_classifier_csv_file(tmp_path):

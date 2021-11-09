@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.2.4]  - 2021-04-11
+- Solved bug in downloading Zenodo files
+## [0.2.3]  - 2021-02-11
+- Added run_ms2query to make it more user friendly
+- Refactored code to process spectrum per spectrum instead of list of spectra
 
 ## [0.2.2]  - 2021-09-30
 - Refactored code to use results table
