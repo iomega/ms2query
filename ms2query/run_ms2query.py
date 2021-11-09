@@ -85,7 +85,7 @@ def run_complete_folder(ms2library: MS2Library,
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))[:5]
+            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
             if spectra is not None:
                 # Adds the charge 1 to spectra that do not have a specified charge. This is important for determining
                 #  the parent mass from the precursor mass.
