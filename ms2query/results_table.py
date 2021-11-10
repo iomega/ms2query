@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-from typing import Union
+from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.utils import get_classifier_from_csv_file
+from ms2query.utils import get_classifier_from_csv_file, columns_and_order_for_output_dataframe
 
 
 class ResultsTable:
@@ -131,6 +131,7 @@ class ResultsTable:
         # Select top results
         selected_analogs: pd.DataFrame = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
+        selected_analogs.reset_index(inplace=True)
 
         # Remove analogs that do not have a high enough ms2query score
         selected_analogs = selected_analogs[
@@ -138,44 +139,33 @@ class ResultsTable:
         # Return None if know analogs are selected.
         if selected_analogs.empty:
             return None
-        # Add inchikey and ms2query model prediction to results df
-        results_df = selected_analogs.loc[:, ["ms2query_model_prediction",
-                                              "inchikey"]]
 
-        # Add the parent masses of the analogs
-        results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
-        # Add the parent mass of the query spectrum
-        results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
-        # # Add parent mass difference
-        # results_df["parent_mass_difference"] = abs(results_df["parent_mass_analog"] - results_df["parent_mass_query_spectrum"])
         # For each analog the compound name is selected from sqlite
         metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
-                                                 list(results_df.index))
+                                                 list(selected_analogs["spectrum_ids"]))
         compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
                               for analog_spectrum_id
-                              in list(results_df.index)]
-        results_df["analog_compound_name"] = compound_name_list
-        # Removes index and reorders columns so spectrum_id is not the first column
-        results_df.reset_index(inplace=True)
-        results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
+                              in list(selected_analogs["spectrum_ids"])]
+
+        # Add inchikey and ms2query model prediction to results df
+        # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
+        results_df = pd.DataFrame({"spectrum_ids": selected_analogs["spectrum_ids"],
+                                   "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
+                                   "inchikey": selected_analogs["inchikey"],
+                                   "parent_mass_analog": selected_analogs["parent_mass*0.001"] * 1000,
+                                   "parent_mass_query_spectrum": [self.parent_mass] * nr_of_top_spectra,
+                                   "analog_compound_name": compound_name_list
+                                   })
+
+        # Orders the columns in the right way
+        results_df = results_df.reindex(columns=columns_and_order_for_output_dataframe(True, False))
+
         # Add classifiers to dataframe
         if self.classifier_csv_file_name is not None:
             classifiers_df = \
                 get_classifier_from_csv_file(self.classifier_csv_file_name,
                                              results_df["inchikey"].unique())
-            # data = results_df.reset_index()
             results_df = pd.merge(results_df,
                                   classifiers_df,
                                   on="inchikey")
-
         return results_df
-
-
-def columns_and_order_for_output_dataframe(classifier_file_specified):
-    if classifier_file_specified is None:
-        return ",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids," \
-               "analog_compound_name\n"
-    else:
-        return ",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids," \
-               "analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent," \
-               "npc_class_results,npc_superclass_results,npc_pathway_results\n"

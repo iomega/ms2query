@@ -84,14 +84,12 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     assert os.path.isfile(classifier_file_name), \
         f"The given classifier csv file does not exist: {classifier_file_name}"
     classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
-                       "cf_superclass", "cf_class", "cf_subclass",
-                       "cf_direct_parent", "npc_class_results",
-                       "npc_superclass_results", "npc_pathway_results"]
+    classifiers_df.rename(columns={"inchi_key": "inchikey"}, inplace=True)
+    columns_to_keep = ["inchikey"] + columns_and_order_for_output_dataframe(False, True)
     list_of_classifiers = []
     for inchikey in list_of_inchikeys:
         classifiers = classifiers_df.loc[
-            classifiers_df["inchi_key"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
+            classifiers_df["inchikey"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
         if classifiers.empty:
             list_of_classifiers.append(pd.DataFrame(np.array(
                 [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
@@ -105,6 +103,24 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     else:
         results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
 
-    results["inchi_key"] = list_of_inchikeys
-    results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
+    results["inchikey"] = list_of_inchikeys
     return results
+
+
+def columns_and_order_for_output_dataframe(return_standard_columns: bool,
+                                           return_classifier_columns: bool) -> List[str]:
+    """Returns the column names in order for the output of results table
+
+    This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
+    and get_classifier_from_csv_file
+    """
+    standard_columns = ["parent_mass_query_spectrum", "ms2query_model_prediction",
+                        "parent_mass_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+    classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
+                          "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
+    if return_classifier_columns and return_standard_columns:
+        return standard_columns + classifier_columns
+    if return_classifier_columns:
+        return classifier_columns
+    if return_standard_columns:
+        return standard_columns
