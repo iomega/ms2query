@@ -48,6 +48,7 @@ def download_default_models(dir_to_store_files: str,
 def run_complete_folder(ms2library: MS2Library,
                         folder_with_spectra: str,
                         results_folder: Union[str, None] = None,
+                        set_charge_to: int = None,
                         nr_of_analogs_to_store: int = 1,
                         minimal_ms2query_score: Union[int, float] = 0.0
                         ) -> None:
@@ -61,8 +62,12 @@ def run_complete_folder(ms2library: MS2Library,
         Path to folder containing spectra on which analog search should be run.
     results_folder:
         Path to folder in which the results are stored, folder does not have to exist yet.
-        In this folder new folders are created called "analog_search" and "library_search"
-        containing the csv files with results.
+        In this folder the csv files with results are stored. When None results_folder is set to
+        folder_with_spectra/result.
+    set_charge_to:
+        The charge of all spectra that have no charge is set to this value. This is important for parent mass
+        calculations. It is important that for positive mode charge is set to 1 and at negative mode charge is set to -1
+        for correct parent mass calculations.
     nr_of_top_analogs_to_store:
         The number of returned analogs that are stored.
     minimal_ms2query_score:
@@ -70,15 +75,11 @@ def run_complete_folder(ms2library: MS2Library,
         Spectra for which no analog with this minimal metascore was found,
         will not be stored in the csv file.
     """
-    # pylint: disable=too-many-arguments
-
     if results_folder is None:
         results_folder = os.path.join(folder_with_spectra, "results")
     # check if there is a results folder otherwise create one
     if not os.path.exists(results_folder):
         os.mkdir(results_folder)
-    # if not os.path.exists(os.path.join(results_folder, "analog_search")):
-    #     os.mkdir(os.path.join(results_folder, "analog_search"))
 
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
@@ -89,7 +90,7 @@ def run_complete_folder(ms2library: MS2Library,
             if spectra is not None:
                 # Adds the charge 1 to spectra that do not have a specified charge. This is important for determining
                 #  the parent mass from the precursor mass.
-                add_unknown_charges_to_spectra(spectra)
+                add_unknown_charges_to_spectra(spectra, charge_to_use=set_charge_to)
                 analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
                 ms2library.analog_search_store_in_csv(spectra,
                                                       analogs_results_file_name,

@@ -23,6 +23,9 @@ def clean_metadata(spectrum_list: List[SpectrumType]):
         s = add_parent_mass(s,
                             estimate_from_adduct=False,
                             overwrite_existing_entry=True)
+        assert s.get("parent_mass") is None, \
+            "Parent mass was not calculated. Probably due to no defined charge. " \
+            "To automatically set charge for missing values, set set_charge_to in run_ms2query to 1 or -1"
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
