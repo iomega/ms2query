@@ -15,7 +15,7 @@ from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
 from ms2query.utils import load_pickled_file, get_classifier_from_csv_file
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
-from ms2query.results_table import ResultsTable
+from ms2query.results_table import ResultsTable, columns_and_order_for_output_dataframe
 
 
 class MS2Library:
@@ -226,13 +226,8 @@ class MS2Library:
             "MS2Query model should be given when creating ms2library object"
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
-            if self.classifier_file_name is None:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
-                               "spectrum_ids,analog_compound_name\n")
-            else:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
-                               "spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,"
-                               "cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
+            csv_file.write(columns_and_order_for_output_dataframe(self.classifier_file_name))
+
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)

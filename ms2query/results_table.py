@@ -146,6 +146,8 @@ class ResultsTable:
         results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
         # Add the parent mass of the query spectrum
         results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
+        # # Add parent mass difference
+        # results_df["parent_mass_difference"] = abs(results_df["parent_mass_analog"] - results_df["parent_mass_query_spectrum"])
         # For each analog the compound name is selected from sqlite
         metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
                                                  list(results_df.index))
@@ -167,3 +169,13 @@ class ResultsTable:
                                   on="inchikey")
 
         return results_df
+
+
+def columns_and_order_for_output_dataframe(classifier_file_specified):
+    if classifier_file_specified is None:
+        return ",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids," \
+               "analog_compound_name\n"
+    else:
+        return ",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids," \
+               "analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent," \
+               "npc_class_results,npc_superclass_results,npc_pathway_results\n"
