@@ -105,10 +105,6 @@ def test_ms2library_set_settings(file_names):
         "Different value for attribute was expected"
 
 
-def test_select_best_matches():
-    # todo add this testfunction, once the best filter step has been selected
-    pass
-
 
 def test_select_potential_true_matches(file_names, test_spectra):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
