@@ -271,8 +271,8 @@ class MS2Library:
                                                            minimal_ms2query_metascore,
                                                            additional_metadata_columns=additional_metadata_columns,
                                                            additional_ms2query_score_columns=additional_ms2query_score_columns)
-            results_df.insert(0, "query_spectrum_nr", [i] * len(results_df))
             if results_df is not None:
+                results_df.insert(0, "query_spectrum_nr", [i] * len(results_df))
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def select_potential_true_matches(self,

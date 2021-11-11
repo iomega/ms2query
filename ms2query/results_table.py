@@ -146,6 +146,7 @@ class ResultsTable:
         # Remove analogs that do not have a high enough ms2query score
         selected_analogs = selected_analogs[
             (selected_analogs["ms2query_model_prediction"] > minimal_ms2query_score)]
+        nr_of_analogs = len(selected_analogs)
         # Return None if know analogs are selected.
         if selected_analogs.empty:
             return None
@@ -163,18 +164,17 @@ class ResultsTable:
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
                                    "parent_mass_analog": selected_analogs["parent_mass*0.001"] * 1000,
-                                   "parent_mass_query_spectrum": [self.parent_mass] * nr_of_top_spectra,
+                                   "parent_mass_query_spectrum": [self.parent_mass] * nr_of_analogs,
                                    "analog_compound_name": compound_name_list,
                                    "parent_mass_difference": abs(selected_analogs["parent_mass*0.001"] * 1000 -
-                                                                 pd.Series([self.parent_mass] * nr_of_top_spectra))
+                                                                 pd.Series([self.parent_mass] * nr_of_analogs))
                                    })
         if additional_metadata_columns is not None:
             for metadata_name in additional_metadata_columns:
-                results_df[metadata_name] = [self.query_spectrum.get(metadata_name)] * nr_of_top_spectra
+                results_df[metadata_name] = [self.query_spectrum.get(metadata_name)] * nr_of_analogs
         if additional_ms2query_score_columns is not None:
             for score in additional_ms2query_score_columns:
                 results_df[score] = selected_analogs[score]
-
 
         # Orders the columns in the right way
         results_df = results_df.reindex(
