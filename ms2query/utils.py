@@ -49,7 +49,8 @@ def convert_files_to_matchms_spectrum_objects(file_name
 
 
 def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
-                                   charge_to_use: int = 1) -> List[Spectrum]:
+                                   charge_to_use: int = 1,
+                                   change_all_spectra: bool = False) -> List[Spectrum]:
     """Adds charges to spectra when no charge is known
 
     This is important for matchms to be able to calculate the parent_mass
@@ -61,10 +62,17 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
         List of spectra
     charge_to_use:
         The charge set when no charge is known. Default = 1
+    change_all_spectra:
+        If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
+        charge will be changed.
     """
-    for spectrum in spectrum_list:
-        if spectrum.get("charge") is None:
+    if change_all_spectra:
+        for spectrum in spectrum_list:
             spectrum.set("charge", charge_to_use)
+    else:
+        for spectrum in spectrum_list:
+            if spectrum.get("charge") is None:
+                spectrum.set("charge", charge_to_use)
     return spectrum_list
 
 
