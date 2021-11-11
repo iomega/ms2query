@@ -36,6 +36,7 @@ __pycache__/
 debug.log
 downloads/
 data/
+ms2query/readme_example_code.py
 
 # conda build directory
 /_build
