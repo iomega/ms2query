@@ -85,6 +85,8 @@ def run_complete_folder(ms2library: MS2Library,
         "average_tanimoto_score_for_chemical_neighbourhood_score",
         "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
     """
+    # pylint: disable=too-many-arguments
+
     if results_folder is None:
         results_folder = os.path.join(folder_with_spectra, "results")
     # check if there is a results folder otherwise create one

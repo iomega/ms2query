@@ -143,3 +143,4 @@ def columns_and_order_for_output_dataframe(return_standard_columns: bool,
         return classifier_columns
     if return_standard_columns:
         return standard_columns
+    return []
