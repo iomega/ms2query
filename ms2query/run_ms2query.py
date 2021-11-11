@@ -1,5 +1,5 @@
 import os
-from typing import Union, Dict
+from typing import Union, Dict, List
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
 from ms2query.utils import add_unknown_charges_to_spectra
@@ -50,7 +50,9 @@ def run_complete_folder(ms2library: MS2Library,
                         results_folder: Union[str, None] = None,
                         set_charge_to: int = None,
                         nr_of_analogs_to_store: int = 1,
-                        minimal_ms2query_score: Union[int, float] = 0.0
+                        minimal_ms2query_score: Union[int, float] = 0.0,
+                        additional_metadata_columns: List[str] = None,
+                        additional_ms2query_score_columns: List[str] = None
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder
 
@@ -74,6 +76,14 @@ def run_complete_folder(ms2library: MS2Library,
         The minimal ms2query metascore needed to be stored in the csv file.
         Spectra for which no analog with this minimal metascore was found,
         will not be stored in the csv file.
+    additional_metadata_columns:
+        Additional columns with query spectrum metadata that should be added. For instance "retention_time".
+    additional_ms2query_score_columns:
+        Additional columns with scores used for calculating the ms2query metascore
+        Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
+        "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
+        "average_tanimoto_score_for_chemical_neighbourhood_score",
+        "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
     """
     if results_folder is None:
         results_folder = os.path.join(folder_with_spectra, "results")
@@ -95,5 +105,7 @@ def run_complete_folder(ms2library: MS2Library,
                 ms2library.analog_search_store_in_csv(spectra,
                                                       analogs_results_file_name,
                                                       nr_of_top_analogs_to_save=nr_of_analogs_to_store,
-                                                      minimal_ms2query_metascore=minimal_ms2query_score)
+                                                      minimal_ms2query_metascore=minimal_ms2query_score,
+                                                      additional_metadata_columns=additional_metadata_columns,
+                                                      additional_ms2query_score_columns=additional_ms2query_score_columns)
                 print(f"Results stored in {analogs_results_file_name}")

@@ -357,11 +357,12 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
     test_library.analog_search_store_in_csv(test_spectra, results_csv_file)
     assert os.path.exists(results_csv_file)
     with open(results_csv_file, "r") as test_file:
-        assert test_file.readlines() == [
-            ',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
-            '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
-            '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
-            "Expected different results to be stored in csv file"
+        assert test_file.readlines() == \
+               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+                '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
+                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
+               "Expected different results to be stored in csv file"
+
 
 
 def test_create_library_object_from_one_dir():

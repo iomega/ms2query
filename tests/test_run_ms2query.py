@@ -39,7 +39,6 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name, ms2q_model_file_name = file_names
-    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
 
     test_library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
@@ -56,6 +55,55 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
     assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
-        assert file.readlines() == [',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n', '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n', '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
+        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+                '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
+                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
-        assert file.readlines() == [',parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n', '0,905.9927235480093,0.5706255,466.200724,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n', '0,926.9927235480093,0.5717702,736.240782,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
+        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+                '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
+                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
+
+
+def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra):
+    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
+        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+        spectrum_id_column_name, ms2q_model_file_name = file_names
+    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
+
+    test_library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
+                              s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
+                              classifier_csv_file_name=classifiers_file_location,
+                              spectrum_id_column_name=spectrum_id_column_name)
+
+    folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
+    results_directory = os.path.join(folder_with_spectra, "results")
+
+    run_complete_folder(ms2library=test_library,
+                        folder_with_spectra=folder_with_spectra,
+                        minimal_ms2query_score=0,
+                        additional_metadata_columns=["charge"],
+                        additional_ms2query_score_columns=["s2v_score", "ms2ds_score"]
+                        )
+    assert os.path.exists(results_directory), "Expected results directory to be created"
+
+    assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
+
+    with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
+        assert file.readlines() == \
+               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,'
+                'parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,'
+                'smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,'
+                'npc_superclass_results,npc_pathway_results\n',
+                '0,0.5706,439.7920,905.9927,466.2007,'
+                'HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine,1,0.9642,0.7096,'
+                'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC,'
+                'Organic compounds,Organoheterocyclic compounds,Oxepanes,,Oxepanes,Lipopeptides,'
+                'Oligopeptides,Amino acids and Peptides\n',
+                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A,1,0.9920,0.8510,nan,nan,nan,nan,nan,nan,nan,nan,nan\n']
+
+    with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
+        assert file.readlines() == \
+               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
+                '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine,1,0.9642,0.7096,CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC,Organic compounds,Organoheterocyclic compounds,Oxepanes,,Oxepanes,Lipopeptides,Oligopeptides,Amino acids and Peptides\n',
+                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A,1,0.9920,0.8510,nan,nan,nan,nan,nan,nan,nan,nan,nan\n']
+

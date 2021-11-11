@@ -108,14 +108,33 @@ def get_classifier_from_csv_file(classifier_file_name: str,
 
 
 def columns_and_order_for_output_dataframe(return_standard_columns: bool,
-                                           return_classifier_columns: bool) -> List[str]:
+                                           return_classifier_columns: bool,
+                                           additional_metadata_columns: List[str] = None,
+                                           additional_ms2query_score_columns: List[str] = None) -> List[str]:
     """Returns the column names in order for the output of results table
 
     This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
     and get_classifier_from_csv_file
+
+    Args:
+    ------
+    return_standard_columns:
+        If true the standard columns are returned,
+        if additional_metadata_columns or additional_ms2query_score_columns is specified these are appended.
+        If return_classifier_columns is True, the classifier_columns are also appended to the columns list.
+    return_classifier_columns:
+        If true the classifier columns are appended
+    additional_metadata_columns:
+        These columns are appended to the standard columns
+    additional_ms2query_score_columns:
+        These columns are appended to the standard columns
     """
-    standard_columns = ["parent_mass_query_spectrum", "ms2query_model_prediction",
+    standard_columns = ["ms2query_model_prediction", "parent_mass_difference", "parent_mass_query_spectrum",
                         "parent_mass_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+    if additional_metadata_columns is not None:
+        standard_columns += additional_metadata_columns
+    if additional_ms2query_score_columns is not None:
+        standard_columns += additional_ms2query_score_columns
     classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
                           "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
     if return_classifier_columns and return_standard_columns:

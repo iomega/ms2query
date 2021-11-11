@@ -116,7 +116,9 @@ class ResultsTable:
     def export_to_dataframe(
             self,
             nr_of_top_spectra: int,
-            minimal_ms2query_score: Union[float, int] = 0.0
+            minimal_ms2query_score: Union[float, int] = 0.0,
+            additional_metadata_columns: List[str] = None,
+            additional_ms2query_score_columns: List[str] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
 
@@ -127,6 +129,14 @@ class ResultsTable:
             The best spectra are selected based on highest MS2Query meta score
         minimal_ms2query_score:
             Only results with ms2query metascore >= minimal_ms2query_score will be returned.
+        additional_metadata_columns:
+            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
+        additional_ms2query_score_columns:
+            Additional columns with scores used for calculating the ms2query metascore
+            Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
+            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
+            "average_tanimoto_score_for_chemical_neighbourhood_score",
+            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
         """
         # Select top results
         selected_analogs: pd.DataFrame = \
@@ -154,12 +164,23 @@ class ResultsTable:
                                    "inchikey": selected_analogs["inchikey"],
                                    "parent_mass_analog": selected_analogs["parent_mass*0.001"] * 1000,
                                    "parent_mass_query_spectrum": [self.parent_mass] * nr_of_top_spectra,
-                                   "analog_compound_name": compound_name_list
+                                   "analog_compound_name": compound_name_list,
+                                   "parent_mass_difference": abs(selected_analogs["parent_mass*0.001"] * 1000 -
+                                                                 pd.Series([self.parent_mass] * nr_of_top_spectra))
                                    })
+        if additional_metadata_columns is not None:
+            for metadata_name in additional_metadata_columns:
+                results_df[metadata_name] = [self.query_spectrum.get(metadata_name)] * nr_of_top_spectra
+        if additional_ms2query_score_columns is not None:
+            for score in additional_ms2query_score_columns:
+                results_df[score] = selected_analogs[score]
+
 
         # Orders the columns in the right way
-        results_df = results_df.reindex(columns=columns_and_order_for_output_dataframe(True, False))
-
+        results_df = results_df.reindex(
+            columns=columns_and_order_for_output_dataframe(True, False,
+                                                           additional_metadata_columns,
+                                                           additional_ms2query_score_columns))
         # Add classifiers to dataframe
         if self.classifier_csv_file_name is not None:
             classifiers_df = \
