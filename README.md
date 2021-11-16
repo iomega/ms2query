@@ -1,4 +1,4 @@
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/iomega/ms2query/CI%20Build)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/iomega/ms2query/CI%20Build)](https://github.com/iomega/ms2query/actions/workflows/CI_build.yml)
 ![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 [![PyPI](https://img.shields.io/pypi/v/ms2query)](https://pypi.org/project/ms2query/)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
