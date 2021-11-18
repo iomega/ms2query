@@ -136,9 +136,9 @@ def column_names_for_output(return_non_classifier_columns: bool,
         If true the classifier columns appended. If return_standard_columns is false and return_classifier_columns is
         True, only the classifier columns are returned.
     additional_metadata_columns:
-        These columns are appended to the standard columns
+        These columns are appended to the standard columns and returned when return_non_classifier_columns is true
     additional_ms2query_score_columns:
-        These columns are appended to the standard columns
+        These columns are appended to the standard columns and returned when return_non_classifier_columns is true
     """
     standard_columns = ["ms2query_model_prediction", "parent_mass_difference", "parent_mass_query_spectrum",
                         "parent_mass_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
