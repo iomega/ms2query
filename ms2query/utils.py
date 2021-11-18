@@ -115,7 +115,7 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     return results
 
 
-def column_names_for_output(return_standard_columns: bool,
+def column_names_for_output(return_non_classifier_columns: bool,
                             return_classifier_columns: bool,
                             additional_metadata_columns: List[str] = None,
                             additional_ms2query_score_columns: List[str] = None) -> List[str]:
@@ -128,11 +128,13 @@ def column_names_for_output(return_standard_columns: bool,
     Args:
     ------
     return_standard_columns:
-        If true the standard columns are returned,
-        if additional_metadata_columns or additional_ms2query_score_columns is specified these are appended.
+        If true all columns are returned that do not belong to the classifier_columns. This always includes the
+        standard_columns and if if additional_metadata_columns or additional_ms2query_score_columns is specified these
+        are appended.
         If return_classifier_columns is True, the classifier_columns are also appended to the columns list.
     return_classifier_columns:
-        If true the classifier columns are appended
+        If true the classifier columns appended. If return_standard_columns is false and return_classifier_columns is
+        True, only the classifier columns are returned.
     additional_metadata_columns:
         These columns are appended to the standard columns
     additional_ms2query_score_columns:
@@ -146,10 +148,10 @@ def column_names_for_output(return_standard_columns: bool,
         standard_columns += additional_ms2query_score_columns
     classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
                           "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
-    if return_classifier_columns and return_standard_columns:
+    if return_classifier_columns and return_non_classifier_columns:
         return standard_columns + classifier_columns
     if return_classifier_columns:
         return classifier_columns
-    if return_standard_columns:
+    if return_non_classifier_columns:
         return standard_columns
     return []
