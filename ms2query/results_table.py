@@ -3,7 +3,7 @@ import pandas as pd
 from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.utils import get_classifier_from_csv_file, columns_and_order_for_output_dataframe
+from ms2query.utils import get_classifier_from_csv_file, column_names_for_output
 
 
 class ResultsTable:
@@ -178,9 +178,8 @@ class ResultsTable:
 
         # Orders the columns in the right way
         results_df = results_df.reindex(
-            columns=columns_and_order_for_output_dataframe(True, False,
-                                                           additional_metadata_columns,
-                                                           additional_ms2query_score_columns))
+            columns=column_names_for_output(True, False, additional_metadata_columns,
+                                            additional_ms2query_score_columns))
         # Add classifiers to dataframe
         if self.classifier_csv_file_name is not None:
             classifiers_df = \

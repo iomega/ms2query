@@ -93,7 +93,7 @@ def get_classifier_from_csv_file(classifier_file_name: str,
         f"The given classifier csv file does not exist: {classifier_file_name}"
     classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
     classifiers_df.rename(columns={"inchi_key": "inchikey"}, inplace=True)
-    columns_to_keep = ["inchikey"] + columns_and_order_for_output_dataframe(False, True)
+    columns_to_keep = ["inchikey"] + column_names_for_output(False, True)
     list_of_classifiers = []
     for inchikey in list_of_inchikeys:
         classifiers = classifiers_df.loc[
@@ -115,14 +115,15 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     return results
 
 
-def columns_and_order_for_output_dataframe(return_standard_columns: bool,
-                                           return_classifier_columns: bool,
-                                           additional_metadata_columns: List[str] = None,
-                                           additional_ms2query_score_columns: List[str] = None) -> List[str]:
-    """Returns the column names in order for the output of results table
+def column_names_for_output(return_standard_columns: bool,
+                            return_classifier_columns: bool,
+                            additional_metadata_columns: List[str] = None,
+                            additional_ms2query_score_columns: List[str] = None) -> List[str]:
+    """Returns the column names for the output of results table
 
     This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
-    and get_classifier_from_csv_file
+    and get_classifier_from_csv_file. The column names are used to select which data is added from the ResultsTable to
+    the dataframe and the order of these columns is also used as order for the columns in this dataframe.
 
     Args:
     ------

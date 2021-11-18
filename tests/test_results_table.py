@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 from matchms import Spectrum
 from ms2query import ResultsTable
-from ms2query.utils import load_pickled_file, columns_and_order_for_output_dataframe
+from ms2query.utils import load_pickled_file, column_names_for_output
 from tests.test_utils import create_test_classifier_csv_file
 
 
@@ -80,7 +80,7 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
-    assert list(returned_dataframe.columns) == columns_and_order_for_output_dataframe(True, True)
+    assert list(returned_dataframe.columns) == column_names_for_output(True, True)
     # Check if one of the classifiers is filled in
     assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
     assert len(returned_dataframe.index) == 5
@@ -105,9 +105,8 @@ def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
                                                         additional_metadata_columns=["charge"],
                                                         additional_ms2query_score_columns=["s2v_score", "ms2ds_score"])
     assert isinstance(returned_dataframe, pd.DataFrame)
-    assert list(returned_dataframe.columns) == columns_and_order_for_output_dataframe(True, True,
-                                                                                      ["charge"],
-                                                                                      ["s2v_score", "ms2ds_score"])
+    assert list(returned_dataframe.columns) == column_names_for_output(True, True, ["charge"],
+                                                                       ["s2v_score", "ms2ds_score"])
     # Check if one of the classifiers is filled in
     assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
     assert len(returned_dataframe.index) == 5

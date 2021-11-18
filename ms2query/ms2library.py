@@ -12,7 +12,7 @@ from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
     get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
-from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, columns_and_order_for_output_dataframe
+from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -238,13 +238,13 @@ class MS2Library:
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_name is None:
                 csv_file.write("query_spectrum_nr," +
-                               ",".join(columns_and_order_for_output_dataframe(
-                                   True, False, additional_metadata_columns, additional_ms2query_score_columns)) +
+                               ",".join(column_names_for_output(True, False, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) +
                                "\n")
             else:
                 csv_file.write("query_spectrum_nr," +
-                               ",".join(columns_and_order_for_output_dataframe(
-                                   True, True, additional_metadata_columns, additional_ms2query_score_columns)) +
+                               ",".join(column_names_for_output(True, True, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) +
                                "\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
