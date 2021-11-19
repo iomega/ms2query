@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 from matchms import Spectrum
 from ms2query import ResultsTable
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_pickled_file, column_names_for_output
 from tests.test_utils import create_test_classifier_csv_file
 
 
@@ -80,18 +80,42 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
-    assert list(returned_dataframe.columns) == ['parent_mass_query_spectrum', 'ms2query_model_prediction',
-       'parent_mass_analog', 'inchikey', 'spectrum_ids',
-       'analog_compound_name', 'smiles', 'cf_kingdom', 'cf_superclass',
-       'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results',
-       'npc_superclass_results', 'npc_pathway_results']
+    assert list(returned_dataframe.columns) == column_names_for_output(True, True)
     # Check if one of the classifiers is filled in
     assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
     assert len(returned_dataframe.index) == 5
     # Test if first row is correct
     np.testing.assert_array_almost_equal(
-        list(returned_dataframe.iloc[0, :3]),
-        [905.9927235480093, 0.5706255, 466.200724],
+        list(returned_dataframe.iloc[0, :4]),
+        [0.5706255, 439.792, 905.9927235480093, 466.200724],
         5)
-    assert np.all(list(returned_dataframe.iloc[0, 3:10]) ==
+    assert np.all(list(returned_dataframe.iloc[0, 4:11]) ==
+                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine',
+                         'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC',
+                          'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
+
+
+def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
+    create_test_classifier_csv_file(tmp_path)
+    test_table: ResultsTable = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+    test_table.sqlite_file_name = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
+    test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
+    returned_dataframe = test_table.export_to_dataframe(5,
+                                                        additional_metadata_columns=["charge"],
+                                                        additional_ms2query_score_columns=["s2v_score", "ms2ds_score"])
+    assert isinstance(returned_dataframe, pd.DataFrame)
+    assert list(returned_dataframe.columns) == column_names_for_output(True, True, ["charge"],
+                                                                       ["s2v_score", "ms2ds_score"])
+    # Check if one of the classifiers is filled in
+    assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
+    assert len(returned_dataframe.index) == 5
+    # Test if first row is correct
+    np.testing.assert_array_almost_equal(
+        list(returned_dataframe.iloc[0, [0, 1, 2, 3, 7, 8, 9]]),
+        [0.5706255, 439.792, 905.9927235480093, 466.200724, 1, 0.96422, 0.70962],
+        5)
+    assert np.all(list(returned_dataframe.iloc[0, [4, 5, 6, 10, 11, 12, 13]]) ==
                        ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])

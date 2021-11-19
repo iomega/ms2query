@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-from typing import Union
+from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.utils import get_classifier_from_csv_file
+from ms2query.utils import get_classifier_from_csv_file, column_names_for_output
 
 
 class ResultsTable:
@@ -116,7 +116,9 @@ class ResultsTable:
     def export_to_dataframe(
             self,
             nr_of_top_spectra: int,
-            minimal_ms2query_score: Union[float, int] = 0.0
+            minimal_ms2query_score: Union[float, int] = 0.0,
+            additional_metadata_columns: List[str] = None,
+            additional_ms2query_score_columns: List[str] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
 
@@ -127,43 +129,63 @@ class ResultsTable:
             The best spectra are selected based on highest MS2Query meta score
         minimal_ms2query_score:
             Only results with ms2query metascore >= minimal_ms2query_score will be returned.
+        additional_metadata_columns:
+            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
+        additional_ms2query_score_columns:
+            Additional columns with scores used for calculating the ms2query metascore
+            Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
+            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
+            "average_tanimoto_score_for_chemical_neighbourhood_score",
+            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
         """
         # Select top results
         selected_analogs: pd.DataFrame = \
             self.data.iloc[:nr_of_top_spectra, :].copy()
+        selected_analogs.reset_index(inplace=True)
 
         # Remove analogs that do not have a high enough ms2query score
         selected_analogs = selected_analogs[
             (selected_analogs["ms2query_model_prediction"] > minimal_ms2query_score)]
+        nr_of_analogs = len(selected_analogs)
         # Return None if know analogs are selected.
         if selected_analogs.empty:
             return None
-        # Add inchikey and ms2query model prediction to results df
-        results_df = selected_analogs.loc[:, ["ms2query_model_prediction",
-                                              "inchikey"]]
 
-        # Add the parent masses of the analogs
-        results_df.insert(1, "parent_mass_analog", selected_analogs["parent_mass*0.001"] * 1000)
-        # Add the parent mass of the query spectrum
-        results_df.insert(0, "parent_mass_query_spectrum", [self.parent_mass] * nr_of_top_spectra)
         # For each analog the compound name is selected from sqlite
         metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
-                                                 list(results_df.index))
+                                                 list(selected_analogs["spectrum_ids"]))
         compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
                               for analog_spectrum_id
-                              in list(results_df.index)]
-        results_df["analog_compound_name"] = compound_name_list
-        # Removes index and reorders columns so spectrum_id is not the first column
-        results_df.reset_index(inplace=True)
-        results_df = results_df.iloc[:, [1, 2, 3, 4, 0, 5]]
+                              in list(selected_analogs["spectrum_ids"])]
+
+        # Add inchikey and ms2query model prediction to results df
+        # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
+        results_df = pd.DataFrame({"spectrum_ids": selected_analogs["spectrum_ids"],
+                                   "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
+                                   "inchikey": selected_analogs["inchikey"],
+                                   "parent_mass_analog": selected_analogs["parent_mass*0.001"] * 1000,
+                                   "parent_mass_query_spectrum": [self.parent_mass] * nr_of_analogs,
+                                   "analog_compound_name": compound_name_list,
+                                   "parent_mass_difference": abs(selected_analogs["parent_mass*0.001"] * 1000 -
+                                                                 pd.Series([self.parent_mass] * nr_of_analogs))
+                                   })
+        if additional_metadata_columns is not None:
+            for metadata_name in additional_metadata_columns:
+                results_df[metadata_name] = [self.query_spectrum.get(metadata_name)] * nr_of_analogs
+        if additional_ms2query_score_columns is not None:
+            for score in additional_ms2query_score_columns:
+                results_df[score] = selected_analogs[score]
+
+        # Orders the columns in the right way
+        results_df = results_df.reindex(
+            columns=column_names_for_output(True, False, additional_metadata_columns,
+                                            additional_ms2query_score_columns))
         # Add classifiers to dataframe
         if self.classifier_csv_file_name is not None:
             classifiers_df = \
                 get_classifier_from_csv_file(self.classifier_csv_file_name,
                                              results_df["inchikey"].unique())
-            # data = results_df.reset_index()
             results_df = pd.merge(results_df,
                                   classifiers_df,
                                   on="inchikey")
-
         return results_df

@@ -12,7 +12,7 @@ from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
     get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
-from ms2query.utils import load_pickled_file, get_classifier_from_csv_file
+from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -194,7 +194,9 @@ class MS2Library:
                                    results_csv_file_location: str,
                                    preselection_cut_off: int = 2000,
                                    nr_of_top_analogs_to_save: int = 1,
-                                   minimal_ms2query_metascore: Union[float, int] = 0.0
+                                   minimal_ms2query_metascore: Union[float, int] = 0.0,
+                                   additional_metadata_columns: List[str] = None,
+                                   additional_ms2query_score_columns: List[str] = None
                                    ) -> None:
         """Stores the results of an analog in csv files.
 
@@ -217,6 +219,14 @@ class MS2Library:
             The minimal ms2query metascore needed to be stored in the csv file.
             Spectra for which no analog with this minimal metascore was found,
             will not be stored in the csv file.
+        additional_metadata_columns:
+            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
+        additional_ms2query_score_columns:
+            Additional columns with scores used for calculating the ms2query metascore
+            Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
+            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
+            "average_tanimoto_score_for_chemical_neighbourhood_score",
+            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
         """
         # pylint: disable=too-many-arguments
 
@@ -227,12 +237,15 @@ class MS2Library:
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_name is None:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
-                               "spectrum_ids,analog_compound_name\n")
+                csv_file.write("query_spectrum_nr," +
+                               ",".join(column_names_for_output(True, False, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) +
+                               "\n")
             else:
-                csv_file.write(",parent_mass_query_spectrum,ms2query_model_prediction,parent_mass_analog,inchikey,"
-                               "spectrum_ids,analog_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,"
-                               "cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n")
+                csv_file.write("query_spectrum_nr," +
+                               ",".join(column_names_for_output(True, True, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) +
+                               "\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
@@ -254,9 +267,13 @@ class MS2Library:
             results_table = \
                 self._calculate_scores_for_metascore(results_table)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save, minimal_ms2query_metascore)
+            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
+                                                           minimal_ms2query_metascore,
+                                                           additional_metadata_columns=additional_metadata_columns,
+                                                           additional_ms2query_score_columns=additional_ms2query_score_columns)
             if results_df is not None:
-                results_df.to_csv(results_csv_file_location, mode="a", header=False)
+                results_df.insert(0, "query_spectrum_nr", [i] * len(results_df))
+                results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def select_potential_true_matches(self,
                                       query_spectra: List[Spectrum],

@@ -49,7 +49,8 @@ def convert_files_to_matchms_spectrum_objects(file_name
 
 
 def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
-                                   charge_to_use: int = 1) -> List[Spectrum]:
+                                   charge_to_use: int = 1,
+                                   change_all_spectra: bool = False) -> List[Spectrum]:
     """Adds charges to spectra when no charge is known
 
     This is important for matchms to be able to calculate the parent_mass
@@ -61,10 +62,17 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
         List of spectra
     charge_to_use:
         The charge set when no charge is known. Default = 1
+    change_all_spectra:
+        If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
+        charge will be changed.
     """
-    for spectrum in spectrum_list:
-        if spectrum.get("charge") is None:
+    if change_all_spectra:
+        for spectrum in spectrum_list:
             spectrum.set("charge", charge_to_use)
+    else:
+        for spectrum in spectrum_list:
+            if spectrum.get("charge") is None:
+                spectrum.set("charge", charge_to_use)
     return spectrum_list
 
 
@@ -84,14 +92,12 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     assert os.path.isfile(classifier_file_name), \
         f"The given classifier csv file does not exist: {classifier_file_name}"
     classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    columns_to_keep = ["inchi_key", "smiles", "cf_kingdom",
-                       "cf_superclass", "cf_class", "cf_subclass",
-                       "cf_direct_parent", "npc_class_results",
-                       "npc_superclass_results", "npc_pathway_results"]
+    classifiers_df.rename(columns={"inchi_key": "inchikey"}, inplace=True)
+    columns_to_keep = ["inchikey"] + column_names_for_output(False, True)
     list_of_classifiers = []
     for inchikey in list_of_inchikeys:
         classifiers = classifiers_df.loc[
-            classifiers_df["inchi_key"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
+            classifiers_df["inchikey"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
         if classifiers.empty:
             list_of_classifiers.append(pd.DataFrame(np.array(
                 [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
@@ -105,6 +111,47 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     else:
         results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
 
-    results["inchi_key"] = list_of_inchikeys
-    results.rename(columns={"inchi_key": "inchikey"}, inplace=True)
+    results["inchikey"] = list_of_inchikeys
     return results
+
+
+def column_names_for_output(return_non_classifier_columns: bool,
+                            return_classifier_columns: bool,
+                            additional_metadata_columns: List[str] = None,
+                            additional_ms2query_score_columns: List[str] = None) -> List[str]:
+    """Returns the column names for the output of results table
+
+    This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
+    and get_classifier_from_csv_file. The column names are used to select which data is added from the ResultsTable to
+    the dataframe and the order of these columns is also used as order for the columns in this dataframe.
+
+    Args:
+    ------
+    return_standard_columns:
+        If true all columns are returned that do not belong to the classifier_columns. This always includes the
+        standard_columns and if if additional_metadata_columns or additional_ms2query_score_columns is specified these
+        are appended.
+        If return_classifier_columns is True, the classifier_columns are also appended to the columns list.
+    return_classifier_columns:
+        If true the classifier columns appended. If return_standard_columns is false and return_classifier_columns is
+        True, only the classifier columns are returned.
+    additional_metadata_columns:
+        These columns are appended to the standard columns and returned when return_non_classifier_columns is true
+    additional_ms2query_score_columns:
+        These columns are appended to the standard columns and returned when return_non_classifier_columns is true
+    """
+    standard_columns = ["ms2query_model_prediction", "parent_mass_difference", "parent_mass_query_spectrum",
+                        "parent_mass_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+    if additional_metadata_columns is not None:
+        standard_columns += additional_metadata_columns
+    if additional_ms2query_score_columns is not None:
+        standard_columns += additional_ms2query_score_columns
+    classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
+                          "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
+    if return_classifier_columns and return_non_classifier_columns:
+        return standard_columns + classifier_columns
+    if return_classifier_columns:
+        return classifier_columns
+    if return_non_classifier_columns:
+        return standard_columns
+    return []
