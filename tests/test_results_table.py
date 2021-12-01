@@ -90,7 +90,9 @@ def test_export_to_dataframe(dummy_data, tmp_path):
         [0.5706255, 439.792, 905.9927235480093, 466.200724],
         5)
     assert np.all(list(returned_dataframe.iloc[0, 4:11]) ==
-                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
+                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine',
+                         'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC',
+                          'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
 
 
 def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
