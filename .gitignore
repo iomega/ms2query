@@ -29,6 +29,7 @@ docs/apidocs
 config.py
 output/
 /data/
+/ms2query/use_case_python_files
 models_trained/
 computed_results/
 notebooks/.ipynb_checkpoints/

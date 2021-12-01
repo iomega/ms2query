@@ -108,7 +108,7 @@ def create_and_train_ms2query_nn(x_train: pd.DataFrame, y_train: pd.DataFrame,
                                  model_batch_size: int = 16,
                                  save_name: Union[None, str] = None
                                  ) -> Tuple[Sequential, Dict[str, float]]:
-    """Create and tain a keras deep NN, returns (model, history)
+    """Create and train a keras deep NN, returns (model, history)
 
     Args
     ----
