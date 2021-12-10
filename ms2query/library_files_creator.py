@@ -167,6 +167,9 @@ class LibraryFilesCreator:
             If True new tanimoto scores will be calculated and stored in
             tanimoto_scores_file_name.
         """
+        assert os.path.exists(ms2ds_model_file_name), "ms2deepscore model file does not exist"
+        assert os.path.exists(s2v_model_file_name), "spec2vec model file does not exist"
+
         if calculate_new_tanimoto_scores:
             assert not os.path.exists(tanimoto_scores_file_name),\
                 "Tanimoto scores file already exists, " \
