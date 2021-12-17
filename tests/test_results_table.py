@@ -33,7 +33,7 @@ def test_table_init(dummy_data):
     assert table.data.shape == (0, 11), \
         "Should have an empty data attribute"
     assert table.precursor_mz == 205.0, \
-        "Expected different parent mass"
+        "Expected different precursor m/z"
 
 
 def test_table_preselect_ms2deepscore(dummy_data):

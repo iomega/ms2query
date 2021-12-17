@@ -82,9 +82,9 @@ def run_complete_folder(ms2library: MS2Library,
         "average_tanimoto_score_for_chemical_neighbourhood_score",
         "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
     set_charge_to:
-        The charge of all spectra that have no charge is set to this value. This is important for parent mass
+        The charge of all spectra that have no charge is set to this value. This is important for precursor m/z
         calculations. It is important that for positive mode charge is set to 1 and at negative mode charge is set to -1
-        for correct parent mass calculations.
+        for correct precursor m/z calculations.
     change_all_charges:
         If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
         charge will be changed.
@@ -105,7 +105,7 @@ def run_complete_folder(ms2library: MS2Library,
             spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
             if spectra is not None:
                 # Adds the charge 1 to spectra that do not have a specified charge. This is important for determining
-                #  the parent mass from the precursor mass.
+                #  the precursor m/z from the precursor mass.
                 add_unknown_charges_to_spectra(spectra,
                                                charge_to_use=set_charge_to,
                                                change_all_spectra=change_all_charges)

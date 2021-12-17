@@ -80,7 +80,7 @@ class MS2Library:
         base_nr_mass_similarity:
             The base nr used for normalizing the mass similarity. Default = 0.8
         max_precursor_mz:
-            The value used to normalize the parent mass by dividing it by the
+            The value used to normalize the precursor m/z by dividing it by the
             max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown of all methods. Default = True
@@ -108,7 +108,7 @@ class MS2Library:
         self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
             pickled_ms2ds_embeddings_file_name)
 
-        # load parent masses
+        # load precursor mz's
         self.precursors_library = get_precursor_mz(
             self.sqlite_file_name,
             self.settings["spectrum_id_column_name"])
@@ -309,7 +309,7 @@ class MS2Library:
                                                       desc="Selecting potential perfect matches",
                                                       disable=not self.settings["progress_bars"]):
             query_precursor_mz = query_spectrum.get("precursor_mz")
-            # Preselection based on parent mass
+            # Preselection based on precursor m/z
             precursors_within_mass_tolerance = get_precursor_mz_within_range(
                 self.sqlite_file_name,
                 query_precursor_mz - mass_tolerance,

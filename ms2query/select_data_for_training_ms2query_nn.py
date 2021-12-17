@@ -64,7 +64,7 @@ class DataCollectorForTraining(MS2Library):
         base_nr_mass_similarity:
             The base nr used for normalizing the mass similarity. Default = 0.8
         max_precursor_mz:
-            The value used to normalize the parent mass by dividing it by the
+            The value used to normalize the precursor m/z by dividing it by the
             max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown. Default = True"""

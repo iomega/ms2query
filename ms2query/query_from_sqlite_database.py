@@ -289,16 +289,16 @@ def get_precursor_mz_within_range(sqlite_file_name: str,
                                  spectrum_id_storage_name: str = "spectrumid",
                                  table_name: str = "spectrum_data"
                                  ) -> List[Tuple[str, float]]:
-    """Returns spectrum_ids with parent mass between lower and upper bound
+    """Returns spectrum_ids with precursor m/z between lower and upper bound
 
     Args:
     -----
     sqlite_file_name:
         The sqlite file in which the spectra data is stored.
     lower_bound:
-        The lower bound of the allowed parent mass
+        The lower bound of the allowed precursor m/z
     upper_bound:
-        The upper bound of the allowed parent mass
+        The upper bound of the allowed precursor m/z
     spectrum_id_storage_name:
         The name under which the spectrum ids are stored in the metadata.
         Default = 'spectrumid'
@@ -320,7 +320,7 @@ def get_precursor_mz(sqlite_file_name: str,
                     spectrum_id_storage_name: str = "spectrumid",
                     table_name: str = "spectrum_data"
                     ) -> Dict[str, float]:
-    """Returns all spectrum_ids with parent mass
+    """Returns all spectrum_ids with precursor m/z
 
     Args:
     -----
