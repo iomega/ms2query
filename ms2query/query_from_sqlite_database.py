@@ -283,7 +283,7 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     return results_dict
 
 
-def get_parent_mass_within_range(sqlite_file_name: str,
+def get_precursor_mz_within_range(sqlite_file_name: str,
                                  lower_bound: Union[float, int],
                                  upper_bound: Union[float, int],
                                  spectrum_id_storage_name: str = "spectrumid",
@@ -308,15 +308,15 @@ def get_parent_mass_within_range(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
-        f"""SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name} 
-        WHERE parent_mass BETWEEN {lower_bound} and {upper_bound}"""
+        f"""SELECT {spectrum_id_storage_name}, precursor_mz FROM {table_name} 
+        WHERE precursor_mz BETWEEN {lower_bound} and {upper_bound}"""
     cur = conn.cursor()
     cur.execute(sqlite_command)
     spectrum_ids_within_range = cur.fetchall()
     return spectrum_ids_within_range
 
 
-def get_parent_mass(sqlite_file_name: str,
+def get_precursor_mz(sqlite_file_name: str,
                     spectrum_id_storage_name: str = "spectrumid",
                     table_name: str = "spectrum_data"
                     ) -> Dict[str, float]:
@@ -335,14 +335,14 @@ def get_parent_mass(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
-        f"SELECT {spectrum_id_storage_name}, parent_mass FROM {table_name}"
+        f"SELECT {spectrum_id_storage_name}, precursor_mz FROM {table_name}"
     cur = conn.cursor()
     cur.execute(sqlite_command)
     results = cur.fetchall()
-    parent_mass_dict = {}
+    precursor_mz_dict = {}
     for result in results:
-        parent_mass_dict[result[0]] = result[1]
-    return parent_mass_dict
+        precursor_mz_dict[result[0]] = result[1]
+    return precursor_mz_dict
 
 
 def get_inchikey_information(sqlite_file_name: str

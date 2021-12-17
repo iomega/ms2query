@@ -181,7 +181,7 @@ class LibraryFilesCreator:
             self.settings["output_file_sqlite"],
             tanimoto_scores_file_name,
             self.list_of_spectra,
-            columns_dict={"parent_mass": "REAL"},
+            columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.settings["progress_bars"],
             spectrum_id_column_name=self.settings["spectrum_id_column_name"])
 

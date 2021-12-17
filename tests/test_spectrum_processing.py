@@ -128,7 +128,7 @@ def test_spectrum_processing_s2v():
                                        dtype="float"),
                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
                                                 dtype="float"),
-                           metadata={"parent_mass": 250.0,
+                           metadata={"precursor_mz": 250.0,
                                      "precursor_mz": 240.0})
     spectrum = spectrum_processing_s2v(spectrum_in)
     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
@@ -148,7 +148,7 @@ def test_spectrum_processing_s2v():
 #                                        dtype="float"),
 #                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
 #                                                 dtype="float"),
-#                            metadata={"parent_mass": 250.0,
+#                            metadata={"precursor_mz": 250.0,
 #                                      "precursor_mz": 240.0})
 #     spectrum = spectrum_processing_s2v(spectrum_in, n_max=4)
 #     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."

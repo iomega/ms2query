@@ -1,6 +1,6 @@
 import os
 from matchms.filtering import add_losses
-from matchms.filtering import add_parent_mass
+from matchms.filtering import add_precursor_mz
 from matchms.filtering import default_filters
 from matchms.filtering import normalize_intensities
 from matchms.filtering import reduce_to_number_of_peaks
@@ -15,7 +15,7 @@ def spectrum_processing(s):
     """This is how one would typically design a desired pre- and post-
     processing pipeline."""
     s = default_filters(s)
-    s = add_parent_mass(s)
+    s = add_precursor_mz(s)
     s = normalize_intensities(s)
     s = reduce_to_number_of_peaks(s, n_required=10, ratio_desired=0.5, n_max=500)
     s = select_by_mz(s, mz_from=0, mz_to=1000)

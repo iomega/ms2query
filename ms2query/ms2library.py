@@ -10,8 +10,8 @@ from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
-from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
-    get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import get_precursor_mz_within_range, \
+    get_precursor_mz, get_inchikey_information, get_metadata_from_sqlite
 from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
@@ -79,9 +79,9 @@ class MS2Library:
             Default = 0.1
         base_nr_mass_similarity:
             The base nr used for normalizing the mass similarity. Default = 0.8
-        max_parent_mass:
+        max_precursor_mz:
             The value used to normalize the parent mass by dividing it by the
-            max_parent_mass. Default = 13428.370894192036
+            max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown of all methods. Default = True
         """
@@ -109,7 +109,7 @@ class MS2Library:
             pickled_ms2ds_embeddings_file_name)
 
         # load parent masses
-        self.parent_masses_library = get_parent_mass(
+        self.precursors_library = get_precursor_mz(
             self.sqlite_file_name,
             self.settings["spectrum_id_column_name"])
 
@@ -300,36 +300,36 @@ class MS2Library:
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         found_matches = pd.DataFrame(columns=["query_spectrum_nr",
-                                              "query_spectrum_parent_mass",
+                                              "query_spectrum_precursor_mz",
                                               "s2v_score",
                                               "match_spectrum_id",
-                                              "match_parent_mass",
+                                              "match_precursor_mz",
                                               "match_inchikey"])
         for query_spectrum_nr, query_spectrum in tqdm(enumerate(query_spectra),
                                                       desc="Selecting potential perfect matches",
                                                       disable=not self.settings["progress_bars"]):
-            query_parent_mass = query_spectrum.get("parent_mass")
+            query_precursor_mz = query_spectrum.get("precursor_mz")
             # Preselection based on parent mass
-            parent_masses_within_mass_tolerance = get_parent_mass_within_range(
+            precursors_within_mass_tolerance = get_precursor_mz_within_range(
                 self.sqlite_file_name,
-                query_parent_mass - mass_tolerance,
-                query_parent_mass + mass_tolerance,
+                query_precursor_mz - mass_tolerance,
+                query_precursor_mz + mass_tolerance,
                 self.settings["spectrum_id_column_name"])
             selected_library_spectra = [result[0] for result in
-                                        parent_masses_within_mass_tolerance]
+                                        precursors_within_mass_tolerance]
             s2v_scores = self._get_s2v_scores(query_spectrum,
                                               selected_library_spectra)
 
-            for i, spectrum_id_and_parent_mass in enumerate(parent_masses_within_mass_tolerance):
-                match_spectrum_id, match_parent_mass = spectrum_id_and_parent_mass
+            for i, spectrum_id_and_precursor_mz in enumerate(precursors_within_mass_tolerance):
+                match_spectrum_id, match_precursor_mz = spectrum_id_and_precursor_mz
                 if s2v_scores[i] > s2v_score_threshold:
                     found_matches = \
                         found_matches.append(
                             {"query_spectrum_nr": query_spectrum_nr,
-                             "query_spectrum_parent_mass": query_parent_mass,
+                             "query_spectrum_precursor_mz": query_precursor_mz,
                              "s2v_score": s2v_scores[i],
                              "match_spectrum_id": match_spectrum_id,
-                             "match_parent_mass": match_parent_mass,
+                             "match_precursor_mz": match_precursor_mz,
                              "match_inchikey": self.inchikey14s_of_spectra[match_spectrum_id]},
                             ignore_index=True)
         return found_matches
@@ -399,11 +399,11 @@ class MS2Library:
             results_table.query_spectrum,
             results_table.data.index.values)
 
-        parent_masses = np.array(
-            [self.parent_masses_library[x]
+        precursors = np.array(
+            [self.precursors_library[x]
              for x in results_table.data.index])
-        results_table.add_parent_masses(
-            parent_masses,
+        results_table.add_precursors(
+            precursors,
             self.settings["base_nr_mass_similarity"])
         return results_table
 

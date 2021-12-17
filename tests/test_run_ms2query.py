@@ -55,11 +55,11 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
     assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
-        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
                 '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
                 '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
-        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+        assert file.readlines() == ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
                 '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
                 '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
 
@@ -90,8 +90,8 @@ def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
         assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,'
-                'parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,'
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,'
+                'precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,'
                 'smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,'
                 'npc_superclass_results,npc_pathway_results\n',
                 '0,0.5706,439.7920,905.9927,466.2007,'
@@ -103,7 +103,7 @@ def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
         assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
                 '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine,1,0.9642,0.7096,CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC,Organic compounds,Organoheterocyclic compounds,Oxepanes,,Oxepanes,Lipopeptides,Oligopeptides,Amino acids and Peptides\n',
                 '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A,1,0.9920,0.8510,nan,nan,nan,nan,nan,nan,nan,nan,nan\n']
 

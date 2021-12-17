@@ -65,7 +65,7 @@ def test_spectra():
                          metadata={'pepmass': (907.0, None),
                                    'spectrumid': 'CCMSLIB00000001760',
                                    'precursor_mz': 907.0,
-                                   'parent_mass': 905.9927235480093,
+                                   'precursor_mz': 905.9927235480093,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
                                    'charge': 1})
     spectrum2 = Spectrum(mz=np.array([538.003174, 539.217773, 556.030396,
@@ -83,7 +83,7 @@ def test_spectra():
                          metadata={'pepmass': (928.0, None),
                                    'spectrumid': 'CCMSLIB00000001761',
                                    'precursor_mz': 928.0,
-                                   'parent_mass': 905.010782,
+                                   'precursor_mz': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
                                    'charge': 1})
     return [spectrum1, spectrum2]
@@ -122,13 +122,13 @@ def test_select_potential_true_matches(file_names, test_spectra):
     assert isinstance(results, pd.DataFrame), "Expected DataFrame"
     expected_df = pd.DataFrame(
         data={"query_spectrum_nr": [0, 0, 0, 0, 1],
-              "query_spectrum_parent_mass": [905.992724, 905.992724, 905.992724,
+              "query_spectrum_precursor_mz": [905.992724, 905.992724, 905.992724,
                                              905.992724, 926.992723],
               "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844, 0.995251],
               "match_spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
                                     'CCMSLIB00000001648', 'CCMSLIB00000001650',
                                     "CCMSLIB00000001548"],
-              "match_parent_mass":
+              "match_precursor_mz":
                   [878.453724, 878.453782, 878.332724, 878.410782, 939.242724],
               "match_inchikey": ["SATIISJKSAELDC", "SATIISJKSAELDC",
                                  "JXOFEBNJOOEXJY", "JXOFEBNJOOEXJY",
@@ -153,7 +153,7 @@ def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
                                               os.path.join(tmp_path, "results"),
                                               mass_tolerance=30,
                                               s2v_score_threshold=0.6)
-    expected_results = ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
+    expected_results = ['query_spectrum_nr,query_spectrum_precursor_mz,s2v_score,match_spectrum_id,match_precursor_mz,match_inchikey,match_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
                                 '0,905.9927235480093,0.910426948299387,CCMSLIB00000001631,878.453724,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
                                 '0,905.9927235480093,0.9738527174501868,CCMSLIB00000001633,878.4537819999999,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
                                 '0,905.9927235480093,0.9784846351429164,CCMSLIB00000001648,878.332724,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
@@ -192,7 +192,7 @@ def test_store_potential_true_matches_no_matches_found(file_names, test_spectra,
                                               s2v_score_threshold=0.6)
     with open(os.path.join(tmp_path, "results"), "r") as results_file:
         results_list = results_file.readlines()
-        assert results_list == ['query_spectrum_nr,query_spectrum_parent_mass,s2v_score,match_spectrum_id,match_parent_mass,match_inchikey,match_compound_name\n'], \
+        assert results_list == ['query_spectrum_nr,query_spectrum_precursor_mz,s2v_score,match_spectrum_id,match_precursor_mz,match_inchikey,match_compound_name\n'], \
             "Expected different results in csv file"
 
 def test_analog_search(file_names, test_spectra):
@@ -358,7 +358,7 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
     assert os.path.exists(results_csv_file)
     with open(results_csv_file, "r") as test_file:
         assert test_file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,parent_mass_difference,parent_mass_query_spectrum,parent_mass_analog,inchikey,spectrum_ids,analog_compound_name\n',
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
                 '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
                 '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
                "Expected different results to be stored in csv file"

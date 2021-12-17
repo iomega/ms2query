@@ -53,7 +53,7 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
                                    change_all_spectra: bool = False) -> List[Spectrum]:
     """Adds charges to spectra when no charge is known
 
-    This is important for matchms to be able to calculate the parent_mass
+    This is important for matchms to be able to calculate the precursor_mz
     from the mz_precursor
 
     Args:
@@ -140,8 +140,8 @@ def column_names_for_output(return_non_classifier_columns: bool,
     additional_ms2query_score_columns:
         These columns are appended to the standard columns and returned when return_non_classifier_columns is true
     """
-    standard_columns = ["ms2query_model_prediction", "parent_mass_difference", "parent_mass_query_spectrum",
-                        "parent_mass_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+    standard_columns = ["ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
+                        "precursor_mz_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
     if additional_metadata_columns is not None:
         standard_columns += additional_metadata_columns
     if additional_ms2query_score_columns is not None:

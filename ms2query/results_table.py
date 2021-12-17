@@ -9,7 +9,7 @@ from ms2query.utils import get_classifier_from_csv_file, column_names_for_output
 class ResultsTable:
     default_columns = ["spectrum_ids",
                        "inchikey",
-                       "parent_mass*0.001",
+                       "precursor_mz*0.001",
                        "mass_similarity",
                        "s2v_score",
                        "ms2ds_score",
@@ -31,7 +31,7 @@ class ResultsTable:
         self.ms2deepscores = ms2deepscores
         self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
-        self.parent_mass = query_spectrum.get("parent_mass")
+        self.precursor_mz = query_spectrum.get("precursor_mz")
         self.sqlite_file_name = sqlite_file_name
         self.classifier_csv_file_name = classifier_csv_file_name
 
@@ -41,7 +41,7 @@ class ResultsTable:
 
         # Round is used to prevent returning float for float rounding errors
         return other.preselection_cut_off == self.preselection_cut_off and \
-            other.parent_mass == self.parent_mass and \
+            other.precursor_mz == self.precursor_mz and \
             self.data.round(5).equals(other.data.round(5)) and \
             self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
             self.query_spectrum.__eq__(other.query_spectrum) and \
@@ -51,7 +51,7 @@ class ResultsTable:
         """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
         assert isinstance(other, ResultsTable), "Expected ResultsTable"
         assert other.preselection_cut_off == self.preselection_cut_off
-        assert other.parent_mass == self.parent_mass
+        assert other.precursor_mz == self.precursor_mz
         assert self.data.round(5).equals(other.data.round(5))
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5))
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
@@ -74,12 +74,12 @@ class ResultsTable:
         self.data["nr_of_spectra_with_same_inchikey14*0.01"] = \
             [average_ms2ds_scores[x][1] / 100 for x in self.data["inchikey"]]
 
-    def add_parent_masses(self, parent_masses, base_nr_mass_similarity):
-        assert isinstance(parent_masses, np.ndarray), "Expected np.ndarray as input."
-        self.data["parent_mass*0.001"] = parent_masses / 1000
+    def add_precursors(self, precursors, base_nr_mass_similarity):
+        assert isinstance(precursors, np.ndarray), "Expected np.ndarray as input."
+        self.data["precursor_mz*0.001"] = precursors / 1000
 
         self.data["mass_similarity"] = base_nr_mass_similarity ** \
-            (np.abs(parent_masses - self.parent_mass))
+            (np.abs(precursors - self.precursor_mz))
 
     def preselect_on_ms2deepscore(self):
         selected_spectrum_ids = list(self.ms2deepscores.nlargest(
@@ -103,7 +103,7 @@ class ResultsTable:
                               inplace=True)
 
     def get_training_data(self) -> pd.DataFrame:
-        return self.data[["parent_mass*0.001",
+        return self.data[["precursor_mz*0.001",
                           "mass_similarity",
                           "s2v_score",
                           "ms2ds_score",
@@ -163,11 +163,11 @@ class ResultsTable:
         results_df = pd.DataFrame({"spectrum_ids": selected_analogs["spectrum_ids"],
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
-                                   "parent_mass_analog": selected_analogs["parent_mass*0.001"] * 1000,
-                                   "parent_mass_query_spectrum": [self.parent_mass] * nr_of_analogs,
+                                   "precursor_mz_analog": selected_analogs["precursor_mz*0.001"] * 1000,
+                                   "precursor_mz_query_spectrum": [self.precursor_mz] * nr_of_analogs,
                                    "analog_compound_name": compound_name_list,
-                                   "parent_mass_difference": abs(selected_analogs["parent_mass*0.001"] * 1000 -
-                                                                 pd.Series([self.parent_mass] * nr_of_analogs))
+                                   "precursor_mz_difference": abs(selected_analogs["precursor_mz*0.001"] * 1000 -
+                                                                 pd.Series([self.precursor_mz] * nr_of_analogs))
                                    })
         if additional_metadata_columns is not None:
             for metadata_name in additional_metadata_columns:
