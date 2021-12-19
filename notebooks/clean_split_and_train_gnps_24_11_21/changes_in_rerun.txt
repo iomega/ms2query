@@ -1,0 +1,11 @@
+Keep track of all changes done during re-run:
+
+Data cleaning:
+- new GNPS data (downloaded 15-12-2021, 20:00 CET)
+- additional name cleaning steps: (1) remove ";" at the end, (2) try compound_name.replace("_", " ") if first attempt failed
+- add allowed_differences of 18.01 and 18.03
+- name_search_depth=15 (instead of 10)
+
+Model training:
+- Use most common inchi for every unique inchikey (not the first one found as before)
+- spec2vec: set n_required=5 (was =10 before)
