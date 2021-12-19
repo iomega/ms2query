@@ -28,7 +28,7 @@ def spectrum_processing(s):
 path_data = "C:\\HSD\\OneDrive - Hochschule Düsseldorf\\Data\\ms2query"
 
 training_spectra_annotated = pickle.load(open(os.path.join(path_data,
-                                                           "positive_mode/GNPS_15_12_2021_pos_train.pickle"), "rb"))
+                                                           "GNPS_15_12_2021_pos_train.pickle"), "rb"))
 training_spectra_not_annotated = pickle.load(open(os.path.join(path_data,
                                                                "ALL_GNPS_15_12_2021_positive_not_annotated.pickle"), "rb"))
 all_spectra = training_spectra_annotated + training_spectra_not_annotated

@@ -11,7 +11,7 @@ from tqdm import tqdm
 from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
-from matchms.filtering import require_precursor_mz
+from matchms.filtering.require_precursor_mz import require_precursor_mz
 from matchms.filtering import default_filters
 from matchms.filtering import add_parent_mass
 
