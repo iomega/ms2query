@@ -9,3 +9,4 @@ Data cleaning:
 Model training:
 - Use most common inchi for every unique inchikey (not the first one found as before)
 - spec2vec: set n_required=5 (was =10 before)
+

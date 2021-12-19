@@ -41,7 +41,8 @@ cleaned_spectra = [s for s in cleaned_spectra if s is not None]
 # Create spectrum documents
 reference_documents = [SpectrumDocument(s, n_decimals=2) for s in cleaned_spectra]
 
-model_file = "spec2vec_model_GNPS_15_12_2021.model"
+model_file = os.path.join(path_data, "trained_models",
+                          "spec2vec_model_GNPS_15_12_2021.model")
 model = train_new_word2vec_model(reference_documents,
                                  iterations=[10, 20, 30],
                                  filename=model_file,

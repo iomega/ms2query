@@ -175,6 +175,9 @@ class LibraryFilesCreator:
                 "Tanimoto scores file already exists, " \
                 "to use a file with already calculated tanimoto scores, " \
                 "set calculate_new_tanimoto_scores to False"
+        else:
+            assert os.path.exists(tanimoto_scores_file_name),\
+                "Tanimoto scores file does not exists" \
             # Todo automatically create tanimoto scores
 
         make_sqlfile_wrapper(
