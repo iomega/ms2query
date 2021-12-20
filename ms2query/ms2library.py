@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from heapq import nlargest
-from tensorflow.keras.models import load_model as load_nn_model
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
@@ -12,7 +11,7 @@ from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_parent_mass_within_range, \
     get_parent_mass, get_inchikey_information, get_metadata_from_sqlite
-from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output
+from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output, load_ms2query_model
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -95,7 +94,7 @@ class MS2Library:
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
         self.sqlite_file_name = sqlite_file_name
         if ms2query_model_file_name is not None:
-            self.ms2query_model = load_nn_model(ms2query_model_file_name)
+            self.ms2query_model = load_ms2query_model(ms2query_model_file_name)
         else:
             self.ms2query_model = None
 
