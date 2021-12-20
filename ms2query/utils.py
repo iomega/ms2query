@@ -53,8 +53,8 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
                                    change_all_spectra: bool = False) -> List[Spectrum]:
     """Adds charges to spectra when no charge is known
 
-    This is important for matchms to be able to calculate the precursor_mz
-    from the mz_precursor
+    The charge is important to calculate the parent mass from the mz_precursor
+    This function is not important anymore, since the switch to using mz_precursor
 
     Args:
     ------
