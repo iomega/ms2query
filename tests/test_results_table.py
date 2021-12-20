@@ -87,12 +87,12 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     # Test if first row is correct
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, :4]),
-        [0.5706255, 439.792, 905.9927235480093, 466.200724],
+        [0.570547, 439.792, 907.0, 467.208],
         5)
     assert np.all(list(returned_dataframe.iloc[0, 4:11]) ==
-                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine',
-                         'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC',
-                          'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
+                  ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine',
+                   'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC',
+                   'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
 
 
 def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
@@ -115,7 +115,7 @@ def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
     # Test if first row is correct
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, [0, 1, 2, 3, 7, 8, 9]]),
-        [0.5706255, 439.792, 905.9927235480093, 466.200724, 1, 0.96422, 0.70962],
+        [0.570547, 439.792, 907.0, 467.208, 1, 0.96422, 0.70962],
         5)
     assert np.all(list(returned_dataframe.iloc[0, [4, 5, 6, 10, 11, 12, 13]]) ==
                        ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
