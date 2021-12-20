@@ -10,3 +10,7 @@ Model training:
 - Use most common inchi for every unique inchikey (not the first one found as before)
 - spec2vec: set n_required=5 (was =10 before)
 
+Found dangerous piece:
+- When building a collector or library, we give the code all the filenames.
+ I once had the wrong order of spec2vec embeddings and ms2ds embeddings and that worked fine (because both are pickle and have a similar size).
+It only crashed becaue the embedding dimension was different, otherwise the code wouldn't complain at all.

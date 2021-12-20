@@ -107,6 +107,9 @@ class MS2Library:
             pickled_s2v_embeddings_file_name)
         self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
             pickled_ms2ds_embeddings_file_name)
+        
+        assert self.ms2ds_model.base.output_shape[1] == self.ms2ds_embeddings.shape[1], \
+            "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
 
         # load precursor mz's
         self.precursors_library = get_precursor_mz(
