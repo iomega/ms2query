@@ -94,10 +94,14 @@ class MS2Library:
         self.classifier_file_name = classifier_csv_file_name
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
         self.sqlite_file_name = sqlite_file_name
-        if ms2query_model_file_name is not None:
+        if ms2query_model_file_name is None:
+            self.ms2query_model = None
+        elif ms2query_model_file_name.endswith(".pickle"):
+            self.ms2query_model = load_pickled_file(ms2query_model_file_name)
+        elif ms2query_model_file_name.endswith(".model") or ms2query_model_file_name.endswith(".hdf5"):
             self.ms2query_model = load_nn_model(ms2query_model_file_name)
         else:
-            self.ms2query_model = None
+            raise ValueError(f"Unknown file format for ms2query model: {ms2query_model_file_name}")
 
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
