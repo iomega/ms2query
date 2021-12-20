@@ -65,7 +65,7 @@ def test_spectra():
                          metadata={'pepmass': (907.0, None),
                                    'spectrumid': 'CCMSLIB00000001760',
                                    'precursor_mz': 907.0,
-                                   'precursor_mz': 905.9927235480093,
+                                   # 'precursor_mz': 905.9927235480093,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
                                    'charge': 1})
     spectrum2 = Spectrum(mz=np.array([538.003174, 539.217773, 556.030396,
@@ -83,9 +83,10 @@ def test_spectra():
                          metadata={'pepmass': (928.0, None),
                                    'spectrumid': 'CCMSLIB00000001761',
                                    'precursor_mz': 928.0,
-                                   'precursor_mz': 905.010782,
+                                   # 'precursor_mz': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
-                                   'charge': 1})
+                                   # 'charge': 1
+                                   })
     return [spectrum1, spectrum2]
 
 
@@ -105,7 +106,6 @@ def test_ms2library_set_settings(file_names):
         "Different value for attribute was expected"
 
 
-
 def test_select_potential_true_matches(file_names, test_spectra):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
@@ -117,22 +117,16 @@ def test_select_potential_true_matches(file_names, test_spectra):
 
     results = \
         test_library.select_potential_true_matches(test_spectra,
-                                                   mass_tolerance=30,
+                                                   mass_tolerance=20,
                                                    s2v_score_threshold=0.6)
     assert isinstance(results, pd.DataFrame), "Expected DataFrame"
     expected_df = pd.DataFrame(
-        data={"query_spectrum_nr": [0, 0, 0, 0, 1],
-              "query_spectrum_precursor_mz": [905.992724, 905.992724, 905.992724,
-                                             905.992724, 926.992723],
-              "s2v_score": [0.910427, 0.973853, 0.978485, 0.979844, 0.995251],
-              "match_spectrum_id": ['CCMSLIB00000001631', 'CCMSLIB00000001633',
-                                    'CCMSLIB00000001648', 'CCMSLIB00000001650',
-                                    "CCMSLIB00000001548"],
-              "match_precursor_mz":
-                  [878.453724, 878.453782, 878.332724, 878.410782, 939.242724],
-              "match_inchikey": ["SATIISJKSAELDC", "SATIISJKSAELDC",
-                                 "JXOFEBNJOOEXJY", "JXOFEBNJOOEXJY",
-                                 "KNGPFNUOXXLKCN"]})
+        data={"query_spectrum_nr": [0, 0, 0, 1],
+              "query_spectrum_precursor_mz": [907.0, 907.0, 907.0, 928.0],
+              "s2v_score": [0.975656, 0.973853, 0.979844, 0.995251],
+              "match_spectrum_id": ['CCMSLIB00000001572', 'CCMSLIB00000001633', 'CCMSLIB00000001650', "CCMSLIB00000001548"],
+              "match_precursor_mz": [888.615, 901.443, 901.400, 940.250],
+              "match_inchikey": ["GRJSOZDXIUZXEW", "SATIISJKSAELDC", "JXOFEBNJOOEXJY", "KNGPFNUOXXLKCN"]})
 
     pd.testing.assert_frame_equal(results,
                                   expected_df,
@@ -151,14 +145,14 @@ def test_store_potential_true_matches(file_names, test_spectra, tmp_path):
                               spectrum_id_column_name=spectrum_id_column_name)
     test_library.store_potential_true_matches(test_spectra,
                                               os.path.join(tmp_path, "results"),
-                                              mass_tolerance=30,
+                                              mass_tolerance=20,
                                               s2v_score_threshold=0.6)
     expected_results = ['query_spectrum_nr,query_spectrum_precursor_mz,s2v_score,match_spectrum_id,match_precursor_mz,match_inchikey,match_compound_name,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
-                                '0,905.9927235480093,0.910426948299387,CCMSLIB00000001631,878.453724,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
-                                '0,905.9927235480093,0.9738527174501868,CCMSLIB00000001633,878.4537819999999,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
-                                '0,905.9927235480093,0.9784846351429164,CCMSLIB00000001648,878.332724,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
-                                '0,905.9927235480093,0.9798438405143981,CCMSLIB00000001650,878.4107819999999,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
-                                '1,926.9927235480093,0.9952514653551044,CCMSLIB00000001548,939.242724,KNGPFNUOXXLKCN,Hoiamide B,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n']
+                        '0,907.0,0.9756560316119328,CCMSLIB00000001572,888.615,GRJSOZDXIUZXEW,Halovir A,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                        '0,907.0,0.9738527174501868,CCMSLIB00000001633,901.443,SATIISJKSAELDC,Etamycin,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                        '0,907.0,0.9798438405143981,CCMSLIB00000001650,901.4,JXOFEBNJOOEXJY,Dolastatin 16,nan,nan,nan,nan,nan,nan,nan,nan,nan\n',
+                        '1,928.0,0.9952514653551044,CCMSLIB00000001548,940.25,KNGPFNUOXXLKCN,Hoiamide B,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n']
+
     with open(os.path.join(tmp_path, "results"), "r") as results_file:
         results_list = results_file.readlines()
         for row_nr, result_row in enumerate(results_list):
@@ -195,6 +189,7 @@ def test_store_potential_true_matches_no_matches_found(file_names, test_spectra,
         assert results_list == ['query_spectrum_nr,query_spectrum_precursor_mz,s2v_score,match_spectrum_id,match_precursor_mz,match_inchikey,match_compound_name\n'], \
             "Expected different results in csv file"
 
+
 def test_analog_search(file_names, test_spectra):
     """Test analog search"""
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
@@ -211,6 +206,7 @@ def test_analog_search(file_names, test_spectra):
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
+
     for i in range(len(expected_result)):
         result[i].assert_results_table_equal(expected_result[i])
 
@@ -234,10 +230,10 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
     results_table = test_library._calculate_scores_for_metascore(results_table)
-
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
+
     results_table.assert_results_table_equal(expected_result)
 
 
@@ -359,10 +355,9 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
     with open(results_csv_file, "r") as test_file:
         assert test_file.readlines() == \
                ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5706,439.7920,905.9927,466.2007,HKSZLNNOFSGOKW,CCMSLIB00000001655,Staurosporine\n',
-                '1,0.5718,190.7519,926.9927,736.2408,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
+                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16\n',
+                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
                "Expected different results to be stored in csv file"
-
 
 
 def test_create_library_object_from_one_dir():
