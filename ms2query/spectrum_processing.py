@@ -106,7 +106,7 @@ def set_minimal_processing_defaults(**settings: Union[int, float]
     **settings:
         Change default settings
     """
-    defaults = {"mz_from": 0.0,
+    defaults = {"mz_from": 10,
                 "n_required_below_mz": 3,
                 "intensity_from": 0.001,
                 "max_mz_required": 1000.0,
