@@ -163,9 +163,6 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
         Peaks above this value are removed. Default = 1000.0
     n_required
         Number of minimal required peaks for a spectrum to be considered.
-    ratio_desired
-        Number of minimum required peaks. Spectra with fewer peaks will be set
-        to 'None'. Default is 1.
     n_max
         Maximum number of peaks to be kept per spectrum. Default is 1000.
     loss_mz_from
@@ -180,7 +177,6 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
     spectrum = reduce_to_number_of_peaks(
         spectrum,
         n_required=settings["n_required"],
-        ratio_desired=settings["ratio_desired"],
         n_max=settings["n_max"])
 
     spectrum = add_losses(spectrum,
@@ -203,7 +199,6 @@ def set_spec2vec_defaults(**settings: Union[int, float]
     defaults = {"mz_from": 10.0,
                 "mz_to": 1000.0,
                 "n_required": 1,
-                "ratio_desired": 0.5,
                 "intensity_from": 0.001,
                 "n_max": 1000,
                 "loss_mz_from": 5.0,
