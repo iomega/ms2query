@@ -13,19 +13,12 @@ from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
 from matchms.filtering.require_precursor_mz import require_precursor_mz
 from matchms.filtering import default_filters
-from matchms.filtering import add_parent_mass
 
 
 def clean_metadata(spectrum_list: List[SpectrumType]):
     spectra_cleaned_metadata = []
     for s in spectrum_list:
         s = default_filters(s)
-        s = add_parent_mass(s,
-                            estimate_from_adduct=False,
-                            overwrite_existing_entry=True)
-        assert s.get("parent_mass") is not None, \
-            "Parent mass was not calculated. Probably due to no defined charge. " \
-            "To automatically set charge for missing values, set set_charge_to in run_ms2query to 1 or -1"
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
