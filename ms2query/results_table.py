@@ -17,7 +17,9 @@ class ResultsTable:
                        "nr_of_spectra_with_same_inchikey14*0.01",
                        "chemical_neighbourhood_score",
                        "average_tanimoto_score_for_chemical_neighbourhood_score",
-                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]
+                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01",
+                       "cosine_score",
+                       "modified_cosine_score"]
 
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
@@ -107,11 +109,13 @@ class ResultsTable:
                           "mass_similarity",
                           "s2v_score",
                           "ms2ds_score",
-                          # "average_ms2ds_score_for_inchikey14",
-                          # "nr_of_spectra_with_same_inchikey14*0.01",
+                          "average_ms2ds_score_for_inchikey14",
+                          "nr_of_spectra_with_same_inchikey14*0.01",
                           "chemical_neighbourhood_score",
-                          # "average_tanimoto_score_for_chemical_neighbourhood_score",
-                          # "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
+                          "average_tanimoto_score_for_chemical_neighbourhood_score",
+                          "nr_of_spectra_for_chemical_neighbourhood_score*0.01",
+                          "cosine_score",
+                          "modified_cosine_score"
                           ]]
 
     def export_to_dataframe(

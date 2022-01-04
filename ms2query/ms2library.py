@@ -7,11 +7,14 @@ from heapq import nlargest
 from tensorflow.keras.models import load_model as load_nn_model
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
+from matchms.calculate_scores import calculate_scores
+from matchms.similarity.CosineGreedy import CosineGreedy
+from matchms.similarity.ModifiedCosine import ModifiedCosine
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
 from ms2query.query_from_sqlite_database import get_precursor_mz_within_range, \
-    get_precursor_mz, get_inchikey_information, get_metadata_from_sqlite
+    get_precursor_mz, get_inchikey_information, get_metadata_from_sqlite, get_spectra_from_sqlite
 from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
@@ -406,6 +409,10 @@ class MS2Library:
             results_table.query_spectrum,
             results_table.data.index.values)
 
+        cosine_scores, modified_cosine_scores = self._calculate_cosine_score(results_table)
+        results_table.data["cosine_score"] = cosine_scores
+        results_table.data["modified_cosine_score"] = modified_cosine_scores
+
         precursors = np.array(
             [self.precursors_library[x]
              for x in results_table.data.index])
@@ -500,6 +507,19 @@ class MS2Library:
         # todo convert to dataframe, so there is less chance of introducing
         #  errors
         return s2v_scores
+
+    def _calculate_cosine_score(self, results_table: ResultsTable
+                                ) -> Tuple[List[float], List[float]]:
+        """Returns the cosine scores and modified cosine scores
+        """
+        query_spectrum = results_table.query_spectrum,
+        preselection_of_library_ids = results_table.data.index.values
+        library_spectra = get_spectra_from_sqlite(self.sqlite_file_name, preselection_of_library_ids)
+        cosine_scores = calculate_scores(query_spectrum, library_spectra, CosineGreedy())
+        cosine_scores = [score[0] for score in cosine_scores.scores[0]]
+        modified_cosine_scores = calculate_scores(query_spectrum, library_spectra, ModifiedCosine())
+        modified_cosine_scores = [score[0] for score in modified_cosine_scores.scores[0]]
+        return cosine_scores, modified_cosine_scores
 
     def _get_average_ms2ds_for_inchikey14(self,
                                           ms2ds_scores: pd.DataFrame,
