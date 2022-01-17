@@ -1,8 +1,14 @@
 import os
-import pickle
+import sys
 import pytest
 from ms2query.run_ms2query import download_default_models, run_complete_folder
 from tests.test_ms2library import file_names, MS2Library, create_test_classifier_csv_file, test_spectra
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def test_download_default_models(tmp_path):
