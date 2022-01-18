@@ -1,9 +1,14 @@
 import os
-import pickle
-
+import sys
 import pandas as pd
 from ms2query.select_data_for_training_ms2query_nn import DataCollectorForTraining
 from ms2query.utils import load_pickled_file
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def get_test_file_names():

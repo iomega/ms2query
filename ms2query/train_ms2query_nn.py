@@ -1,11 +1,17 @@
 import os
-import pickle
+import sys
 import pandas as pd
 from typing import Union, List, Tuple, Dict
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import Dense, Dropout
 from matplotlib import pyplot as plt
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def create_ms2query_nn(layers: List[int],
