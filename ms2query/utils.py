@@ -3,6 +3,7 @@ import sys
 from typing import Union, List
 import pandas as pd
 import numpy as np
+from tensorflow.keras.models import load_model as load_nn_model
 from spec2vec.Spec2Vec import Spectrum
 from matchms import importing
 
@@ -11,6 +12,25 @@ if sys.version_info < (3, 8):
     import pickle5 as pickle
 else:
     import pickle
+
+
+def load_ms2query_model(ms2query_model_file_name):
+    """Loads in a MS2Query model
+
+    A .hdf5 is expected to be a neural network from tensorflow and
+    a .pickle file is loaded like a ranadom forest from sklearn
+
+    ms2query_model_file_name:
+        The file name of the ms2query model
+    """
+    assert os.path.exists(ms2query_model_file_name), "MS2Query model file name does not exist"
+    file_extension = os.path.splitext(ms2query_model_file_name)[1].lower()
+
+    if file_extension == ".pickle":
+        return load_pickled_file(ms2query_model_file_name)
+    if file_extension == ".hdf5":
+        return load_nn_model(ms2query_model_file_name)
+    raise ValueError("The MS2Query model file is expected to end on .hdf5 or .pickle")
 
 
 def load_pickled_file(filename: str):
