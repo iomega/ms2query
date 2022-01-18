@@ -1,5 +1,4 @@
 import os
-import pickle
 from matchms.filtering import add_losses
 from matchms.filtering import add_precursor_mz
 from matchms.filtering import default_filters
