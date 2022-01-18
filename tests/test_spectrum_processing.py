@@ -1,12 +1,17 @@
 import os
-import pickle
-
+import sys
 import numpy as np
 from matchms import Spectrum
 from ms2query.spectrum_processing import require_peaks_below_mz, \
     spectrum_processing_minimal, spectrum_processing_s2v, \
-    minimal_processing_multiple_spectra, create_spectrum_documents
+    minimal_processing_multiple_spectra, create_spectrum_documents, clean_metadata
 from spec2vec import SpectrumDocument
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def test_minimal_processing_multiple_spectra():
@@ -128,8 +133,7 @@ def test_spectrum_processing_s2v():
                                        dtype="float"),
                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
                                                 dtype="float"),
-                           metadata={"precursor_mz": 250.0,
-                                     "precursor_mz": 240.0})
+                           metadata={"precursor_mz": 240.0})
     spectrum = spectrum_processing_s2v(spectrum_in)
     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
     assert np.all(spectrum.peaks.mz == spectrum_in.peaks.mz[:-1]), \
@@ -148,8 +152,7 @@ def test_spectrum_processing_s2v():
 #                                        dtype="float"),
 #                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
 #                                                 dtype="float"),
-#                            metadata={"precursor_mz": 250.0,
-#                                      "precursor_mz": 240.0})
+#                            metadata={"precursor_mz": 250.0})
 #     spectrum = spectrum_processing_s2v(spectrum_in, n_max=4)
 #     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
 #     assert spectrum.peaks == spectrum_in.peaks[1:], \

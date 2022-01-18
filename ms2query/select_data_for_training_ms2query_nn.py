@@ -1,4 +1,4 @@
-import pickle
+import sys
 from typing import List, Tuple, Union
 import pandas as pd
 from tqdm import tqdm
@@ -8,6 +8,12 @@ from ms2query import MS2Library
 from ms2query import ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 class DataCollectorForTraining(MS2Library):

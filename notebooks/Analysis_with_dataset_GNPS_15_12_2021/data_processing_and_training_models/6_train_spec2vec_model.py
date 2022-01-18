@@ -8,7 +8,7 @@ from matchms.filtering import require_minimum_number_of_peaks
 from matchms.filtering import select_by_mz
 from spec2vec import SpectrumDocument
 from spec2vec.model_building import train_new_word2vec_model
-import pickle
+from ms2query.utils import load_pickled_file
 
 
 def spectrum_processing(s):
@@ -23,14 +23,15 @@ def spectrum_processing(s):
     s = require_minimum_number_of_peaks(s, n_required=5)
     return s
 
+
 # path_root = os.path.dirname(os.getcwd())
 # path_data = os.path.join(os.path.dirname(path_root), "data/gnps_15_12_2021/")
 path_data = "C:\\HSD\\OneDrive - Hochschule Düsseldorf\\Data\\ms2query"
 
-training_spectra_annotated = pickle.load(open(os.path.join(path_data,
-                                                           "GNPS_15_12_2021_pos_train.pickle"), "rb"))
-training_spectra_not_annotated = pickle.load(open(os.path.join(path_data,
-                                                               "ALL_GNPS_15_12_2021_positive_not_annotated.pickle"), "rb"))
+training_spectra_annotated = load_pickled_file(os.path.join(path_data,
+                                                            "GNPS_15_12_2021_pos_train.pickle"))
+training_spectra_not_annotated = load_pickled_file(os.path.join(path_data,
+                                                                "ALL_GNPS_15_12_2021_positive_not_annotated.pickle"))
 all_spectra = training_spectra_annotated + training_spectra_not_annotated
 # Load data from pickled file and apply filters
 cleaned_spectra = [spectrum_processing(s) for s in all_spectra]
