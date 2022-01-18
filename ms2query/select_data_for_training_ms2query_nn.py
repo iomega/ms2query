@@ -1,4 +1,4 @@
-import pickle
+import sys
 from typing import List, Tuple, Union
 import pandas as pd
 from tqdm import tqdm
@@ -8,6 +8,12 @@ from ms2query import MS2Library
 from ms2query import ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 class DataCollectorForTraining(MS2Library):
@@ -63,9 +69,9 @@ class DataCollectorForTraining(MS2Library):
             Default = 0.1
         base_nr_mass_similarity:
             The base nr used for normalizing the mass similarity. Default = 0.8
-        max_parent_mass:
-            The value used to normalize the parent mass by dividing it by the
-            max_parent_mass. Default = 13428.370894192036
+        max_precursor_mz:
+            The value used to normalize the precursor m/z by dividing it by the
+            max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown. Default = True"""
         # pylint: disable=too-many-arguments

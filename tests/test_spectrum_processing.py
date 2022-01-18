@@ -1,6 +1,5 @@
 import os
-import pickle
-
+import sys
 import numpy as np
 from matchms import Spectrum
 from ms2query.spectrum_processing import require_peaks_below_mz, \
@@ -9,25 +8,10 @@ from ms2query.spectrum_processing import require_peaks_below_mz, \
 from spec2vec import SpectrumDocument
 
 
-def test_clean_metadata():
-    spectrum_1 = Spectrum(mz=np.array([5, 110, 220, 330, 399, 440],
-                                      dtype="float"),
-                          intensities=np.array([10, 10, 1, 10, 20, 100],
-                                               dtype="float"),
-                          metadata={"precursor_mz": 240.0, "charge": 1})
-
-    spectrum_2 = Spectrum(mz=np.array([110, 220, 330], dtype="float"),
-                          intensities=np.array([0, 1, 10], dtype="float"),
-                          metadata={"precursor_mz": 240.0, "charge": 1}
-                          )
-    spectrum_list = [spectrum_1, spectrum_2]
-    processed_spectrum_list = clean_metadata(
-        spectrum_list)
-    assert len(processed_spectrum_list) == 2, \
-        "Expected 2 spectra"
-    assert processed_spectrum_list[0].get("parent_mass") == 238.99272354800925
-    assert processed_spectrum_list[1].get("parent_mass") == 238.99272354800925
-
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def test_minimal_processing_multiple_spectra():
@@ -149,8 +133,7 @@ def test_spectrum_processing_s2v():
                                        dtype="float"),
                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
                                                 dtype="float"),
-                           metadata={"parent_mass": 250.0,
-                                     "precursor_mz": 240.0})
+                           metadata={"precursor_mz": 240.0})
     spectrum = spectrum_processing_s2v(spectrum_in)
     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
     assert np.all(spectrum.peaks.mz == spectrum_in.peaks.mz[:-1]), \
@@ -169,8 +152,7 @@ def test_spectrum_processing_s2v():
 #                                        dtype="float"),
 #                            intensities=np.array([0.1, 0.2, 0.1, 1, 0.5],
 #                                                 dtype="float"),
-#                            metadata={"parent_mass": 250.0,
-#                                      "precursor_mz": 240.0})
+#                            metadata={"precursor_mz": 250.0})
 #     spectrum = spectrum_processing_s2v(spectrum_in, n_max=4)
 #     assert isinstance(spectrum, Spectrum), "Expected output to be Spectrum."
 #     assert spectrum.peaks == spectrum_in.peaks[1:], \

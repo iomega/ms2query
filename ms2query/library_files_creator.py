@@ -175,13 +175,16 @@ class LibraryFilesCreator:
                 "Tanimoto scores file already exists, " \
                 "to use a file with already calculated tanimoto scores, " \
                 "set calculate_new_tanimoto_scores to False"
+        else:
+            assert os.path.exists(tanimoto_scores_file_name),\
+                "Tanimoto scores file does not exists" \
             # Todo automatically create tanimoto scores
 
         make_sqlfile_wrapper(
             self.settings["output_file_sqlite"],
             tanimoto_scores_file_name,
             self.list_of_spectra,
-            columns_dict={"parent_mass": "REAL"},
+            columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.settings["progress_bars"],
             spectrum_id_column_name=self.settings["spectrum_id_column_name"])
 

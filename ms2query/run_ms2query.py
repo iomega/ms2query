@@ -2,7 +2,6 @@ import os
 from typing import Union, Dict, List
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
-from ms2query.utils import add_unknown_charges_to_spectra
 from ms2query.utils import convert_files_to_matchms_spectrum_objects
 from urllib.request import urlretrieve
 
@@ -51,9 +50,7 @@ def run_complete_folder(ms2library: MS2Library,
                         nr_of_analogs_to_store: int = 1,
                         minimal_ms2query_score: Union[int, float] = 0.0,
                         additional_metadata_columns: List[str] = None,
-                        additional_ms2query_score_columns: List[str] = None,
-                        set_charge_to: int = None,
-                        change_all_charges: bool = False
+                        additional_ms2query_score_columns: List[str] = None
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder
 
@@ -82,9 +79,9 @@ def run_complete_folder(ms2library: MS2Library,
         "average_tanimoto_score_for_chemical_neighbourhood_score",
         "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
     set_charge_to:
-        The charge of all spectra that have no charge is set to this value. This is important for parent mass
+        The charge of all spectra that have no charge is set to this value. This is important for precursor m/z
         calculations. It is important that for positive mode charge is set to 1 and at negative mode charge is set to -1
-        for correct parent mass calculations.
+        for correct precursor m/z calculations.
     change_all_charges:
         If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
         charge will be changed.
@@ -104,11 +101,6 @@ def run_complete_folder(ms2library: MS2Library,
         if os.path.isfile(file_path):
             spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
             if spectra is not None:
-                # Adds the charge 1 to spectra that do not have a specified charge. This is important for determining
-                #  the parent mass from the precursor mass.
-                add_unknown_charges_to_spectra(spectra,
-                                               charge_to_use=set_charge_to,
-                                               change_all_spectra=change_all_charges)
                 analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
                 ms2library.analog_search_store_in_csv(spectra,
                                                       analogs_results_file_name,
