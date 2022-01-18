@@ -12,20 +12,13 @@ from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
     select_by_intensity, reduce_to_number_of_peaks, add_losses
 from matchms.filtering.require_precursor_mz import require_precursor_mz
-from matchms.filtering.default_filters import default_filters
-from matchms.filtering.add_parent_mass import add_parent_mass
+from matchms.filtering import default_filters
 
 
 def clean_metadata(spectrum_list: List[SpectrumType]):
     spectra_cleaned_metadata = []
     for s in spectrum_list:
         s = default_filters(s)
-        s = add_parent_mass(s,
-                            estimate_from_adduct=False,
-                            overwrite_existing_entry=True)
-        assert s.get("parent_mass") is not None, \
-            "Parent mass was not calculated. Probably due to no defined charge. " \
-            "To automatically set charge for missing values, set set_charge_to in run_ms2query to 1 or -1"
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
@@ -113,7 +106,7 @@ def set_minimal_processing_defaults(**settings: Union[int, float]
     **settings:
         Change default settings
     """
-    defaults = {"mz_from": 0.0,
+    defaults = {"mz_from": 10,
                 "n_required_below_mz": 3,
                 "intensity_from": 0.001,
                 "max_mz_required": 1000.0,
@@ -170,9 +163,6 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
         Peaks above this value are removed. Default = 1000.0
     n_required
         Number of minimal required peaks for a spectrum to be considered.
-    ratio_desired
-        Number of minimum required peaks. Spectra with fewer peaks will be set
-        to 'None'. Default is 1.
     n_max
         Maximum number of peaks to be kept per spectrum. Default is 1000.
     loss_mz_from
@@ -187,7 +177,6 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
     spectrum = reduce_to_number_of_peaks(
         spectrum,
         n_required=settings["n_required"],
-        ratio_desired=settings["ratio_desired"],
         n_max=settings["n_max"])
 
     spectrum = add_losses(spectrum,
@@ -210,7 +199,6 @@ def set_spec2vec_defaults(**settings: Union[int, float]
     defaults = {"mz_from": 10.0,
                 "mz_to": 1000.0,
                 "n_required": 1,
-                "ratio_desired": 0.5,
                 "intensity_from": 0.001,
                 "n_max": 1000,
                 "loss_mz_from": 5.0,
