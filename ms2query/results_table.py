@@ -9,15 +9,15 @@ from ms2query.utils import get_classifier_from_csv_file, column_names_for_output
 class ResultsTable:
     default_columns = ["spectrum_ids",
                        "inchikey",
-                       "precursor_mz*0.001",
-                       "mass_similarity",
+                       "query_precursor_mz",
+                       "precursor_mz_difference",
                        "s2v_score",
                        "ms2ds_score",
                        "average_ms2ds_score_for_inchikey14",
-                       "nr_of_spectra_with_same_inchikey14*0.01",
+                       "nr_of_spectra_with_same_inchikey14",
                        "chemical_neighbourhood_score",
                        "average_tanimoto_score_for_chemical_neighbourhood_score",
-                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01",
+                       "nr_of_spectra_for_chemical_neighbourhood_score",
                        "cosine_score",
                        "modified_cosine_score"]
 
@@ -65,23 +65,21 @@ class ResultsTable:
     def add_related_inchikey_scores(self, related_inchikey_scores):
         self.data["chemical_neighbourhood_score"] = \
             [related_inchikey_scores[x][0] for x in self.data["inchikey"]]
-        self.data["nr_of_spectra_for_chemical_neighbourhood_score*0.01"] = \
-            [related_inchikey_scores[x][1] / 100 for x in self.data["inchikey"]]
+        self.data["nr_of_spectra_for_chemical_neighbourhood_score"] = \
+            [related_inchikey_scores[x][1] for x in self.data["inchikey"]]
         self.data["average_tanimoto_score_for_chemical_neighbourhood_score"] = \
             [related_inchikey_scores[x][2] for x in self.data["inchikey"]]
 
     def add_average_ms2ds_scores(self, average_ms2ds_scores):
         self.data["average_ms2ds_score_for_inchikey14"] = \
             [average_ms2ds_scores[x][0] for x in self.data["inchikey"]]
-        self.data["nr_of_spectra_with_same_inchikey14*0.01"] = \
-            [average_ms2ds_scores[x][1] / 100 for x in self.data["inchikey"]]
+        self.data["nr_of_spectra_with_same_inchikey14"] = \
+            [average_ms2ds_scores[x][1] for x in self.data["inchikey"]]
 
-    def add_precursors(self, precursors, base_nr_mass_similarity):
+    def add_precursors(self, precursors):
         assert isinstance(precursors, np.ndarray), "Expected np.ndarray as input."
-        self.data["precursor_mz*0.001"] = precursors / 1000
-
-        self.data["mass_similarity"] = base_nr_mass_similarity ** \
-            (np.abs(precursors - self.precursor_mz))
+        self.data["query_precursor_mz"] = precursors
+        self.data["precursor_mz_difference"] = (np.abs(precursors - self.precursor_mz))
 
     def preselect_on_ms2deepscore(self):
         selected_spectrum_ids = list(self.ms2deepscores.nlargest(
@@ -104,18 +102,38 @@ class ResultsTable:
                               ascending=False,
                               inplace=True)
 
+    def add_multiple_structure_scores(self, average_ms2deepscores, closely_related_inchikeys):
+        print(average_ms2deepscores)
+        print(closely_related_inchikeys)
+        tanimoto_scores_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
+        average_ms2deepscore_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
+        nr_of_spectra_per_inchikey_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
+        for inchikeys_per_spectrum in closely_related_inchikeys:
+            for structure_nr, (inchikey, tanimoto_score) in enumerate(inchikeys_per_spectrum):
+                average_ms2deepscore, nr_of_spectra_for_inchikey = average_ms2deepscores[inchikey]
+
+                tanimoto_scores_dict[structure_nr].append(tanimoto_score)
+                average_ms2deepscore_dict[structure_nr].append(average_ms2deepscore)
+                nr_of_spectra_per_inchikey_dict[structure_nr].append(nr_of_spectra_for_inchikey)
+        # add to data
+        for i in range(10):
+            self.data["average_ms2deepscore_" + str(i)] = average_ms2deepscore_dict[i]
+            self.data["tanimoto_score_structure_" + str(i)] = tanimoto_scores_dict[i]
+            self.data["nr_of_spectra_structure_" + str(i)] = nr_of_spectra_per_inchikey_dict[i]
+
     def get_training_data(self) -> pd.DataFrame:
-        return self.data[["precursor_mz*0.001",
-                          "mass_similarity",
+        print(self.data)
+        return self.data[["query_precursor_mz",
+                          "precursor_mz_difference",
                           "s2v_score",
                           "ms2ds_score",
                           "average_ms2ds_score_for_inchikey14",
-                          "nr_of_spectra_with_same_inchikey14*0.01",
+                          "nr_of_spectra_with_same_inchikey14",
                           "chemical_neighbourhood_score",
                           "average_tanimoto_score_for_chemical_neighbourhood_score",
-                          "nr_of_spectra_for_chemical_neighbourhood_score*0.01",
-                          "cosine_score",
-                          "modified_cosine_score"
+                          "nr_of_spectra_for_chemical_neighbourhood_score",
+                          # "cosine_score",
+                          # "modified_cosine_score"
                           ]]
 
     def export_to_dataframe(
@@ -139,9 +157,9 @@ class ResultsTable:
         additional_ms2query_score_columns:
             Additional columns with scores used for calculating the ms2query metascore
             Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
-            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
+            "nr_of_spectra_with_same_inchikey14", "chemical_neighbourhood_score",
             "average_tanimoto_score_for_chemical_neighbourhood_score",
-            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
+            "nr_of_spectra_for_chemical_neighbourhood_score"
         """
         # Select top results
         selected_analogs: pd.DataFrame = \

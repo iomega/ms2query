@@ -411,8 +411,7 @@ class MS2Library:
             [self.precursors_library[x]
              for x in results_table.data.index])
         results_table.add_precursors(
-            precursors,
-            self.settings["base_nr_mass_similarity"])
+            precursors)
         return results_table
 
     def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
@@ -470,6 +469,12 @@ class MS2Library:
         average_ms2ds_scores = \
             self._get_average_ms2ds_for_inchikey14(
                 ms2ds_scores, inchikeys_to_calc_average_for)
+        selected_inchikeys_and_scores = []
+        for inchikey in selected_inchikeys:
+            selected_inchikeys_and_scores.append(self.closely_related_inchikey14s[inchikey])
+
+        results_table.add_multiple_structure_scores(average_ms2ds_scores,
+                                                    selected_inchikeys_and_scores)
 
         closely_related_inchikey_scores = self._get_chemical_neighbourhood_scores(
             selected_inchikeys_set,
