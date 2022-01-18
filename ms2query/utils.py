@@ -1,10 +1,16 @@
 import os
+import sys
 from typing import Union, List
-import pickle
 import pandas as pd
 import numpy as np
 from spec2vec.Spec2Vec import Spectrum
 from matchms import importing
+
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 
 def load_pickled_file(filename: str):
