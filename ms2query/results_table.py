@@ -103,8 +103,6 @@ class ResultsTable:
                               inplace=True)
 
     def add_multiple_structure_scores(self, average_ms2deepscores, closely_related_inchikeys):
-        print(average_ms2deepscores)
-        print(closely_related_inchikeys)
         tanimoto_scores_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
         average_ms2deepscore_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
         nr_of_spectra_per_inchikey_dict = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[],7:[], 8:[],9:[]}
@@ -122,19 +120,24 @@ class ResultsTable:
             self.data["nr_of_spectra_structure_" + str(i)] = nr_of_spectra_per_inchikey_dict[i]
 
     def get_training_data(self) -> pd.DataFrame:
-        print(self.data)
-        return self.data[["query_precursor_mz",
-                          "precursor_mz_difference",
-                          "s2v_score",
-                          "ms2ds_score",
-                          "average_ms2ds_score_for_inchikey14",
-                          "nr_of_spectra_with_same_inchikey14",
-                          "chemical_neighbourhood_score",
-                          "average_tanimoto_score_for_chemical_neighbourhood_score",
-                          "nr_of_spectra_for_chemical_neighbourhood_score",
-                          # "cosine_score",
-                          # "modified_cosine_score"
-                          ]]
+        column_list = ["query_precursor_mz",
+                       "precursor_mz_difference",
+                       "s2v_score",
+                       "ms2ds_score",
+                       "average_ms2ds_score_for_inchikey14",
+                       "nr_of_spectra_with_same_inchikey14",
+                       "chemical_neighbourhood_score",
+                       "average_tanimoto_score_for_chemical_neighbourhood_score",
+                       "nr_of_spectra_for_chemical_neighbourhood_score",
+                       "cosine_score",
+                       "modified_cosine_score"
+                       ]
+        for i in range(10):
+            column_list.append("average_ms2deepscore_" + str(i))
+            column_list.append("tanimoto_score_structure_" + str(i))
+            column_list.append("nr_of_spectra_structure_" + str(i))
+
+        return self.data[column_list]
 
     def export_to_dataframe(
             self,
