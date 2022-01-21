@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import re
 from typing import Union, List
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
@@ -119,6 +120,57 @@ class ResultsTable:
             self.data["tanimoto_score_structure_" + str(i)] = tanimoto_scores_dict[i]
             self.data["nr_of_spectra_structure_" + str(i)] = nr_of_spectra_per_inchikey_dict[i]
 
+    def add_instrument_types(self):
+        # Add for library spectra
+        lib_spectrum_ids = list(self.data.index)
+        metadata = get_metadata_from_sqlite(self.sqlite_file_name, lib_spectrum_ids)
+        orbitrap_list = []
+        iontrap_list = []
+        tof_list = []
+        quadrupole_list = []
+        for lib_spectrum_id in lib_spectrum_ids:
+            instrument_type = parse_instrument_type(metadata[lib_spectrum_id]["source_instrument"])
+            if instrument_type == "Orbitrap":
+                orbitrap_list.append(1)
+            else:
+                orbitrap_list.append(0)
+            if instrument_type == "Ion Trap":
+                iontrap_list.append(1)
+            else:
+                iontrap_list.append(0)
+            if instrument_type == "ToF":
+                tof_list.append(1)
+            else:
+                tof_list.append(0)
+            if instrument_type == "Quadrupole":
+                quadrupole_list.append(1)
+            else:
+                quadrupole_list.append(0)
+        self.data["lib_instrument_orbitrap"] = orbitrap_list
+        self.data["lib_instrument_ion_trap"] = iontrap_list
+        self.data["lib_instrument_tof"] = tof_list
+        self.data["lib_instrument_quadrupole"] = quadrupole_list
+
+        # Add for query spectrum
+        query_spec_instrument = self.query_spectrum.get("source_instrument")
+        query_instrument_type = parse_instrument_type(query_spec_instrument)
+        if query_instrument_type == "Orbitrap":
+            self.data["query_instrument_orbitrap"] = [1] * self.preselection_cut_off
+        else:
+            self.data["query_instrument_orbitrap"] = [0] * self.preselection_cut_off
+        if query_instrument_type == "Ion Trap":
+            self.data["query_instrument_ion_trap"] = [1] * self.preselection_cut_off
+        else:
+            self.data["query_instrument_ion_trap"] = [0] * self.preselection_cut_off
+        if query_instrument_type == "ToF":
+            self.data["query_instrument_tof"] = [1] * self.preselection_cut_off
+        else:
+            self.data["query_instrument_tof"] = [0] * self.preselection_cut_off
+        if query_instrument_type == "Quadrupole":
+            self.data["query_instrument_quadrupole"] = [1] * self.preselection_cut_off
+        else:
+            self.data["query_instrument_quadrupole"] = [0] * self.preselection_cut_off
+
     def get_training_data(self) -> pd.DataFrame:
         column_list = ["query_precursor_mz",
                        "precursor_mz_difference",
@@ -130,13 +182,20 @@ class ResultsTable:
                        "average_tanimoto_score_for_chemical_neighbourhood_score",
                        "nr_of_spectra_for_chemical_neighbourhood_score",
                        "cosine_score",
-                       "modified_cosine_score"
+                       "modified_cosine_score",
+                       "lib_instrument_orbitrap",
+                       "lib_instrument_ion_trap",
+                       "lib_instrument_tof",
+                       "lib_instrument_quadrupole",
+                       "query_instrument_orbitrap",
+                       "query_instrument_ion_trap",
+                       "query_instrument_tof",
+                       "query_instrument_quadrupole"
                        ]
         for i in range(10):
             column_list.append("average_ms2deepscore_" + str(i))
             column_list.append("tanimoto_score_structure_" + str(i))
             column_list.append("nr_of_spectra_structure_" + str(i))
-
         return self.data[column_list]
 
     def export_to_dataframe(
@@ -215,3 +274,42 @@ class ResultsTable:
                                   classifiers_df,
                                   on="inchikey")
         return results_df
+
+
+def parse_instrument_type(instrument_name):
+    # Options: Qtof, Orbitrab, QQQ, ion trap, CID-API, HCD, FTMS, CID, FAB-EBEB, ITFT, APPI-QQ
+    if instrument_name == None:
+        return None
+    found_tof = re.search("(?i)tof", instrument_name)
+    if found_tof is not None:
+        return "ToF"
+    found_ion_trap = re.search("(?i)ion trap", instrument_name)
+    if found_ion_trap is not None:
+        return "Ion Trap"
+    found_ion_trap = re.search("(?i)itft", instrument_name)
+    if found_ion_trap is not None:
+        return "Ion Trap"
+    found_ion_trap = re.search("-IT", instrument_name)
+    if found_ion_trap is not None:
+        return "Ion Trap"
+    found_quadrupole = re.search("(?i)qq", instrument_name)
+    if found_quadrupole is not None:
+        return "quadrupole"
+    found_quadrupole = re.search("(?i)QFT", instrument_name)
+    if found_quadrupole is not None:
+        return "quadrupole"
+    found_orbitrab = re.search("(?i)hybrid ft", instrument_name)
+    if found_orbitrab is not None:
+        return "Orbitrap"
+    found_orbitrab = re.search("(?i)orbitrap", instrument_name)
+    if found_orbitrab is not None:
+        return "Orbitrap"
+    found_orbitrab = re.search("(?i)velos", instrument_name)
+    if found_orbitrab is not None:
+        return "Orbitrap"
+    found_orbitrab = re.search("(?i)lumos", instrument_name)
+    if found_orbitrab is not None:
+        return "Orbitrap"
+    found_orbitrab = re.search("(?i)q-exactive", instrument_name)
+    if found_orbitrab is not None:
+        return "Orbitrap"

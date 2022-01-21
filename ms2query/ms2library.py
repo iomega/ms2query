@@ -410,6 +410,8 @@ class MS2Library:
         precursors = np.array(
             [self.precursors_library[x]
              for x in results_table.data.index])
+
+        results_table.add_instrument_types()
         results_table.add_precursors(
             precursors)
         return results_table
