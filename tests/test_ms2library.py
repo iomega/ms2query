@@ -210,7 +210,6 @@ def test_analog_search(file_names, test_spectra):
     for i in range(len(expected_result)):
         # TODO: update results
         result = results[i]
-        result.data = result.data.drop(["retention_time", "retention_index"], axis=1)
         results[i].assert_results_table_equal(expected_result[i])
 
 
@@ -233,8 +232,6 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
     results_table = test_library._calculate_scores_for_metascore(results_table)
-    # TODO: update results
-    results_table.data = results_table.data.drop(["retention_time", "retention_index"], axis=1)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
