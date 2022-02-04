@@ -1,7 +1,8 @@
 import os
 import sys
 import pandas as pd
-from ms2query.select_data_for_training_ms2query_nn import DataCollectorForTraining
+from ms2query.select_data_for_training_ms2query_nn import \
+    DataCollectorForTraining
 from ms2query.utils import load_pickled_file
 
 
@@ -161,4 +162,3 @@ def test_get_tanimoto_for_spectrum_ids():
                                    columns=["Tanimoto_score"])
     assert isinstance(result, pd.DataFrame), "Expected a pd.Dataframe"
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
-

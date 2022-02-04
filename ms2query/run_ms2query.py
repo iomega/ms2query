@@ -1,9 +1,9 @@
 import os
-from typing import Union, Dict, List
+from typing import Dict, List, Tuple, Union
+from urllib.request import urlretrieve
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
 from ms2query.utils import convert_files_to_matchms_spectrum_objects
-from urllib.request import urlretrieve
 
 
 def default_library_file_base_names() -> Dict[str, str]:
@@ -49,7 +49,7 @@ def run_complete_folder(ms2library: MS2Library,
                         results_folder: Union[str, None] = None,
                         nr_of_analogs_to_store: int = 1,
                         minimal_ms2query_score: Union[int, float] = 0.0,
-                        additional_metadata_columns: List[str] = None,
+                        additional_metadata_columns: Tuple[str] = ("retention_time", "retention_index",),
                         additional_ms2query_score_columns: List[str] = None
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder

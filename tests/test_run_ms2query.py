@@ -1,8 +1,8 @@
 import os
 import sys
-import pytest
 from ms2query.run_ms2query import download_default_models, run_complete_folder
-from tests.test_ms2library import file_names, MS2Library, create_test_classifier_csv_file, test_spectra
+from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file,
+                                   file_names, test_spectra)
 
 
 if sys.version_info < (3, 8):
@@ -62,15 +62,15 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
         assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
-                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n']
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
+                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,,\n',
+                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,,\n']
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
         assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
-                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n']
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
+                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,,\n',
+                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,,\n']
 
 
 def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra):

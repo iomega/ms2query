@@ -1,10 +1,11 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 from matchms import Spectrum
-from ms2query.utils import get_classifier_from_csv_file, convert_files_to_matchms_spectrum_objects, \
-    load_pickled_file, add_unknown_charges_to_spectra
+from ms2query.utils import (add_unknown_charges_to_spectra,
+                            convert_files_to_matchms_spectrum_objects,
+                            get_classifier_from_csv_file, load_pickled_file)
 
 
 def test_convert_files_to_matchms_spectrum_objects_unknown_file_extension(tmp_path):

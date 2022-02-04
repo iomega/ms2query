@@ -1,17 +1,17 @@
-import os
 import math
+import os
 import re
 import numpy as np
-import pytest
 import pandas as pd
-from pandas.testing import assert_frame_equal
+import pytest
 from matchms import Spectrum
-from ms2query.utils import load_ms2query_model
-from ms2query.ms2library import MS2Library, get_ms2query_model_prediction_single_spectrum, \
-    create_library_object_from_one_dir
-from ms2query.utils import load_pickled_file
-from tests.test_utils import create_test_classifier_csv_file
+from pandas.testing import assert_frame_equal
+from ms2query.ms2library import (MS2Library,
+                                 create_library_object_from_one_dir,
+                                 get_ms2query_model_prediction_single_spectrum)
 from ms2query.results_table import ResultsTable
+from ms2query.utils import load_ms2query_model, load_pickled_file
+from tests.test_utils import create_test_classifier_csv_file
 
 
 @pytest.fixture
@@ -116,13 +116,14 @@ def test_analog_search(file_names, test_spectra):
                               spectrum_id_column_name=spectrum_id_column_name)
 
     cutoff = 20
-    result = test_library.analog_search_return_results_tables(test_spectra, cutoff)
+    results = test_library.analog_search_return_results_tables(test_spectra, cutoff)
+
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
 
     for i in range(len(expected_result)):
-        result[i].assert_results_table_equal(expected_result[i])
+        results[i].assert_results_table_equal(expected_result[i])
 
 
 def test_calculate_scores_for_metadata(file_names, test_spectra):
@@ -143,6 +144,7 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         ms2deepscores=ms2dscores.iloc[:, 0],
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
+
     results_table = test_library._calculate_features_for_random_forest_model(results_table)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],

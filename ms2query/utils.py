@@ -1,10 +1,10 @@
 import os
 import sys
-from typing import Union, List
-import pandas as pd
+from typing import List, Union
 import numpy as np
-from spec2vec.Spec2Vec import Spectrum
+import pandas as pd
 from matchms import importing
+from spec2vec.Spec2Vec import Spectrum
 
 
 if sys.version_info < (3, 8):

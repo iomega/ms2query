@@ -1,16 +1,16 @@
-from typing import List, Dict, Union
 import os
+from typing import Dict, List, Union
 import pandas as pd
-from tqdm import tqdm
-from matchms.Spectrum import Spectrum
 from gensim.models import Word2Vec
+from matchms.Spectrum import Spectrum
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
-from ms2query.utils import load_pickled_file
+from tqdm import tqdm
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.spectrum_processing import minimal_processing_multiple_spectra, \
-    create_spectrum_documents
+from ms2query.spectrum_processing import (create_spectrum_documents,
+                                          minimal_processing_multiple_spectra)
+from ms2query.utils import load_pickled_file
 
 
 class LibraryFilesCreator:

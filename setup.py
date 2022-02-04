@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import os
+from setuptools import find_packages, setup
 
-from setuptools import setup
-from setuptools import find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -29,9 +28,9 @@ setup(
     test_suite="tests",
     python_requires='>=3.7',
     install_requires=[
-        "matchms>=0.6.1",
+        "matchms>=0.11.0",
         "numpy",
-        "spec2vec",
+        "spec2vec>=0.6.0",
         "h5py<3.0.0",
         "tensorflow",
         "scikit-learn",
@@ -40,7 +39,7 @@ setup(
         "pandas>=1.2.5",],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
-                            "isort>=4.2.5,<5",
+                            "isort>=5.1.0",
                             "prospector[with_pyroma]",
                             "pytest",
                             "pytest-cov",

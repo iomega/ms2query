@@ -1,18 +1,21 @@
 import os.path
-from typing import List, Dict, Union, Tuple, Set
-import pandas as pd
+from typing import Dict, List, Set, Tuple, Union
 import numpy as np
-from tqdm import tqdm
+import pandas as pd
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
-from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
-from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
-from ms2query.query_from_sqlite_database import get_precursor_mz, get_inchikey_information
-from ms2query.utils import load_pickled_file, column_names_for_output, load_ms2query_model
-from ms2query.spectrum_processing import create_spectrum_documents, \
-    clean_metadata, minimal_processing_multiple_spectra
+from ms2deepscore.models import load_model as load_ms2ds_model
+from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
+from tqdm import tqdm
+from ms2query.query_from_sqlite_database import (get_inchikey_information,
+                                                 get_precursor_mz)
 from ms2query.results_table import ResultsTable
+from ms2query.spectrum_processing import (clean_metadata,
+                                          create_spectrum_documents,
+                                          minimal_processing_multiple_spectra)
+from ms2query.utils import (column_names_for_output, load_ms2query_model,
+                            load_pickled_file)
 
 
 class MS2Library:
