@@ -2,9 +2,9 @@ import os
 import sys
 import pandas as pd
 from typing import Union, List, Tuple, Dict
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.models import Sequential  # pylint: disable=import-error
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint  # pylint: disable=import-error
+from tensorflow.keras.layers import Dense, Dropout  # pylint: disable=import-error
 from matplotlib import pyplot as plt
 
 

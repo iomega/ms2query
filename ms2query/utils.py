@@ -3,7 +3,7 @@ import sys
 from typing import Union, List
 import pandas as pd
 import numpy as np
-from tensorflow.keras.models import load_model as load_nn_model
+from tensorflow.keras.models import load_model as load_nn_model  # pylint: disable=import-error
 from spec2vec.Spec2Vec import Spectrum
 from matchms import importing
 
