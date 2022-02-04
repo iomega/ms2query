@@ -17,7 +17,7 @@ else:
 
 
 class DataCollectorForTraining(MS2Library):
-    """Class to collect data needed to train a ms2query neural network"""
+    """Class to collect data needed to train a ms2query random forest"""
     def __init__(self,
                  sqlite_file_location: str,
                  s2v_model_file_name: str,
@@ -144,7 +144,7 @@ class DataCollectorForTraining(MS2Library):
                 query_spectrum=query_spectrum,
                 sqlite_file_name=self.sqlite_file_name)
 
-            results_table = self._calculate_scores_for_metascore(results_table)
+            results_table = self._calculate_features_for_random_forest_model(results_table)
             library_spectrum_ids = list(results_table.data.index)
             # Select the features (remove inchikey, since this should not be
             # used for training

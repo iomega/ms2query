@@ -3,7 +3,6 @@ import sys
 from typing import Union, List
 import pandas as pd
 import numpy as np
-from tensorflow.keras.models import load_model as load_nn_model
 from spec2vec.Spec2Vec import Spectrum
 from matchms import importing
 
@@ -17,7 +16,6 @@ else:
 def load_ms2query_model(ms2query_model_file_name):
     """Loads in a MS2Query model
 
-    A .hdf5 is expected to be a neural network from tensorflow and
     a .pickle file is loaded like a ranadom forest from sklearn
 
     ms2query_model_file_name:
@@ -28,9 +26,8 @@ def load_ms2query_model(ms2query_model_file_name):
 
     if file_extension == ".pickle":
         return load_pickled_file(ms2query_model_file_name)
-    if file_extension == ".hdf5":
-        return load_nn_model(ms2query_model_file_name)
-    raise ValueError("The MS2Query model file is expected to end on .hdf5 or .pickle")
+
+    raise ValueError("The MS2Query model file is expected to end on .pickle")
 
 
 def load_pickled_file(filename: str):
