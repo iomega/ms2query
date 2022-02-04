@@ -11,6 +11,8 @@ class ResultsTable:
                        "inchikey",
                        "precursor_mz*0.001",
                        "mass_similarity",
+                       "retention_time",
+                       "retention_index",
                        "s2v_score",
                        "ms2ds_score",
                        "average_ms2ds_score_for_inchikey14",

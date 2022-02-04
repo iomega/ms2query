@@ -201,14 +201,17 @@ def test_analog_search(file_names, test_spectra):
                               spectrum_id_column_name=spectrum_id_column_name)
 
     cutoff = 20
-    result = test_library.analog_search_return_results_tables(test_spectra, cutoff)
+    results = test_library.analog_search_return_results_tables(test_spectra, cutoff)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
 
     for i in range(len(expected_result)):
-        result[i].assert_results_table_equal(expected_result[i])
+        # TODO: update results
+        result = results[i]
+        result.data = result.data.drop(["retention_time", "retention_index"], axis=1)
+        results[i].assert_results_table_equal(expected_result[i])
 
 
 def test_calculate_scores_for_metadata(file_names, test_spectra):
@@ -230,6 +233,9 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
     results_table = test_library._calculate_scores_for_metascore(results_table)
+    # TODO: update results
+    results_table.data = results_table.data.drop(["retention_time", "retention_index"], axis=1)
+
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
