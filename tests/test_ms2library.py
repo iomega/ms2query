@@ -37,7 +37,7 @@ def file_names():
         "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
     spectrum_id_column_name = "spectrumid"
     ms2q_model_file_name = os.path.join(path_to_tests_dir,
-        "general_test_files/test_ms2q_rf_model.pickle")
+        "general_test_files", "test_ms2q_rf_model.pickle")
     return sqlite_file_loc, spec2vec_model_file_loc, \
         s2v_pickled_embeddings_file, ms2ds_model_file_name, \
         ms2ds_embeddings_file_name, spectrum_id_column_name, ms2q_model_file_name
