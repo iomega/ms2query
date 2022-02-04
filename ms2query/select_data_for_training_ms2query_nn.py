@@ -144,7 +144,7 @@ class DataCollectorForTraining(MS2Library):
                 query_spectrum=query_spectrum,
                 sqlite_file_name=self.sqlite_file_name)
 
-            results_table = self._calculate_scores_for_metascore(results_table)
+            results_table = self._calculate_features_for_random_forest_model(results_table)
             library_spectrum_ids = list(results_table.data.index)
             # Select the features (remove inchikey, since this should not be
             # used for training

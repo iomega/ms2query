@@ -9,15 +9,12 @@ from ms2query.utils import get_classifier_from_csv_file, column_names_for_output
 class ResultsTable:
     default_columns = ["spectrum_ids",
                        "inchikey",
-                       "precursor_mz*0.001",
-                       "mass_similarity",
+                       "precursor_mz_library_spectrum",
+                       "precursor_mz_difference",
                        "s2v_score",
                        "ms2ds_score",
-                       "average_ms2ds_score_for_inchikey14",
-                       "nr_of_spectra_with_same_inchikey14*0.01",
                        "chemical_neighbourhood_score",
-                       "average_tanimoto_score_for_chemical_neighbourhood_score",
-                       "nr_of_spectra_for_chemical_neighbourhood_score*0.01"]
+                       "average_tanimoto_score_for_chemical_neighbourhood_score"]
 
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
@@ -63,23 +60,13 @@ class ResultsTable:
     def add_related_inchikey_scores(self, related_inchikey_scores):
         self.data["chemical_neighbourhood_score"] = \
             [related_inchikey_scores[x][0] for x in self.data["inchikey"]]
-        self.data["nr_of_spectra_for_chemical_neighbourhood_score*0.01"] = \
-            [related_inchikey_scores[x][1] / 100 for x in self.data["inchikey"]]
         self.data["average_tanimoto_score_for_chemical_neighbourhood_score"] = \
-            [related_inchikey_scores[x][2] for x in self.data["inchikey"]]
+            [related_inchikey_scores[x][1] for x in self.data["inchikey"]]
 
-    def add_average_ms2ds_scores(self, average_ms2ds_scores):
-        self.data["average_ms2ds_score_for_inchikey14"] = \
-            [average_ms2ds_scores[x][0] for x in self.data["inchikey"]]
-        self.data["nr_of_spectra_with_same_inchikey14*0.01"] = \
-            [average_ms2ds_scores[x][1] / 100 for x in self.data["inchikey"]]
-
-    def add_precursors(self, precursors, base_nr_mass_similarity):
+    def add_precursors(self, precursors):
         assert isinstance(precursors, np.ndarray), "Expected np.ndarray as input."
-        self.data["precursor_mz*0.001"] = precursors / 1000
-
-        self.data["mass_similarity"] = base_nr_mass_similarity ** \
-            (np.abs(precursors - self.precursor_mz))
+        self.data["precursor_mz_library_spectrum"] = precursors
+        self.data["precursor_mz_difference"] = np.abs(precursors - self.precursor_mz)
 
     def preselect_on_ms2deepscore(self):
         selected_spectrum_ids = list(self.ms2deepscores.nlargest(
@@ -103,16 +90,11 @@ class ResultsTable:
                               inplace=True)
 
     def get_training_data(self) -> pd.DataFrame:
-        return self.data[["precursor_mz*0.001",
-                          "mass_similarity",
+        return self.data[["precursor_mz_library_spectrum",
+                          "precursor_mz_difference",
                           "s2v_score",
-                          "ms2ds_score",
-                          "average_ms2ds_score_for_inchikey14",
-                          "nr_of_spectra_with_same_inchikey14*0.01",
                           "chemical_neighbourhood_score",
-                          "average_tanimoto_score_for_chemical_neighbourhood_score",
-                          "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
-                          ]]
+                          "average_tanimoto_score_for_chemical_neighbourhood_score"]]
 
     def export_to_dataframe(
             self,
@@ -164,11 +146,10 @@ class ResultsTable:
         results_df = pd.DataFrame({"spectrum_ids": selected_analogs["spectrum_ids"],
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
-                                   "precursor_mz_analog": selected_analogs["precursor_mz*0.001"] * 1000,
+                                   "precursor_mz_analog": selected_analogs["precursor_mz_library_spectrum"],
                                    "precursor_mz_query_spectrum": [self.precursor_mz] * nr_of_analogs,
                                    "analog_compound_name": compound_name_list,
-                                   "precursor_mz_difference": abs(selected_analogs["precursor_mz*0.001"] * 1000 -
-                                                                 pd.Series([self.precursor_mz] * nr_of_analogs))
+                                   "precursor_mz_difference": selected_analogs["precursor_mz_difference"]
                                    })
         if additional_metadata_columns is not None:
             for metadata_name in additional_metadata_columns:

@@ -98,11 +98,11 @@ def test_ms2library_set_settings(file_names):
 
     test_library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
-                              spectrum_id_column_name=spectrum_id_column_name, cosine_score_tolerance=0.2)
+                              spectrum_id_column_name=spectrum_id_column_name)
 
-    assert test_library.settings["cosine_score_tolerance"] == 0.2, \
+    assert test_library.settings["spectrum_id_column_name"] == "spectrumid", \
         "Different value for attribute was expected"
-    assert test_library.settings["base_nr_mass_similarity"] == 0.8, \
+    assert test_library.settings["progress_bars"] == True, \
         "Different value for attribute was expected"
 
 
@@ -145,7 +145,7 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         ms2deepscores=ms2dscores.iloc[:, 0],
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
-    results_table = test_library._calculate_scores_for_metascore(results_table)
+    results_table = test_library._calculate_features_for_random_forest_model(results_table)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
