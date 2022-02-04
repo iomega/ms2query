@@ -117,7 +117,6 @@ def test_analog_search(file_names, test_spectra):
 
     cutoff = 20
     result = test_library.analog_search_return_results_tables(test_spectra, cutoff)
-
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
@@ -202,7 +201,7 @@ def test_get_average_ms2ds_for_inchikey14(file_names):
     results = test_library._get_average_ms2ds_for_inchikey14(
         ms2ds_scores, inchickey14s)
     assert results == \
-           {'BKUKTJSDOUXYFL': (0.1, 1), 'BTVYFIMKUHNOBZ': (0.55, 2)}, \
+           {'BKUKTJSDOUXYFL': 0.1, 'BTVYFIMKUHNOBZ': 0.55}, \
            "Expected different results"
 
 
@@ -215,16 +214,16 @@ def test_get_chemical_neighbourhood_scores(file_names):
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     average_inchickey_scores = \
-        {'BKUKTJSDOUXYFL': (0.8, 3),
-         'UZMVEOVJASEKLP': (0.8, 2),
-         'QWSYKJZSJYRUSS': (0.8, 2),
-         'GRVRRAOIXXYICO': (0.8, 7),
-         'WXDBUBIFYCCNLE': (0.8, 2),
-         'ORRFIXSGNXBETO': (0.8, 2),
-         'LLWMPGSQZXZZAE': (0.8, 4),
-         'CTBBEXWJRAPJIZ': (0.8, 2),
-         'YQLQWGVOWKPLFR': (0.8, 2),
-         'BTVYFIMKUHNOBZ': (0.8, 2)}
+        {'BKUKTJSDOUXYFL': 0.8,
+         'UZMVEOVJASEKLP': 0.8,
+         'QWSYKJZSJYRUSS': 0.8,
+         'GRVRRAOIXXYICO': 0.8,
+         'WXDBUBIFYCCNLE': 0.8,
+         'ORRFIXSGNXBETO': 0.7,
+         'LLWMPGSQZXZZAE': 0.7,
+         'CTBBEXWJRAPJIZ': 0.6,
+         'YQLQWGVOWKPLFR': 0.6,
+         'BTVYFIMKUHNOBZ': 0.6}
 
     results = test_library._get_chemical_neighbourhood_scores(
         {"BKUKTJSDOUXYFL"}, average_inchickey_scores)
@@ -234,10 +233,9 @@ def test_get_chemical_neighbourhood_scores(file_names):
     assert 'BKUKTJSDOUXYFL' in results
     scores = results['BKUKTJSDOUXYFL']
     assert isinstance(scores, tuple)
-    assert len(scores) == 3, "Expected three scores for each InChiKey"
-    assert math.isclose(scores[0], 0.8)
-    assert scores[1] == 28
-    assert math.isclose(scores[2], 0.46646038479969587)
+    assert len(scores) == 2, "Expected two scores for each InChiKey"
+    assert math.isclose(scores[0], 0.72)
+    assert math.isclose(scores[1], 0.4607757103045708)
 
 
 def test_get_ms2query_model_prediction_single_spectrum():
@@ -270,8 +268,8 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
     with open(results_csv_file, "r") as test_file:
         assert test_file.readlines() == \
                ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16\n',
-                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n'], \
+                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
+                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n'], \
                "Expected different results to be stored in csv file"
 
 
