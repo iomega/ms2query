@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `retention_index` and `retention_time` to results table [#127](https://github.com/iomega/ms2query/pull/127)
+- `retention_index` and `retention_time` are cleaned by matchms in data filtering [#127](https://github.com/iomega/ms2query/pull/127)
 
 ### Changed
 
