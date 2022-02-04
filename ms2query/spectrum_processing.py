@@ -10,8 +10,8 @@ from spec2vec import SpectrumDocument
 from tqdm import tqdm
 from matchms.typing import SpectrumType
 from matchms.filtering import normalize_intensities, select_by_mz, \
-    select_by_intensity, reduce_to_number_of_peaks, add_losses
-from matchms.filtering.require_precursor_mz import require_precursor_mz
+    select_by_intensity, reduce_to_number_of_peaks, add_losses, \
+    require_precursor_mz, add_retention_index, add_retention_time
 from matchms.filtering import default_filters
 
 
@@ -19,6 +19,8 @@ def clean_metadata(spectrum_list: List[SpectrumType]):
     spectra_cleaned_metadata = []
     for s in spectrum_list:
         s = default_filters(s)
+        s = add_retention_index(s)
+        s = add_retention_time(s)
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
