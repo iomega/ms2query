@@ -118,7 +118,7 @@ class ResultsTable:
             self,
             nr_of_top_spectra: int,
             minimal_ms2query_score: Union[float, int] = 0.0,
-            additional_metadata_columns: List[str] = ["retention_time", "retention_index",],
+            additional_metadata_columns: List[str] = None,
             additional_ms2query_score_columns: List[str] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
