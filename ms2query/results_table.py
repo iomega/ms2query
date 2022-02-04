@@ -13,8 +13,8 @@ class ResultsTable:
                        "precursor_mz_difference",
                        "s2v_score",
                        "ms2ds_score",
-                       "chemical_neighbourhood_score",
-                       "average_tanimoto_score_for_chemical_neighbourhood_score"]
+                       "average_ms2deepscore_multiple_library_structures",
+                       "average_tanimoto_score_library_structures"]
 
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.DataFrame,
@@ -58,9 +58,10 @@ class ResultsTable:
         self.data = self.data.set_index(column_name)
 
     def add_related_inchikey_scores(self, related_inchikey_scores):
-        self.data["chemical_neighbourhood_score"] = \
+
+        self.data["average_ms2deepscore_multiple_library_structures"] = \
             [related_inchikey_scores[x][0] for x in self.data["inchikey"]]
-        self.data["average_tanimoto_score_for_chemical_neighbourhood_score"] = \
+        self.data["average_tanimoto_score_library_structures"] = \
             [related_inchikey_scores[x][1] for x in self.data["inchikey"]]
 
     def add_precursors(self, precursors):
@@ -93,8 +94,8 @@ class ResultsTable:
         return self.data[["precursor_mz_library_spectrum",
                           "precursor_mz_difference",
                           "s2v_score",
-                          "chemical_neighbourhood_score",
-                          "average_tanimoto_score_for_chemical_neighbourhood_score"]]
+                          "average_ms2deepscore_multiple_library_structures",
+                          "average_tanimoto_score_library_structures"]]
 
     def export_to_dataframe(
             self,
