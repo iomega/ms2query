@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.layers import Dense  # pylint: disable=import-error
-from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import Dropout  # pylint: disable=import-error
 from tensorflow.keras.models import Sequential  # pylint: disable=import-error
 
 
