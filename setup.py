@@ -33,6 +33,7 @@ setup(
         "spec2vec>=0.6.0",
         "h5py<3.0.0",
         "tensorflow",
+        "scikit-learn",
         "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5",],
