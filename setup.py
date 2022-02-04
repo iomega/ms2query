@@ -39,7 +39,7 @@ setup(
         "pandas>=1.2.5",],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
-                            "isort>=4.2.5,<5,>5.1.0",
+                            "isort>=4.2.5,!=5.0.*",
                             "prospector[with_pyroma]",
                             "pytest",
                             "pytest-cov",
