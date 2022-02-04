@@ -49,7 +49,7 @@ def run_complete_folder(ms2library: MS2Library,
                         results_folder: Union[str, None] = None,
                         nr_of_analogs_to_store: int = 1,
                         minimal_ms2query_score: Union[int, float] = 0.0,
-                        additional_metadata_columns: List[str] = None,
+                        additional_metadata_columns: List[str] = ["retention_time", "retention_index",],
                         additional_ms2query_score_columns: List[str] = None
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder
