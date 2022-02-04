@@ -72,15 +72,6 @@ class MS2Library:
         spectrum_id_column_name:
             The name of the column or key in dictionaries under which the
             spectrum id is stored. Default = "spectrumid"
-        cosine_score_tolerance:
-            Setting for calculating the cosine score. If two peaks fall within
-            the cosine_score tolerance the peaks are considered a match.
-            Default = 0.1
-        base_nr_mass_similarity:
-            The base nr used for normalizing the mass similarity. Default = 0.8
-        max_precursor_mz:
-            The value used to normalize the precursor m/z by dividing it by the
-            max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown of all methods. Default = True
         """
@@ -138,8 +129,6 @@ class MS2Library:
         """
         # Set default settings
         default_settings = {"spectrum_id_column_name": "spectrumid",
-                            "cosine_score_tolerance": 0.1,
-                            "base_nr_mass_similarity": 0.8,
                             "progress_bars": True}
         for attribute in new_settings:
             assert attribute in default_settings, \
@@ -275,108 +264,6 @@ class MS2Library:
             if results_df is not None:
                 results_df.insert(0, "query_spectrum_nr", [i] * len(results_df))
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
-
-    def select_potential_true_matches(self,
-                                      query_spectra: List[Spectrum],
-                                      mass_tolerance: Union[float, int] = 0.1,
-                                      s2v_score_threshold: float = 0.6
-                                      ) -> pd.DataFrame:
-        """Returns potential true matches for query spectra
-
-        The spectra are selected that fall within the mass_tolerance and have a
-        s2v score higher than s2v_score_threshold.
-
-        Args:
-        ------
-        query_spectra:
-            A list with spectrum objects for which the potential true matches
-            are returned
-        mass_tolerance:
-            The mass difference between query spectrum and library spectrum,
-            that is allowed.
-        s2v_score_threshold:
-            The minimal s2v score to be considered a potential true match
-        """
-        query_spectra = clean_metadata(query_spectra)
-        query_spectra = minimal_processing_multiple_spectra(query_spectra)
-
-        found_matches = pd.DataFrame(columns=["query_spectrum_nr",
-                                              "query_spectrum_precursor_mz",
-                                              "s2v_score",
-                                              "match_spectrum_id",
-                                              "match_precursor_mz",
-                                              "match_inchikey"])
-        for query_spectrum_nr, query_spectrum in tqdm(enumerate(query_spectra),
-                                                      desc="Selecting potential perfect matches",
-                                                      disable=not self.settings["progress_bars"]):
-            query_precursor_mz = query_spectrum.get("precursor_mz")
-            # Preselection based on precursor m/z
-            precursors_within_mass_tolerance = get_precursor_mz_within_range(
-                self.sqlite_file_name,
-                query_precursor_mz - mass_tolerance,
-                query_precursor_mz + mass_tolerance,
-                self.settings["spectrum_id_column_name"])
-            selected_library_spectra = [result[0] for result in
-                                        precursors_within_mass_tolerance]
-            s2v_scores = self._get_s2v_scores(query_spectrum,
-                                              selected_library_spectra)
-
-            for i, spectrum_id_and_precursor_mz in enumerate(precursors_within_mass_tolerance):
-                match_spectrum_id, match_precursor_mz = spectrum_id_and_precursor_mz
-                if s2v_scores[i] > s2v_score_threshold:
-                    found_matches = \
-                        found_matches.append(
-                            {"query_spectrum_nr": query_spectrum_nr,
-                             "query_spectrum_precursor_mz": query_precursor_mz,
-                             "s2v_score": s2v_scores[i],
-                             "match_spectrum_id": match_spectrum_id,
-                             "match_precursor_mz": match_precursor_mz,
-                             "match_inchikey": self.inchikey14s_of_spectra[match_spectrum_id]},
-                            ignore_index=True)
-        return found_matches
-
-    def store_potential_true_matches(self,
-                                     query_spectra: List[Spectrum],
-                                     results_file_location: str,
-                                     mass_tolerance: Union[float, int] = 0.1,
-                                     s2v_score_threshold: float = 0.6
-                                     ) -> None:
-        """Stores the results of a library search in a csv file
-
-        The spectra are selected that fall within the mass_tolerance and have a
-        s2v score higher than s2v_score_threshold.
-
-        Args:
-        ------
-        query_spectra:
-            A list with spectrum objects for which the potential true matches
-            are returned
-        results_file_location:
-            File location in which a csv file is created containing the results
-        mass_tolerance:
-            The mass difference between query spectrum and library spectrum,
-            that is allowed.
-        s2v_score_threshold:
-            The minimal s2v score to be considered a potential true match
-        """
-        assert not os.path.exists(results_file_location), "Results file already exists"
-        found_matches = self.select_potential_true_matches(query_spectra,
-                                                           mass_tolerance,
-                                                           s2v_score_threshold)
-        pd.set_option("display.max_rows", None, "display.max_columns", None)
-        # For each analog the compound name is selected from sqlite
-        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
-                                                 list(found_matches["match_spectrum_id"]))
-        compound_name_list = [metadata_dict[match_spectrum_id]["compound_name"]
-                              for match_spectrum_id
-                              in list(found_matches["match_spectrum_id"])]
-        found_matches["match_compound_name"] = compound_name_list
-        if self.classifier_file_name is not None and not found_matches.empty:
-            classifier_data = get_classifier_from_csv_file(self.classifier_file_name,
-                                                           list(found_matches["match_inchikey"].unique()))
-            classifier_data.rename(columns={"inchikey": "match_inchikey"}, inplace=True)
-            found_matches = found_matches.merge(classifier_data, on="match_inchikey")
-        found_matches.to_csv(results_file_location, mode="w", index=False)
 
     def _calculate_scores_for_metascore(self,
                                         results_table: ResultsTable
