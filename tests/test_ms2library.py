@@ -6,7 +6,7 @@ import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from matchms import Spectrum
-from tensorflow.keras.models import load_model as load_nn_model
+from ms2query.utils import load_ms2query_model
 from ms2query.ms2library import MS2Library, get_ms2query_model_prediction_single_spectrum, \
     create_library_object_from_one_dir
 from ms2query.utils import load_pickled_file
@@ -36,9 +36,8 @@ def file_names():
         path_to_tests_dir,
         "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
     spectrum_id_column_name = "spectrumid"
-    ms2q_model_file_name = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
+    ms2q_model_file_name = os.path.join(path_to_tests_dir,
+        "general_test_files/test_ms2q_rf_model.pickle")
     return sqlite_file_loc, spec2vec_model_file_loc, \
         s2v_pickled_embeddings_file, ms2ds_model_file_name, \
         ms2ds_embeddings_file_name, spectrum_id_column_name, ms2q_model_file_name
@@ -247,8 +246,8 @@ def test_get_ms2query_model_prediction_single_spectrum():
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5')
-    ms2query_nn_model = load_nn_model(ms2q_model_file_name)
+        'tests/test_files/general_test_files/test_ms2q_rf_model.pickle')
+    ms2query_nn_model = load_ms2query_model(ms2q_model_file_name)
     results = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
 
     expected_result = load_pickled_file(os.path.join(
@@ -285,7 +284,7 @@ def test_create_library_object_from_one_dir():
                        "classifiers": None,
                        "s2v_model": "general_test_files/100_test_spectra_s2v_model.model",
                        "ms2ds_model": "general_test_files/ms2ds_siamese_210301_5000_500_400.hdf5",
-                       "ms2query_model": "test_files_ms2library/ms2query_model_all_scores_dropout_regularization.hdf5",
+                       "ms2query_model": "general_test_files/test_ms2q_rf_model.pickle",
                        "s2v_embeddings": "general_test_files/100_test_spectra_s2v_embeddings.pickle",
                        "ms2ds_embeddings": "general_test_files/100_test_spectra_ms2ds_embeddings.pickle"}
     library = create_library_object_from_one_dir(path_to_tests_dir,
