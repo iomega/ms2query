@@ -30,7 +30,7 @@ def test_table_init(dummy_data):
                          ms2deepscores.iloc[:, 0],
                          query_spectrum,
                          sqlite_test_file)
-    assert table.data.shape == (0, 13), \
+    assert table.data.shape == (0, 11), \
         "Should have an empty data attribute"
     assert table.precursor_mz == 205.0, \
         "Expected different precursor m/z"
@@ -63,7 +63,7 @@ def test_add_precursors(dummy_data):
     table.add_precursors(np.array([190.0, 199.2, 200.0, 201.0]), 0.8)
     expected = np.array([0.03518437, 0.27410813, 0.32768, 0.4096])
 
-    assert table.data.shape == (4, 13), \
+    assert table.data.shape == (4, 11), \
         "Should have different data table"
     assert np.all(np.isclose(table.data.mass_similarity.values,
                              expected, atol=1e-7)), \
