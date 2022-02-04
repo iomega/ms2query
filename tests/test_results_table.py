@@ -30,7 +30,7 @@ def test_table_init(dummy_data):
                          ms2deepscores.iloc[:, 0],
                          query_spectrum,
                          sqlite_test_file)
-    assert table.data.shape == (0, 11), \
+    assert table.data.shape == (0, 8), \
         "Should have an empty data attribute"
     assert table.precursor_mz == 205.0, \
         "Expected different precursor m/z"
@@ -44,29 +44,12 @@ def test_table_preselect_ms2deepscore(dummy_data):
                          query_spectrum,
                          sqlite_test_file)
     table.preselect_on_ms2deepscore()
-    assert table.data.shape == (3, 11), "Should have different data table"
+    assert table.data.shape == (3, 8), "Should have different data table"
     assert np.all(table.data.spectrum_ids.values ==
                   ['XXXXXXXXXXXXXC', 'XXXXXXXXXXXXXB', 'XXXXXXXXXXXXXD']), \
         "Expected different spectrum IDs or order"
     assert np.all(table.data.ms2ds_score.values ==
                   [0.99, 0.7, 0.4]), \
-        "Expected different scores or order"
-
-
-def test_add_precursors(dummy_data):
-    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
-    preselection_cut_off = 2
-    table = ResultsTable(preselection_cut_off,
-                         ms2deepscores.iloc[:, 0],
-                         query_spectrum,
-                         sqlite_test_file)
-    table.add_precursors(np.array([190.0, 199.2, 200.0, 201.0]), 0.8)
-    expected = np.array([0.03518437, 0.27410813, 0.32768, 0.4096])
-
-    assert table.data.shape == (4, 11), \
-        "Should have different data table"
-    assert np.all(np.isclose(table.data.mass_similarity.values,
-                             expected, atol=1e-7)), \
         "Expected different scores or order"
 
 
@@ -85,14 +68,15 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
     assert len(returned_dataframe.index) == 5
     # Test if first row is correct
+    print(returned_dataframe)
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, :4]),
-        [0.570547, 439.792, 907.0, 467.208],
+        [0.56453, 33.25000, 907.0, 940.250],
         5)
     assert np.all(list(returned_dataframe.iloc[0, 4:11]) ==
-                  ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine',
-                   'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC',
-                   'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
+                  ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B',
+                   'CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O',
+                   'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
 
 
 def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
@@ -115,7 +99,7 @@ def test_export_to_dataframe_with_additional_columns(dummy_data, tmp_path):
     # Test if first row is correct
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, [0, 1, 2, 3, 7, 8, 9]]),
-        [0.570547, 439.792, 907.0, 467.208, 1, 0.96422, 0.70962],
+        [0.56453, 33.25000, 907.0, 940.250, 1, 0.99965, 0.92317],
         5)
     assert np.all(list(returned_dataframe.iloc[0, [4, 5, 6, 10, 11, 12, 13]]) ==
-                       ['HKSZLNNOFSGOKW', 'CCMSLIB00000001655', 'Staurosporine', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes'])
+                       ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B', 'CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O', 'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
