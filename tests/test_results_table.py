@@ -44,7 +44,7 @@ def test_table_preselect_ms2deepscore(dummy_data):
                          query_spectrum,
                          sqlite_test_file)
     table.preselect_on_ms2deepscore()
-    assert table.data.shape == (3, 13), "Should have different data table"
+    assert table.data.shape == (3, 11), "Should have different data table"
     assert np.all(table.data.spectrum_ids.values ==
                   ['XXXXXXXXXXXXXC', 'XXXXXXXXXXXXXB', 'XXXXXXXXXXXXXD']), \
         "Expected different spectrum IDs or order"
