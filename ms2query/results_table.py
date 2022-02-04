@@ -117,10 +117,8 @@ class ResultsTable:
             Additional columns with query spectrum metadata that should be added. For instance "retention_time".
         additional_ms2query_score_columns:
             Additional columns with scores used for calculating the ms2query metascore
-            Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
-            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
-            "average_tanimoto_score_for_chemical_neighbourhood_score",
-            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
+            Options are: "s2v_score", "ms2ds_score", "average_ms2deepscore_multiple_library_structures",
+            "average_tanimoto_score_library_structures"
         """
         # Select top results
         selected_analogs: pd.DataFrame = \

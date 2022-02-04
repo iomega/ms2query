@@ -3,15 +3,13 @@ from typing import List, Dict, Union, Tuple, Set
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from heapq import nlargest
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
 from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from spec2vec.vector_operations import cosine_similarity_matrix, calc_vector
-from ms2query.query_from_sqlite_database import get_precursor_mz_within_range, \
-    get_precursor_mz, get_inchikey_information, get_metadata_from_sqlite
-from ms2query.utils import load_pickled_file, get_classifier_from_csv_file, column_names_for_output, load_ms2query_model
+from ms2query.query_from_sqlite_database import get_precursor_mz, get_inchikey_information
+from ms2query.utils import load_pickled_file, column_names_for_output, load_ms2query_model
 from ms2query.spectrum_processing import create_spectrum_documents, \
     clean_metadata, minimal_processing_multiple_spectra
 from ms2query.results_table import ResultsTable
@@ -213,10 +211,8 @@ class MS2Library:
             Additional columns with query spectrum metadata that should be added. For instance "retention_time".
         additional_ms2query_score_columns:
             Additional columns with scores used for calculating the ms2query metascore
-            Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
-            "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
-            "average_tanimoto_score_for_chemical_neighbourhood_score",
-            "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
+            Options are: "s2v_score", "ms2ds_score", "average_ms2deepscore_multiple_library_structures",
+            "average_tanimoto_score_library_structures"
         """
         # pylint: disable=too-many-arguments
 
@@ -349,9 +345,8 @@ class MS2Library:
             self._get_average_ms2ds_for_inchikey14(
                 ms2ds_scores, inchikeys_to_calc_average_for)
         closely_related_inchikey_scores = \
-            self._get_chemical_neighbourhood_scores(
-                selected_inchikeys_set,
-                average_ms2ds_scores_per_inchikey)
+            self._calculate_average_multiple_library_structures(selected_inchikeys_set,
+                                                                average_ms2ds_scores_per_inchikey)
 
         results_table.add_related_inchikey_scores(closely_related_inchikey_scores)
         return results_table
@@ -381,18 +376,17 @@ class MS2Library:
                 average_ms2ds_per_inchikey14[inchikey14] = avg_ms2ds_score
         return average_ms2ds_per_inchikey14
 
-    def _get_chemical_neighbourhood_scores(
+    def _calculate_average_multiple_library_structures(
             self,
             selected_inchikey14s: Set[str],
             average_inchikey_scores: Dict[str, float]
             ) -> Dict[str, Tuple[float, float]]:
-        """
+        """Returns the average ms2deepscore and average tanimoto score for the 10 chemically closest inchikeys
 
         Args:
         ------
         selected_inchikey14s:
-            The inchikeys for which the chemical neighbourhood scores are
-            calculated
+            The inchikeys for which the 10 chemically closest inchikeys are selected
         average_inchikey_scores:
             Dictionary containing the average MS2Deepscore scores for each
             inchikey and the number of spectra belonging to this inchikey.

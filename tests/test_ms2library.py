@@ -225,8 +225,7 @@ def test_get_chemical_neighbourhood_scores(file_names):
          'YQLQWGVOWKPLFR': 0.6,
          'BTVYFIMKUHNOBZ': 0.6}
 
-    results = test_library._get_chemical_neighbourhood_scores(
-        {"BKUKTJSDOUXYFL"}, average_inchickey_scores)
+    results = test_library._calculate_average_multiple_library_structures({"BKUKTJSDOUXYFL"}, average_inchickey_scores)
     assert isinstance(results, dict), "expected a dictionary"
     assert len(results) == 1, "Expected different number of results in " \
                               "dictionary"
