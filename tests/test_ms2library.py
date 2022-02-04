@@ -10,8 +10,7 @@ from ms2query.ms2library import (MS2Library,
                                  create_library_object_from_one_dir,
                                  get_ms2query_model_prediction_single_spectrum)
 from ms2query.results_table import ResultsTable
-from ms2query.utils import load_ms2query_model
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_ms2query_model, load_pickled_file
 from tests.test_utils import create_test_classifier_csv_file
 
 

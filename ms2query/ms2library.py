@@ -14,8 +14,7 @@ from ms2query.results_table import ResultsTable
 from ms2query.spectrum_processing import (clean_metadata,
                                           create_spectrum_documents,
                                           minimal_processing_multiple_spectra)
-from ms2query.utils import (column_names_for_output,
-                            load_ms2query_model,
+from ms2query.utils import (column_names_for_output, load_ms2query_model,
                             load_pickled_file)
 
 
