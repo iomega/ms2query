@@ -5,14 +5,15 @@ adjusting the spectrum peaks (m/z and intensities).
 """
 from typing import Dict, List, Union
 import numpy as np
-from tqdm import tqdm
 from matchms import Spectrum
-from matchms.filtering import (
-    add_losses, add_retention_index, add_retention_time, default_filters,
-    normalize_intensities, reduce_to_number_of_peaks, require_precursor_mz,
-    select_by_intensity, select_by_mz)
+from matchms.filtering import (add_losses, add_retention_index,
+                               add_retention_time, default_filters,
+                               normalize_intensities,
+                               reduce_to_number_of_peaks, require_precursor_mz,
+                               select_by_intensity, select_by_mz)
 from matchms.typing import SpectrumType
 from spec2vec import SpectrumDocument
+from tqdm import tqdm
 
 
 def clean_metadata(spectrum_list: List[SpectrumType]):

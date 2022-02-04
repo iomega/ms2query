@@ -3,9 +3,9 @@ from matchms.filtering import (add_losses, add_precursor_mz, default_filters,
                                normalize_intensities,
                                reduce_to_number_of_peaks,
                                require_minimum_number_of_peaks, select_by_mz)
-from ms2query.utils import load_pickled_file
 from spec2vec import SpectrumDocument
 from spec2vec.model_building import train_new_word2vec_model
+from ms2query.utils import load_pickled_file
 
 
 def spectrum_processing(s):

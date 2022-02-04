@@ -4,9 +4,9 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
+from matchms import Spectrum
 from pandas.testing import assert_frame_equal
 from tensorflow.keras.models import load_model as load_nn_model
-from matchms import Spectrum
 from ms2query.ms2library import (MS2Library,
                                  create_library_object_from_one_dir,
                                  get_ms2query_model_prediction_single_spectrum)

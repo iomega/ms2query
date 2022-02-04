@@ -3,9 +3,10 @@ import sys
 from typing import List, Union
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import load_model as load_nn_model  # pylint: disable=import-error
 from matchms import importing
 from spec2vec.Spec2Vec import Spectrum
+from tensorflow.keras.models import \
+    load_model as load_nn_model  # pylint: disable=import-error
 
 
 if sys.version_info < (3, 8):

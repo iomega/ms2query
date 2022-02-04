@@ -8,8 +8,8 @@ import sqlite3
 from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from matchms.Spectrum import Spectrum
+from tqdm import tqdm
 
 
 def get_spectra_from_sqlite(sqlite_file_name: str,

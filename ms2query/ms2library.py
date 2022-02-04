@@ -4,10 +4,11 @@ from typing import Dict, List, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
+from matchms.Spectrum import Spectrum
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
+from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
-from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import (get_inchikey_information,
                                                  get_metadata_from_sqlite,
                                                  get_precursor_mz,
@@ -19,7 +20,6 @@ from ms2query.spectrum_processing import (clean_metadata,
 from ms2query.utils import (column_names_for_output,
                             get_classifier_from_csv_file, load_ms2query_model,
                             load_pickled_file)
-from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 
 
 class MS2Library:
