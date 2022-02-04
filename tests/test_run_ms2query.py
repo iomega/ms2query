@@ -62,15 +62,15 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
         assert file.readlines() ==        \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16\n',
-                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
+                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16,,\n',
+                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A,,\n']
 
     with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
         assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16\n',
-                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A\n']
+               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
+                '0,0.5755,5.6000,907.0000,901.4000,JXOFEBNJOOEXJY,CCMSLIB00000001650,Dolastatin 16,,\n',
+                '1,0.5697,168.7700,928.0000,759.2300,HEWGADDUUGVTPF,CCMSLIB00000001640,Antanapeptin A,,\n']
 
 
 def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra):
