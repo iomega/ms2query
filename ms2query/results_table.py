@@ -11,8 +11,6 @@ class ResultsTable:
                        "inchikey",
                        "precursor_mz*0.001",
                        "mass_similarity",
-                       "retention_time",
-                       "retention_index",
                        "s2v_score",
                        "ms2ds_score",
                        "average_ms2ds_score_for_inchikey14",
@@ -120,7 +118,7 @@ class ResultsTable:
             self,
             nr_of_top_spectra: int,
             minimal_ms2query_score: Union[float, int] = 0.0,
-            additional_metadata_columns: List[str] = None,
+            additional_metadata_columns: List[str] = ["retention_time", "retention_index",],
             additional_ms2query_score_columns: List[str] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
