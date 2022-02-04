@@ -6,16 +6,16 @@ information from the sqlite database.
 """
 
 import os
-import pandas as pd
-import numpy as np
 import sqlite3
+import numpy as np
+import pandas as pd
 from matchms import Spectrum
-from ms2query.utils import load_pickled_file
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import \
-    get_tanimoto_score_for_inchikey14s, get_spectra_from_sqlite,  \
-    get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import (
+    get_metadata_from_sqlite, get_spectra_from_sqlite,
+    get_tanimoto_score_for_inchikey14s)
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+from ms2query.utils import load_pickled_file
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):

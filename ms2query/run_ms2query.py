@@ -1,9 +1,9 @@
 import os
-from typing import Union, Dict, List
+from typing import Dict, List, Union
+from urllib.request import urlretrieve
 from tqdm import tqdm
 from ms2query.ms2library import MS2Library
 from ms2query.utils import convert_files_to_matchms_spectrum_objects
-from urllib.request import urlretrieve
 
 
 def default_library_file_base_names() -> Dict[str, str]:

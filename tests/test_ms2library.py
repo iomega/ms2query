@@ -1,17 +1,18 @@
-import os
 import math
+import os
 import re
 import numpy as np
-import pytest
 import pandas as pd
-from pandas.testing import assert_frame_equal
+import pytest
 from matchms import Spectrum
+from pandas.testing import assert_frame_equal
 from tensorflow.keras.models import load_model as load_nn_model
-from ms2query.ms2library import MS2Library, get_ms2query_model_prediction_single_spectrum, \
-    create_library_object_from_one_dir
+from ms2query.ms2library import (MS2Library,
+                                 create_library_object_from_one_dir,
+                                 get_ms2query_model_prediction_single_spectrum)
+from ms2query.results_table import ResultsTable
 from ms2query.utils import load_pickled_file
 from tests.test_utils import create_test_classifier_csv_file
-from ms2query.results_table import ResultsTable
 
 
 @pytest.fixture

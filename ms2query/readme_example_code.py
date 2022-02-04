@@ -1,5 +1,8 @@
-from ms2query.run_ms2query import download_default_models, default_library_file_base_names, run_complete_folder
 from ms2query.ms2library import create_library_object_from_one_dir
+from ms2query.run_ms2query import (default_library_file_base_names,
+                                   download_default_models,
+                                   run_complete_folder)
+
 
 # Set the location where all your downloaded model files are stored
 ms2query_library_files_directory = "../data/models_embeddings_files/"

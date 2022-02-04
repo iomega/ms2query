@@ -1,10 +1,10 @@
 import os
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 from matchms import Spectrum
 from ms2query import ResultsTable
-from ms2query.utils import load_pickled_file, column_names_for_output
+from ms2query.utils import column_names_for_output, load_pickled_file
 from tests.test_utils import create_test_classifier_csv_file
 
 

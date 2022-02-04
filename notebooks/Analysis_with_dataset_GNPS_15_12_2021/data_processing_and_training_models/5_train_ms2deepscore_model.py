@@ -1,12 +1,13 @@
 import os
 import pickle
 import numpy as np
-from ms2deepscore import SpectrumBinner
-from ms2deepscore.models import SiameseModel
-from ms2deepscore.data_generators import DataGeneratorAllInchikeys
 import tensorflow as tf
+from ms2deepscore import SpectrumBinner
+from ms2deepscore.data_generators import DataGeneratorAllInchikeys
+from ms2deepscore.models import SiameseModel
+from tensorflow.keras.callbacks import (  # pylint: disable=import-error
+    EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint  # pylint: disable=import-error
 
 
 path_data = "C:\\HSD\\OneDrive - Hochschule Düsseldorf\\Data\\ms2query"

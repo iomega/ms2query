@@ -2,10 +2,13 @@ import os
 import sys
 import numpy as np
 from matchms import Spectrum
-from ms2query.spectrum_processing import require_peaks_below_mz, \
-    spectrum_processing_minimal, spectrum_processing_s2v, \
-    minimal_processing_multiple_spectra, create_spectrum_documents, clean_metadata
 from spec2vec import SpectrumDocument
+from ms2query.spectrum_processing import (clean_metadata,
+                                          create_spectrum_documents,
+                                          minimal_processing_multiple_spectra,
+                                          require_peaks_below_mz,
+                                          spectrum_processing_minimal,
+                                          spectrum_processing_s2v)
 
 
 if sys.version_info < (3, 8):
