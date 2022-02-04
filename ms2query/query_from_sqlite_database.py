@@ -4,11 +4,11 @@ Functions to obtain data from sqlite files.
 
 import ast
 import io
-from typing import Dict, List, Union, Tuple
+import sqlite3
+from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import sqlite3
 from matchms.Spectrum import Spectrum
 
 

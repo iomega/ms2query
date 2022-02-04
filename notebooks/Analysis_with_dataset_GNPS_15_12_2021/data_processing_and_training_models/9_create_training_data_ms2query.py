@@ -1,5 +1,7 @@
 import os
-from ms2query.select_data_for_training_ms2query_nn import DataCollectorForTraining
+from ms2query.select_data_for_training_ms2query_nn import \
+    DataCollectorForTraining
+
 
 file_date = "15_12_2021"
 

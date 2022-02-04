@@ -1,9 +1,9 @@
 import os
-import pytest
 import pandas as pd
-from .test_sqlite import check_sqlite_files_are_equal
+import pytest
 from ms2query.library_files_creator import LibraryFilesCreator
 from ms2query.utils import load_pickled_file
+from .test_sqlite import check_sqlite_files_are_equal
 
 
 @pytest.fixture

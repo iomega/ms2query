@@ -3,16 +3,16 @@ and inspection is expected to happen prior to running MS2Query and is not taken
 into account here. Processing here hence refers to inspecting, filtering,
 adjusting the spectrum peaks (m/z and intensities).
 """
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 import numpy as np
-from matchms import Spectrum
-from spec2vec import SpectrumDocument
 from tqdm import tqdm
+from matchms import Spectrum
+from matchms.filtering import (
+    add_losses, add_retention_index, add_retention_time, default_filters,
+    normalize_intensities, reduce_to_number_of_peaks, require_precursor_mz,
+    select_by_intensity, select_by_mz)
 from matchms.typing import SpectrumType
-from matchms.filtering import normalize_intensities, select_by_mz, \
-    select_by_intensity, reduce_to_number_of_peaks, add_losses, \
-    require_precursor_mz, add_retention_index, add_retention_time
-from matchms.filtering import default_filters
+from spec2vec import SpectrumDocument
 
 
 def clean_metadata(spectrum_list: List[SpectrumType]):

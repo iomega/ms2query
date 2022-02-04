@@ -8,14 +8,14 @@ Inchikeys contains the order of inchikey14s, that can be used to find
 corresponding indexes in the tanimoto_scores table.
 """
 
-import io
-from tqdm import tqdm
-from typing import Dict, List, Tuple
-import pandas as pd
-import numpy as np
-import sqlite3
-import os
 import gc
+import io
+import os
+import sqlite3
+from typing import Dict, List, Tuple
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
 from matchms import Spectrum
 from ms2query.utils import load_pickled_file
 
