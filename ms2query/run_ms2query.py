@@ -8,15 +8,15 @@ from ms2query.utils import convert_files_to_matchms_spectrum_objects
 
 def default_library_file_base_names() -> Dict[str, str]:
     """Returns a dictionary with the base names of default files for a MS2Library"""
-    return {"sqlite": "ALL_GNPS_210409_train_split.sqlite",
-            "sqlite_trainables": "ALL_GNPS_210409_Spec2Vec_ms2query.model.trainables.syn1neg.npy",
-            "sqlite_vectors": "ALL_GNPS_210409_Spec2Vec_ms2query.model.wv.vectors.npy",
+    return {"sqlite": "library_GNPS_15_12_2021.sqlite",
+            "s2v_trainables": "spec2vec_model_GNPS_15_12_202.model.trainables.syn1neg.npy",
+            "s2v_vectors": "spec2vec_model_GNPS_15_12_202.model.wv.vectors.npy",
             "classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt",
-            "s2v_model": "ALL_GNPS_210409_Spec2Vec_ms2query.model",
-            "ms2ds_model": "ms2ds_20210420-141937_data210409_10k_500_500_200.hdf5",
-            "ms2query_model": "ms2query_model_all_scores_dropout_regularization.hdf5",
-            "s2v_embeddings": "s2v_embeddings_train_spectra_210426.pickle",
-            "ms2ds_embeddings": "ms2ds_embeddings_train_spectra_210426.pickle"}
+            "s2v_model": "spec2vec_model_GNPS_15_12_2021.model",
+            "ms2ds_model": "ms2ds_model_GNPS_15_12_2021.hdf5",
+            "ms2query_model": "ms2query_random_forest_model.pickle",
+            "s2v_embeddings": "library_GNPS_15_12_2021_s2v_embeddings.pickle",
+            "ms2ds_embeddings": "library_GNPS_15_12_2021_ms2ds_embeddings.pickle"}
 
 
 def download_default_models(dir_to_store_files: str,
