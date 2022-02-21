@@ -22,7 +22,7 @@ def clean_metadata(spectrum_list: List[SpectrumType]):
         s = default_filters(s)
         s = add_retention_index(s)
         s = add_retention_time(s)
-        s.set("spectrum_nr", i)
+        s.set("spectrum_nr", i+1)
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 

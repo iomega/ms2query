@@ -60,7 +60,7 @@ def test_export_to_dataframe(dummy_data, tmp_path):
         'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
     test_table.sqlite_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
-    test_table.query_spectrum.set("spectrum_nr", 0)
+    test_table.query_spectrum.set("spectrum_nr", 1)
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
@@ -72,7 +72,7 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     print(returned_dataframe)
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, :5]),
-        [0, 0.56453, 33.25000, 907.0, 940.250],
+        [1, 0.56453, 33.25000, 907.0, 940.250],
         5)
     assert np.all(list(returned_dataframe.iloc[0, 5:12]) ==
                   ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B',
@@ -88,7 +88,7 @@ def test_export_to_dataframe_with_additional_columns(tmp_path):
     test_table.sqlite_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
-    test_table.query_spectrum.set("spectrum_nr", 0)
+    test_table.query_spectrum.set("spectrum_nr", 1)
     returned_dataframe = test_table.export_to_dataframe(5,
                                                         additional_metadata_columns=["charge"],
                                                         additional_ms2query_score_columns=["s2v_score", "ms2ds_score"])
@@ -101,7 +101,7 @@ def test_export_to_dataframe_with_additional_columns(tmp_path):
     # Test if first row is correct
     np.testing.assert_array_almost_equal(
         list(returned_dataframe.iloc[0, [0, 1, 2, 3, 4, 8, 9, 10]]),
-        [0, 0.56453, 33.25000, 907.0, 940.250, 1, 0.99965, 0.92317],
+        [1, 0.56453, 33.25000, 907.0, 940.250, 1, 0.99965, 0.92317],
         5)
     assert np.all(list(returned_dataframe.iloc[0, [5, 6, 7, 11, 12, 13, 14]]) ==
                        ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B', 'CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O', 'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
