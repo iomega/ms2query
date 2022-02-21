@@ -143,7 +143,8 @@ class ResultsTable:
 
         # Add inchikey and ms2query model prediction to results df
         # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
-        results_df = pd.DataFrame({"spectrum_ids": selected_analogs["spectrum_ids"],
+        results_df = pd.DataFrame({"query_spectrum_nr": self.query_spectrum.get("spectrum_nr"),
+                                   "spectrum_ids": selected_analogs["spectrum_ids"],
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
                                    "precursor_mz_analog": selected_analogs["precursor_mz_library_spectrum"],

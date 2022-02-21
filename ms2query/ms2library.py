@@ -226,15 +226,11 @@ class MS2Library:
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_name is None:
-                csv_file.write("query_spectrum_nr," +
-                               ",".join(column_names_for_output(True, False, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) +
-                               "\n")
+                csv_file.write(",".join(column_names_for_output(True, False, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) + "\n")
             else:
-                csv_file.write("query_spectrum_nr," +
-                               ",".join(column_names_for_output(True, True, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) +
-                               "\n")
+                csv_file.write(",".join(column_names_for_output(True, True, additional_metadata_columns,
+                                                                additional_ms2query_score_columns)) + "\n")
         # preprocess spectra
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
@@ -261,7 +257,6 @@ class MS2Library:
                                                            additional_metadata_columns=additional_metadata_columns,
                                                            additional_ms2query_score_columns=additional_ms2query_score_columns)
             if results_df is not None:
-                results_df.insert(0, "query_spectrum_nr", [i] * len(results_df))
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,
