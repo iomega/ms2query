@@ -269,8 +269,8 @@ def test_analog_search_store_in_csv(file_names, test_spectra, tmp_path):
     with open(results_csv_file, "r") as test_file:
         assert test_file.readlines() == \
                ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '0,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
-                '1,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n'], \
+                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
+                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n'], \
                "Expected different results to be stored in csv file"
 
 
