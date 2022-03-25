@@ -18,10 +18,11 @@ from tqdm import tqdm
 
 def clean_metadata(spectrum_list: List[SpectrumType]):
     spectra_cleaned_metadata = []
-    for s in spectrum_list:
+    for i, s in enumerate(spectrum_list):
         s = default_filters(s)
         s = add_retention_index(s)
         s = add_retention_time(s)
+        s.set("spectrum_nr", i+1)
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
