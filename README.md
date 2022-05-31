@@ -6,7 +6,7 @@
 <img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="280">
 
 ### MS2Query - machine learning assisted library querying of MS/MS spectra.
-MS2Query is a tool for fast library searching for both analogs and true matches.
+MS2Query is a tool for fast library searching for both analogs and exact matches.
 
 
 ## Documentation for users
