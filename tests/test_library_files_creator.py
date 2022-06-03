@@ -142,4 +142,6 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     expected_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
         "100_test_spectra_s2v_embeddings.pickle"))
-    pd.testing.assert_frame_equal(embeddings, expected_embeddings)
+    pd.testing.assert_frame_equal(embeddings, expected_embeddings,
+                                  check_exact=False,
+                                  atol=1e-5)
