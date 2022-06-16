@@ -3,14 +3,12 @@
 [![PyPI](https://img.shields.io/pypi/v/ms2query)](https://pypi.org/project/ms2query/)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
 
-<img src="https://github.com/iomega/ms2query/blob/main/images/ms2query_logo.svg" width="280">
-
 ### MS2Query - Reliable and fast MS/MS spectral-based analogue search with MS2Query
 MS2Query is able to search for both analogues and exact matches in large libraries. 
 
 Metabolomics of natural extracts remains hampered by the grand challenge of metabolite annotation and identification. Only a tiny fraction of all metabolites has an annotated spectrum in a library; hence, when searching only for exact library matches such an approach generally has a low recall. An attractive alternative is searching for so-called analogues as a starting point for structural annotations; analogues are library molecules which are not exact matches, but display a high chemical similarity. However, current analogue search implementations are not very reliable yet and are relatively slow. Here, we present MS2Query, a machine learning-based tool that integrates mass spectrum-based chemical similarity predictors (Spec2Vec and MS2Deepscore) as well as detected precursor masses to rank potential analogues and exact matches. The reliability and scalability of MS2Query are encouraging steps toward higher-throughput large-scale untargeted metabolomics workflows. This offers entirely new opportunities for further increasing the annotation rate of complex metabolite mixtures.
 
-<img src="https://github.com/iomega/ms2query/blob/main/images/Worflow%MS2Query.png" width="280">
+<img src="https://github.com/iomega/ms2query/blob/main/images/workflow_ms2query.png" width="1000">
 
 
 ### Workflow
