@@ -265,7 +265,7 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
-        f"""SELECT metadata FROM {table_name} 
+        f"""SELECT spectrumid, metadata FROM {table_name} 
         WHERE {spectrum_id_storage_name} 
         IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
@@ -273,9 +273,9 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     list_of_metadata = cur.fetchall()
     # Convert to dictionary
     results_dict = {}
-    for metadata in list_of_metadata:
-        metadata = ast.literal_eval(metadata[0])
-        results_dict[metadata[spectrum_id_storage_name]] = metadata
+    for spectrumid, metadata in list_of_metadata:
+        metadata = ast.literal_eval(metadata)
+        results_dict[spectrumid] = metadata
     # Check if all spectrum_ids were found
     for spectrum_id in spectrum_id_list:
         assert spectrum_id in results_dict, \
