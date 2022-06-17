@@ -144,7 +144,6 @@ def test_calculate_scores_for_metadata(file_names, test_spectra):
         ms2deepscores=ms2dscores.iloc[:, 0],
         query_spectrum=test_spectra[0],
         sqlite_file_name=sqlite_file_loc)
-
     results_table = test_library._calculate_features_for_random_forest_model(results_table)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -182,7 +181,7 @@ def test_get_s2v_scores(file_names, test_spectra):
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
     result = test_library._get_s2v_scores(
-        test_spectra[0], ["CCMSLIB00000001572", "CCMSLIB00000001648"])
+        test_spectra[0], [18, 68])
     assert np.allclose(result, np.array([0.97565603, 0.97848464])), \
         "Expected different Spec2Vec scores"
 
@@ -198,8 +197,7 @@ def test_get_average_ms2ds_for_inchikey14(file_names):
     inchickey14s = {"BKUKTJSDOUXYFL", "BTVYFIMKUHNOBZ"}
     ms2ds_scores = pd.Series(
         [0.1, 0.8, 0.3],
-        index=['CCMSLIB00000001678',
-               'CCMSLIB00000001651', 'CCMSLIB00000001653'])
+        index=[87, 71, 73])
     results = test_library._get_average_ms2ds_for_inchikey14(
         ms2ds_scores, inchickey14s)
     assert results == \
