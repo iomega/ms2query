@@ -9,8 +9,8 @@ from ms2query.utils import convert_files_to_matchms_spectrum_objects
 def default_library_file_base_names() -> Dict[str, str]:
     """Returns a dictionary with the base names of default files for a MS2Library"""
     return {"sqlite": "library_GNPS_15_12_2021.sqlite",
-            "s2v_trainables": "spec2vec_model_GNPS_15_12_202.model.trainables.syn1neg.npy",
-            "s2v_vectors": "spec2vec_model_GNPS_15_12_202.model.wv.vectors.npy",
+            "s2v_trainables": "spec2vec_model_GNPS_15_12_2021.model.syn1neg.npy",
+            "s2v_vectors": "spec2vec_model_GNPS_15_12_2021.model.wv.vectors.npy",
             "classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt",
             "s2v_model": "spec2vec_model_GNPS_15_12_2021.model",
             "ms2ds_model": "ms2ds_model_GNPS_15_12_2021.hdf5",
