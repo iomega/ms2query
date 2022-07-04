@@ -6,8 +6,8 @@ This laptop has an 11th generation Intel Core i5-1125G7 and 16GB installed RAM.
 
 import os
 import time
-from ms2query.run_ms2query import run_complete_folder
 from ms2query.ms2library import MS2Library
+from ms2query.run_ms2query import run_complete_folder
 
 start_time = time.time()
 
