@@ -120,7 +120,7 @@ def get_classifier_from_csv_file(classifier_file_name: str,
     list_of_classifiers = []
     for inchikey in list_of_inchikeys:
         classifiers = classifiers_df.loc[
-            classifiers_df["inchikey"].str.startswith(inchikey)]  # pylint: disable=unsubscriptable-object
+            classifiers_df["inchikey"].str.startswith(inchikey)]
         if classifiers.empty:
             list_of_classifiers.append(pd.DataFrame(np.array(
                 [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
