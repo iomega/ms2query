@@ -21,14 +21,13 @@ def spectrum_processing(s):
     return s
 
 
-# path_root = os.path.dirname(os.getcwd())
-# path_data = os.path.join(os.path.dirname(path_root), "data/gnps_15_12_2021/")
-path_data = "C:\\HSD\\OneDrive - Hochschule Düsseldorf\\Data\\ms2query"
+path_root = os.path.dirname(os.getcwd())
+path_data = os.path.join(path_root, "../../../data/libraries_and_models/gnps_15_12_2021/in_between_files")
 
 training_spectra_annotated = load_pickled_file(os.path.join(path_data,
-                                                            "GNPS_15_12_2021_pos_train.pickle"))
+                                                            "GNPS_15_12_2021_neg_train.pickle"))
 training_spectra_not_annotated = load_pickled_file(os.path.join(path_data,
-                                                                "ALL_GNPS_15_12_2021_positive_not_annotated.pickle"))
+                                                                "ALL_GNPS_15_12_2021_negative_not_annotated.pickle"))
 all_spectra = training_spectra_annotated + training_spectra_not_annotated
 # Load data from pickled file and apply filters
 cleaned_spectra = [spectrum_processing(s) for s in all_spectra]
@@ -39,8 +38,8 @@ cleaned_spectra = [s for s in cleaned_spectra if s is not None]
 # Create spectrum documents
 reference_documents = [SpectrumDocument(s, n_decimals=2) for s in cleaned_spectra]
 
-model_file = os.path.join(path_data, "trained_models",
-                          "spec2vec_model_GNPS_15_12_2021.model")
+model_file = os.path.join(path_data, "negative_mode_models",
+                          "neg_mode_spec2vec_model_GNPS_15_12_2021.model")
 model = train_new_word2vec_model(reference_documents,
                                  iterations=[10, 20, 30],
                                  filename=model_file,

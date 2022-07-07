@@ -9,19 +9,21 @@ from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
 
+path_root = os.path.dirname(os.getcwd())
 
-path_data = "C:\\HSD\\OneDrive - Hochschule Düsseldorf\\Data\\ms2query"
+path_data = os.path.join(path_root, "../../../data/libraries_and_models/gnps_15_12_2021/in_between_files")
 
-outfile = os.path.join(path_data, "GNPS_15_12_2021_pos_train.pickle")
+
+outfile = os.path.join(path_data, "GNPS_15_12_2021_neg_train.pickle")
 with open(outfile, 'rb') as file:
     spectrums_training = pickle.load(file)
-outfile = os.path.join(path_data, "GNPS_15_12_2021_pos_tanimoto_scores.pickle")
+outfile = os.path.join(path_data, "GNPS_15_12_2021_neg_tanimoto_scores.pickle")
 with open(outfile, 'rb') as file:
     tanimoto_df = pickle.load(file)
-outfile = os.path.join(path_data, "GNPS_15_12_2021_pos_val_250_inchikeys.pickle")
+outfile = os.path.join(path_data, "GNPS_15_12_2021_neg_val_250_inchikeys.pickle")
 with open(outfile, 'rb') as file:
     validation_spectra_250 = pickle.load(file)
-outfile = os.path.join(path_data, "GNPS_15_12_2021_pos_val_3000_spectra.pickle")
+outfile = os.path.join(path_data, "GNPS_15_12_2021_neg_val_3000_spectra.pickle")
 with open(outfile, 'rb') as file:
     validation_spectra_3000 = pickle.load(file)
 
@@ -69,7 +71,7 @@ metrics = ["mae", tf.keras.metrics.RootMeanSquaredError()]
 patience_scoring_net = 10
 embedding_dim = 200
 filename_base = "GNPS_15_12_2021"
-model_output_file = os.path.join(path_data, "trained_models" , filename_base+".hdf5")
+model_output_file = os.path.join(path_data, "negative_mode_models", filename_base+".hdf5")
 
 model.compile(
     loss='mse',
@@ -104,5 +106,5 @@ filename = os.path.join(path_data, filename_base+'_training_history.pickle')
 with open(filename, 'wb') as f:
     pickle.dump(history.history, f)
 
-model_output_file = os.path.join(path_data, "trained_models" , "ms2ds_"+filename_base+".hdf5")
+model_output_file = os.path.join(path_data, "negative_mode_models", "ms2ds_"+filename_base+".hdf5")
 model.save(model_output_file)
