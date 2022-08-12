@@ -24,8 +24,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
                          tanimoto_scores_pickled_dataframe_file: str,
                          list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
-                         progress_bars: bool = True,
-                         spectrum_id_column_name: str = "spectrumid"):
+                         progress_bars: bool = True):
     """Wrapper to create sqlite file with three tables.
 
     Args:
@@ -50,11 +49,6 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     progress_bars:
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
-    spectrum_id_column_name:
-        The spectrum id column name is the name given to the column storing the
-        spectrum ids. This is important since this name will be used to look
-        up the spectrum id in the metadata. Per version of the data this
-        differs between 'spectrum_id' and 'spectrumid'
     """
     # pylint: disable=too-many-arguments
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
@@ -191,7 +185,7 @@ def create_table_structure(sqlite_file_name: str,
     for column_header in combined_columns_dict:
         create_table_command += column_header + " " \
                                 + combined_columns_dict[column_header] + ",\n"
-    create_table_command += f"PRIMARY KEY (spectrumid));"
+    create_table_command += "PRIMARY KEY (spectrumid));"
 
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
@@ -248,6 +242,7 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
     progress_bar:
         If True a progress bar will show the progress.
     """
+    # pylint: disable=too-many-locals
     conn = sqlite3.connect(sqlite_file_name)
 
     # Get the column names in the sqlite file
