@@ -50,7 +50,6 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
     """
-    # pylint: disable=too-many-arguments
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
                                   tanimoto_scores_pickled_dataframe_file,
                                   list_of_spectra,
