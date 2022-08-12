@@ -6,7 +6,7 @@ from ms2query.select_data_for_training_ms2query_nn import \
 file_date = "15_12_2021"
 path_root = os.path.dirname(os.getcwd())
 path_data = os.path.join(path_root, "../../../data/libraries_and_models/gnps_15_12_2021/in_between_files")
-path_negative_mode = os.path.join(path_data, "negative_mode_models")
+path_negative_mode = os.path.join(path_data, "../negative_mode_models")
 
 assert os.path.exists(os.path.join(path_negative_mode, f"neg_library_GNPS_{file_date}.sqlite"))
 assert os.path.exists(os.path.join(path_negative_mode, f"neg_mode_spec2vec_model_GNPS_{file_date}.model"))

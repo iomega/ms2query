@@ -5,8 +5,7 @@ from ms2query.library_files_creator import LibraryFilesCreator
 file_date = "15_12_2021"
 path_root = os.path.dirname(os.getcwd())
 path_data = os.path.join(path_root, "../../../data/libraries_and_models/gnps_15_12_2021/in_between_files")
-path_library = os.path.join(path_data, "negative_mode_models")
-
+path_library = os.path.join(path_data, "../negative_mode_models")
 
 file_creator = LibraryFilesCreator(os.path.join(path_data,
                                                 f"GNPS_{file_date}_neg_train.pickle"),
