@@ -265,7 +265,7 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     """
     conn = sqlite3.connect(sqlite_file_name)
     sqlite_command = \
-        f"""SELECT spectrumid, metadata FROM {table_name} 
+        f"""SELECT {spectrum_id_storage_name}, metadata FROM {table_name} 
         WHERE {spectrum_id_storage_name} 
         IN ('{"', '".join(map(str, spectrum_id_list))}')"""
     cur = conn.cursor()
