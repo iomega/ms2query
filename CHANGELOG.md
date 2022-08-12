@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2]
+
+### Added 
+
+- Updated notebooks for performance analysis
+- Solved bug in downloading library
+
+### Changed
+
+- Made handling different pandas versions more flexible
+
 ## [0.3.1]
 
 ### Changed
@@ -80,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Licence.
 
 [Unreleased]: https://github.com/iomega/ms2query/compare/0.3.1...HEAD
+[0.3.2]: https://github.com/iomega/ms2query/compare/0.3.1...0.3.2
 [0.3.1]: https://github.com/iomega/ms2query/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/iomega/ms2query/compare/0.2.4...0.3.0
 [0.2.4]: https://github.com/iomega/ms2query/compare/0.2.3...0.2.4

@@ -399,7 +399,7 @@ class MS2Library:
 
             average_tanimoto_score_multiple_library_spectra = sum(tanimoto_scores) / len(tanimoto_scores)
             sum_of_average_ms2ds_multiple_library_structures = \
-                sum([average_inchikey_scores[closely_related_inchikey14]for closely_related_inchikey14 in closest_library_structures])
+                sum(average_inchikey_scores[closely_related_inchikey14] for closely_related_inchikey14 in closest_library_structures)
             average_ms2deepscore_multiple_library_structures = sum_of_average_ms2ds_multiple_library_structures/ len(closest_library_structures)
             results_per_inchikey[inchikey] = (average_ms2deepscore_multiple_library_structures, average_tanimoto_score_multiple_library_spectra)
         return results_per_inchikey
