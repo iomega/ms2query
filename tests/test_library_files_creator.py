@@ -85,9 +85,11 @@ def test_create_all_library_files(tmp_path, path_to_general_test_files):
     s2v_embeddings = load_pickled_file(expected_s2v_emb_file_name)
     expected_s2v_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
+        "test_files_without_spectrum_id",
         "100_test_spectra_s2v_embeddings.pickle"))
     expected_ms2ds_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
+        "test_files_without_spectrum_id",
         "100_test_spectra_ms2ds_embeddings.pickle"))
     pd.testing.assert_frame_equal(ms2ds_embeddings,
                                   expected_ms2ds_embeddings,
@@ -99,7 +101,7 @@ def test_create_all_library_files(tmp_path, path_to_general_test_files):
                                   atol=1e-5)
     # Check if sqlite file is stored correctly
     check_sqlite_files_are_equal(expected_sqlite_file_name, os.path.join(
-        path_to_general_test_files, "100_test_spectra.sqlite"))
+        path_to_general_test_files, "test_files_without_spectrum_id", "100_test_spectra.sqlite"))
 
 
 def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
@@ -119,6 +121,7 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     embeddings = load_pickled_file(new_embeddings_file_name)
     expected_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
+        "test_files_without_spectrum_id",
         "100_test_spectra_ms2ds_embeddings.pickle"))
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
@@ -141,6 +144,7 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     embeddings = load_pickled_file(new_embeddings_file_name)
     expected_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
+        "test_files_without_spectrum_id",
         "100_test_spectra_s2v_embeddings.pickle"))
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
