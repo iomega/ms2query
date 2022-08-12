@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import pytest
 from ms2query.library_files_creator import LibraryFilesCreator
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_pickled_pandas_file
 from .test_sqlite import check_sqlite_files_are_equal
 
 
@@ -81,13 +81,13 @@ def test_create_all_library_files(tmp_path, path_to_general_test_files):
     assert os.path.isfile(expected_sqlite_file_name), \
         "Expected sqlite file to be created"
     # Test if correct embeddings are stored
-    ms2ds_embeddings = load_pickled_file(expected_ms2ds_emb_file_name)
-    s2v_embeddings = load_pickled_file(expected_s2v_emb_file_name)
-    expected_s2v_embeddings = load_pickled_file(os.path.join(
+    ms2ds_embeddings = load_pickled_pandas_file(expected_ms2ds_emb_file_name)
+    s2v_embeddings = load_pickled_pandas_file(expected_s2v_emb_file_name)
+    expected_s2v_embeddings = load_pickled_pandas_file(os.path.join(
         path_to_general_test_files,
         "test_files_without_spectrum_id",
         "100_test_spectra_s2v_embeddings.pickle"))
-    expected_ms2ds_embeddings = load_pickled_file(os.path.join(
+    expected_ms2ds_embeddings = load_pickled_pandas_file(os.path.join(
         path_to_general_test_files,
         "test_files_without_spectrum_id",
         "100_test_spectra_ms2ds_embeddings.pickle"))
@@ -118,8 +118,8 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     assert os.path.isfile(new_embeddings_file_name), \
         "Expected file to be created"
     # Test if correct embeddings are stored
-    embeddings = load_pickled_file(new_embeddings_file_name)
-    expected_embeddings = load_pickled_file(os.path.join(
+    embeddings = load_pickled_pandas_file(new_embeddings_file_name)
+    expected_embeddings = load_pickled_pandas_file(os.path.join(
         path_to_general_test_files,
         "test_files_without_spectrum_id",
         "100_test_spectra_ms2ds_embeddings.pickle"))
@@ -141,8 +141,8 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     new_embeddings_file_name = base_file_name + "_s2v_embeddings.pickle"
     assert os.path.isfile(new_embeddings_file_name), \
         "Expected file to be created"
-    embeddings = load_pickled_file(new_embeddings_file_name)
-    expected_embeddings = load_pickled_file(os.path.join(
+    embeddings = load_pickled_pandas_file(new_embeddings_file_name)
+    expected_embeddings = load_pickled_pandas_file(os.path.join(
         path_to_general_test_files,
         "test_files_without_spectrum_id",
         "100_test_spectra_s2v_embeddings.pickle"))
