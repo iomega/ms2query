@@ -36,11 +36,6 @@ def load_pickled_file(filename: str):
     return loaded_object
 
 
-def load_pickled_pandas_file(filename: str):
-    pandas_df = pd.read_pickle(filename)
-    return pandas_df
-
-
 def convert_files_to_matchms_spectrum_objects(file_name
                                               ) -> Union[List[Spectrum], None]:
     """Loads spectra from your spectrum file into memory as matchms Spectrum object
