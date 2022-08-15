@@ -2,12 +2,13 @@ import os
 import pickle
 import numpy as np
 import tensorflow as tf
-from ms2deepscore import SpectrumBinner
-from ms2deepscore.data_generators import DataGeneratorAllInchikeys
-from ms2deepscore.models import SiameseModel
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
+from ms2deepscore import SpectrumBinner
+from ms2deepscore.data_generators import DataGeneratorAllInchikeys
+from ms2deepscore.models import SiameseModel
+
 
 path_root = os.path.dirname(os.getcwd())
 

@@ -1,7 +1,6 @@
 import os
 import sys
 import pytest
-
 from ms2query.run_ms2query import run_complete_folder
 from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file, test_spectra)
 
@@ -9,6 +8,7 @@ if sys.version_info < (3, 8):
     import pickle5 as pickle
 else:
     import pickle
+
 
 @pytest.fixture
 def file_names():
