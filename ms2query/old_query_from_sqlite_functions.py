@@ -322,9 +322,9 @@ def test_get_spectrum_data():
     pickled_file_name = os.path.join(path_to_test_files_sqlite_dir,
                                      "first_10_spectra.pickle")
     original_spectra = load_pickled_file(pickled_file_name)
-    assert original_spectra[0].__eq__(spectra_list[0]), \
+    assert original_spectra[0] == spectra_list[0], \
         "Expected different spectrum to be loaded"
-    assert original_spectra[2].__eq__(spectra_list[1]), \
+    assert original_spectra[2] == spectra_list[1], \
         "Expected different spectrum to be loaded"
 
 
@@ -358,7 +358,7 @@ def test_get_spectra_from_sqlite_all_spectra():
     for expected_spectrum in expected_spectra:
         spectrum_returned = False
         for spectrum in spectra_list:
-            if expected_spectrum.__eq__(spectrum):
+            if expected_spectrum == spectrum:
                 spectrum_returned = True
         assert spectrum_returned, \
             f"Expected spectrum with spectrumid: " \
