@@ -72,7 +72,7 @@ def initialize_tables(sqlite_file_name: str,
         additional_metadata_columns_dict = {}
     combined_columns_dict = {**default_columns_dict, **additional_metadata_columns_dict}
 
-    initialize_spectrum_data_table = f"""
+    initialize_spectrum_data_table = """
     DROP TABLE IF EXISTS 'spectrum_data';
     CREATE TABLE 'spectrum_data' (
     """
@@ -83,7 +83,7 @@ def initialize_tables(sqlite_file_name: str,
     initialize_spectrum_data_table += "PRIMARY KEY (spectrumid));"
 
     # Initialize inchikeys table
-    initialize_inchikeys_table = f""";
+    initialize_inchikeys_table = """;
     DROP TABLE IF EXISTS 'inchikeys';
     CREATE TABLE 'inchikeys'(
         'inchikey' TEXT,
@@ -120,7 +120,6 @@ def fill_spectrum_data_table(sqlite_file_name: str,
     progress_bar:
         If True a progress bar will show the progress.
     """
-    # pylint: disable=too-many-locals
     conn = sqlite3.connect(sqlite_file_name)
 
     # Get the column names in the sqlite file
