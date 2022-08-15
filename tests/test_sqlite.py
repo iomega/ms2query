@@ -8,10 +8,8 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
-from matchms import Spectrum
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import (
-    get_metadata_from_sqlite)
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.utils import load_pickled_file
 
