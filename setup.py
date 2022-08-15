@@ -36,7 +36,7 @@ setup(
         "scikit-learn",
         "ms2deepscore",
         "gensim>=4.0.0",
-        "pandas>=1.2.5",],
+        "pandas>=1.2.5, <=1.3.5",],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
                             "isort>=5.1.0",
