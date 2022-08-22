@@ -80,6 +80,7 @@ def test_making_sqlite_file(tmp_path):
         'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
+                                         "test_files_without_spectrum_id",
                                          "100_test_spectra.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
@@ -93,8 +94,7 @@ def test_making_sqlite_file(tmp_path):
     make_sqlfile_wrapper(new_sqlite_file_name,
                          tanimoto_scores_file_name,
                          list_of_spectra,
-                         columns_dict={"precursor_mz": "REAL"},
-                         spectrum_id_column_name="spectrumid")
+                         columns_dict={"precursor_mz": "REAL"})
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 

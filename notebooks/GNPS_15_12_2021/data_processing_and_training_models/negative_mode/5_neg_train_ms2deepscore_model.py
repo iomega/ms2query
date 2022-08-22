@@ -9,6 +9,7 @@ from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
 
+
 path_root = os.path.dirname(os.getcwd())
 
 path_data = os.path.join(path_root, "../../../data/libraries_and_models/gnps_15_12_2021/in_between_files")

@@ -103,8 +103,7 @@ class MS2Library:
 
         # load precursor mz's
         self.precursors_library = get_precursor_mz(
-            self.sqlite_file_name,
-            self.settings["spectrum_id_column_name"])
+            self.sqlite_file_name)
 
         # Load inchikey information into memory
         self.spectra_of_inchikey14s, \

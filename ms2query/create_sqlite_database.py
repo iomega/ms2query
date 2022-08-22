@@ -24,8 +24,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
                          tanimoto_scores_pickled_dataframe_file: str,
                          list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
-                         progress_bars: bool = True,
-                         spectrum_id_column_name: str = "spectrumid"):
+                         progress_bars: bool = True):
     """Wrapper to create sqlite file with three tables.
 
     Args:
@@ -50,20 +49,13 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     progress_bars:
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
-    spectrum_id_column_name:
-        The spectrum id column name is the name given to the column storing the
-        spectrum ids. This is important since this name will be used to look
-        up the spectrum id in the metadata. Per version of the data this
-        differs between 'spectrum_id' and 'spectrumid'
     """
-    # pylint: disable=too-many-arguments
     add_tanimoto_scores_to_sqlite(sqlite_file_name,
                                   tanimoto_scores_pickled_dataframe_file,
                                   list_of_spectra,
                                   progress_bars=progress_bars)
     create_table_structure(sqlite_file_name,
-                           additional_columns_dict=columns_dict,
-                           spectrum_column_name=spectrum_id_column_name)
+                           additional_columns_dict=columns_dict)
     add_list_of_spectra_to_sqlite(sqlite_file_name,
                                   list_of_spectra,
                                   progress_bar=progress_bars)
@@ -144,8 +136,7 @@ def add_tanimoto_scores_to_sqlite(sqlite_file_name: str,
 
 def create_table_structure(sqlite_file_name: str,
                            additional_columns_dict: Dict[str, str] = None,
-                           table_name: str = "spectrum_data",
-                           spectrum_column_name: str = "spectrumid"):
+                           table_name: str = "spectrum_data"):
     """Creates a new sqlite file, with columns defined in combined_columns_dict
 
     On default the columns spectrum_id, peaks, intensities and metadata are
@@ -169,11 +160,6 @@ def create_table_structure(sqlite_file_name: str,
     table_name:
         Name of the table that is created in the sqlite file,
         default = "spectrum_data"
-    spectrum_column_name:
-        The spectrum column name is the name given to the column storing the
-        spectrum ids. This is important since this name will be used to look
-        up the spectrum id in the metadata. Per version of the data this
-        differs between 'spectrum_id' and 'spectrumid'
     """
     # Create a new datatype array for sqlite
     # Converts np.array to TEXT when inserting
@@ -184,7 +170,7 @@ def create_table_structure(sqlite_file_name: str,
         additional_columns_dict = {}
 
     # Create default combined_columns_dict
-    default_columns_dict = {spectrum_column_name: "TEXT",
+    default_columns_dict = {"spectrumid": "INTEGER",
                             "peaks": "array",
                             "intensities": "array",
                             "metadata": "TEXT"}
@@ -198,7 +184,7 @@ def create_table_structure(sqlite_file_name: str,
     for column_header in combined_columns_dict:
         create_table_command += column_header + " " \
                                 + combined_columns_dict[column_header] + ",\n"
-    create_table_command += f"PRIMARY KEY ({spectrum_column_name}));"
+    create_table_command += "PRIMARY KEY (spectrumid));"
 
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
@@ -255,6 +241,7 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
     progress_bar:
         If True a progress bar will show the progress.
     """
+    # pylint: disable=too-many-locals
     conn = sqlite3.connect(sqlite_file_name)
 
     # Get the column names in the sqlite file
@@ -270,20 +257,23 @@ def add_list_of_spectra_to_sqlite(sqlite_file_name: str,
                            values ({value_placeholders[:-2]})"""
 
     # Add the data of each spectrum to the sqlite table
-    for spectrum in tqdm(list_of_spectra,
+    for i, spectrum in tqdm(enumerate(list_of_spectra),
                          desc="Adding spectra to sqlite table",
                          disable=not progress_bar):
         peaks = spectrum.peaks.mz
         intensities = spectrum.peaks.intensities
         metadata = spectrum.metadata
+        spectrumid = i
 
         # Give the value for the default columns
         value_dict = {'peaks': peaks,
                       "intensities": intensities,
-                      "metadata": str(metadata)}
+                      "metadata": str(metadata),
+                      "spectrumid": spectrumid}
+
         # Gets the data for addition columns from metadata
         for column in column_names:
-            if column not in ['peaks', 'intensities', 'metadata']:
+            if column not in ['peaks', 'intensities', 'metadata', 'spectrumid']:
                 if column in metadata:
                     value_dict[column] = str(metadata[column])
                 else:
@@ -366,7 +356,7 @@ def create_inchikey_sqlite_table(
 
 
 def get_spectra_belonging_to_inchikey14(spectra: List[Spectrum]
-                                        ) -> Dict[str, List[str]]:
+                                        ) -> Dict[str, List[int]]:
     """Returns a dictionary with the spectrum_ids belonging to each inchikey14
 
     Args:
@@ -377,9 +367,8 @@ def get_spectra_belonging_to_inchikey14(spectra: List[Spectrum]
         List of spectrum objects
     """
     spectra_belonging_to_inchikey14 = {}
-    for spectrum in spectra:
+    for spectrum_id, spectrum in enumerate(spectra):
         inchikey14_of_spectrum = spectrum.get("inchikey")[:14]
-        spectrum_id = spectrum.get("spectrumid")
         if inchikey14_of_spectrum in spectra_belonging_to_inchikey14:
             spectra_belonging_to_inchikey14[inchikey14_of_spectrum].append(spectrum_id)
         else:

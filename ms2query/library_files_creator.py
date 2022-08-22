@@ -1,5 +1,6 @@
 import os
 from typing import Dict, List, Union
+import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
@@ -133,11 +134,6 @@ class LibraryFilesCreator:
         """
         # Loads the spectra from a pickled file
         list_of_spectra = load_pickled_file(pickled_spectra_file_name)
-        assert list_of_spectra[0].get(self.settings[
-                                          "spectrum_id_column_name"]), \
-            f"Expected spectra to have '" \
-            f"{self.settings['spectrum_id_column_name']}' in " \
-            f"metadata, to solve specify the correct spectrum_solumn_name"
         # Does normalization and filtering of spectra
         list_of_spectra = \
             minimal_processing_multiple_spectra(
@@ -186,7 +182,7 @@ class LibraryFilesCreator:
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.settings["progress_bars"],
-            spectrum_id_column_name=self.settings["spectrum_id_column_name"])
+        )
 
         self.store_s2v_embeddings(s2v_model_file_name)
         self.store_ms2ds_embeddings(ms2ds_model_file_name)
@@ -218,8 +214,7 @@ class LibraryFilesCreator:
 
         # Compute spectral embeddings
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
-        spectrum_ids = [s.get(self.settings["spectrum_id_column_name"])
-                        for s in self.list_of_spectra]
+        spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
         all_embeddings_df.to_pickle(self.settings[
                                         'ms2ds_embeddings_file_name'])
@@ -246,15 +241,13 @@ class LibraryFilesCreator:
             self.list_of_spectra,
             progress_bar=self.settings["progress_bars"])
         embeddings_dict = {}
-        for spectrum_document in tqdm(spectrum_documents,
+        for spectrum_id, spectrum_document in tqdm(enumerate(spectrum_documents),
                                       desc="Calculating embeddings",
                                       disable=not self.settings[
                                           "progress_bars"]):
             embedding = calc_vector(model,
                                     spectrum_document,
                                     allowed_missing_percentage=100)
-            spectrum_id = spectrum_document.get(self.settings[
-                                                    "spectrum_id_column_name"])
             embeddings_dict[spectrum_id] = embedding
 
         # Convert to pandas Dataframe
