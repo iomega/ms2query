@@ -1,6 +1,6 @@
+import ast
 import io
 import os
-import ast
 import sqlite3
 from typing import Dict, List, Tuple, Union
 import numpy as np
