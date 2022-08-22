@@ -214,7 +214,7 @@ class LibraryFilesCreator:
 
         # Compute spectral embeddings
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
-        spectrum_ids = np.arrange(0, len(self.list_of_spectra))
+        spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
         all_embeddings_df.to_pickle(self.settings[
                                         'ms2ds_embeddings_file_name'])
