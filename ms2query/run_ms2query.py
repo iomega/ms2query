@@ -33,7 +33,7 @@ def download_default_models(dir_to_store_files: str,
     """
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
-    zenodo_files_location = "https://zenodo.org/record/6124553/files/"
+    zenodo_files_location = "https://zenodo.org/record/6997924/files/"
     for file_name in tqdm(file_name_dict.values(),
                           "Downloading library files"):
         complete_url = zenodo_files_location + file_name + "?download=1"

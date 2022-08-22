@@ -8,12 +8,8 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
-import pandas as pd
-from matchms import Spectrum
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import (
-    get_metadata_from_sqlite, get_spectra_from_sqlite,
-    get_tanimoto_score_for_inchikey14s)
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.utils import load_pickled_file
 
@@ -96,102 +92,6 @@ def test_making_sqlite_file(tmp_path):
                          list_of_spectra,
                          columns_dict={"precursor_mz": "REAL"})
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
-
-
-def test_get_tanimoto_scores():
-    """Tests if the correct tanimoto scores are retrieved from sqlite file
-    """
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-
-    test_inchikeys = ['TXZUPPVCNIMVHW',
-                      'WIOKWEJDRXNVSH',
-                      'VBFKEZGCUWHGSK']
-    tanimoto_score_dataframe = get_tanimoto_score_for_inchikey14s(
-        test_inchikeys, test_inchikeys, sqlite_file_name)
-
-    reference_tanimoto_scores = \
-        load_pickled_file(os.path.join(path_to_test_files_sqlite_dir,
-                                       "test_tanimoto_scores.pickle"))
-    expected_result = reference_tanimoto_scores.loc[test_inchikeys][
-        test_inchikeys]
-
-    pd.testing.assert_frame_equal(tanimoto_score_dataframe,
-                                  expected_result,
-                                  check_like=True)
-
-
-def test_get_spectrum_data():
-    """Tests if the correct spectrum data is returned from a sqlite file
-    """
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-
-    spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
-    spectra_list = get_spectra_from_sqlite(
-        sqlite_file_name,
-        spectra_id_list,
-        spectrum_id_storage_name="spectrum_id")
-
-    # Test if the output is of the right type
-    assert isinstance(spectra_list, list), "Expected a list"
-    assert isinstance(spectra_list[0], Spectrum), \
-        "Expected a list with matchms.Spectrum.Spectrum objects"
-
-    # Test if the right number of spectra are returned
-    assert len(spectra_list) == 2, "Expected only 2 spectra"
-
-    # Test if the correct spectra are loaded
-    pickled_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                     "first_10_spectra.pickle")
-    original_spectra = load_pickled_file(pickled_file_name)
-    assert original_spectra[0].__eq__(spectra_list[0]), \
-        "Expected different spectrum to be loaded"
-    assert original_spectra[2].__eq__(spectra_list[1]), \
-        "Expected different spectrum to be loaded"
-
-
-def test_get_spectra_from_sqlite_all_spectra():
-    """Tests if the correct spectrum data is returned from a sqlite file
-    """
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-
-    spectra_list = get_spectra_from_sqlite(
-        sqlite_file_name,
-        [],
-        spectrum_id_storage_name="spectrum_id",
-        get_all_spectra=True)
-
-    # Test if the output is of the right type
-    assert isinstance(spectra_list, list), "Expected a list"
-    assert isinstance(spectra_list[0], Spectrum), \
-        "Expected a list with matchms.Spectrum.Spectrum objects"
-
-    # Test if the right number of spectra are returned
-    assert len(spectra_list) == 10, "Expected 10 spectra"
-
-    # Test if the correct spectra are loaded
-    pickled_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                     "first_10_spectra.pickle")
-    expected_spectra = load_pickled_file(pickled_file_name)
-    for expected_spectrum in expected_spectra:
-        spectrum_returned = False
-        for spectrum in spectra_list:
-            if expected_spectrum.__eq__(spectrum):
-                spectrum_returned = True
-        assert spectrum_returned, \
-            f"Expected spectrum with spectrumid: " \
-            f"{expected_spectrum.get('spectrum_id')} to be returned as well"
 
 
 def test_get_metadata_from_sqlite():

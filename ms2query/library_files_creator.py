@@ -134,6 +134,7 @@ class LibraryFilesCreator:
         """
         # Loads the spectra from a pickled file
         list_of_spectra = load_pickled_file(pickled_spectra_file_name)
+
         # Does normalization and filtering of spectra
         list_of_spectra = \
             minimal_processing_multiple_spectra(
