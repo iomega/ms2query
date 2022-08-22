@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3]
+
+
+### Changed
+- Use smaller SQlite file. Tanimoto scores and peak and intensities are not stored anymore reducing the sqlite file size to 300 mb
+- Generate spectrum id integers, instead of using spectrum id specified in the metadata of spectra. 
+
 ## [0.3.2]
 
 ### Added 
