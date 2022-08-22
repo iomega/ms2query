@@ -100,7 +100,7 @@ def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra
     run_complete_folder(ms2library=test_library,
                         folder_with_spectra=folder_with_spectra,
                         minimal_ms2query_score=0,
-                        additional_metadata_columns=["charge"],
+                        additional_metadata_columns=("charge",),
                         additional_ms2query_score_columns=["s2v_score", "ms2ds_score"]
                         )
     assert os.path.exists(results_directory), "Expected results directory to be created"
