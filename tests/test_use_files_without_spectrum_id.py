@@ -1,13 +1,14 @@
 import os
 import sys
 import pytest
-from ms2query.run_ms2query import run_complete_folder
-from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file, test_spectra)
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
 else:
     import pickle
+
+from ms2query.run_ms2query import run_complete_folder
+from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file, test_spectra)
 
 
 @pytest.fixture
@@ -98,7 +99,7 @@ def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra
     run_complete_folder(ms2library=test_library,
                         folder_with_spectra=folder_with_spectra,
                         minimal_ms2query_score=0,
-                        additional_metadata_columns=["charge"],
+                        additional_metadata_columns=tuple("charge"),
                         additional_ms2query_score_columns=["s2v_score", "ms2ds_score"]
                         )
     assert os.path.exists(results_directory), "Expected results directory to be created"
