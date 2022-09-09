@@ -141,3 +141,16 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
+
+
+def test_calculate_tanimoto_scores(tmp_path, path_to_general_test_files):
+    base_file_name = os.path.join(tmp_path, '100_test_spectra')
+    test_create_files = LibraryFilesCreator(os.path.join(
+        path_to_general_test_files, '100_test_spectra.pickle'),
+        base_file_name)
+    test_create_files.calculate_tanimoto_scores()
+    result: pd.DataFrame = test_create_files.tanimoto_scores
+    result.sort_index(inplace=True)
+    result.sort_index(1, inplace=True)
+    expected_result = load_pickled_file(path_to_general_test_files + "/100_test_spectra_tanimoto_scores.pickle")
+    pd.testing.assert_frame_equal(result, expected_result, check_exact=False, atol=1e-5)
