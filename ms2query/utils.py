@@ -66,8 +66,6 @@ def convert_files_to_matchms_spectrum_objects(file_name
     if file_extension == ".usi":
         return list(importing.load_from_usi(file_name))
     if file_extension == ".pickle":
-        return load_pickled_file(file_name)
-    if file_extension == ".pickle":
         spectra = load_pickled_file(file_name)
         assert isinstance(spectra, list), "Expected list of spectra"
         assert isinstance(spectra[0], Spectrum), "Expected list of spectra"
