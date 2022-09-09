@@ -145,8 +145,7 @@ class LibraryFilesCreator:
     def create_all_library_files(self,
                                  tanimoto_scores_file_name: str,
                                  ms2ds_model_file_name: str,
-                                 s2v_model_file_name: str,
-                                 calculate_new_tanimoto_scores: bool = False):
+                                 s2v_model_file_name: str):
         """Creates files with embeddings and a sqlite file with spectra data
 
         Args:
@@ -166,16 +165,8 @@ class LibraryFilesCreator:
         """
         assert os.path.exists(ms2ds_model_file_name), "ms2deepscore model file does not exist"
         assert os.path.exists(s2v_model_file_name), "spec2vec model file does not exist"
-
-        if calculate_new_tanimoto_scores:
-            assert not os.path.exists(tanimoto_scores_file_name),\
-                "Tanimoto scores file already exists, " \
-                "to use a file with already calculated tanimoto scores, " \
-                "set calculate_new_tanimoto_scores to False"
-        else:
-            assert os.path.exists(tanimoto_scores_file_name),\
-                "Tanimoto scores file does not exists" \
-            # Todo automatically create tanimoto scores
+        assert os.path.exists(tanimoto_scores_file_name),\
+            "Tanimoto scores file does not exists" \
 
         self.create_sqlite_file(tanimoto_scores_file_name)
         self.store_s2v_embeddings(s2v_model_file_name)
