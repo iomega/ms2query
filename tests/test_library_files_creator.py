@@ -63,14 +63,12 @@ def test_create_all_library_files(tmp_path, path_to_general_test_files):
     test_create_files = LibraryFilesCreator(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
         base_file_name,
-        tanimoto_scores_file_name=os.path.join(path_to_general_test_files, '100_test_spectra_tanimoto_scores.pickle')
+        tanimoto_scores_file_name=os.path.join(path_to_general_test_files, '100_test_spectra_tanimoto_scores.pickle',),
+        s2v_model_file_name=os.path.join(path_to_general_test_files, '100_test_spectra_s2v_model.model'),
+        ms2ds_model_file_name=os.path.join(path_to_general_test_files, 'ms2ds_siamese_210301_5000_500_400.hdf5')
     )
 
-    test_create_files.create_all_library_files(
-        os.path.join(path_to_general_test_files,
-                     'ms2ds_siamese_210301_5000_500_400.hdf5'),
-        os.path.join(path_to_general_test_files,
-                     '100_test_spectra_s2v_model.model'))
+    test_create_files.create_all_library_files()
 
     expected_ms2ds_emb_file_name = base_file_name + "_ms2ds_embeddings.pickle"
     expected_s2v_emb_file_name = base_file_name + "_s2v_embeddings.pickle"
@@ -110,10 +108,9 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     test_create_files = LibraryFilesCreator(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        base_file_name)
-    test_create_files.store_ms2ds_embeddings(os.path.join(
-        path_to_general_test_files,
-        'ms2ds_siamese_210301_5000_500_400.hdf5'))
+        base_file_name,
+        ms2ds_model_file_name=os.path.join(path_to_general_test_files, 'ms2ds_siamese_210301_5000_500_400.hdf5'))
+    test_create_files.store_ms2ds_embeddings()
 
     new_embeddings_file_name = base_file_name + "_ms2ds_embeddings.pickle"
     assert os.path.isfile(new_embeddings_file_name), \
@@ -134,10 +131,9 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     test_create_files = LibraryFilesCreator(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'),
-        base_file_name)
-    test_create_files.store_s2v_embeddings(os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_s2v_model.model"))
+        base_file_name,
+        s2v_model_file_name=os.path.join(path_to_general_test_files, "100_test_spectra_s2v_model.model"))
+    test_create_files.store_s2v_embeddings()
 
     new_embeddings_file_name = base_file_name + "_s2v_embeddings.pickle"
     assert os.path.isfile(new_embeddings_file_name), \

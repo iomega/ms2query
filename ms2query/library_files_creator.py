@@ -71,11 +71,25 @@ class LibraryFilesCreator:
         self.list_of_spectra = \
             self._load_spectra_and_minimal_processing(
                 pickled_spectra_file_name)
+
+        # Load in tanimoto scores
         if tanimoto_scores_file_name is None:
             self.tanimoto_scores = None
         else:
             assert os.path.exists(tanimoto_scores_file_name), "Tanimoto scores file does not exists"
             self.tanimoto_scores = load_pickled_file(tanimoto_scores_file_name)
+        # Load in spec2vec model
+        if s2v_model_file_name is None:
+            self.s2v_model = None
+        else:
+            assert os.path.exists(s2v_model_file_name), "Spec2Vec model file does not exists"
+            self.s2v_model = Word2Vec.load(s2v_model_file_name)
+        # load in ms2ds model
+        if ms2ds_model_file_name is None:
+            self.ms2ds_model = None
+        else:
+            assert os.path.exists(ms2ds_model_file_name), "MS2Deepscore model file does not exists"
+            self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -150,9 +164,7 @@ class LibraryFilesCreator:
                 progress_bar=self.settings["progress_bars"])
         return list_of_spectra
 
-    def create_all_library_files(self,
-                                 ms2ds_model_file_name: str,
-                                 s2v_model_file_name: str):
+    def create_all_library_files(self):
         """Creates files with embeddings and a sqlite file with spectra data
 
         Args:
@@ -170,12 +182,9 @@ class LibraryFilesCreator:
             If True new tanimoto scores will be calculated and stored in
             tanimoto_scores_file_name.
         """
-        assert os.path.exists(ms2ds_model_file_name), "ms2deepscore model file does not exist"
-        assert os.path.exists(s2v_model_file_name), "spec2vec model file does not exist"
-
         self.create_sqlite_file()
-        self.store_s2v_embeddings(s2v_model_file_name)
-        self.store_ms2ds_embeddings(ms2ds_model_file_name)
+        self.store_s2v_embeddings()
+        self.store_ms2ds_embeddings()
 
     def create_sqlite_file(self):
         assert self.tanimoto_scores is not None, "No tanimoto scores were provided"
@@ -187,8 +196,7 @@ class LibraryFilesCreator:
             progress_bars=self.settings["progress_bars"],
         )
 
-    def store_ms2ds_embeddings(self,
-                               ms2ds_model_file_name):
+    def store_ms2ds_embeddings(self):
         """Creates a pickled file with embeddings scores for spectra
 
         A dataframe with as index the spectrum_ids and as columns the indexes
@@ -207,9 +215,8 @@ class LibraryFilesCreator:
         assert not os.path.exists(self.settings[
                                       'ms2ds_embeddings_file_name']), \
             "Given ms2ds_embeddings_file_name already exists"
-
-        model = load_ms2ds_model(ms2ds_model_file_name)
-        ms2ds = MS2DeepScore(model,
+        assert self.ms2ds_model is not None, "No MS2deepscore model was provided"
+        ms2ds = MS2DeepScore(self.ms2ds_model,
                              progress_bar=self.settings["progress_bars"])
 
         # Compute spectral embeddings
@@ -219,7 +226,7 @@ class LibraryFilesCreator:
         all_embeddings_df.to_pickle(self.settings[
                                         'ms2ds_embeddings_file_name'])
 
-    def store_s2v_embeddings(self, s2v_model_file_name):
+    def store_s2v_embeddings(self):
         """Creates and stored a dataframe with embeddings as pickled file
 
         A dataframe with as index the spectrum_ids and as columns the indexes
@@ -235,7 +242,7 @@ class LibraryFilesCreator:
         assert not os.path.exists(self.settings[
             "s2v_embeddings_file_name"]), \
             "Given s2v_embeddings_file_name already exists"
-        model = Word2Vec.load(s2v_model_file_name)
+        assert self.s2v_model is not None, "No spec2vec model was specified"
         # Convert Spectrum objects to SpectrumDocument
         spectrum_documents = create_spectrum_documents(
             self.list_of_spectra,
@@ -245,7 +252,7 @@ class LibraryFilesCreator:
                                       desc="Calculating embeddings",
                                       disable=not self.settings[
                                           "progress_bars"]):
-            embedding = calc_vector(model,
+            embedding = calc_vector(self.s2v_model,
                                     spectrum_document,
                                     allowed_missing_percentage=100)
             embeddings_dict[spectrum_id] = embedding
