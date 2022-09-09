@@ -282,8 +282,8 @@ class LibraryFilesCreator:
         fingerprint_spectra = []
         for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey):
             spectrum_with_fingerprint = add_fingerprint(spectrum,
-                                                       fingerprint_type="daylight",
-                                                       nbits=2048)
+                                                        fingerprint_type="daylight",
+                                                        nbits=2048)
             fingerprint_spectra.append(spectrum_with_fingerprint)
 
             assert spectrum_with_fingerprint.get("fingerprint") is not None, \
@@ -297,6 +297,4 @@ class LibraryFilesCreator:
                                        index=inchikeys14_unique,
                                        columns=inchikeys14_unique)
         self.tanimoto_scores = tanimoto_scores
-        # pickle.dump(results,
-        #             open(os.path.join(path_data, "GNPS_15_12_2021_pos_tanimoto_scores.pickle"), "wb"))
-
+        return self.tanimoto_scores
