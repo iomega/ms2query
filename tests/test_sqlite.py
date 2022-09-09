@@ -83,12 +83,12 @@ def test_making_sqlite_file(tmp_path):
         path_to_general_test_files, "100_test_spectra.pickle"))
     list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
 
-    tanimoto_scores_file_name = os.path.join(
-        path_to_general_test_files, "100_test_spectra_tanimoto_scores.pickle")
+    tanimoto_scores = load_pickled_file(os.path.join(
+        path_to_general_test_files, "100_test_spectra_tanimoto_scores.pickle"))
 
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
-                         tanimoto_scores_file_name,
+                         tanimoto_scores,
                          list_of_spectra,
                          columns_dict={"precursor_mz": "REAL"})
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)

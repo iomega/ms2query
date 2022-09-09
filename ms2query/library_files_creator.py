@@ -38,6 +38,9 @@ class LibraryFilesCreator:
     def __init__(self,
                  pickled_spectra_file_name: str,
                  output_base_filename: str,
+                 tanimoto_scores_file_name: str = None,
+                 s2v_model_file_name: str = None,
+                 ms2ds_model_file_name: str = None,
                  **settings):
         """Creates files needed to run queries on a library
 
@@ -68,6 +71,11 @@ class LibraryFilesCreator:
         self.list_of_spectra = \
             self._load_spectra_and_minimal_processing(
                 pickled_spectra_file_name)
+        if tanimoto_scores_file_name is None:
+            self.tanimoto_scores = None
+        else:
+            assert os.path.exists(tanimoto_scores_file_name), "Tanimoto scores file does not exists"
+            self.tanimoto_scores = load_pickled_file(tanimoto_scores_file_name)
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -143,7 +151,6 @@ class LibraryFilesCreator:
         return list_of_spectra
 
     def create_all_library_files(self,
-                                 tanimoto_scores_file_name: str,
                                  ms2ds_model_file_name: str,
                                  s2v_model_file_name: str):
         """Creates files with embeddings and a sqlite file with spectra data
@@ -165,18 +172,16 @@ class LibraryFilesCreator:
         """
         assert os.path.exists(ms2ds_model_file_name), "ms2deepscore model file does not exist"
         assert os.path.exists(s2v_model_file_name), "spec2vec model file does not exist"
-        assert os.path.exists(tanimoto_scores_file_name),\
-            "Tanimoto scores file does not exists" \
 
-        self.create_sqlite_file(tanimoto_scores_file_name)
+        self.create_sqlite_file()
         self.store_s2v_embeddings(s2v_model_file_name)
         self.store_ms2ds_embeddings(ms2ds_model_file_name)
 
-    def create_sqlite_file(self,
-                           tanimoto_scores_file_name):
+    def create_sqlite_file(self):
+        assert self.tanimoto_scores is not None, "No tanimoto scores were provided"
         make_sqlfile_wrapper(
             self.settings["output_file_sqlite"],
-            tanimoto_scores_file_name,
+            self.tanimoto_scores,
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.settings["progress_bars"],
