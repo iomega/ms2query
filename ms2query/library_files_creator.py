@@ -177,6 +177,12 @@ class LibraryFilesCreator:
                 "Tanimoto scores file does not exists" \
             # Todo automatically create tanimoto scores
 
+        self.create_sqlite_file(tanimoto_scores_file_name)
+        self.store_s2v_embeddings(s2v_model_file_name)
+        self.store_ms2ds_embeddings(ms2ds_model_file_name)
+
+    def create_sqlite_file(self,
+                           tanimoto_scores_file_name):
         make_sqlfile_wrapper(
             self.settings["output_file_sqlite"],
             tanimoto_scores_file_name,
@@ -184,9 +190,6 @@ class LibraryFilesCreator:
             columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.settings["progress_bars"],
         )
-
-        self.store_s2v_embeddings(s2v_model_file_name)
-        self.store_ms2ds_embeddings(ms2ds_model_file_name)
 
     def store_ms2ds_embeddings(self,
                                ms2ds_model_file_name):
