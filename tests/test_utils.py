@@ -8,14 +8,6 @@ from ms2query.utils import (add_unknown_charges_to_spectra,
                             get_classifier_from_csv_file, load_pickled_file)
 
 
-def test_convert_files_to_matchms_spectrum_objects_unknown_file_extension(tmp_path):
-    """Test if None is returned when the file extension is not known"""
-    test_text_file_name = os.path.join(tmp_path, "test_txt_file.txt")
-    with open(test_text_file_name, "w") as test_txt_file:
-        test_txt_file.write("test")
-    assert convert_files_to_matchms_spectrum_objects(test_text_file_name) is None, "expected None for .txt extension"
-
-
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
     """Tests if unknown file raises an Assertion error"""
     with pytest.raises(AssertionError):

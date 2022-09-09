@@ -11,7 +11,7 @@ from tqdm import tqdm
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.spectrum_processing import (create_spectrum_documents,
                                           minimal_processing_multiple_spectra)
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_pickled_file, convert_files_to_matchms_spectrum_objects
 
 
 class LibraryFilesCreator:
@@ -155,7 +155,7 @@ class LibraryFilesCreator:
             The file name of a pickled file containing a list of spectra.
         """
         # Loads the spectra from a pickled file
-        list_of_spectra = load_pickled_file(pickled_spectra_file_name)
+        list_of_spectra = convert_files_to_matchms_spectrum_objects(pickled_spectra_file_name)
 
         # Does normalization and filtering of spectra
         list_of_spectra = \
