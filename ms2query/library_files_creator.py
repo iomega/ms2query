@@ -28,15 +28,16 @@ class LibraryFilesCreator:
         library_creator = LibraryFilesCreator(
             spectrums_file,
             output_file_sqlite="... folder and file name base...",
+            'tanimoto_scores.pickle',
+            'ms2ds_model.hdf5',
+            'spec2vec_model.model'
             progress_bars=True)
         #
-        library_creator.create_all_library_files('tanimoto_scores.pickle',
-                                                 'ms2ds_model.hdf5',
-                                                 'spec2vec_model.model')
+        library_creator.create_all_library_files()
 
     """
     def __init__(self,
-                 pickled_spectra_file_name: str,
+                 spectra_file_name: str,
                  output_base_filename: str,
                  tanimoto_scores_file_name: str = None,
                  s2v_model_file_name: str = None,
@@ -46,14 +47,24 @@ class LibraryFilesCreator:
 
         Parameters
         ----------
-        pickled_spectra_file_name:
-            File name of a pickled file containing spectrum objects.
+        spectra_file_name:
+            File name of a file containing mass spectra. Accepted file types are: "mzML", "json", "mgf", "msp",
+        "mzxml", "usi" or "pickle"
         output_base_filename:
             The file name used as base for new files that are created.
             The following extensions are added to the output_base_filename
             For sqlite file: ".sqlite"
             For ms2ds_embeddings: "_ms2ds_embeddings.pickle"
             For s2v_embeddings: "_s2v_embeddings.pickle"
+        tanimoto_scores_file_name:
+            File name of a pickled file containing a dataframe with tanimoto
+            scores. If self.calculate_new_tanimoto_scores = True, this will
+            be the file name of a new file in which the tanimoto scores will
+            be stored.
+        s2v_model_file_name:
+            file name of a s2v model
+        ms2ds_model_file_name:
+            File name of a ms2ds model
 
         **settings:
             The following optional parameters can be defined.
@@ -70,7 +81,7 @@ class LibraryFilesCreator:
         # Load in the spectra
         self.list_of_spectra = \
             self._load_spectra_and_minimal_processing(
-                pickled_spectra_file_name)
+                spectra_file_name)
 
         # Load in tanimoto scores
         if tanimoto_scores_file_name is None:
@@ -166,21 +177,6 @@ class LibraryFilesCreator:
 
     def create_all_library_files(self):
         """Creates files with embeddings and a sqlite file with spectra data
-
-        Args:
-        ------
-        tanimoto_scores_file_name:
-            File name of a pickled file containing a dataframe with tanimoto
-            scores. If self.calculate_new_tanimoto_scores = True, this will
-            be the file name of a new file in which the tanimoto scores will
-            be stored.
-        ms2ds_model_file_name:
-            File name of a ms2ds model
-        s2v_model_file_name:
-            file name of a s2v model
-        calculate_new_tanimoto_scores:
-            If True new tanimoto scores will be calculated and stored in
-            tanimoto_scores_file_name.
         """
         self.create_sqlite_file()
         self.store_s2v_embeddings()
@@ -199,18 +195,8 @@ class LibraryFilesCreator:
     def store_ms2ds_embeddings(self):
         """Creates a pickled file with embeddings scores for spectra
 
-        A dataframe with as index the spectrum_ids and as columns the indexes
+        A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
-
-        Args:
-        ------
-        spectrum_list:
-            Spectra for which embeddings should be calculated.
-        ms2ds_model_file_name:
-            File name for a SiameseModel that is used to calculate the
-            embeddings.
-        new_pickled_embeddings_file_name:
-            The file name in which the pickled dataframe is stored.
         """
         assert not os.path.exists(self.settings[
                                       'ms2ds_embeddings_file_name']), \
@@ -229,15 +215,8 @@ class LibraryFilesCreator:
     def store_s2v_embeddings(self):
         """Creates and stored a dataframe with embeddings as pickled file
 
-        A dataframe with as index the spectrum_ids and as columns the indexes
+        A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
-
-        Args:
-        ------
-        s2v_model_file_name:
-            File name to load spec2vec model, 3 files are expected, with the
-             extension .model, .model.trainables.syn1neg.npy and
-             .model.wv.vectors.npy, together containing a Spec2Vec model,
         """
         assert not os.path.exists(self.settings[
             "s2v_embeddings_file_name"]), \
