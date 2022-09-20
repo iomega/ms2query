@@ -55,51 +55,6 @@ def test_give_already_used_file_name(tmp_path):
                   pickled_spectra_file_name, base_file_name)
 
 
-def test_create_all_library_files(tmp_path, path_to_general_test_files):
-    """Tests create_all_library_files"""
-    base_file_name = os.path.join(tmp_path, '100_test_spectra')
-    test_create_files = LibraryFilesCreator(os.path.join(
-        path_to_general_test_files, '100_test_spectra.pickle'), base_file_name,
-        ion_mode="positive",
-        tanimoto_scores_file_name=os.path.join(path_to_general_test_files, '100_test_spectra_tanimoto_scores.pickle', ),
-        s2v_model_file_name=os.path.join(path_to_general_test_files, '100_test_spectra_s2v_model.model'),
-        ms2ds_model_file_name=os.path.join(path_to_general_test_files, 'ms2ds_siamese_210301_5000_500_400.hdf5'))
-    test_create_files.clean_spectra(False)
-    test_create_files.create_all_library_files()
-
-    expected_ms2ds_emb_file_name = base_file_name + "_ms2ds_embeddings.pickle"
-    expected_s2v_emb_file_name = base_file_name + "_s2v_embeddings.pickle"
-    expected_sqlite_file_name = base_file_name + ".sqlite"
-    assert os.path.isfile(expected_ms2ds_emb_file_name), \
-        "Expected ms2ds embeddings file to be created"
-    assert os.path.isfile(expected_s2v_emb_file_name), \
-        "Expected s2v file to be created"
-    assert os.path.isfile(expected_sqlite_file_name), \
-        "Expected sqlite file to be created"
-    # Test if correct embeddings are stored
-    ms2ds_embeddings = load_pickled_file(expected_ms2ds_emb_file_name)
-    s2v_embeddings = load_pickled_file(expected_s2v_emb_file_name)
-    expected_s2v_embeddings = load_pickled_file(os.path.join(
-        path_to_general_test_files,
-        "test_files_without_spectrum_id",
-        "100_test_spectra_s2v_embeddings.pickle"))
-    expected_ms2ds_embeddings = load_pickled_file(os.path.join(
-        path_to_general_test_files,
-        "test_files_without_spectrum_id",
-        "100_test_spectra_ms2ds_embeddings.pickle"))
-    pd.testing.assert_frame_equal(ms2ds_embeddings,
-                                  expected_ms2ds_embeddings,
-                                  check_exact=False,
-                                  atol=1e-5)
-    pd.testing.assert_frame_equal(s2v_embeddings,
-                                  expected_s2v_embeddings,
-                                  check_exact=False,
-                                  atol=1e-5)
-    # Check if sqlite file is stored correctly, is disabled since metadata is changed by filtering
-    # check_sqlite_files_are_equal(expected_sqlite_file_name, os.path.join(
-    #     path_to_general_test_files, "test_files_without_spectrum_id", "100_test_spectra.sqlite"))
-
-
 def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     """Tests store_ms2ds_embeddings"""
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
