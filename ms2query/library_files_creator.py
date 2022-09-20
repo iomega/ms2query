@@ -8,6 +8,8 @@ from matchms.Spectrum import Spectrum
 from matchms import calculate_scores
 from matchms.filtering import add_fingerprint
 from matchms.similarity import FingerprintSimilarity
+import matchms.filtering as msfilters
+from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
@@ -43,6 +45,7 @@ class LibraryFilesCreator:
     def __init__(self,
                  spectra_file_name: str,
                  output_base_filename: str,
+                 ion_mode: str = "positive",
                  tanimoto_scores_file_name: str = None,
                  s2v_model_file_name: str = None,
                  ms2ds_model_file_name: str = None,
@@ -82,11 +85,8 @@ class LibraryFilesCreator:
         """
         self.settings = self._set_settings(settings, output_base_filename)
         self._check_for_existing_files()
-
-        # Load in the spectra
-        self.list_of_spectra = \
-            self._load_spectra_and_minimal_processing(
-                spectra_file_name)
+        assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
+        self.ion_mode = ion_mode
 
         # Load in tanimoto scores
         if tanimoto_scores_file_name is None:
@@ -106,6 +106,11 @@ class LibraryFilesCreator:
         else:
             assert os.path.exists(ms2ds_model_file_name), "MS2Deepscore model file does not exists"
             self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
+        # Load in the spectra
+        self.list_of_spectra = convert_files_to_matchms_spectrum_objects(spectra_file_name)
+        self.list_of_spectra = [msfilters.default_filters(s) for s in tqdm(self.list_of_spectra,
+                                                                           desc="Applying default filters to spectra")]
+        self.remove_wrong_ion_modes()
 
     @staticmethod
     def _set_settings(new_settings: Dict[str, Union[str, bool]],
@@ -160,25 +165,76 @@ class LibraryFilesCreator:
             f"The file {self.settings['s2v_embeddings_file_name']} " \
             f"already exists, choose a different output_base_filename"
 
-    def _load_spectra_and_minimal_processing(self,
-                                             pickled_spectra_file_name: str
-                                             ) -> List[Spectrum]:
-        """Loads spectra from pickled file and does minimal processing
+    def clean_up_smiles_inchi_and_inchikeys(self, do_pubchem_lookup):
+        """Uses filters to clean ms2query
 
-        Args:
-        ------
-        pickled_spectra_file_name:
-            The file name of a pickled file containing a list of spectra.
+        do_pubchem_lookup: If true missing information will be searched on pubchem"""
+        def run_metadata_filters(s):
+            # Default filters
+            s = msfilters.derive_adduct_from_name(s)
+            s = msfilters.add_parent_mass(s, estimate_from_adduct=True)
+
+            # Here, undefiend entries will be harmonized (instead of having a huge variation of None,"", "N/A" etc.)
+            s = msfilters.harmonize_undefined_inchikey(s)
+            s = msfilters.harmonize_undefined_inchi(s)
+            s = msfilters.harmonize_undefined_smiles(s)
+
+            # The repair_inchi_inchikey_smiles function will correct misplaced metadata (e.g. inchikeys entered as inchi etc.) and harmonize the entry strings.
+            s = msfilters.repair_inchi_inchikey_smiles(s)
+
+            # Where possible (and necessary, i.e. missing): Convert between smiles, inchi, inchikey to complete metadata. This is done using functions from rdkit.
+            s = msfilters.derive_inchi_from_smiles(s)
+            s = msfilters.derive_smiles_from_inchi(s)
+            s = msfilters.derive_inchikey_from_inchi(s)
+
+            if do_pubchem_lookup:
+                s = pubchem_metadata_lookup(s,
+                                            mass_tolerance=2.0,
+                                            allowed_differences=[(18.03, 0.01),
+                                                                 (18.01, 0.01)],
+                                            name_search_depth=15)
+            return s
+        self.list_of_spectra = [run_metadata_filters(s) for s in tqdm(self.list_of_spectra,
+                                                                      desc="Cleaning metadata library spectra")]
+
+    def remove_wrong_ion_modes(self):
+        spectra_to_keep = []
+        for i, spec in enumerate(tqdm(self.list_of_spectra, desc=f"Selecting {self.ion_mode} mode spectra")):
+            if spec.get("ionmode") == self.ion_mode:
+                spectra_to_keep.append(spec)
+        print(f"From {len(self.list_of_spectra)} spectra, {len(self.list_of_spectra) - len(spectra_to_keep)} are removed since they are not in {self.ion_mode} mode")
+        self.list_of_spectra = spectra_to_keep
+
+    def remove_not_fully_annotated_spectra(self):
+        fully_annotated_spectra = []
+        for spectrum in self.list_of_spectra:
+            inchikey = spectrum.get("inchikey")
+            if inchikey is not None and len(inchikey) > 13:
+                smiles = spectrum.get("smiles")
+                inchi = spectrum.get("inchi")
+                if smiles is not None and len(smiles) > 0:
+                    if inchi is not None and len(inchi) > 0:
+                        fully_annotated_spectra.append(spectrum)
+        self.list_of_spectra = fully_annotated_spectra
+
+    def clean_spectra(self):
+        """Cleans library spectra
+
+        pubchem_lookup:
+
         """
-        # Loads the spectra from a pickled file
-        list_of_spectra = convert_files_to_matchms_spectrum_objects(pickled_spectra_file_name)
+        def normalize_and_filter_peaks(spectrum):
+            spectrum = msfilters.normalize_intensities(spectrum)
+            spectrum = msfilters.select_by_relative_intensity(spectrum, 0.001, 1)
+            spectrum = msfilters.select_by_mz(spectrum, mz_from=0.0, mz_to=1000.0)
+            spectrum = msfilters.reduce_to_number_of_peaks(spectrum, n_max=500)
+            spectrum = msfilters.require_minimum_number_of_peaks(spectrum, n_required=3)
+            return spectrum
 
-        # Does normalization and filtering of spectra
-        list_of_spectra = \
-            minimal_processing_multiple_spectra(
-                list_of_spectra,
-                progress_bar=self.settings["progress_bars"])
-        return list_of_spectra
+        library_spectra = [normalize_and_filter_peaks(s) for s in tqdm(self.list_of_spectra,
+                                                                       desc="Cleaning and filtering peaks library spectra")]
+        library_spectra = [s for s in library_spectra if s is not None]
+        self.list_of_spectra = library_spectra
 
     def create_all_library_files(self):
         """Creates files with embeddings and a sqlite file with spectra data
