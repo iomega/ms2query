@@ -15,9 +15,8 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.spectrum_processing import (create_spectrum_documents,
-                                          minimal_processing_multiple_spectra)
-from ms2query.utils import load_pickled_file, convert_files_to_matchms_spectrum_objects
+from ms2query.spectrum_processing import create_spectrum_documents
+from ms2query.utils import load_pickled_file
 
 
 class LibraryFilesCreator:
@@ -43,7 +42,7 @@ class LibraryFilesCreator:
 
     """
     def __init__(self,
-                 spectra_file_name: str,
+                 library_spectra: List[Spectrum],
                  output_base_filename: str,
                  ion_mode: str = "positive",
                  tanimoto_scores_file_name: str = None,
@@ -106,10 +105,13 @@ class LibraryFilesCreator:
         else:
             assert os.path.exists(ms2ds_model_file_name), "MS2Deepscore model file does not exists"
             self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-        # Load in the spectra
-        self.list_of_spectra = convert_files_to_matchms_spectrum_objects(spectra_file_name)
+        # Initialise spectra
+        self.list_of_spectra = library_spectra
+
+        # Run default filters
         self.list_of_spectra = [msfilters.default_filters(s) for s in tqdm(self.list_of_spectra,
                                                                            desc="Applying default filters to spectra")]
+        # Remove spectra with the wrong ion mode (or no ion mode)
         self.remove_wrong_ion_modes()
 
     @staticmethod
@@ -215,9 +217,11 @@ class LibraryFilesCreator:
                 if smiles is not None and len(smiles) > 0:
                     if inchi is not None and len(inchi) > 0:
                         fully_annotated_spectra.append(spectrum)
+        print(f"From {len(self.list_of_spectra)} spectra, {len(self.list_of_spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
         self.list_of_spectra = fully_annotated_spectra
 
-    def clean_spectra(self):
+
+    def clean_peaks_and_normalise_intensities_spectra(self):
         """Cleans library spectra
 
         pubchem_lookup:
