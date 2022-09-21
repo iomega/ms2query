@@ -27,18 +27,21 @@ class LibraryFilesCreator:
 
     .. code-block:: python
 
-        from ms2query import LibraryFilesCreator
-
-        # Initiate Creator
-        library_creator = LibraryFilesCreator(
-            spectrums_file,
-            output_file_sqlite="... folder and file name base...",
-            'tanimoto_scores.pickle',
-            'ms2ds_model.hdf5',
-            'spec2vec_model.model'
-            progress_bars=True)
-        #
-        library_creator.create_all_library_files()
+    from ms2query.library_files_creator import LibraryFilesCreator
+    from ms2query.utils import convert_files_to_matchms_spectrum_objects
+    spectrum_file_location =
+    library_spectra = convert_files_to_matchms_spectrum_objects(spectrum_file_location)
+    # Fill in the missing values:
+    library_creator = LibraryFilesCreator(library_spectra,
+                                          output_directory=,
+                                          ion_mode="positive",
+                                          ms2ds_model_file_name=,
+                                          s2v_model_file_name=,)
+    library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
+    library_creator.clean_peaks_and_normalise_intensities_spectra()
+    library_creator.remove_not_fully_annotated_spectra()
+    library_creator.calculate_tanimoto_scores()
+    library_creator.create_all_library_files()
 
     """
     def __init__(self,
