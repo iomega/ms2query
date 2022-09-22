@@ -4,13 +4,9 @@ into account here. Processing here hence refers to inspecting, filtering,
 adjusting the spectrum peaks (m/z and intensities).
 """
 from typing import Dict, List, Union
+import matchms.filtering as msfilters
 import numpy as np
 from matchms import Spectrum
-from matchms.filtering import (add_losses, add_retention_index,
-                               add_retention_time, default_filters,
-                               normalize_intensities,
-                               reduce_to_number_of_peaks, require_precursor_mz,
-                               select_by_intensity, select_by_mz)
 from matchms.typing import SpectrumType
 from spec2vec import SpectrumDocument
 from tqdm import tqdm
@@ -19,9 +15,9 @@ from tqdm import tqdm
 def clean_metadata(spectrum_list: List[SpectrumType]):
     spectra_cleaned_metadata = []
     for i, s in enumerate(spectrum_list):
-        s = default_filters(s)
-        s = add_retention_index(s)
-        s = add_retention_time(s)
+        s = msfilters.default_filters(s)
+        s = msfilters.add_retention_index(s)
+        s = msfilters.add_retention_time(s)
         s.set("spectrum_nr", i+1)
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
@@ -87,17 +83,17 @@ def spectrum_processing_minimal(spectrum: SpectrumType,
         contains sufficient peaks to be considered.
     """
     settings = set_minimal_processing_defaults(**settings)
-    spectrum = normalize_intensities(spectrum)
-    spectrum = select_by_intensity(spectrum,
+    spectrum = msfilters.normalize_intensities(spectrum)
+    spectrum = msfilters.select_by_intensity(spectrum,
                                    intensity_from=settings["intensity_from"])
-    spectrum = select_by_mz(spectrum,
+    spectrum = msfilters.select_by_mz(spectrum,
                             mz_from=settings["mz_from"],
                             mz_to=np.inf)
     spectrum = require_peaks_below_mz(
         spectrum,
         n_required=settings["n_required_below_mz"],
         max_mz=settings["max_mz_required"])
-    spectrum = require_precursor_mz(spectrum)
+    spectrum = msfilters.require_precursor_mz(spectrum)
     return spectrum
 
 
@@ -175,15 +171,15 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
         Maximum allowed m/z value for losses. Default is 1000.0.
     """
     settings = set_spec2vec_defaults(**settings)
-    spectrum = select_by_mz(spectrum,
+    spectrum = msfilters.select_by_mz(spectrum,
                             mz_from=settings["mz_from"],
                             mz_to=settings["mz_to"])
-    spectrum = reduce_to_number_of_peaks(
+    spectrum = msfilters.reduce_to_number_of_peaks(
         spectrum,
         n_required=settings["n_required"],
         n_max=settings["n_max"])
 
-    spectrum = add_losses(spectrum,
+    spectrum = msfilters.add_losses(spectrum,
                           loss_mz_from=settings["loss_mz_from"],
                           loss_mz_to=settings["loss_mz_to"])
     assert spectrum is not None, \

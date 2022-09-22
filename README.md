@@ -82,6 +82,61 @@ ms2library = create_library_object_from_one_dir(ms2query_library_files_directory
 run_complete_folder(ms2library, ms2_spectra_directory)
 
 ```
+
+## Create your own library
+If you would like to create a library for your own library. You can run the following code:
+
+It is important that the library spectra are annotated with smiles, inchi's or inchikeys in the metadata otherwise they
+are not included in the library. 
+
+Fill in the blank spots with the file locations.
+For downloading a s2v model and ms2ds model see above in "Run MS2Query"
+
+```python
+from ms2query.library_files_creator import LibraryFilesCreator
+from ms2query.utils import convert_files_to_matchms_spectrum_objects
+spectrum_file_location = # The file location of the library spectra
+library_spectra = convert_files_to_matchms_spectrum_objects(spectrum_file_location)
+# Fill in the missing values:
+library_creator = LibraryFilesCreator(library_spectra, 
+                                      output_base_filename=, # For instance "data/library_data/all_GNPS_positive_mode_"
+                                      ion_mode="positive",
+                                      ms2ds_model_file_name=, # The file location of the ms2ds model
+                                      s2v_model_file_name=,) # The file location of the s2v model
+library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
+library_creator.clean_peaks_and_normalise_intensities_spectra()
+library_creator.remove_not_fully_annotated_spectra()
+library_creator.calculate_tanimoto_scores()
+library_creator.create_all_library_files()
+```
+
+To run MS2Query on your own created library run (again fill in the blanks).
+For the SQLite file, S2V embeddings file and the ms2ds embeddings file. The files just calculated by you should be used.
+For the other files the files downloaded from zenodo (see "run MS2Query") should be used. 
+The results will be returned as csv files in a results directory. 
+```python
+from ms2query.run_ms2query import download_default_models, default_library_file_base_names, run_complete_folder
+from ms2query.ms2library import MS2Library
+
+# Define the folder in which your query spectra are stored.
+# Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
+ms2_spectra_directory = "specify_directory"
+
+# Create a MS2Library object
+ms2library = MS2Library(sqlite_file_name= ,
+                        s2v_model_file_name= ,
+                        ms2ds_model_file_name= ,
+                        pickled_s2v_embeddings_file_name= ,
+                        pickled_ms2ds_embeddings_file_name= ,
+                        ms2query_model_file_name= ,
+                        classifier_csv_file_name= ,
+                        )
+
+# Run library search and analog search on your files.
+run_complete_folder(ms2library, ms2_spectra_directory)
+```
+
+
 ## Documentation for developers
 ### Prepare environmnent
 We recommend to create an Anaconda environment with

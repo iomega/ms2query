@@ -3,11 +3,10 @@ from typing import Dict, List
 import pandas as pd
 from matchms import Spectrum
 from tqdm import tqdm
-from ms2query.utils import load_pickled_file
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
-                         tanimoto_scores_pickled_dataframe_file: str,
+                         tanimoto_scores: pd.DataFrame,
                          list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
                          progress_bars: bool = True):
@@ -38,7 +37,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     """
     initialize_tables(sqlite_file_name, additional_metadata_columns_dict=columns_dict)
     fill_spectrum_data_table(sqlite_file_name, list_of_spectra, progress_bar=progress_bars)
-    fill_inchikeys_table(sqlite_file_name, tanimoto_scores_pickled_dataframe_file, list_of_spectra,
+    fill_inchikeys_table(sqlite_file_name, tanimoto_scores, list_of_spectra,
                          progress_bars=progress_bars)
 
 
@@ -161,7 +160,7 @@ def fill_spectrum_data_table(sqlite_file_name: str,
 
 
 def fill_inchikeys_table(sqlite_file_name: str,
-                         tanimoto_scores_pickled_dataframe_file: str,
+                         tanimoto_scores : pd.DataFrame,
                          list_of_spectra: List[Spectrum],
                          progress_bars: bool = True):
     """Fills the inchikeys table with Inchikeys, spectrum_ids_belonging_to_inchikey and closest related inchikeys
@@ -179,17 +178,15 @@ def fill_inchikeys_table(sqlite_file_name: str,
         If True progress bars will show the progress of the different steps
         in the process.
     """
-    tanimoto_df = load_pickled_file(tanimoto_scores_pickled_dataframe_file)
-
     # Get spectra belonging to each inchikey14
     spectra_belonging_to_inchikey14 = \
         get_spectra_belonging_to_inchikey14(list_of_spectra)
 
-    inchikeys_order = tanimoto_df.index
+    inchikeys_order = tanimoto_scores.index
 
     # Get closest related inchikey14s for each inchikey14
     closest_related_inchikey14s = \
-        get_closest_related_inchikey14s(tanimoto_df, inchikeys_order)
+        get_closest_related_inchikey14s(tanimoto_scores, inchikeys_order)
 
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
