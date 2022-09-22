@@ -3,7 +3,6 @@ from typing import Dict, List
 import pandas as pd
 from matchms import Spectrum
 from tqdm import tqdm
-from ms2query.utils import load_pickled_file
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,

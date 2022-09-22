@@ -85,6 +85,7 @@ class LibraryFilesCreator:
             If True, a progress bar of the different processes is shown.
             Default = True.
         """
+        # pylint: disable=too-many-arguments
         self.settings = self._set_settings(settings, output_base_filename)
         self._check_for_existing_files()
         assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
@@ -187,7 +188,8 @@ class LibraryFilesCreator:
             # The repair_inchi_inchikey_smiles function will correct misplaced metadata (e.g. inchikeys entered as inchi etc.) and harmonize the entry strings.
             s = msfilters.repair_inchi_inchikey_smiles(s)
 
-            # Where possible (and necessary, i.e. missing): Convert between smiles, inchi, inchikey to complete metadata. This is done using functions from rdkit.
+            # Where possible (and necessary, i.e. missing): Convert between smiles, inchi, inchikey to complete metadata.
+            # This is done using functions from rdkit.
             s = msfilters.derive_inchi_from_smiles(s)
             s = msfilters.derive_smiles_from_inchi(s)
             s = msfilters.derive_inchikey_from_inchi(s)
@@ -204,10 +206,11 @@ class LibraryFilesCreator:
 
     def remove_wrong_ion_modes(self):
         spectra_to_keep = []
-        for i, spec in enumerate(tqdm(self.list_of_spectra, desc=f"Selecting {self.ion_mode} mode spectra")):
+        for spec in tqdm(self.list_of_spectra, desc=f"Selecting {self.ion_mode} mode spectra"):
             if spec.get("ionmode") == self.ion_mode:
                 spectra_to_keep.append(spec)
-        print(f"From {len(self.list_of_spectra)} spectra, {len(self.list_of_spectra) - len(spectra_to_keep)} are removed since they are not in {self.ion_mode} mode")
+        print(f"From {len(self.list_of_spectra)} spectra, "
+              f"{len(self.list_of_spectra) - len(spectra_to_keep)} are removed since they are not in {self.ion_mode} mode")
         self.list_of_spectra = spectra_to_keep
 
     def remove_not_fully_annotated_spectra(self):
@@ -220,7 +223,8 @@ class LibraryFilesCreator:
                 if smiles is not None and len(smiles) > 0:
                     if inchi is not None and len(inchi) > 0:
                         fully_annotated_spectra.append(spectrum)
-        print(f"From {len(self.list_of_spectra)} spectra, {len(self.list_of_spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
+        print(f"From {len(self.list_of_spectra)} spectra, "
+              f"{len(self.list_of_spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
         self.list_of_spectra = fully_annotated_spectra
 
     def clean_peaks_and_normalise_intensities_spectra(self):
