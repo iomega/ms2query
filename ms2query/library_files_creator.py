@@ -223,7 +223,6 @@ class LibraryFilesCreator:
         print(f"From {len(self.list_of_spectra)} spectra, {len(self.list_of_spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
         self.list_of_spectra = fully_annotated_spectra
 
-
     def clean_peaks_and_normalise_intensities_spectra(self):
         """Cleans library spectra
 
@@ -343,7 +342,8 @@ class LibraryFilesCreator:
         spectra_with_most_frequent_inchi_per_inchikey, inchikeys14_unique = self._select_inchi_for_unique_inchikeys()
         # Add fingerprints
         fingerprint_spectra = []
-        for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey):
+        for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey,
+                             desc="Calculating fingerprints for tanimoto scores"):
             spectrum_with_fingerprint = add_fingerprint(spectrum,
                                                         fingerprint_type="daylight",
                                                         nbits=2048)
