@@ -1,14 +1,14 @@
 import os
+from collections import Counter
 from typing import Dict, List, Union
+import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
-from collections import Counter
-from matchms.Spectrum import Spectrum
 from matchms import calculate_scores
 from matchms.filtering import add_fingerprint
 from matchms.similarity import FingerprintSimilarity
-import matchms.filtering as msfilters
+from matchms.Spectrum import Spectrum
 from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model

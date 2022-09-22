@@ -4,9 +4,9 @@ into account here. Processing here hence refers to inspecting, filtering,
 adjusting the spectrum peaks (m/z and intensities).
 """
 from typing import Dict, List, Union
+import matchms.filtering as msfilters
 import numpy as np
 from matchms import Spectrum
-import matchms.filtering as msfilters
 from matchms.typing import SpectrumType
 from spec2vec import SpectrumDocument
 from tqdm import tqdm
