@@ -1,10 +1,11 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 from matchms import Spectrum
 from ms2query.library_files_creator import LibraryFilesCreator
-from ms2query.utils import load_pickled_file, convert_files_to_matchms_spectrum_objects
+from ms2query.utils import (convert_files_to_matchms_spectrum_objects,
+                            load_pickled_file)
 
 
 @pytest.fixture
