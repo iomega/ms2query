@@ -278,14 +278,6 @@ def test_create_library_object_from_one_dir():
     """Test creating a MS2Library object with create_library_object_from_one_dir"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/')
-    file_names_dict = {"sqlite": "general_test_files/100_test_spectra.sqlite",
-                       "classifiers": None,
-                       "s2v_model": "general_test_files/100_test_spectra_s2v_model.model",
-                       "ms2ds_model": "general_test_files/ms2ds_siamese_210301_5000_500_400.hdf5",
-                       "ms2query_model": "general_test_files/test_ms2q_rf_model.pickle",
-                       "s2v_embeddings": "general_test_files/100_test_spectra_s2v_embeddings.pickle",
-                       "ms2ds_embeddings": "general_test_files/100_test_spectra_ms2ds_embeddings.pickle"}
-    library = create_library_object_from_one_dir(path_to_tests_dir,
-                                                 file_names_dict)
+        'tests/test_files/general_test_files')
+    library = create_library_object_from_one_dir(path_to_tests_dir)
     assert isinstance(library, MS2Library)

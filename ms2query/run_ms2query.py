@@ -1,47 +1,40 @@
+import json
 import os
-from typing import Dict, List, Tuple, Union
-from urllib.request import urlretrieve
-from tqdm import tqdm
+from typing import List, Tuple, Union
+from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
 from ms2query.utils import convert_files_to_matchms_spectrum_objects
 
 
-def default_library_file_base_names() -> Dict[str, str]:
-    """Returns a dictionary with the base names of default files for a MS2Library"""
-    return {"sqlite": "library_GNPS_15_12_2021.sqlite",
-            "s2v_trainables": "spec2vec_model_GNPS_15_12_2021.model.syn1neg.npy",
-            "s2v_vectors": "spec2vec_model_GNPS_15_12_2021.model.wv.vectors.npy",
-            "classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt",
-            "s2v_model": "spec2vec_model_GNPS_15_12_2021.model",
-            "ms2ds_model": "ms2ds_model_GNPS_15_12_2021.hdf5",
-            "ms2query_model": "ms2query_random_forest_model.pickle",
-            "s2v_embeddings": "library_GNPS_15_12_2021_s2v_embeddings.pickle",
-            "ms2ds_embeddings": "library_GNPS_15_12_2021_ms2ds_embeddings.pickle"}
-
-
-def download_default_models(dir_to_store_files: str,
-                            file_name_dict: Dict[str, str]):
+def download_zenodo_files(zenodo_doi: int,
+                          dir_to_store_files:str):
     """Downloads files from Zenodo
 
     Args:
     ------
+    zenodo_doi: 
+        The doi of the zenodo files you would like to download
     dir_to_store_files:
         The path to the directory in which the downloaded files will be stored.
         The directory does not have to exist yet.
-    file_name_dict:
-        A dictionary with as keys the type of file and as values the file names
-    """
+        """
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
-    zenodo_files_location = "https://zenodo.org/record/6997924/files/"
-    for file_name in tqdm(file_name_dict.values(),
-                          "Downloading library files"):
-        complete_url = zenodo_files_location + file_name + "?download=1"
-        file_location = os.path.join(dir_to_store_files, file_name)
-        if not os.path.exists(file_location):
-            urlretrieve(complete_url, file_location)
+    file_names_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
+    with urlopen(file_names_metadata_url) as zenodo_metadata_file:
+        file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
+    files = file_names_metadata_json["files"]
+    zenodo_files_url = f"https://zenodo.org/record/{zenodo_doi}/files/"
+
+    for file in files:
+        file_name = file["key"]
+        store_file_location = os.path.join(dir_to_store_files, file_name)
+        if not os.path.exists(store_file_location):
+            print(f"downloading the file {file_name} from zenodo ({file['size'] / 1000000:.1f} MB)")
+            urlretrieve(zenodo_files_url + file_name,
+                        store_file_location)
         else:
-            print(f"file with the name {file_location} already exists, so was not downloaded")
+            print(f"file with the name {store_file_location} already exists, so was not downloaded")
 
 
 def run_complete_folder(ms2library: MS2Library,
@@ -99,8 +92,8 @@ def run_complete_folder(ms2library: MS2Library,
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
-            if spectra is not None:
+            if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
+                spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
                 analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
                 ms2library.analog_search_store_in_csv(spectra,
                                                       analogs_results_file_name,
@@ -109,3 +102,6 @@ def run_complete_folder(ms2library: MS2Library,
                                                       additional_metadata_columns=additional_metadata_columns,
                                                       additional_ms2query_score_columns=additional_ms2query_score_columns)
                 print(f"Results stored in {analogs_results_file_name}")
+            else:
+                print(f'The file extension of the file {file_name} is not recognized, '
+                      f'accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')

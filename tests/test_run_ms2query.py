@@ -1,6 +1,7 @@
 import os
 import sys
-from ms2query.run_ms2query import download_default_models, run_complete_folder
+from ms2query.ms2library import create_library_object_from_one_dir
+from ms2query.run_ms2query import download_zenodo_files, run_complete_folder
 from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file,
                                    file_names, test_spectra)
 
@@ -12,23 +13,34 @@ else:
 
 
 def test_download_default_models(tmp_path):
-    """Tests downloading one of the files from zenodo
+    """Tests downloading small files from zenodo
 
-    Only one file is downloaded to keep test running time acceptable"""
+    The files are a total of 20 MB from https://zenodo.org/record/7108049#.Yy2nPKRBxPY"""
+    dir_to_store_test_files = os.path.join(tmp_path, "positive_model")
+    download_zenodo_files(7108049, dir_to_store_test_files)
+    assert os.path.exists(dir_to_store_test_files)
+    assert os.path.exists(os.path.join(dir_to_store_test_files,
+                                       "GNPS_15_12_2021_neg_test_250_inchikeys.pickle"))
+    assert os.path.exists(os.path.join(dir_to_store_test_files,
+                                       "GNPS_15_12_2021_neg_test_3000_spectra.pickle"))
+    assert os.path.exists(os.path.join(dir_to_store_test_files,
+                                       "GNPS_15_12_2021_pos_test_250_inchikeys.pickle"))
+    assert os.path.exists(os.path.join(dir_to_store_test_files,
+                                       "GNPS_15_12_2021_pos_test_3000_spectra.pickle"))
 
-    dir_to_store_files = os.path.join(tmp_path, "models")
-    download_default_models(dir_to_store_files,
-                            {"classifiers": "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"})
-    assert os.path.exists(dir_to_store_files)
-    print(os.path.join(dir_to_store_files,
-                                       "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"))
-    assert os.path.exists(os.path.join(dir_to_store_files,
-                                       "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"))
-    with open(os.path.join(dir_to_store_files,
-                           "ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"), "r") as classifiers_file:
-        assert classifiers_file.readline() == "inchi_key\tsmiles\tcf_kingdom\tcf_superclass\tcf_class\t" \
-                                              "cf_subclass\tcf_direct_parent\tnpc_class_results\t" \
-                                              "npc_superclass_results\tnpc_pathway_results\tnpc_isglycoside\n"
+    run_test = False # Run test is set to false, since downloading takes too long for default testing
+    if run_test:
+        dir_to_store_positive_files = os.path.join(tmp_path, "positive_model")
+        dir_to_store_negative_files = os.path.join(tmp_path, "negative_model")
+
+        download_zenodo_files(6997924, dir_to_store_positive_files)
+        download_zenodo_files(7107654, dir_to_store_negative_files)
+        assert os.path.exists(dir_to_store_positive_files)
+        assert os.path.exists(dir_to_store_negative_files)
+        pos_ms2library = create_library_object_from_one_dir(dir_to_store_positive_files)
+        neg_ms2library = create_library_object_from_one_dir(dir_to_store_negative_files)
+        assert isinstance(pos_ms2library, MS2Library)
+        assert isinstance(neg_ms2library, MS2Library)
 
 
 def create_test_folder_with_spectra_files(path, spectra):

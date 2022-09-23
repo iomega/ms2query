@@ -447,34 +447,71 @@ def get_ms2query_model_prediction_single_spectrum(
     return result_table
 
 
-def create_library_object_from_one_dir(directory: str,
-                                       file_name_dictionary: Dict[str, str]
-                                       ) -> MS2Library:
-    """Creates a library object for specified directory and file names
-
-    For default file names the function run_ms2query.default_library_file_names can be used
+def create_library_object_from_one_dir(directory_containing_library_and_models: str) -> MS2Library:
+    """Selects file names corresponding to file types in a directory and creates an MS2Library object
 
     Args:
     ------
     directory:
         Path to the directory in which the files are stored
-    file_name_dictionary:
-        A dictionary with as keys the type of file and as values the base names of the files
     """
-    sqlite_file_name = os.path.join(directory, file_name_dictionary["sqlite"])
-    if file_name_dictionary["classifiers"] is not None:
-        classifiers_file_name = os.path.join(directory, file_name_dictionary["classifiers"])
-    else:
-        classifiers_file_name = None
+    assert os.path.exists(directory_containing_library_and_models) \
+           and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
+    dict_with_file_names = \
+        {"sqlite": None, "classifiers": None, "s2v_model": None, "ms2ds_model": None,
+         "ms2query_model": None, "s2v_embeddings": None, "ms2ds_embeddings": None}
 
-    # Models
-    s2v_model_file_name = os.path.join(directory, file_name_dictionary["s2v_model"])
-    ms2ds_model_file_name = os.path.join(directory, file_name_dictionary["ms2ds_model"])
-    ms2query_model_file_name = os.path.join(directory, file_name_dictionary["ms2query_model"])
+    # Go through spectra files in directory
+    for file_name in os.listdir(directory_containing_library_and_models):
+        file_path = os.path.join(directory_containing_library_and_models, file_name)
+        # skip folders
+        if os.path.isfile(file_path):
+            if str.endswith(file_path, ".sqlite"):
+                file_name = "sqlite"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, "ms2ds_embeddings.pickle"):
+                file_name = "ms2ds_embeddings"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, "s2v_embeddings.pickle"):
+                file_name = "s2v_embeddings"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, ".hdf5"):
+                file_name = "ms2ds_model"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, ".pickle") and "ms2q" in file_name:
+                file_name = "ms2query_model"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, ".model"):
+                file_name = "s2v_model"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+            elif str.endswith(file_path, "CF_NPC_classes.txt"):
+                file_name = "classifiers"
+                assert dict_with_file_names[file_name] is None, \
+                    f"Multiple files could be the file containing the {file_name} file"
+                dict_with_file_names[file_name] = file_path
+    for file_type, stored_file_name in dict_with_file_names.items():
+        if file_type != "classifiers":
+            assert stored_file_name is not None, \
+                f"The file type {file_type} was not found in the directory"
+        elif stored_file_name is None:
+            print(f"The file type {file_type} was not found in the directory ")
 
-    # Embeddings
-    s2v_embeddings_file_name = os.path.join(directory, file_name_dictionary["s2v_embeddings"])
-    ms2ds_embeddings_file_name = os.path.join(directory, file_name_dictionary["ms2ds_embeddings"])
-
-    return MS2Library(sqlite_file_name, s2v_model_file_name, ms2ds_model_file_name, s2v_embeddings_file_name,
-                      ms2ds_embeddings_file_name, ms2query_model_file_name, classifiers_file_name)
+    return MS2Library(dict_with_file_names["sqlite"],
+                      dict_with_file_names["s2v_model"],
+                      dict_with_file_names["ms2ds_model"],
+                      dict_with_file_names["s2v_embeddings"],
+                      dict_with_file_names["ms2ds_embeddings"],
+                      dict_with_file_names["ms2query_model"],
+                      dict_with_file_names["classifiers"])
