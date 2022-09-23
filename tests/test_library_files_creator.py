@@ -32,7 +32,8 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'))
     test_create_files = LibraryFilesCreator(library_spectra, base_file_name,
-        ms2ds_model_file_name=os.path.join(path_to_general_test_files, 'ms2ds_siamese_210301_5000_500_400.hdf5'))
+                                            ms2ds_model_file_name=os.path.join(path_to_general_test_files,
+                                                                               'ms2ds_siamese_210301_5000_500_400.hdf5'))
     test_create_files.clean_peaks_and_normalise_intensities_spectra()
     test_create_files.store_ms2ds_embeddings()
 
@@ -56,7 +57,8 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'))
     test_create_files = LibraryFilesCreator(library_spectra, base_file_name,
-        s2v_model_file_name=os.path.join(path_to_general_test_files, "100_test_spectra_s2v_model.model"))
+                                            s2v_model_file_name=os.path.join(path_to_general_test_files,
+                                                                             "100_test_spectra_s2v_model.model"))
     test_create_files.clean_peaks_and_normalise_intensities_spectra()
     test_create_files.store_s2v_embeddings()
 
@@ -77,8 +79,7 @@ def test_calculate_tanimoto_scores(tmp_path, path_to_general_test_files):
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'))
-    test_create_files = LibraryFilesCreator(library_spectra,
-                                            base_file_name)
+    test_create_files = LibraryFilesCreator(library_spectra, base_file_name)
     test_create_files.calculate_tanimoto_scores()
     result: pd.DataFrame = test_create_files.tanimoto_scores
     result.sort_index(inplace=True)
@@ -105,9 +106,7 @@ def test_clean_library_spectra(tmp_path, path_to_general_test_files):
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
-    test_create_files = LibraryFilesCreator(library_spectra,
-                                            base_file_name,
-                                            ion_mode="positive")
+    test_create_files = LibraryFilesCreator(library_spectra, base_file_name, ion_mode="positive")
     test_create_files.clean_peaks_and_normalise_intensities_spectra()
     cleaned_spectra = test_create_files.list_of_spectra
     # Check if the spectra are still correct, output is not checked
@@ -131,9 +130,7 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path, path_to_general_test_file
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
-    test_create_files = LibraryFilesCreator(library_spectra,
-                                            base_file_name,
-                                            ion_mode="positive")
+    test_create_files = LibraryFilesCreator(library_spectra, base_file_name, ion_mode="positive")
     test_create_files.clean_up_smiles_inchi_and_inchikeys(True)
     cleaned_spectra = test_create_files.list_of_spectra
     # Check if the spectra are still correct, output is not checked
@@ -167,9 +164,7 @@ def test_remove_not_fully_annotated_spectra(tmp_path, path_to_general_test_files
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
-    test_create_files = LibraryFilesCreator(library_spectra,
-                                            base_file_name,
-                                            ion_mode="positive")
+    test_create_files = LibraryFilesCreator(library_spectra, base_file_name, ion_mode="positive")
     test_create_files.remove_not_fully_annotated_spectra()
     results = test_create_files.list_of_spectra
     assert len(results) == 1, "Expected that 1 spectrum was removed"

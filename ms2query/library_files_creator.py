@@ -48,9 +48,10 @@ class LibraryFilesCreator:
                  library_spectra: List[Spectrum],
                  output_directory: str,
                  ion_mode: str = "positive",
-                 tanimoto_scores_file_name: str = None,
                  s2v_model_file_name: str = None,
-                 ms2ds_model_file_name: str = None,):
+                 ms2ds_model_file_name: str = None,
+                 tanimoto_scores_file_name: str = None,
+                 ):
         """Creates files needed to run queries on a library
 
         Parameters
@@ -70,8 +71,8 @@ class LibraryFilesCreator:
         ms2ds_model_file_name:
             File name of a ms2ds model
         tanimoto_scores_file_name:
-            File name of a pickled file containing a dataframe with tanimoto
-            scores. The tanimoto scores can also be calculated from scratch
+            File name of a pickled file containing a dataframe with tanimoto scores.
+            The tanimoto scores can also be calculated from scratch using the method calculate_tanimoto_scores
         """
         # pylint: disable=too-many-arguments
         self.progress_bars = True
