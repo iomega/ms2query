@@ -91,7 +91,7 @@ def run_complete_folder(ms2library: MS2Library,
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"}:
+            if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
                 spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
                 analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
                 ms2library.analog_search_store_in_csv(spectra,

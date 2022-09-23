@@ -486,7 +486,7 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
                 assert dict_with_file_names[file_name] is None, \
                     f"Multiple files could be the file containing the {file_name} file"
                 dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".pickle") and "ms2query" in file_name:
+            elif str.endswith(file_path, ".pickle") and "ms2q" in file_name:
                 file_name = "ms2query_model"
                 assert dict_with_file_names[file_name] is None, \
                     f"Multiple files could be the file containing the {file_name} file"
