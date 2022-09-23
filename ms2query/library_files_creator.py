@@ -46,47 +46,42 @@ class LibraryFilesCreator:
     """
     def __init__(self,
                  library_spectra: List[Spectrum],
-                 output_base_filename: str,
+                 output_directory: str,
                  ion_mode: str = "positive",
                  tanimoto_scores_file_name: str = None,
                  s2v_model_file_name: str = None,
-                 ms2ds_model_file_name: str = None,
-                 **settings):
+                 ms2ds_model_file_name: str = None,):
         """Creates files needed to run queries on a library
 
         Parameters
         ----------
-        spectra_file_name:
-            File name of a file containing mass spectra. Accepted file types are: "mzML", "json", "mgf", "msp", "mzxml",
-            "usi" or "pickle". Spectra are expected to contain full annotations and be of the same ionization mode.
-
-        output_base_filename:
-            The file name used as base for new files that are created.
-            The following extensions are added to the output_base_filename
-            For sqlite file: ".sqlite"
-            For ms2ds_embeddings: "_ms2ds_embeddings.pickle"
-            For s2v_embeddings: "_s2v_embeddings.pickle"
-        tanimoto_scores_file_name:
-            File name of a pickled file containing a dataframe with tanimoto
-            scores. If self.calculate_new_tanimoto_scores = True, this will
-            be the file name of a new file in which the tanimoto scores will
-            be stored.
+        library_spectra:
+            A list containing matchms spectra objects for the library spectra.
+            To load in library spectra use ms2query.utils load_matchms_spectrum_objects_from_file
+        output_directory:
+            The directory in which the created library files are stored. The used file names are
+            For sqlite file: "ms2query_library.sqlite"
+            For ms2ds_embeddings: "ms2ds_embeddings.pickle"
+            For s2v_embeddings: "s2v_embeddings.pickle"
+        ion_mode:
+            The ion mode of the library you want to create. Spectra not in this ion mode will be removed
         s2v_model_file_name:
             file name of a s2v model
         ms2ds_model_file_name:
             File name of a ms2ds model
-
-        **settings:
-            The following optional parameters can be defined.
-        spectrum_id_column_name:
-            The name of the column or key under which the spectrum id is
-            stored. Default = "spectrumid"
-        progress_bars:
-            If True, a progress bar of the different processes is shown.
-            Default = True.
+        tanimoto_scores_file_name:
+            File name of a pickled file containing a dataframe with tanimoto
+            scores. The tanimoto scores can also be calculated from scratch
         """
         # pylint: disable=too-many-arguments
-        self.settings = self._set_settings(settings, output_base_filename)
+        self.progress_bars = True
+        self.output_directory = output_directory
+        if not os.path.exists(self.output_directory):
+            os.mkdir(self.output_directory)
+        self.sqlite_file_name = os.path.join(output_directory, "ms2query_library.sqlite")
+        self.ms2ds_embeddings_file_name = os.path.join(output_directory, "ms2ds_embeddings.pickle")
+        self.s2v_embeddings_file_name = os.path.join(output_directory, "s2v_embeddings.pickle")
+        # These checks are performed at the start, since the filtering of spectra can take long
         self._check_for_existing_files()
         assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
         self.ion_mode = ion_mode
@@ -118,57 +113,15 @@ class LibraryFilesCreator:
         # Remove spectra with the wrong ion mode (or no ion mode)
         self.remove_wrong_ion_modes()
 
-    @staticmethod
-    def _set_settings(new_settings: Dict[str, Union[str, bool]],
-                      output_base_filename: str
-                      ) -> Dict[str, Union[str, bool]]:
-        """Changes default settings to new_settings and creates file names
-
-        Args:
-        ------
-        new_settings:
-            Dictionary with settings that should be changed. Only the
-            keys given in default_settings can be used and the type has to be
-            the same as the type of the values in default settings.
-        output_base_filename:
-            The file name used as base for new files that are created.
-            The following extensions are added to the output_base_filename
-            For sqlite file: ".sqlite"
-            For ms2ds_embeddings: "_ms2ds_embeddings.pickle"
-            For s2v_embeddings: "_s2v_embeddings.pickle"
-        """
-        default_settings = {"progress_bars": True,
-                            "spectrum_id_column_name": "spectrumid"}
-
-        for attribute in new_settings:
-            assert attribute in default_settings, \
-                f"Invalid argument in constructor:{attribute}"
-            assert isinstance(new_settings[attribute],
-                              type(default_settings[attribute])), \
-                f"Different type is expected for argument: {attribute}"
-            default_settings[attribute] = new_settings[attribute]
-
-        # Set file names of new file
-        default_settings["output_file_sqlite"] = \
-            output_base_filename + ".sqlite"
-        default_settings["ms2ds_embeddings_file_name"] = \
-            output_base_filename + "_ms2ds_embeddings.pickle"
-        default_settings["s2v_embeddings_file_name"] = \
-            output_base_filename + "_s2v_embeddings.pickle"
-
-        return default_settings
-
     def _check_for_existing_files(self):
-        assert not os.path.exists(self.settings["output_file_sqlite"]), \
-            f"The file {self.settings['output_file_sqlite']} already exists," \
+        assert not os.path.exists(self.sqlite_file_name), \
+            f"The file {self.sqlite_file_name} already exists," \
             f" choose a different output_base_filename"
-        assert not os.path.exists(self.settings[
-                                      'ms2ds_embeddings_file_name']), \
-            f"The file {self.settings['ms2ds_embeddings_file_name']} " \
+        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
+            f"The file {self.ms2ds_embeddings_file_name} " \
             f"already exists, choose a different output_base_filename"
-        assert not os.path.exists(self.settings[
-            "s2v_embeddings_file_name"]), \
-            f"The file {self.settings['s2v_embeddings_file_name']} " \
+        assert not os.path.exists(self.s2v_embeddings_file_name), \
+            f"The file {self.s2v_embeddings_file_name} " \
             f"already exists, choose a different output_base_filename"
 
     def clean_up_smiles_inchi_and_inchikeys(self, do_pubchem_lookup):
@@ -257,11 +210,11 @@ class LibraryFilesCreator:
         assert self.tanimoto_scores is not None, \
             "No tanimoto scores were provided, provide tanimoto score file or run LibraryFilesCreator.calculate_tanimoto_scores()"
         make_sqlfile_wrapper(
-            self.settings["output_file_sqlite"],
+            self.sqlite_file_name,
             self.tanimoto_scores,
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
-            progress_bars=self.settings["progress_bars"],
+            progress_bars=self.progress_bars,
         )
 
     def store_ms2ds_embeddings(self):
@@ -270,19 +223,17 @@ class LibraryFilesCreator:
         A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
         """
-        assert not os.path.exists(self.settings[
-                                      'ms2ds_embeddings_file_name']), \
+        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
             "Given ms2ds_embeddings_file_name already exists"
         assert self.ms2ds_model is not None, "No MS2deepscore model was provided"
         ms2ds = MS2DeepScore(self.ms2ds_model,
-                             progress_bar=self.settings["progress_bars"])
+                             progress_bar=self.progress_bars)
 
         # Compute spectral embeddings
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
         spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
-        all_embeddings_df.to_pickle(self.settings[
-                                        'ms2ds_embeddings_file_name'])
+        all_embeddings_df.to_pickle(self.ms2ds_embeddings_file_name)
 
     def store_s2v_embeddings(self):
         """Creates and stored a dataframe with embeddings as pickled file
@@ -290,19 +241,17 @@ class LibraryFilesCreator:
         A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
         """
-        assert not os.path.exists(self.settings[
-            "s2v_embeddings_file_name"]), \
+        assert not os.path.exists(self.s2v_embeddings_file_name), \
             "Given s2v_embeddings_file_name already exists"
         assert self.s2v_model is not None, "No spec2vec model was specified"
         # Convert Spectrum objects to SpectrumDocument
         spectrum_documents = create_spectrum_documents(
             self.list_of_spectra,
-            progress_bar=self.settings["progress_bars"])
+            progress_bar=self.progress_bars)
         embeddings_dict = {}
         for spectrum_id, spectrum_document in tqdm(enumerate(spectrum_documents),
                                       desc="Calculating embeddings",
-                                      disable=not self.settings[
-                                          "progress_bars"]):
+                                      disable=not self.progress_bars):
             embedding = calc_vector(self.s2v_model,
                                     spectrum_document,
                                     allowed_missing_percentage=100)
@@ -311,8 +260,7 @@ class LibraryFilesCreator:
         # Convert to pandas Dataframe
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
-        embeddings_dataframe.to_pickle(self.settings[
-            "s2v_embeddings_file_name"])
+        embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
 
     def _select_inchi_for_unique_inchikeys(self) -> (List[Spectrum], List[str]):
         """"Select spectra with most frequent inchi for unique inchikeys

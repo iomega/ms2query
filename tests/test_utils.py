@@ -4,19 +4,19 @@ import pandas as pd
 import pytest
 from matchms import Spectrum
 from ms2query.utils import (add_unknown_charges_to_spectra,
-                            convert_files_to_matchms_spectrum_objects,
+                            load_matchms_spectrum_objects_from_file,
                             get_classifier_from_csv_file, load_pickled_file)
 
 
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
     """Tests if unknown file raises an Assertion error"""
     with pytest.raises(AssertionError):
-        convert_files_to_matchms_spectrum_objects(os.path.join(tmp_path, "file_that_does_not_exist.json"))
+        load_matchms_spectrum_objects_from_file(os.path.join(tmp_path, "file_that_does_not_exist.json"))
 
 
 def test_convert_files_to_matchms_spectrum_object_known_file():
     """Test if pickled file is loaded in correctly"""
-    spectra = convert_files_to_matchms_spectrum_objects(os.path.join(
+    spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/general_test_files/100_test_spectra.pickle'))
     assert isinstance(spectra, list), "expected list of spectra"

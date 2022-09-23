@@ -88,15 +88,16 @@ For downloading a s2v model and ms2ds model see above in "Run MS2Query"
 
 ```python
 from ms2query.library_files_creator import LibraryFilesCreator
-from ms2query.utils import convert_files_to_matchms_spectrum_objects
-spectrum_file_location = # The file location of the library spectra
-library_spectra = convert_files_to_matchms_spectrum_objects(spectrum_file_location)
+from ms2query.utils import load_matchms_spectrum_objects_from_file
+
+spectrum_file_location =  # The file location of the library spectra
+library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location)
 # Fill in the missing values:
-library_creator = LibraryFilesCreator(library_spectra, 
-                                      output_base_filename=, # For instance "data/library_data/all_GNPS_positive_mode_"
+library_creator = LibraryFilesCreator(library_spectra,
+                                      output_base_filename=,  # For instance "data/library_data/all_GNPS_positive_mode_"
                                       ion_mode="positive",
-                                      ms2ds_model_file_name=, # The file location of the ms2ds model
-                                      s2v_model_file_name=,) # The file location of the s2v model
+                                      ms2ds_model_file_name=,  # The file location of the ms2ds model
+                                      s2v_model_file_name=, )  # The file location of the s2v model
 library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
 library_creator.clean_peaks_and_normalise_intensities_spectra()
 library_creator.remove_not_fully_annotated_spectra()

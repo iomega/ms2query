@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple, Union
 from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
-from ms2query.utils import convert_files_to_matchms_spectrum_objects
+from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 
 def download_zenodo_files(zenodo_doi: int,
@@ -93,7 +93,7 @@ def run_complete_folder(ms2library: MS2Library,
         # skip folders
         if os.path.isfile(file_path):
             if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
-                spectra = convert_files_to_matchms_spectrum_objects(os.path.join(folder_with_spectra, file_name))
+                spectra = load_matchms_spectrum_objects_from_file(os.path.join(folder_with_spectra, file_name))
                 analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
                 ms2library.analog_search_store_in_csv(spectra,
                                                       analogs_results_file_name,
