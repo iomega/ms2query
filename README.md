@@ -17,20 +17,8 @@ Metabolomics of natural extracts remains hampered by the grand challenge of meta
 ### Workflow
 MS2Query is a tool for MSMS library matching, searching both for analogues and exact matches in one run. The workflow for running MS2Query first uses MS2Deepscore to calculate spectral similarity scores between all library spectra and a query spectrum. By using pre-computed MS2Deepscore embeddings for library spectra, this full-library comparison can be computed very quickly. The top 2000 spectra with the highest MS2Deepscore are selected. In contrast to other analogue search methods, no preselection on precursor m/z is performed. MS2Query optimizes re-ranking the best analogue or exact match at the top by using a random forest that combines 5 features. The random forest predicts a score between 0 and 1 between each library and query spectrum and the highest scoring library match is selected. By using a minimum threshold for this score, unreliable matches can be filtered out.
 
-### Used features
-As input for the random forest model, MS2Query uses 5 different features, calculated between the query spectrum and each of the 2000 preselected library spectra. The features are Spec2Vec, query precursor m/z, precursor m/z difference, an average MS2Deepscore over 10 chemically similar library molecules, and the average Tanimoto score for these 10 chemically similar library molecules. 
-
-<img src="https://github.com/iomega/ms2query/blob/main/images/features_used.png" width="300"> 
-
-For the last two features, multiple library spectra are used to calculate an average MS2Deepscore for 10 chemical similar library molecules. These library molecules are selected based on the known chemical structures of the spectra in the library. First the molecule belonging to 1 of the 2000 preselected library spectra is selected, followed by selecting the 10 library molecules that are chemically most similar. The chemical similarity is calculated by calculating a Tanimoto score between the InChi’s of the molecules in the library. For each of the 10 library molecules all corresponding library spectra are selected, which are often multiple spectra. The MS2Deepscore between these library spectra and the query spectrum is calculated and the average per library structure is taken. As an input feature for the random forest model, the average over the MS2Deepscore for the 10 library structures is used. In addition, the average of the Tanimoto score between the starting library structure and the 10 library structures is used as an additional input feature. 
-
-<img src="https://github.com/iomega/ms2query/blob/main/images/worflow_average_ms2deepscore.png" width="700"> 
-
 ### Preliminary results
 MS2Query can reliably predict good analogues and exact library matches. We demonstrate that MS2Query is able to find reliable analogues for 35% of the mass spectra during benchmarking with an average Tanimoto score of 0.67 (chemical similarity). For the benchmarking test set, any exact library matches were purposely removed from the reference library, to make sure the best possible match is an analogue. This is a large improvement compared to a modified cosine score based method, which resulted in an average Tanimoto score of 0.45 with settings that resulted in a recall of 35% on the same test set. The workflow of MS2Query is fully automated and optimized for scalability and speed. This makes it possible to run MS2Query on 1000 query spectra against a library of over 300.000 spectra in less than 15 minutes on a normal laptop. The scalability of MS2Query is an encouraging step toward higher-throughput large-scale untargeted metabolomics workflows, thereby creating the opportunity to develop entirely novel large-scale full sample comparisons. The good performance for larger molecules offers a lot of new opportunities for further increasing the annotation rate of complex metabolite mixtures, in particular for natural product relevant mass ranges. Finally, MS2Query is provided as a tested, open source Python library which grants easy access for researchers and developers. 
-
-
-A preprint will be released soon with more detailed information! 
 
 For questions regarding MS2Query you can contact niek.dejonge@wur.nl
 
@@ -90,7 +78,7 @@ run_complete_folder(ms2library, ms2_spectra_directory)
 ```
 
 ## Create your own library
-If you would like to create a library for your own library. You can run the following code:
+If you would like to create the required library files for your own in house library. You can run the following code:
 
 It is important that the library spectra are annotated with smiles, inchi's or inchikeys in the metadata otherwise they
 are not included in the library. 
