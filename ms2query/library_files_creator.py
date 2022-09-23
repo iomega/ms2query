@@ -1,6 +1,6 @@
 import os
 from collections import Counter
-from typing import Dict, List, Union
+from typing import List
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
