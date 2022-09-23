@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.3]
+## [0.4.0]
 
+### Changed
+- Creating your own library files for ms2query is a lot easier (see readme)
+- Downloading negative mode files is added
+- Downloading from zenodo is more robust
+
+## [0.3.3]
 
 ### Changed
 - Use smaller SQlite file. Tanimoto scores and peak and intensities are not stored anymore reducing the sqlite file size to 300 mb
@@ -98,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Licence.
 
 [Unreleased]: https://github.com/iomega/ms2query/compare/0.3.1...HEAD
+[0.4.0]: https://github.com/iomega/ms2query/compare/0.3.3...0.4.0
+[0.3.3]: https://github.com/iomega/ms2query/compare/0.3.2...0.3.3
 [0.3.2]: https://github.com/iomega/ms2query/compare/0.3.1...0.3.2
 [0.3.1]: https://github.com/iomega/ms2query/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/iomega/ms2query/compare/0.2.4...0.3.0
