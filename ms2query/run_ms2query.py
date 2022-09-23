@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 from urllib.request import urlopen, urlretrieve
 import json
 from ms2query.ms2library import MS2Library
@@ -21,7 +21,8 @@ def download_zenodo_files(zenodo_doi: int,
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
     file_names_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
-    file_names_metadata_json: dict = json.loads(urlopen(file_names_metadata_url).read())
+    with urlopen(file_names_metadata_url) as zenodo_metadata_file:
+        file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
     files = file_names_metadata_json["files"]
     zenodo_files_url = f"https://zenodo.org/record/{zenodo_doi}/files/"
 
@@ -102,4 +103,5 @@ def run_complete_folder(ms2library: MS2Library,
                                                       additional_ms2query_score_columns=additional_ms2query_score_columns)
                 print(f"Results stored in {analogs_results_file_name}")
             else:
-                print(f'The file extension of the file {file_name} is not recognized, accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+                print(f'The file extension of the file {file_name} is not recognized, '
+                      f'accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
