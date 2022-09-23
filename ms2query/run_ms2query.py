@@ -1,7 +1,7 @@
+import json
 import os
 from typing import List, Tuple, Union
 from urllib.request import urlopen, urlretrieve
-import json
 from ms2query.ms2library import MS2Library
 from ms2query.utils import convert_files_to_matchms_spectrum_objects
 

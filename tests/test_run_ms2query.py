@@ -1,7 +1,7 @@
 import os
 import sys
-from ms2query.run_ms2query import run_complete_folder, download_zenodo_files
 from ms2query.ms2library import create_library_object_from_one_dir
+from ms2query.run_ms2query import download_zenodo_files, run_complete_folder
 from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file,
                                    file_names, test_spectra)
 
