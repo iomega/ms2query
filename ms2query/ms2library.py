@@ -501,11 +501,11 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
                 assert dict_with_file_names[file_name] is None, \
                     f"Multiple files could be the file containing the {file_name} file"
                 dict_with_file_names[file_name] = file_path
-    for file_type in dict_with_file_names:
+    for file_type, stored_file_name in dict_with_file_names.items():
         if file_type != "classifiers":
-            assert dict_with_file_names[file_type] is not None, \
+            assert stored_file_name is not None, \
                 f"The file type {file_type} was not found in the directory"
-        elif dict_with_file_names[file_type] is None:
+        elif stored_file_name is None:
             print(f"The file type {file_type} was not found in the directory ")
 
     return MS2Library(dict_with_file_names["sqlite"],
