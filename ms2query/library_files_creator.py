@@ -307,6 +307,7 @@ class LibraryFilesCreator:
 
         # Specify type and calculate similarities
         similarity_measure = FingerprintSimilarity("jaccard")
+        print("Calculating Tanimoto scores...")
         scores = calculate_scores(fingerprint_spectra, fingerprint_spectra,
                                   similarity_measure, is_symmetric=True)
         tanimoto_scores = pd.DataFrame(scores.scores,
