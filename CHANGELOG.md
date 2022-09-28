@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Changed calculation of tanimoto scores, for better memory efficiency
+  - Code structure changed, tanimoto scores are now calculated in create_sqlite_database, instead of library_files_creator. 
 
 ## [0.4.0]
 
