@@ -169,8 +169,6 @@ def fill_inchikeys_table(sqlite_file_name: str,
         Name of sqlite_file that should be created, if it already exists the
         tables are added. If the tables in this sqlite file already exist, they
         will be overwritten.
-    closest_related_inchikey14s:
-        A dictionary with {inchikey14: [(matching_inchi, tanimoto_score), ...]
     list_of_spectra:
         List of spectrum objects
     progress_bars:
