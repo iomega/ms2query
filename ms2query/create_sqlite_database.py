@@ -136,8 +136,8 @@ def fill_spectrum_data_table(sqlite_file_name: str,
 
     # Add the data of each spectrum to the sqlite table
     for i, spectrum in tqdm(enumerate(list_of_spectra),
-                         desc="Adding spectra to sqlite table",
-                         disable=not progress_bar):
+                            desc="Adding spectra to sqlite table",
+                            disable=not progress_bar):
         metadata = spectrum.metadata
         spectrumid = i
 
@@ -251,7 +251,7 @@ def select_inchi_for_unique_inchikeys(list_of_spectra: List[Spectrum]) -> (List[
     return spectra_with_most_frequent_inchi_per_unique_inchikey, inchikeys14_unique
 
 
-def calculate_closest_related_inchikeys(list_of_spectra: List[Spectrum]) -> Dict[str, List[Tuple[str, float]]] :
+def calculate_closest_related_inchikeys(list_of_spectra: List[Spectrum]) -> Dict[str, List[Tuple[str, float]]]:
     spectra_with_most_frequent_inchi_per_inchikey, inchikeys14_unique = select_inchi_for_unique_inchikeys(list_of_spectra)
     # Add fingerprints
     fingerprint_spectra = []

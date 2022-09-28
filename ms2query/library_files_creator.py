@@ -12,7 +12,6 @@ from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.spectrum_processing import create_spectrum_documents
-from ms2query.utils import load_pickled_file
 
 
 class LibraryFilesCreator:
@@ -65,9 +64,6 @@ class LibraryFilesCreator:
             file name of a s2v model
         ms2ds_model_file_name:
             File name of a ms2ds model
-        tanimoto_scores_file_name:
-            File name of a pickled file containing a dataframe with tanimoto scores.
-            The tanimoto scores can also be calculated from scratch using the method calculate_tanimoto_scores
         """
         # pylint: disable=too-many-arguments
         self.progress_bars = True
@@ -127,7 +123,8 @@ class LibraryFilesCreator:
             s = msfilters.harmonize_undefined_inchi(s)
             s = msfilters.harmonize_undefined_smiles(s)
 
-            # The repair_inchi_inchikey_smiles function will correct misplaced metadata (e.g. inchikeys entered as inchi etc.) and harmonize the entry strings.
+            # The repair_inchi_inchikey_smiles function will correct misplaced metadata
+            # (e.g. inchikeys entered as inchi etc.) and harmonize the entry strings.
             s = msfilters.repair_inchi_inchikey_smiles(s)
 
             # Where possible (and necessary, i.e. missing): Convert between smiles, inchi, inchikey to complete metadata.
@@ -236,8 +233,8 @@ class LibraryFilesCreator:
             progress_bar=self.progress_bars)
         embeddings_dict = {}
         for spectrum_id, spectrum_document in tqdm(enumerate(spectrum_documents),
-                                      desc="Calculating embeddings",
-                                      disable=not self.progress_bars):
+                                                   desc="Calculating embeddings",
+                                                   disable=not self.progress_bars):
             embedding = calc_vector(self.s2v_model,
                                     spectrum_document,
                                     allowed_missing_percentage=100)
@@ -247,4 +244,3 @@ class LibraryFilesCreator:
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
         embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
-
