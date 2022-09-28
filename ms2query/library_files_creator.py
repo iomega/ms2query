@@ -1,13 +1,9 @@
 import os
-from collections import Counter
 from typing import List
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
-from matchms import calculate_scores
-from matchms.filtering import add_fingerprint
-from matchms.similarity import FingerprintSimilarity
 from matchms.Spectrum import Spectrum
 from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from ms2deepscore import MS2DeepScore
@@ -50,7 +46,6 @@ class LibraryFilesCreator:
                  ion_mode: str = "positive",
                  s2v_model_file_name: str = None,
                  ms2ds_model_file_name: str = None,
-                 tanimoto_scores_file_name: str = None,
                  ):
         """Creates files needed to run queries on a library
 
@@ -86,13 +81,6 @@ class LibraryFilesCreator:
         self._check_for_existing_files()
         assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
         self.ion_mode = ion_mode
-
-        # Load in tanimoto scores
-        if tanimoto_scores_file_name is None:
-            self.tanimoto_scores = None
-        else:
-            assert os.path.exists(tanimoto_scores_file_name), "Tanimoto scores file does not exists"
-            self.tanimoto_scores = load_pickled_file(tanimoto_scores_file_name)
         # Load in spec2vec model
         if s2v_model_file_name is None:
             self.s2v_model = None
@@ -208,11 +196,8 @@ class LibraryFilesCreator:
         self.store_ms2ds_embeddings()
 
     def create_sqlite_file(self):
-        assert self.tanimoto_scores is not None, \
-            "No tanimoto scores were provided, provide tanimoto score file or run LibraryFilesCreator.calculate_tanimoto_scores()"
         make_sqlfile_wrapper(
             self.sqlite_file_name,
-            self.tanimoto_scores,
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
             progress_bars=self.progress_bars,
@@ -263,55 +248,3 @@ class LibraryFilesCreator:
                                                       orient="index")
         embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
 
-    def _select_inchi_for_unique_inchikeys(self) -> (List[Spectrum], List[str]):
-        """"Select spectra with most frequent inchi for unique inchikeys
-
-        Method needed to calculate tanimoto scores"""
-        # Select all inchi's and inchikeys from spectra metadata
-        inchikeys_list = []
-        inchi_list = []
-        for s in self.list_of_spectra:
-            inchikeys_list.append(s.get("inchikey"))
-            inchi_list.append(s.get("inchi"))
-        inchi_array = np.array(inchi_list)
-        inchikeys14_array = np.array([x[:14] for x in inchikeys_list])
-
-        # Select unique inchikeys
-        inchikeys14_unique = list({x[:14] for x in inchikeys_list})
-
-        spectra_with_most_frequent_inchi_per_unique_inchikey = []
-        for inchikey14 in inchikeys14_unique:
-            # Select inchis for inchikey14
-            idx = np.where(inchikeys14_array == inchikey14)[0]
-            inchis_for_inchikey14 = [self.list_of_spectra[i].get("inchi") for i in idx]
-            # Select the most frequent inchi per inchikey
-            inchi = Counter(inchis_for_inchikey14).most_common(1)[0][0]
-            # Store the ID of the spectrum with the most frequent inchi
-            ID = idx[np.where(inchi_array[idx] == inchi)[0][0]]
-            spectra_with_most_frequent_inchi_per_unique_inchikey.append(self.list_of_spectra[ID].clone())
-        return spectra_with_most_frequent_inchi_per_unique_inchikey, inchikeys14_unique
-
-    def calculate_tanimoto_scores(self):
-        spectra_with_most_frequent_inchi_per_inchikey, inchikeys14_unique = self._select_inchi_for_unique_inchikeys()
-        # Add fingerprints
-        fingerprint_spectra = []
-        for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey,
-                             desc="Calculating fingerprints for tanimoto scores"):
-            spectrum_with_fingerprint = add_fingerprint(spectrum,
-                                                        fingerprint_type="daylight",
-                                                        nbits=2048)
-            fingerprint_spectra.append(spectrum_with_fingerprint)
-
-            assert spectrum_with_fingerprint.get("fingerprint") is not None, \
-                f"Fingerprint for 1 spectrum could not be set smiles is {spectrum.get('smiles')}, inchi is {spectrum.get('inchi')}"
-
-        # Specify type and calculate similarities
-        similarity_measure = FingerprintSimilarity("jaccard")
-        print("Calculating Tanimoto scores...")
-        scores = calculate_scores(fingerprint_spectra, fingerprint_spectra,
-                                  similarity_measure, is_symmetric=True)
-        tanimoto_scores = pd.DataFrame(scores.scores,
-                                       index=inchikeys14_unique,
-                                       columns=inchikeys14_unique)
-        self.tanimoto_scores = tanimoto_scores
-        return self.tanimoto_scores
