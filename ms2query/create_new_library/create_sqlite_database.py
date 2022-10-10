@@ -234,7 +234,7 @@ def select_inchi_for_unique_inchikeys(list_of_spectra: List[Spectrum]) -> (List[
     inchikeys14_array = np.array([x[:14] for x in inchikeys_list])
 
     # Select unique inchikeys
-    inchikeys14_unique = list({x[:14] for x in inchikeys_list})
+    inchikeys14_unique = sorted(list({x[:14] for x in inchikeys_list}))
 
     spectra_with_most_frequent_inchi_per_unique_inchikey = []
     for inchikey14 in inchikeys14_unique:
