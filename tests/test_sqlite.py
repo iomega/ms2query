@@ -9,7 +9,7 @@ import os
 import sqlite3
 import numpy as np
 import pytest
-from ms2query.create_sqlite_database import make_sqlfile_wrapper, calculate_closest_related_inchikeys
+from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper, calculate_closest_related_inchikeys
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.utils import load_pickled_file

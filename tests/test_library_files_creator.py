@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from matchms import Spectrum
-from ms2query.library_files_creator import LibraryFilesCreator
+from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
 

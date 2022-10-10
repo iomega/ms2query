@@ -84,10 +84,10 @@ It is important that the library spectra are annotated with smiles, inchi's or i
 are not included in the library. 
 
 Fill in the blank spots with the file locations.
-The models for spec2vec, ms2deepscore and ms2query can be downloaded from the zenodo links (see above). 
+The models for spec2vec, ms2deepscore and ms2query can be downloaded from the zenodo links (see above).
 
 ```python
-from ms2query.library_files_creator import LibraryFilesCreator
+from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 spectrum_file_location =  # The file location of the library spectra
