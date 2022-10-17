@@ -43,11 +43,12 @@ def get_test_file_names():
         path_to_tests_dir,
         "general_test_files/100_test_spectra_tanimoto_scores.pickle"
         )
+    library_spectra_file_name = os.path.join(path_to_tests_dir, "general_test_files/100_test_spectra.pickle")
     return sqlite_file_loc, spec2vec_model_file_loc, \
         s2v_pickled_embeddings_file, ms2ds_model_file_name, \
         ms2ds_embeddings_file_name, spectrum_id_column_name, \
         training_spectra_file_name, validation_spectra_file_name, \
-        tanimoto_scores_file_name
+        tanimoto_scores_file_name, library_spectra_file_name
 
 
 def test_data_collector_for_training_init():
@@ -55,14 +56,14 @@ def test_data_collector_for_training_init():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name, training_spectra_file_name, \
-        testing_spectra_file_name, tanimoto_scores_file_name \
-        = get_test_file_names()
-    library_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
-    query_spectra = load_matchms_spectrum_objects_from_file(testing_spectra_file_name)
+        validation_spectra_file_name, tanimoto_scores_file_name, library_spectra_file_name = \
+        get_test_file_names()
+    training_query_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
+    validation_query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    library_spectra = load_matchms_spectrum_objects_from_file(library_spectra_file_name)
     DataCollectorForTraining(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
-                             s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, library_spectra,
-                             query_spectra, tanimoto_scores_file_name,
-                             spectrum_id_column_name=spectrum_id_column_name)
+                             s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, training_query_spectra,
+                             validation_query_spectra, library_spectra, spectrum_id_column_name=spectrum_id_column_name)
 
 
 def test_create_train_and_val_data_with_saving(tmp_path):
@@ -70,16 +71,17 @@ def test_create_train_and_val_data_with_saving(tmp_path):
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name, training_spectra_file_name, \
-        validation_spectra_file_name, tanimoto_scores_file_name = \
+        validation_spectra_file_name, tanimoto_scores_file_name, library_spectra_file_name = \
         get_test_file_names()
     save_file_name = os.path.join(
         tmp_path, "test_training_and_validation_set_and_labels")
-    library_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
-    query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    training_query_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
+    validation_query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    library_spectra = load_matchms_spectrum_objects_from_file(library_spectra_file_name)
     select_data_for_training = DataCollectorForTraining(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
                                                         s2v_pickled_embeddings_file, ms2ds_embeddings_file_name,
-                                                        library_spectra, query_spectra,
-                                                        tanimoto_scores_file_name,
+                                                        training_query_spectra, validation_query_spectra,
+                                                        library_spectra,
                                                         spectrum_id_column_name=spectrum_id_column_name)
     returned_results = \
         select_data_for_training.create_train_and_val_data(
@@ -111,20 +113,18 @@ def test_get_matches_info_and_tanimoto():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
         ms2ds_model_file_name, ms2ds_embeddings_file_name, \
         spectrum_id_column_name, training_spectra_file_name, \
-        validation_spectra_file_name, tanimoto_scores_file_name\
-        = get_test_file_names()
-    library_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
-    query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+        validation_spectra_file_name, tanimoto_scores_file_name, library_spectra_file_name = \
+        get_test_file_names()
+    training_query_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
+    validation_query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    library_spectra = load_matchms_spectrum_objects_from_file(library_spectra_file_name)
     select_data_for_training = DataCollectorForTraining(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
                                                         s2v_pickled_embeddings_file, ms2ds_embeddings_file_name,
-                                                        library_spectra, query_spectra,
-                                                        tanimoto_scores_file_name,
+                                                        training_query_spectra, validation_query_spectra,
+                                                        library_spectra,
                                                         spectrum_id_column_name=spectrum_id_column_name)
-
-    query_spectra = load_pickled_file(training_spectra_file_name)
-
     result = select_data_for_training.get_matches_info_and_tanimoto(
-        query_spectra)
+        training_query_spectra)
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_train_ms2query_nn",
@@ -137,17 +137,18 @@ def test_get_matches_info_and_tanimoto():
 
 def test_get_tanimoto_for_spectrum_ids():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name, training_spectra_file_name, \
-        validation_spectra_file_name, tanimoto_scores_file_name \
-        = get_test_file_names()
+    ms2ds_model_file_name, ms2ds_embeddings_file_name, \
+    spectrum_id_column_name, training_spectra_file_name, \
+    validation_spectra_file_name, tanimoto_scores_file_name, library_spectra_file_name = \
+        get_test_file_names()
 
-    library_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
-    query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    training_query_spectra = load_matchms_spectrum_objects_from_file(training_spectra_file_name)
+    validation_query_spectra = load_matchms_spectrum_objects_from_file(validation_spectra_file_name)
+    library_spectra = load_matchms_spectrum_objects_from_file(library_spectra_file_name)
     select_data_for_training = DataCollectorForTraining(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
                                                         s2v_pickled_embeddings_file, ms2ds_embeddings_file_name,
-                                                        library_spectra, query_spectra,
-                                                        tanimoto_scores_file_name,
+                                                        training_query_spectra, validation_query_spectra,
+                                                        library_spectra,
                                                         spectrum_id_column_name=spectrum_id_column_name)
 
     query_spectrum = load_pickled_file(training_spectra_file_name)[0]

@@ -7,6 +7,7 @@ from ms2query import MS2Library, ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.utils import load_pickled_file
+from ms2query.create_new_library.train_ms2deepscore import calculate_tanimoto_scores
 
 
 if sys.version_info < (3, 8):
@@ -23,9 +24,9 @@ class DataCollectorForTraining(MS2Library):
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 library_spectra: List[SpectrumType],
-                 query_spectra: List[SpectrumType],
-                 tanimoto_scores_df_file_name: str,
+                 training_query_spectra: List[SpectrumType],
+                 validation_query_spectra: List[SpectrumType],
+                 library_spectra,
                  preselection_cut_off: int = 2000,
                  **settings):
         """Parameters
@@ -46,9 +47,9 @@ class DataCollectorForTraining(MS2Library):
         pickled_ms2ds_embeddings_file_name:
             File location of a pickled file with ms2ds embeddings in a
             pd.Dataframe with as index the spectrum id.
-        library_spectra:
+        training_query_spectra:
             Pickled file with training spectra.
-        query_spectra:
+        validation_query_spectra:
             Pickled file with validation spectra.
         tanimoto_scores_df_file_name:
             A pickled file containing a dataframe with the tanimoto scores
@@ -72,14 +73,16 @@ class DataCollectorForTraining(MS2Library):
             The value used to normalize the precursor m/z by dividing it by the
             max_precursor_mz. Default = 13428.370894192036
         progress_bars:
-            If True progress bars will be shown. Default = True"""
+            If True progress bars will be shown. Default = True
+            :param library_spectra: """
         # pylint: disable=too-many-arguments
         super().__init__(sqlite_file_location, s2v_model_file_name, ms2ds_model_file_name,
                          pickled_s2v_embeddings_file_name, pickled_ms2ds_embeddings_file_name, None, **settings)
-        self.tanimoto_scores: pd.DataFrame = \
-            load_pickled_file(tanimoto_scores_df_file_name)
+
+        self.training_query_spectra = minimal_processing_multiple_spectra(training_query_spectra)
+        self.validation_query_spectra = minimal_processing_multiple_spectra(validation_query_spectra)
         self.library_spectra = minimal_processing_multiple_spectra(library_spectra)
-        self.query_spectra = minimal_processing_multiple_spectra(query_spectra)
+        self.tanimoto_scores = calculate_tanimoto_scores(self.library_spectra + self.training_query_spectra)
         self.preselection_cut_off = preselection_cut_off
 
     def create_train_and_val_data(self,
@@ -100,9 +103,9 @@ class DataCollectorForTraining(MS2Library):
             that order.
             """
         training_set, training_labels = \
-            self.get_matches_info_and_tanimoto(self.library_spectra)
+            self.get_matches_info_and_tanimoto(self.training_query_spectra)
         validation_set, validation_labels = \
-            self.get_matches_info_and_tanimoto(self.query_spectra)
+            self.get_matches_info_and_tanimoto(self.validation_query_spectra)
 
         if save_file_name:
             with open(save_file_name, "wb") \
@@ -120,13 +123,13 @@ class DataCollectorForTraining(MS2Library):
         A selection of matches is made for each query_spectrum. Based on the
         spectra multiple scores are calculated (info_of_matches_with_tanimoto)
         and the tanimoto scores based on the smiles is returned. All matches of
-        all query_spectra are added together and the order of the tanimoto
+        all validation_query_spectra are added together and the order of the tanimoto
         scores corresponds to the order of the info, so they can be used for
         training.
 
         Args:
         ------
-        query_spectra:
+        validation_query_spectra:
             List of Spectrum objects
         """
         all_tanimoto_scores = pd.DataFrame()
