@@ -9,7 +9,7 @@ from ms2query.create_new_library.clean_and_split_data_for_training import split_
 def path_to_general_test_files() -> str:
     return os.path.join(
         os.getcwd(),
-        './test_files/general_test_files')
+        './tests/test_files/general_test_files')
 
 
 def test_split_spectra_on_inchikeys(path_to_general_test_files):
