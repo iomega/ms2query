@@ -23,7 +23,7 @@ def train_k_fold_cross_validation(spectra: List[Spectrum], k: int, ion_mode, out
         training_sets = [spectrum_set for j, spectrum_set in spectrum_sets if j!=i]
         # todo save test and trianing sets.
         training_set = (list(itertools.chain.from_iterable(training_sets)))
-        train_all_models(training_set, unannotated_spectra, output_folder
+        train_all_models(training_set, unannotated_spectra, output_folder)
 
 
 def train_all_models(annotated_training_spectra,
