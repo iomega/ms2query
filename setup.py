@@ -39,7 +39,8 @@ setup(
         "pandas>=1.2.5",
         "matchmsextras>=0.3.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
-        "tqdm"],
+        "tqdm",
+        "matplotlib"],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
                             "isort>=5.1.0",
