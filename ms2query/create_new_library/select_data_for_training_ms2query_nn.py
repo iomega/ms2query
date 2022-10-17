@@ -1,14 +1,17 @@
+import numpy as np
 import sys
 from typing import List, Tuple, Union
 import pandas as pd
-from matchms.typing import SpectrumType
 from tqdm import tqdm
+from rdkit import Chem
+from matchms import Spectrum, calculate_scores
+from matchms.similarity.vector_similarity_functions import jaccard_similarity_matrix
 from ms2query import MS2Library, ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+from ms2query.create_new_library.create_sqlite_database import add_fingerprint
 from ms2query.utils import load_pickled_file
 from ms2query.create_new_library.train_ms2deepscore import calculate_tanimoto_scores
-
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -24,8 +27,8 @@ class DataCollectorForTraining(MS2Library):
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 training_query_spectra: List[SpectrumType],
-                 validation_query_spectra: List[SpectrumType],
+                 training_query_spectra: List[Spectrum],
+                 validation_query_spectra: List[Spectrum],
                  library_spectra,
                  preselection_cut_off: int = 2000,
                  **settings):
@@ -82,7 +85,6 @@ class DataCollectorForTraining(MS2Library):
         self.training_query_spectra = minimal_processing_multiple_spectra(training_query_spectra)
         self.validation_query_spectra = minimal_processing_multiple_spectra(validation_query_spectra)
         self.library_spectra = minimal_processing_multiple_spectra(library_spectra)
-        self.tanimoto_scores = calculate_tanimoto_scores(self.library_spectra + self.training_query_spectra)
         self.preselection_cut_off = preselection_cut_off
 
     def create_train_and_val_data(self,
@@ -117,7 +119,7 @@ class DataCollectorForTraining(MS2Library):
         return training_set, training_labels, validation_set, validation_labels
 
     def get_matches_info_and_tanimoto(self,
-                                      query_spectra: List[SpectrumType]):
+                                      query_spectra: List[Spectrum]):
         """Returns tanimoto scores and info about matches of all query spectra
 
         A selection of matches is made for each query_spectrum. Based on the
@@ -149,69 +151,38 @@ class DataCollectorForTraining(MS2Library):
             # Select the features (remove inchikey, since this should not be
             # used for training
             features_dataframe = results_table.get_training_data()
-            # Get tanimoto scores, spectra that do not have an inchikey are not
-            # returned.
-            tanimoto_scores_for_query_spectrum = \
-                self.get_tanimoto_for_spectrum_ids(query_spectrum,
-                                                   library_spectrum_ids)
+            # Get tanimoto scores
+            tanimoto_scores = self.calculate_tanimoto_scores(query_spectrum, library_spectrum_ids)
             all_tanimoto_scores = \
-                all_tanimoto_scores.append(tanimoto_scores_for_query_spectrum,
+                all_tanimoto_scores.append(tanimoto_scores,
                                            ignore_index=True)
 
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = features_dataframe.loc[
-                tanimoto_scores_for_query_spectrum.index]
+                tanimoto_scores.index]
             info_of_matches_with_tanimoto = \
                 info_of_matches_with_tanimoto.append(matches_with_tanimoto,
                                                      ignore_index=True)
-        # Converted to float32 since keras model cannot read float64
         return info_of_matches_with_tanimoto, all_tanimoto_scores
 
-    def get_tanimoto_for_spectrum_ids(self,
-                                      query_spectrum: SpectrumType,
-                                      spectra_ids_list: List[str]
-                                      ) -> pd.DataFrame:
-        """Returns a dataframe with tanimoto scores
-
-        Spectra in spectra_ids_list without inchikey are removed.
-        Args:
-        ------
-        query_spectrum:
-            Single Spectrum, the tanimoto scores are calculated between this
-            spectrum and the spectra in match_spectrum_ids.
-        match_spectrum_ids:
-            list of spectrum_ids, which are preselected matches of the
-            query_spectrum
-        """
-        query_inchikey14 = query_spectrum.get("inchikey")[:14]
-        assert len(query_inchikey14) == 14, \
-            f"Expected inchikey of length 14, " \
-            f"got inchikey = {query_inchikey14}"
-
+    def calculate_tanimoto_scores(self, query_spectrum: Spectrum,
+                                      spectra_ids_list: List[str]):
         # Get inchikeys belonging to spectra ids
         metadata_dict = get_metadata_from_sqlite(
             self.sqlite_file_name,
-            spectra_ids_list,
-            self.settings["spectrum_id_column_name"])
-        unfiltered_inchikeys = [metadata_dict[spectrum_id]["inchikey"]
-                                for spectrum_id in spectra_ids_list]
-
-        inchikey14s_dict = {}
-        for i, inchikey in enumerate(unfiltered_inchikeys):
-            # Only get the first 14 characters of the inchikeys
-            inchikey14 = inchikey[:14]
-            spectrum_id = spectra_ids_list[i]
-            # Don't save spectra that do not have an inchikey. If a spectra has
-            # no inchikey it is stored as "", so it will not be stored.
-            if len(inchikey14) == 14:
-                inchikey14s_dict[spectrum_id] = inchikey14
-
-        tanimoto_scores_spectra_ids = pd.DataFrame(
-            columns=["Tanimoto_score"],
-            index=list(inchikey14s_dict.keys()))
-        for spectrum_id, inchikey14 in inchikey14s_dict.items():
-            tanimoto_score = self.tanimoto_scores.loc[inchikey14,
-                                                      query_inchikey14]
-            tanimoto_scores_spectra_ids.at[spectrum_id, "Tanimoto_score"] = \
-                tanimoto_score
-        return tanimoto_scores_spectra_ids
+            spectra_ids_list)
+        query_spectrum_fingerprint = add_fingerprint(query_spectrum, fingerprint_type="daylight", nbits=2048).get("fingerprint")
+        fingerprints = []
+        for spectrum_id in spectra_ids_list:
+            smiles = metadata_dict[spectrum_id]["smiles"]
+            mol = Chem.MolFromSmiles(smiles)
+            fingerprint = np.array(Chem.RDKFingerprint(mol, fpSize=2048))
+            assert isinstance(fingerprint, np.ndarray) and fingerprint.sum() > 0, \
+                f"Fingerprint for 1 spectrum could not be set smiles is {smiles}"
+            fingerprints.append(fingerprint)
+        query_spectrum_fingerprint = np.array([query_spectrum_fingerprint])
+        fingerprints = np.array(fingerprints)
+        # Specify type and calculate similarities
+        tanimoto_scores = jaccard_similarity_matrix(fingerprints, query_spectrum_fingerprint)
+        tanimoto_df = pd.DataFrame(tanimoto_scores, index=spectra_ids_list, columns=["Tanimoto_score"])
+        return tanimoto_df

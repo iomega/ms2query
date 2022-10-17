@@ -99,14 +99,14 @@ def test_create_train_and_val_data_with_saving(tmp_path):
     assert len(returned_results) == 4, "Expected a tuple with length 4"
     for i, result in enumerate(returned_results):
         assert isinstance(result, pd.DataFrame)
-        pd.testing.assert_frame_equal(result, expected_result[i])
+        pd.testing.assert_frame_equal(result, expected_result[i], check_dtype=False)
     # Test if right information is stored in file
     assert isinstance(result_in_file, tuple), \
         "Expected a tuple to be returned"
     assert len(result_in_file) == 4, "Expected a tuple with length 4"
     for i, result in enumerate(returned_results):
         assert isinstance(result, pd.DataFrame)
-        pd.testing.assert_frame_equal(result, expected_result[i])
+        pd.testing.assert_frame_equal(result, expected_result[i], check_dtype=False)
 
 
 def test_get_matches_info_and_tanimoto():
@@ -131,11 +131,11 @@ def test_get_matches_info_and_tanimoto():
         "expected_train_and_val_data.pickle"))[:2]
     assert isinstance(result, tuple), "Expected tuple to be returned"
     assert len(result) == 2, "Expected tuple to be returned"
-    pd.testing.assert_frame_equal(result[0], expected_result[0])
-    pd.testing.assert_frame_equal(result[1], expected_result[1])
+    pd.testing.assert_frame_equal(result[0], expected_result[0], check_dtype=False)
+    pd.testing.assert_frame_equal(result[1], expected_result[1], check_dtype=False)
 
 
-def test_get_tanimoto_for_spectrum_ids():
+def test_calculate_all_tanimoto_scores():
     sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
     ms2ds_model_file_name, ms2ds_embeddings_file_name, \
     spectrum_id_column_name, training_spectra_file_name, \
@@ -154,9 +154,7 @@ def test_get_tanimoto_for_spectrum_ids():
     query_spectrum = load_pickled_file(training_spectra_file_name)[0]
     spectra_ids_list = \
         ['CCMSLIB00000001603', 'CCMSLIB00000001652', 'CCMSLIB00000001640']
-    result = select_data_for_training.get_tanimoto_for_spectrum_ids(
-        query_spectrum,
-        spectra_ids_list)
+    result = select_data_for_training.calculate_tanimoto_scores(query_spectrum, spectra_ids_list)
     expected_result = pd.DataFrame([0.199695, 0.177669, 0.192504],
                                    index=spectra_ids_list,
                                    columns=["Tanimoto_score"])
