@@ -23,8 +23,8 @@ class DataCollectorForTraining(MS2Library):
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 training_spectra_file: str,
-                 validation_spectra_file: str,
+                 library_spectra: List[SpectrumType],
+                 query_spectra: List[SpectrumType],
                  tanimoto_scores_df_file_name: str,
                  preselection_cut_off: int = 2000,
                  **settings):
@@ -46,9 +46,9 @@ class DataCollectorForTraining(MS2Library):
         pickled_ms2ds_embeddings_file_name:
             File location of a pickled file with ms2ds embeddings in a
             pd.Dataframe with as index the spectrum id.
-        training_spectra_file:
+        library_spectra:
             Pickled file with training spectra.
-        validation_spectra_file:
+        query_spectra:
             Pickled file with validation spectra.
         tanimoto_scores_df_file_name:
             A pickled file containing a dataframe with the tanimoto scores
@@ -78,10 +78,8 @@ class DataCollectorForTraining(MS2Library):
                          pickled_s2v_embeddings_file_name, pickled_ms2ds_embeddings_file_name, None, **settings)
         self.tanimoto_scores: pd.DataFrame = \
             load_pickled_file(tanimoto_scores_df_file_name)
-        self.training_spectra = minimal_processing_multiple_spectra(
-            load_pickled_file(training_spectra_file))
-        self.validation_spectra = minimal_processing_multiple_spectra(
-            load_pickled_file(validation_spectra_file))
+        self.library_spectra = minimal_processing_multiple_spectra(library_spectra)
+        self.query_spectra = minimal_processing_multiple_spectra(query_spectra)
         self.preselection_cut_off = preselection_cut_off
 
     def create_train_and_val_data(self,
@@ -102,9 +100,9 @@ class DataCollectorForTraining(MS2Library):
             that order.
             """
         training_set, training_labels = \
-            self.get_matches_info_and_tanimoto(self.training_spectra)
+            self.get_matches_info_and_tanimoto(self.library_spectra)
         validation_set, validation_labels = \
-            self.get_matches_info_and_tanimoto(self.validation_spectra)
+            self.get_matches_info_and_tanimoto(self.query_spectra)
 
         if save_file_name:
             with open(save_file_name, "wb") \
