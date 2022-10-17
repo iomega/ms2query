@@ -1,7 +1,7 @@
 from typing import List
 from matchms import Spectrum
-import numpy as np
 import random
+
 
 def select_unique_inchikeys(spectra: List[Spectrum]) -> List[str]:
     """Selects unique inchikeys for a list of spectra"""
@@ -13,31 +13,53 @@ def select_unique_inchikeys(spectra: List[Spectrum]) -> List[str]:
     return sorted(list(inchikey_set))
 
 
-def split_using_shuffle_split(unique_inchikeys: List[str],
-                              k: int):
-    from sklearn.model_selection import ShuffleSplit
-    rs = ShuffleSplit(n_splits=k, test_size=1/k)
-    for train_index, test_index in rs.split(unique_inchikeys):
-        print("TRAIN:", train_index, "TEST:", test_index)
-
-
-def split_spectra_in_random_inchikey_sets(unique_inchikeys: List[str],
-                                          k: int) -> List[List[str]]:
-    """Splits a set of inchikeys into 5 sets with the same number of inchikeys"""
+def split_spectra_in_random_inchikey_sets(spectra: List[Spectrum],
+                                          k: int) -> List[List[Spectrum]]:
+    """Splits a set of inchikeys into k sets with the same number of inchikeys"""
+    spectrum_sets = []
+    unique_inchikeys = select_unique_inchikeys(spectra)
     random.shuffle(unique_inchikeys)
-    inchikey_set_size = len(unique_inchikeys)//k
-    inchikey_sets = []
+    fraction_size = len(unique_inchikeys) // k
     for i in range(k):
-        inchikey_sets.append(unique_inchikeys[inchikey_set_size*i:inchikey_set_size*(i+1)])
+        validation_inchikeys = unique_inchikeys[-fraction_size:]
+        unique_inchikeys = unique_inchikeys[:-fraction_size]
+        spectrum_set, spectra = select_spectra_belonging_to_inchikey(spectra, validation_inchikeys)
+        spectrum_sets.append(spectrum_set)
 
-    # The length of the number of spectra might not be devidable by k. So a few inchikeys do not end up somewhere.
-    number_of_missing_inchikeys = len(unique_inchikeys)%k
+    # Devide left over inchikeys over sets.
+    # If the number of inchikeys is not perfectly dividable, some inchikeys will be left over, these are added
+    for set_nr, inchikey in enumerate(unique_inchikeys):
+        spectrum_set, spectra = select_spectra_belonging_to_inchikey(spectra, [inchikey])
+        spectrum_sets[set_nr] += spectrum_set
+    return spectrum_sets
 
-    for
 
-    return inchikey_sets
+def select_spectra_belonging_to_inchikey(spectra: List[Spectrum],
+                                         inchikeys: List[str]) -> (List[Spectrum], List[Spectrum]):
+    # Select spectra belonging to the selected inchikeys
+    spectra_containing_inchikey = []
+    spectra_not_containing_inchikey = []
+    for spectrum in spectra:
+        inchikey = spectrum.get("inchikey")[:14]
+        if inchikey in inchikeys:
+            spectra_containing_inchikey.append(spectrum)
+        else:
+            spectra_not_containing_inchikey.append(spectrum)
+    return spectra_containing_inchikey, spectra_not_containing_inchikey
 
-def split_inchikeys(spectra):
+
+def split_spectra_on_inchikeys(spectra, validation_fraction):
+    """Splits a set of inchikeys and selects all spectra beloning to these inchikeys"""
+    # Select unique inchikeys and select a random set to be the validation inchikeys
+    unique_inchikeys = select_unique_inchikeys(spectra)
+    random.shuffle(unique_inchikeys)
+    nr_of_inchikeys = len(unique_inchikeys)//validation_fraction
+    validation_inchikeys = unique_inchikeys[-nr_of_inchikeys:]
+
+    # Select spectra belonging to the selected inchikeys
+    validation_spectra, training_spectra = select_spectra_belonging_to_inchikey(spectra, validation_inchikeys)
+    return training_spectra, validation_spectra
+
 
 def split_training_and_validation_spectra(spectra: List[Spectrum], validation_fraction=10):
     """Randomly selects a validation set from test spectra
