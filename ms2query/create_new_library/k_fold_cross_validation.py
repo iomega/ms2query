@@ -40,15 +40,15 @@ def train_all_models(annotated_training_spectra,
     train_spec2vec_model(annotated_training_spectra + unannotated_training_spectra,
                          os.path.join(spec2vec_model_file_name))
     # Create library files
-    library_creator = LibraryFilesCreator(library_spectra,
-                                          output_directory=output_folder,
-                                          ion_mode="positive",
-                                          ms2ds_model_file_name=,
-                                          s2v_model_file_name=, )
-    library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
-    library_creator.clean_peaks_and_normalise_intensities_spectra()
-    library_creator.remove_not_fully_annotated_spectra()
-    library_creator.create_all_library_files()
+    # library_creator = LibraryFilesCreator(library_spectra,
+    #                                       output_directory=output_folder,
+    #                                       ion_mode="positive",
+    #                                       ms2ds_model_file_name=,
+    #                                       s2v_model_file_name=, )
+    # library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
+    # library_creator.clean_peaks_and_normalise_intensities_spectra()
+    # library_creator.remove_not_fully_annotated_spectra()
+    # library_creator.create_all_library_files()
 
     # Create training data MS2Query model
     # Train MS2Query model
@@ -59,6 +59,7 @@ def train_all_models(annotated_training_spectra,
 
 
 if __name__ == "__main__":
+    pass
     # Train MS2Deepscore and Spec2Vec on 4/5th training spectra
     # Train MS2Query with MS2Deepscore and Spec2Vec
     # Use test set on MS2Query to test performance
