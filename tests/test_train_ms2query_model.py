@@ -2,7 +2,7 @@ import os
 import pytest
 import sys
 import pandas as pd
-from ms2query.create_new_library.select_data_for_training_ms2query_nn import \
+from ms2query.create_new_library.train_ms2query_model import \
     DataCollectorForTraining
 from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file
 from ms2query.ms2library import MS2Library

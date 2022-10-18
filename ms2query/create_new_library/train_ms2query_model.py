@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import sys
 from typing import List, Tuple, Union
@@ -6,6 +7,8 @@ from tqdm import tqdm
 from rdkit import Chem
 from matchms import Spectrum, calculate_scores
 from matchms.similarity.vector_similarity_functions import jaccard_similarity_matrix
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error
 from ms2query import MS2Library, ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
@@ -13,7 +16,7 @@ from ms2query.create_new_library.create_sqlite_database import add_fingerprint
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2query.utils import load_pickled_file
-from ms2query.create_new_library.train_ms2deepscore import calculate_tanimoto_scores
+from ms2query.create_new_library.clean_and_split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -106,3 +109,58 @@ class DataCollectorForTraining():
         tanimoto_scores = jaccard_similarity_matrix(fingerprints, query_spectrum_fingerprint)
         tanimoto_df = pd.DataFrame(tanimoto_scores, index=spectra_ids_list, columns=["Tanimoto_score"])
         return tanimoto_df
+
+
+def train_random_forest(selection_of_training_scores,
+                        training_labels):
+    # train rf using optimised parameters from below
+    rf = RandomForestRegressor(n_estimators=250,
+                               random_state=42,
+                               max_depth=5,
+                               min_samples_leaf=50,
+                               n_jobs=7)
+    rf.fit(selection_of_training_scores, training_labels)
+
+    # predict on train
+    rf_train_predictions = rf.predict(selection_of_training_scores)
+    mse_train_rf = mean_squared_error(training_labels, rf_train_predictions)
+    print('Training MSE', mse_train_rf)
+    return rf
+
+
+def train_ms2query_model(training_spectra,
+                         output_folder,
+                         ms2ds_model_file_name,
+                         s2v_model_file_name,
+                         fraction_for_training):
+    # Select spectra belonging to a single InChIKey
+    library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(training_spectra, fraction_for_training)
+    # Select random spectra from the library
+    library_spectra, single_spectra_query_spectra = split_training_and_validation_spectra(library_spectra, fraction_for_training)
+    query_spectra_for_training = unique_inchikey_query_spectra + single_spectra_query_spectra
+
+    # Create library files for training ms2query
+    library_creator_for_training = LibraryFilesCreator(library_spectra,
+                                                       output_directory=output_folder,
+                                                       ion_mode="positive",
+                                                       ms2ds_model_file_name=ms2ds_model_file_name,
+                                                       s2v_model_file_name=s2v_model_file_name)
+    library_creator_for_training.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
+    library_creator_for_training.clean_peaks_and_normalise_intensities_spectra()
+    library_creator_for_training.remove_not_fully_annotated_spectra()
+    library_creator_for_training.create_all_library_files()
+
+    ms2library_for_training = MS2Library(
+        sqlite_file_name=library_creator_for_training.sqlite_file_name,
+        s2v_model_file_name=s2v_model_file_name,
+        ms2ds_model_file_name=ms2ds_model_file_name,
+        pickled_s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
+        pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
+        ms2query_model_file_name=None,
+        classifier_csv_file_name=None)
+    # Create training data MS2Query model
+    collector = DataCollectorForTraining(ms2library_for_training)
+    training_scores, training_labels = collector.get_matches_info_and_tanimoto(query_spectra_for_training)
+    # Train MS2Query model
+    ms2query_model = train_random_forest(training_scores, training_labels)
+    return ms2query_model

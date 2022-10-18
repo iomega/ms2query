@@ -14,7 +14,6 @@ from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
 from ms2query.create_new_library.create_sqlite_database import select_inchi_for_unique_inchikeys, add_fingerprint
-from ms2query.utils import load_pickled_file
 from ms2query.create_new_library.clean_and_split_data_for_training import split_spectra_on_inchikeys
 
 

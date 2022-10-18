@@ -26,35 +26,6 @@ def train_k_fold_cross_validation(spectra: List[Spectrum], k: int, ion_mode, out
         train_all_models(training_set, unannotated_spectra, output_folder)
 
 
-def train_all_models(annotated_training_spectra,
-                     unannotated_training_spectra,
-                     output_folder):
-    ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")
-    spec2vec_model_file_name = os.path.join(output_folder, "spec2vec_model.model")
-    ms2query_model_file_name = os.path.join(output_folder, "ms2query_model.pickle")
-
-    # Train MS2Deepscore model
-    train_ms2deepscore_wrapper(annotated_training_spectra,
-                               ms2deepscore_model_file_name)
-    # Train Spec2Vec model
-    train_spec2vec_model(annotated_training_spectra + unannotated_training_spectra,
-                         os.path.join(spec2vec_model_file_name))
-    # Create library files
-    # library_creator = LibraryFilesCreator(library_spectra,
-    #                                       output_directory=output_folder,
-    #                                       ion_mode="positive",
-    #                                       ms2ds_model_file_name=,
-    #                                       s2v_model_file_name=, )
-    # library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
-    # library_creator.clean_peaks_and_normalise_intensities_spectra()
-    # library_creator.remove_not_fully_annotated_spectra()
-    # library_creator.create_all_library_files()
-
-    # Create training data MS2Query model
-    # Train MS2Query model
-
-
-
 
 
 
