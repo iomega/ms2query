@@ -28,52 +28,12 @@ class DataCollectorForTraining():
                  preselection_cut_off: int = 2000):
         """Parameters
         ----------
-        sqlite_file_location:
-            The location at which the sqlite_file_is_stored. The file is
-            expected to have 3 tables: tanimoto_scores, inchikeys and
-            spectra_data.
-        s2v_model_file_name:
-            File location of a spec2vec model. In addition two more files in
-            the same folder are expected with the same name but with extensions
-            .trainables.syn1neg.npy and .wv.vectors.npy.
-        ms2ds_model_file_name:
-            File location of a trained ms2ds model.
-        pickled_s2v_embeddings_file_name:
-            File location of a pickled file with Spec2Vec embeddings in a
-            pd.Dataframe with as index the spectrum id.
-        pickled_ms2ds_embeddings_file_name:
-            File location of a pickled file with ms2ds embeddings in a
-            pd.Dataframe with as index the spectrum id.
-        training_query_spectra:
-            Pickled file with training spectra.
-        validation_query_spectra:
-            Pickled file with validation spectra.
-        tanimoto_scores_df_file_name:
-            A pickled file containing a dataframe with the tanimoto scores
-            between all inchikeys. The tanimoto scores in SQLite cannot be
-            used, since these do not contain the inchikeys for the training
-            spectra.
-
-
-        **settings:
-            As additional parameters predefined settings can be changed.
-        spectrum_id_column_name:
-            The name of the column or key in dictionaries under which the
-            spectrum id is stored. Default = "spectrumid"
-        cosine_score_tolerance:
-            Setting for calculating the cosine score. If two peaks fall within
-            the cosine_score tolerance the peaks are considered a match.
-            Default = 0.1
-        base_nr_mass_similarity:
-            The base nr used for normalizing the mass similarity. Default = 0.8
-        max_precursor_mz:
-            The value used to normalize the precursor m/z by dividing it by the
-            max_precursor_mz. Default = 13428.370894192036
-        progress_bars:
-            If True progress bars will be shown. Default = True
-            :param ms2library:
-            :param ouput_dir:
-            :param library_spectra: """
+        ms2library:
+            A ms2library object. These should not contain the query spectra.
+        preselection_cut_off:
+            The number of highest scoring matches of MS2Deepscore that are used. For these top library matches all
+            scores are calculated
+        """
         # pylint: disable=too-many-arguments
         self.ms2library = ms2library
         self.preselection_cut_off = preselection_cut_off
