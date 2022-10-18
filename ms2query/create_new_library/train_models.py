@@ -9,8 +9,7 @@ from ms2query.utils import save_pickled_file
 
 def train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
-                     output_folder,
-                     ion_mode):
+                     output_folder):
     # set file names of new generated files
     ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")
     spec2vec_model_file_name = os.path.join(output_folder, "spec2vec_model.model")
