@@ -10,6 +10,8 @@ from ms2query import MS2Library, ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.spectrum_processing import minimal_processing_multiple_spectra
 from ms2query.create_new_library.create_sqlite_database import add_fingerprint
+from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
+from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2query.utils import load_pickled_file
 from ms2query.create_new_library.train_ms2deepscore import calculate_tanimoto_scores
 
@@ -19,19 +21,11 @@ else:
     import pickle
 
 
-class DataCollectorForTraining(MS2Library):
+class DataCollectorForTraining():
     """Class to collect data needed to train a ms2query random forest"""
     def __init__(self,
-                 sqlite_file_location: str,
-                 s2v_model_file_name: str,
-                 ms2ds_model_file_name: str,
-                 pickled_s2v_embeddings_file_name: str,
-                 pickled_ms2ds_embeddings_file_name: str,
-                 training_query_spectra: List[Spectrum],
-                 validation_query_spectra: List[Spectrum],
-                 library_spectra,
-                 preselection_cut_off: int = 2000,
-                 **settings):
+                 ms2library: MS2Library,
+                 preselection_cut_off: int = 2000):
         """Parameters
         ----------
         sqlite_file_location:
@@ -77,46 +71,12 @@ class DataCollectorForTraining(MS2Library):
             max_precursor_mz. Default = 13428.370894192036
         progress_bars:
             If True progress bars will be shown. Default = True
+            :param ms2library:
+            :param ouput_dir:
             :param library_spectra: """
         # pylint: disable=too-many-arguments
-        super().__init__(sqlite_file_location, s2v_model_file_name, ms2ds_model_file_name,
-                         pickled_s2v_embeddings_file_name, pickled_ms2ds_embeddings_file_name, None, **settings)
-
-        self.training_query_spectra = minimal_processing_multiple_spectra(training_query_spectra)
-        self.validation_query_spectra = minimal_processing_multiple_spectra(validation_query_spectra)
-        self.library_spectra = minimal_processing_multiple_spectra(library_spectra)
+        self.ms2library = ms2library
         self.preselection_cut_off = preselection_cut_off
-
-    def create_train_and_val_data(self,
-                                  save_file_name: Union[None, str] = None
-                                  ) -> Tuple[pd.DataFrame, pd.DataFrame,
-                                             pd.DataFrame, pd.DataFrame]:
-        """Creates the training and validation sets and labels
-
-        The sets contain the top 20 ms2ds matches of each spectrum and a
-        collection of different scores and data of these matches in a
-        pd.DataFrame. The labels contain a dataframe with the tanimoto scores.
-        Args
-        ----
-        save_file_name:
-            File name to which the result will be stored. The result is stored
-            as a pickled file of a tuple containing the training_set, the
-            training_labels, the validation_set and the validation_labels in
-            that order.
-            """
-        training_set, training_labels = \
-            self.get_matches_info_and_tanimoto(self.training_query_spectra)
-        validation_set, validation_labels = \
-            self.get_matches_info_and_tanimoto(self.validation_query_spectra)
-
-        if save_file_name:
-            with open(save_file_name, "wb") \
-                    as new_file:
-                pickle.dump((training_set,
-                             training_labels,
-                             validation_set,
-                             validation_labels), new_file)
-        return training_set, training_labels, validation_set, validation_labels
 
     def get_matches_info_and_tanimoto(self,
                                       query_spectra: List[Spectrum]):
@@ -136,17 +96,17 @@ class DataCollectorForTraining(MS2Library):
         """
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
+        all_ms2ds_scores = self.ms2library._get_all_ms2ds_scores(query_spectra)
         for i, query_spectrum in tqdm(enumerate(query_spectra),
                                       desc="Get scores and tanimoto scores",
-                                      disable=not self.settings["progress_bars"]):
+                                      disable=not self.ms2library.settings["progress_bars"]):
             results_table = ResultsTable(
                 preselection_cut_off=self.preselection_cut_off,
                 ms2deepscores=all_ms2ds_scores.iloc[:, i],
                 query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_name)
+                sqlite_file_name=self.ms2library.sqlite_file_name)
 
-            results_table = self._calculate_features_for_random_forest_model(results_table)
+            results_table = self.ms2library._calculate_features_for_random_forest_model(results_table)
             library_spectrum_ids = list(results_table.data.index)
             # Select the features (remove inchikey, since this should not be
             # used for training
@@ -169,7 +129,7 @@ class DataCollectorForTraining(MS2Library):
                                       spectra_ids_list: List[str]):
         # Get inchikeys belonging to spectra ids
         metadata_dict = get_metadata_from_sqlite(
-            self.sqlite_file_name,
+            self.ms2library.sqlite_file_name,
             spectra_ids_list)
         query_spectrum_fingerprint = add_fingerprint(query_spectrum, fingerprint_type="daylight", nbits=2048).get("fingerprint")
         fingerprints = []
