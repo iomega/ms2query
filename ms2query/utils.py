@@ -30,6 +30,11 @@ def load_ms2query_model(ms2query_model_file_name):
     raise ValueError("The MS2Query model file is expected to end on .pickle")
 
 
+def save_pickled_file(obj, filename: str):
+    assert not os.path.exists(filename), "File already exists"
+    pickle.dump(obj, open(filename, "wb"))
+
+
 def load_pickled_file(filename: str):
     with open(filename, 'rb') as file:
         loaded_object = pickle.load(file)
