@@ -95,12 +95,13 @@ library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location
 # Fill in the missing values:
 library_creator = LibraryFilesCreator(library_spectra,
                                       output_directory=,  # For instance "data/library_data/all_GNPS_positive_mode_"
-                                      ion_mode="positive",
                                       ms2ds_model_file_name=,  # The file location of the ms2ds model
                                       s2v_model_file_name=, )  # The file location of the s2v model
 library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
 library_creator.clean_peaks_and_normalise_intensities_spectra()
 library_creator.remove_not_fully_annotated_spectra()
+library_creator.remove_wrong_ion_modes("ionmode" # Replace with "positive" or "negative"
+                                       )
 library_creator.create_all_library_files()
 ```
 
