@@ -29,15 +29,13 @@ class LibraryFilesCreator:
         # Fill in the missing values:
         library_creator = LibraryFilesCreator(library_spectra,
                                               output_directory=,
-                                              ion_mode="positive",
                                               ms2ds_model_file_name=,
                                               s2v_model_file_name=,)
         library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
         library_creator.clean_peaks_and_normalise_intensities_spectra()
         library_creator.remove_not_fully_annotated_spectra()
-        library_creator.calculate_tanimoto_scores()
+        library_creator.remove_wrong_ion_mode("positive")
         library_creator.create_all_library_files()
-
     """
     def __init__(self,
                  library_spectra: List[Spectrum],
@@ -57,8 +55,6 @@ class LibraryFilesCreator:
             For sqlite file: "ms2query_library.sqlite"
             For ms2ds_embeddings: "ms2ds_embeddings.pickle"
             For s2v_embeddings: "s2v_embeddings.pickle"
-        ion_mode:
-            The ion mode of the library you want to create. Spectra not in this ion mode will be removed
         s2v_model_file_name:
             file name of a s2v model
         ms2ds_model_file_name:
@@ -138,14 +134,14 @@ class LibraryFilesCreator:
         self.list_of_spectra = [run_metadata_filters(s) for s in tqdm(self.list_of_spectra,
                                                                       desc="Cleaning metadata library spectra")]
 
-    def remove_wrong_ion_modes(self, ion_mode):
-        assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
+    def remove_wrong_ion_modes(self, ion_mode_to_keep):
+        assert ion_mode_to_keep in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
         spectra_to_keep = []
-        for spec in tqdm(self.list_of_spectra, desc=f"Selecting {ion_mode} mode spectra"):
-            if spec.get("ionmode") == ion_mode:
+        for spec in tqdm(self.list_of_spectra, desc=f"Selecting {ion_mode_to_keep} mode spectra"):
+            if spec.get("ionmode") == ion_mode_to_keep:
                 spectra_to_keep.append(spec)
         print(f"From {len(self.list_of_spectra)} spectra, "
-              f"{len(self.list_of_spectra) - len(spectra_to_keep)} are removed since they are not in {ion_mode} mode")
+              f"{len(self.list_of_spectra) - len(spectra_to_keep)} are removed since they are not in {ion_mode_to_keep} mode")
         self.list_of_spectra = spectra_to_keep
 
     def remove_not_fully_annotated_spectra(self):
