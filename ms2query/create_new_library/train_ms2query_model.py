@@ -145,9 +145,6 @@ def train_ms2query_model(training_spectra,
                                                        ion_mode="positive",
                                                        ms2ds_model_file_name=ms2ds_model_file_name,
                                                        s2v_model_file_name=s2v_model_file_name)
-    library_creator_for_training.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
-    library_creator_for_training.clean_peaks_and_normalise_intensities_spectra()
-    library_creator_for_training.remove_not_fully_annotated_spectra()
     library_creator_for_training.create_all_library_files()
 
     ms2library_for_training = MS2Library(
