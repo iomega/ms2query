@@ -115,7 +115,8 @@ def test_analog_search(file_names, test_spectra):
                               spectrum_id_column_name=spectrum_id_column_name)
 
     cutoff = 20
-    results = test_library.analog_search_return_results_tables(test_spectra, cutoff)
+    results = test_library.analog_search_return_results_tables(test_spectra, cutoff, True)
+    results_without_ms2deepscores = test_library.analog_search_return_results_tables(test_spectra, cutoff, False)
 
     expected_result = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -123,6 +124,8 @@ def test_analog_search(file_names, test_spectra):
 
     for i in range(len(expected_result)):
         results[i].assert_results_table_equal(expected_result[i])
+        assert results_without_ms2deepscores[i].ms2deepscores.empty, \
+            "No ms2deepscores should be stored in the result table"
 
 
 def test_calculate_scores_for_metadata(file_names, test_spectra):

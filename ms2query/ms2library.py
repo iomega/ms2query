@@ -145,6 +145,7 @@ class MS2Library:
         """Calculates a results table for a single spectrum"""
 
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
+        highest_ms2deepscores = ms2deepscore_scores.nlargest(preselection_cut_off)
         # Initialize result table
         results_table = ResultsTable(
             preselection_cut_off=preselection_cut_off,
@@ -158,9 +159,10 @@ class MS2Library:
         return results_table
 
     def analog_search_return_results_tables(self,
-                                            query_spectra: List[Spectrum],
-                                            preselection_cut_off: int = 2000
-                                            ) -> List[ResultsTable]:
+                                             query_spectra: List[Spectrum],
+                                             preselection_cut_off: int = 2000,
+                                             store_ms2deepscore_scores: bool = False
+                                             ) -> List[ResultsTable]:
         """Returns a list with a ResultTable for each query spectrum
 
         Args
@@ -181,6 +183,9 @@ class MS2Library:
                                    desc="collecting matches info",
                                    disable=not self.settings["progress_bars"]):
             results_table = self.get_matches_single_spectrum(query_spectrum, preselection_cut_off)
+            # To reduce the memory footprint the ms2deepscore scores are removed.
+            if not store_ms2deepscore_scores:
+                results_table.ms2deepscores = pd.DataFrame()
             result_tables.append(results_table)
         return result_tables
 
