@@ -5,13 +5,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from matchms import Spectrum
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_series_equal
 from ms2query.ms2library import (MS2Library,
                                  create_library_object_from_one_dir,
                                  get_ms2query_model_prediction_single_spectrum)
 from ms2query.results_table import ResultsTable
 from ms2query.utils import load_ms2query_model, load_pickled_file
-from tests.test_utils import create_test_classifier_csv_file
 
 
 @pytest.fixture
@@ -163,13 +162,12 @@ def test_get_all_ms2ds_scores(file_names, test_spectra):
                               s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
                               spectrum_id_column_name=spectrum_id_column_name)
 
-    result = test_library._get_all_ms2ds_scores(test_spectra)
+    result = test_library._get_all_ms2ds_scores(test_spectra[0])
 
     expected_result:pd.DataFrame = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
-    assert isinstance(result, pd.DataFrame), "Expected dictionary"
-    assert_frame_equal(result, expected_result)
+        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle')).iloc[:, 0]
+    assert_series_equal(result, expected_result)
 
 
 def test_get_s2v_scores(file_names, test_spectra):
@@ -281,3 +279,6 @@ def test_create_library_object_from_one_dir():
         'tests/test_files/general_test_files')
     library = create_library_object_from_one_dir(path_to_tests_dir)
     assert isinstance(library, MS2Library)
+
+if __name__ == "__main__":
+    pass

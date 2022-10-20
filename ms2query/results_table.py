@@ -18,7 +18,7 @@ class ResultsTable:
                        "average_tanimoto_score_library_structures"]
 
     def __init__(self, preselection_cut_off: int,
-                 ms2deepscores: pd.DataFrame,
+                 ms2deepscores: pd.Series,
                  query_spectrum: Spectrum,
                  sqlite_file_name: str,
                  classifier_csv_file_name: Union[str, None] = None,
