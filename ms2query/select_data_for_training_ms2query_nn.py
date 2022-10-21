@@ -133,9 +133,9 @@ class DataCollectorForTraining(MS2Library):
         """
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        for i, query_spectrum in tqdm(enumerate(query_spectra),
-                                      desc="Get scores and tanimoto scores",
-                                      disable=not self.settings["progress_bars"]):
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Get scores and tanimoto scores",
+                                   disable=not self.settings["progress_bars"]):
             ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
             results_table = ResultsTable(
                 preselection_cut_off=self.preselection_cut_off,
