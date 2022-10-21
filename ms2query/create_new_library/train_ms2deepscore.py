@@ -15,7 +15,7 @@ from tensorflow.keras.callbacks import (  # pylint: disable=import-error
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
 from ms2query.create_new_library.create_sqlite_database import select_inchi_for_unique_inchikeys, add_fingerprint
 from ms2query.create_new_library.clean_and_split_data_for_training import split_spectra_on_inchikeys
-
+from ms2query.create_new_library.train_models import SettingsTrainingModels
 
 def train_ms2ds_model(training_spectra,
                       validation_spectra,
@@ -23,6 +23,8 @@ def train_ms2ds_model(training_spectra,
                       output_model_file_name,
                       epochs=150):
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
+    assert len(validation_spectra) >= 100, \
+        "Expected more validation spectra, too little validation spectra causes keras to crash"
     # Bin training spectra
     spectrum_binner = SpectrumBinner(10000, mz_min=10.0, mz_max=1000.0, peak_scaling=0.5,
                                      allowed_missing_percentage=100.0)
@@ -102,11 +104,16 @@ def plot_history(history: Dict[str, List[float]]):
     plt.show()
 
 
-def train_ms2deepscore_wrapper(spectra: List[Spectrum], output_model_file_name, fraction_validation_inchikeys=30):
+def train_ms2deepscore_wrapper(spectra: List[Spectrum],
+                               output_model_file_name,
+                               settings: SettingsTrainingModels):
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
-    training_spectra, validation_spectra = split_spectra_on_inchikeys(spectra, fraction_validation_inchikeys)
+    training_spectra, validation_spectra = split_spectra_on_inchikeys(spectra,
+                                                                      settings.ms2ds_fraction_validation_spectra)
     tanimoto_score_df = calculate_tanimoto_scores(spectra)
-    history = train_ms2ds_model(training_spectra, validation_spectra, tanimoto_score_df, output_model_file_name)
+    history = train_ms2ds_model(training_spectra, validation_spectra,
+                                tanimoto_score_df, output_model_file_name,
+                                settings.ms2ds_epochs)
     print(f"The training history is: {history}")
     plot_history(history)
 

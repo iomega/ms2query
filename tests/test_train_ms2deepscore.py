@@ -13,7 +13,7 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file, load_pickled
 def path_to_general_test_files() -> str:
     return os.path.join(
         os.getcwd(),
-        '../tests/test_files/general_test_files')
+        './tests/test_files/general_test_files')
 
 
 def test_calculate_tanimoto_scores(path_to_general_test_files):
