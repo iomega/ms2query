@@ -1,8 +1,6 @@
 import os
 import pandas as pd
 import pytest
-import h5py
-import keras
 from ms2deepscore.models import SiameseModel
 from ms2deepscore.models.load_model import load_model as load_ms2deepscore_model
 from ms2query.create_new_library.train_ms2deepscore import calculate_tanimoto_scores, train_ms2ds_model
