@@ -64,16 +64,17 @@ class DataCollectorForTraining():
                                    disable=not self.ms2library.settings["progress_bars"]):
             results_table = self.ms2library.calculate_features_single_spectrum(query_spectrum,
                                                                                self.preselection_cut_off)
-            # Select the features (remove inchikey, since this should not be
-            # used for training
-            features_dataframe = results_table.get_training_data()
+
             # Get tanimoto scores
             library_spectrum_ids = list(results_table.data.index)
             tanimoto_scores = self.calculate_tanimoto_scores(query_spectrum, library_spectrum_ids)
+            # Add tanimoto scores for training data
             all_tanimoto_scores = \
                 all_tanimoto_scores.append(tanimoto_scores,
                                            ignore_index=True)
-
+            # Select the features (remove inchikey, since this should not be
+            # used for training
+            features_dataframe = results_table.get_training_data()
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = features_dataframe.loc[
                 tanimoto_scores.index]
