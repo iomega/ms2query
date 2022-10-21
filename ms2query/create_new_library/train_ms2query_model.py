@@ -59,13 +59,13 @@ class DataCollectorForTraining():
         """
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
-        all_ms2ds_scores = self.ms2library._get_all_ms2ds_scores(query_spectra)
-        for i, query_spectrum in tqdm(enumerate(query_spectra),
-                                      desc="Get scores and tanimoto scores",
-                                      disable=not self.ms2library.settings["progress_bars"]):
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="Get scores and tanimoto scores",
+                                   disable=not self.ms2library.settings["progress_bars"]):
+            ms2deepscores = self.ms2library._get_all_ms2ds_scores(query_spectrum)
             results_table = ResultsTable(
                 preselection_cut_off=self.preselection_cut_off,
-                ms2deepscores=all_ms2ds_scores.iloc[:, i],
+                ms2deepscores=ms2deepscores,
                 query_spectrum=query_spectrum,
                 sqlite_file_name=self.ms2library.sqlite_file_name)
 

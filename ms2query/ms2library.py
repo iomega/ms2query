@@ -139,10 +139,29 @@ class MS2Library:
             default_settings[attribute] = new_settings[attribute]
         return default_settings
 
+    def get_matches_single_spectrum(self,
+                                    query_spectrum: Spectrum,
+                                    preselection_cut_off: int = 2000):
+        """Calculates a results table for a single spectrum"""
+
+        ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
+        # Initialize result table
+        results_table = ResultsTable(
+            preselection_cut_off=preselection_cut_off,
+            ms2deepscores=ms2deepscore_scores,
+            query_spectrum=query_spectrum,
+            sqlite_file_name=self.sqlite_file_name,
+            classifier_csv_file_name=self.classifier_file_name)
+        results_table = \
+            self._calculate_features_for_random_forest_model(results_table)
+        results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+        return results_table
+
     def analog_search_return_results_tables(self,
-                                            query_spectra: List[Spectrum],
-                                            preselection_cut_off: int = 2000
-                                            ) -> List[ResultsTable]:
+                                             query_spectra: List[Spectrum],
+                                             preselection_cut_off: int = 2000,
+                                             store_ms2deepscore_scores: bool = False
+                                             ) -> List[ResultsTable]:
         """Returns a list with a ResultTable for each query spectrum
 
         Args
@@ -158,24 +177,14 @@ class MS2Library:
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        # Calculate all ms2ds scores between all query and library spectra
-        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-
         result_tables = []
-        for i, query_spectrum in \
-                tqdm(enumerate(query_spectra),
-                     desc="collecting matches info",
-                     disable=not self.settings["progress_bars"]):
-            # Initialize result table
-            results_table = ResultsTable(
-                preselection_cut_off=preselection_cut_off,
-                ms2deepscores=all_ms2ds_scores.iloc[:, i],
-                query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_name,
-                classifier_csv_file_name=self.classifier_file_name)
-            results_table = \
-                self._calculate_features_for_random_forest_model(results_table)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+        for query_spectrum in tqdm(query_spectra,
+                                   desc="collecting matches info",
+                                   disable=not self.settings["progress_bars"]):
+            results_table = self.get_matches_single_spectrum(query_spectrum, preselection_cut_off)
+            # To reduce the memory footprint the ms2deepscore scores are removed.
+            if not store_ms2deepscore_scores:
+                results_table.ms2deepscores = pd.DataFrame()
             result_tables.append(results_table)
         return result_tables
 
@@ -234,23 +243,11 @@ class MS2Library:
         query_spectra = clean_metadata(query_spectra)
         query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        # Calculate all ms2ds scores between all query and library spectra
-        all_ms2ds_scores = self._get_all_ms2ds_scores(query_spectra)
-
-        for i, query_spectrum in \
-                tqdm(enumerate(query_spectra),
+        for query_spectrum in \
+                tqdm(query_spectra,
                      desc="collecting matches info",
                      disable=not self.settings["progress_bars"]):
-            # Initialize result table
-            results_table = ResultsTable(
-                preselection_cut_off=preselection_cut_off,
-                ms2deepscores=all_ms2ds_scores.iloc[:, i],
-                query_spectrum=query_spectrum,
-                sqlite_file_name=self.sqlite_file_name,
-                classifier_csv_file_name=self.classifier_file_name)
-            results_table = \
-                self._calculate_features_for_random_forest_model(results_table)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+            results_table = self.get_matches_single_spectrum(query_spectrum, preselection_cut_off)
             results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
                                                            minimal_ms2query_metascore,
                                                            additional_metadata_columns=additional_metadata_columns,
@@ -286,31 +283,26 @@ class MS2Library:
             precursors)
         return results_table
 
-    def _get_all_ms2ds_scores(self, query_spectra: List[Spectrum]
-                              ) -> pd.DataFrame:
+    def _get_all_ms2ds_scores(self, query_spectrum: Spectrum
+                              ) -> pd.Series:
         """Returns a dataframe with the ms2deepscore similarity scores
 
-        The similarity scores are calculated between the query_spectra and all
+        The similarity scores are calculated between the query_spectrum and all
         library spectra.
 
         query_spectra
-            Spectra for which similarity scores should be calculated for all
+            Spectrum for which similarity scores should be calculated for all
             spectra in the ms2ds embeddings file.
         """
         ms2ds = MS2DeepScore(self.ms2ds_model, progress_bar=False)
-        if self.settings["progress_bars"]:
-            print("Calculating MS2Deepscore embeddings for query spectra")
-        query_embeddings = ms2ds.calculate_vectors(query_spectra)
+        query_embeddings = ms2ds.calculate_vectors([query_spectrum])
         library_ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
-        if self.settings["progress_bars"]:
-            print("Calculating MS2Deepscore between query embeddings and "
-                  "library embeddings")
         ms2ds_scores = cosine_similarity_matrix(library_ms2ds_embeddings_numpy,
                                                 query_embeddings)
         similarity_matrix_dataframe = pd.DataFrame(
             ms2ds_scores,
             index=self.ms2ds_embeddings.index)
-        return similarity_matrix_dataframe
+        return similarity_matrix_dataframe.iloc[:, 0]
 
     def _calculate_average_ms2deepscore_multiple_library_spectra(
             self,
