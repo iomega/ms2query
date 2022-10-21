@@ -62,19 +62,13 @@ class DataCollectorForTraining():
         for query_spectrum in tqdm(query_spectra,
                                    desc="Get scores and tanimoto scores",
                                    disable=not self.ms2library.settings["progress_bars"]):
-            ms2deepscores = self.ms2library._get_all_ms2ds_scores(query_spectrum)
-            results_table = ResultsTable(
-                preselection_cut_off=self.preselection_cut_off,
-                ms2deepscores=ms2deepscores,
-                query_spectrum=query_spectrum,
-                sqlite_file_name=self.ms2library.sqlite_file_name)
-
-            results_table = self.ms2library._calculate_features_for_random_forest_model(results_table)
-            library_spectrum_ids = list(results_table.data.index)
+            results_table = self.ms2library.calculate_features_single_spectrum(query_spectrum,
+                                                                               self.preselection_cut_off)
             # Select the features (remove inchikey, since this should not be
             # used for training
             features_dataframe = results_table.get_training_data()
             # Get tanimoto scores
+            library_spectrum_ids = list(results_table.data.index)
             tanimoto_scores = self.calculate_tanimoto_scores(query_spectrum, library_spectrum_ids)
             all_tanimoto_scores = \
                 all_tanimoto_scores.append(tanimoto_scores,

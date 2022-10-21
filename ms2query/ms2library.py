@@ -139,9 +139,9 @@ class MS2Library:
             default_settings[attribute] = new_settings[attribute]
         return default_settings
 
-    def get_matches_single_spectrum(self,
-                                    query_spectrum: Spectrum,
-                                    preselection_cut_off: int = 2000):
+    def calculate_features_single_spectrum(self,
+                                           query_spectrum: Spectrum,
+                                           preselection_cut_off: int = 2000):
         """Calculates a results table for a single spectrum"""
 
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
@@ -154,14 +154,13 @@ class MS2Library:
             classifier_csv_file_name=self.classifier_file_name)
         results_table = \
             self._calculate_features_for_random_forest_model(results_table)
-        results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
         return results_table
 
     def analog_search_return_results_tables(self,
-                                             query_spectra: List[Spectrum],
-                                             preselection_cut_off: int = 2000,
-                                             store_ms2deepscore_scores: bool = False
-                                             ) -> List[ResultsTable]:
+                                            query_spectra: List[Spectrum],
+                                            preselection_cut_off: int = 2000,
+                                            store_ms2deepscore_scores: bool = False
+                                            ) -> List[ResultsTable]:
         """Returns a list with a ResultTable for each query spectrum
 
         Args
@@ -181,7 +180,8 @@ class MS2Library:
         for query_spectrum in tqdm(query_spectra,
                                    desc="collecting matches info",
                                    disable=not self.settings["progress_bars"]):
-            results_table = self.get_matches_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             # To reduce the memory footprint the ms2deepscore scores are removed.
             if not store_ms2deepscore_scores:
                 results_table.ms2deepscores = pd.DataFrame()
@@ -247,7 +247,8 @@ class MS2Library:
                 tqdm(query_spectra,
                      desc="collecting matches info",
                      disable=not self.settings["progress_bars"]):
-            results_table = self.get_matches_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
                                                            minimal_ms2query_metascore,
                                                            additional_metadata_columns=additional_metadata_columns,
