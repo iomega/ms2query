@@ -3,7 +3,6 @@ from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wr
 from ms2query.create_new_library.train_spec2vec import train_spec2vec_model
 from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
-from ms2query.ms2library import MS2Library
 from ms2query.utils import save_pickled_file
 
 
