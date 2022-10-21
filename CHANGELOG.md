@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.2]
+- Do not store MS2Deepscores in results table, to prevent memory issues
+
+## [0.4.1]
 - Changed calculation of tanimoto scores, for better memory efficiency
   - Code structure changed, tanimoto scores are now calculated in create_sqlite_database, instead of library_files_creator. 
 
@@ -105,7 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First test workflow and basic batches.
 - Licence.
 
-[Unreleased]: https://github.com/iomega/ms2query/compare/0.3.1...HEAD
+[Unreleased]: https://github.com/iomega/ms2query/compare/0.4.2...HEAD
+[0.4.2]: https://github.com/iomega/ms2query/compare/0.4.1...0.4.2
+[0.4.1]: https://github.com/iomega/ms2query/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/iomega/ms2query/compare/0.3.3...0.4.0
 [0.3.3]: https://github.com/iomega/ms2query/compare/0.3.2...0.3.3
 [0.3.2]: https://github.com/iomega/ms2query/compare/0.3.1...0.3.2
