@@ -2,8 +2,9 @@ import os
 import sys
 import pytest
 from ms2query.run_ms2query import run_complete_folder
-from tests.test_ms2library import (MS2Library, create_test_classifier_csv_file,
+from tests.test_ms2library import (MS2Library,
                                    test_spectra)
+from tests.test_utils import create_test_classifier_csv_file
 
 
 if sys.version_info < (3, 8):

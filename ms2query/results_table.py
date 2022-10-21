@@ -18,7 +18,7 @@ class ResultsTable:
                        "average_tanimoto_score_library_structures"]
 
     def __init__(self, preselection_cut_off: int,
-                 ms2deepscores: pd.DataFrame,
+                 ms2deepscores: pd.Series,
                  query_spectrum: Spectrum,
                  sqlite_file_name: str,
                  classifier_csv_file_name: Union[str, None] = None,
@@ -51,7 +51,7 @@ class ResultsTable:
         assert other.preselection_cut_off == self.preselection_cut_off
         assert other.precursor_mz == self.precursor_mz
         assert self.data.round(5).equals(other.data.round(5))
-        assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5))
+        assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)), f"ms2deepscores are not equal {self.ms2deepscores} != {other.ms2deepscores}"
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses
 
