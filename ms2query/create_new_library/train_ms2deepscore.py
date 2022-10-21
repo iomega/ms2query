@@ -20,7 +20,8 @@ from ms2query.create_new_library.clean_and_split_data_for_training import split_
 def train_ms2ds_model(training_spectra,
                       validation_spectra,
                       tanimoto_df,
-                      output_model_file_name):
+                      output_model_file_name,
+                      epochs=150):
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
     # Bin training spectra
     spectrum_binner = SpectrumBinner(10000, mz_min=10.0, mz_max=1000.0, peak_scaling=0.5,
@@ -61,7 +62,7 @@ def train_ms2ds_model(training_spectra,
     checkpointer = ModelCheckpoint(filepath=output_model_file_name, monitor='val_loss', mode="min", verbose=1, save_best_only=True)
     earlystopper_scoring_net = EarlyStopping(monitor='val_loss', mode="min", patience=10, verbose=1)
     # Fit model and save history
-    history = model.model.fit(training_generator, validation_data=validation_generator, epochs=10, verbose=1,
+    history = model.model.fit(training_generator, validation_data=validation_generator, epochs=epochs, verbose=1,
                               callbacks=[checkpointer, earlystopper_scoring_net])
     model.load_weights(output_model_file_name)
     model.save(output_model_file_name)
