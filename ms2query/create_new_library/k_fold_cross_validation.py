@@ -2,7 +2,7 @@ import os
 from typing import List
 from matchms import Spectrum
 import itertools
-from ms2query.create_new_library.clean_and_split_data_for_training import split_spectra_in_random_inchikey_sets
+from ms2query.create_new_library.split_data_for_training import split_spectra_in_random_inchikey_sets
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper
 from ms2query.create_new_library.train_spec2vec import train_spec2vec_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator

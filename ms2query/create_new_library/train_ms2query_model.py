@@ -16,7 +16,7 @@ from ms2query.create_new_library.create_sqlite_database import add_fingerprint
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2query.utils import load_pickled_file
-from ms2query.create_new_library.clean_and_split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
+from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
