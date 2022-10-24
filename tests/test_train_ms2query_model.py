@@ -6,7 +6,6 @@ from ms2query.create_new_library.train_ms2query_model import \
     DataCollectorForTraining
 from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file
 from ms2query.ms2library import MS2Library
-from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 
 
 if sys.version_info < (3, 8):
