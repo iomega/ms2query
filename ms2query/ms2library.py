@@ -1,5 +1,5 @@
 import os.path
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union, Optional
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
@@ -142,7 +142,7 @@ class MS2Library:
 
     def calculate_features_single_spectrum(self,
                                            query_spectrum: Spectrum,
-                                           preselection_cut_off: int = 2000):
+                                           preselection_cut_off: int = 2000) -> Optional[ResultsTable]:
         """Calculates a results table for a single spectrum"""
         query_spectrum = clean_metadata([query_spectrum])[0]
         query_spectrum = spectrum_processing_minimal(query_spectrum)
@@ -182,11 +182,14 @@ class MS2Library:
                                       disable=not self.settings["progress_bars"]):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-            # To reduce the memory footprint the ms2deepscore scores are removed.
-            if not store_ms2deepscore_scores:
-                results_table.ms2deepscores = pd.DataFrame()
-            result_tables.append(results_table)
+            if results_table is not None:
+                results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+                # To reduce the memory footprint the ms2deepscore scores are removed.
+                if not store_ms2deepscore_scores:
+                    results_table.ms2deepscores = pd.DataFrame()
+                result_tables.append(results_table)
+            else:
+                result_tables.append(None)
         return result_tables
 
     def analog_search_store_in_csv(self,
@@ -247,12 +250,14 @@ class MS2Library:
                      disable=not self.settings["progress_bars"]):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
-            results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-            results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
-                                                           minimal_ms2query_metascore,
-                                                           additional_metadata_columns=additional_metadata_columns,
-                                                           additional_ms2query_score_columns=additional_ms2query_score_columns)
-            if results_df is not None:
+            if results_table is None:
+                print(f"Spectrum nr {i} was not stored, since it did not pass all cleaning steps")
+            else:
+                results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+                results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
+                                                               minimal_ms2query_metascore,
+                                                               additional_metadata_columns=additional_metadata_columns,
+                                                               additional_ms2query_score_columns=additional_ms2query_score_columns)
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,
