@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from ms2query import MS2Library, ResultsTable
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.create_new_library.create_sqlite_database import add_fingerprint
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import load_matchms_spectrum_objects_from_file

@@ -11,7 +11,7 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.spectrum_processing import create_spectrum_documents
+from ms2query.clean_and_filter_spectra import create_spectrum_documents
 
 
 class LibraryFilesCreator:

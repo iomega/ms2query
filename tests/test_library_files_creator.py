@@ -4,7 +4,7 @@ import pytest
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
-from ms2query.create_new_library.clean_library_spectra import clean_peaks_and_normalise_intensities_spectra
+from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'))
-    library_spectra = clean_peaks_and_normalise_intensities_spectra(library_spectra)
+    library_spectra = [normalize_and_filter_peaks(s) for s in library_spectra if s is not None]
     test_create_files = LibraryFilesCreator(library_spectra, base_file_name,
                                             ms2ds_model_file_name=os.path.join(path_to_general_test_files,
                                                                                'ms2ds_siamese_210301_5000_500_400.hdf5'))
@@ -55,7 +55,7 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files, '100_test_spectra.pickle'))
-    library_spectra = clean_peaks_and_normalise_intensities_spectra(library_spectra)
+    library_spectra = [normalize_and_filter_peaks(s) for s in library_spectra if s is not None]
     test_create_files = LibraryFilesCreator(library_spectra, base_file_name,
                                             s2v_model_file_name=os.path.join(path_to_general_test_files,
                                                                              "100_test_spectra_s2v_model.model"))

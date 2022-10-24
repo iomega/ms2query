@@ -88,19 +88,17 @@ The models for spec2vec, ms2deepscore and ms2query can be downloaded from the ze
 
 ```python
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
+from ms2query.clean_and_filter_spectra import preprocess_library_spectra
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 spectrum_file_location =  # The file location of the library spectra
 library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location)
 # Fill in the missing values:
-library_creator = LibraryFilesCreator(library_spectra,
+cleaned_library_spectra = preprocess_library_spectra(library_spectra, ion_mode_to_keep="") # fill in "positive" or "negative"
+library_creator = LibraryFilesCreator(cleaned_library_spectra,
                                       output_directory="",  # For instance "data/library_data/all_GNPS_positive_mode_"
                                       ms2ds_model_file_name="",  # The file location of the ms2ds model
                                       s2v_model_file_name="", )  # The file location of the s2v model
-library_creator.clean_up_smiles_inchi_and_inchikeys(do_pubchem_lookup=True)
-library_creator.clean_peaks_and_normalise_intensities_spectra()
-library_creator.remove_not_fully_annotated_spectra()
-library_creator.remove_wrong_ion_modes(ion_mode_to_keep="") # Change for "positive" or "negative"
 library_creator.create_all_library_files()
 ```
 

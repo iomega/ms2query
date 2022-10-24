@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper, calculate_closest_related_inchikeys
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.spectrum_processing import minimal_processing_multiple_spectra
+from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
 
 
@@ -88,7 +88,7 @@ def test_making_sqlite_file(tmp_path):
 
     list_of_spectra = load_pickled_file(os.path.join(
         path_to_general_test_files, "100_test_spectra.pickle"))
-    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
 
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
@@ -131,7 +131,7 @@ def test_get_metadata_from_sqlite():
 def test_calculate_tanimoto_scores(tmp_path, path_to_general_test_files):
     list_of_spectra = load_pickled_file(os.path.join(
         path_to_general_test_files, "100_test_spectra.pickle"))
-    list_of_spectra = minimal_processing_multiple_spectra(list_of_spectra)
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
     result = calculate_closest_related_inchikeys(list_of_spectra)
     assert isinstance(result, dict), "expected a dictionary"
     assert len(result) == 61

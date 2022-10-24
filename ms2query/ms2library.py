@@ -11,10 +11,9 @@ from tqdm import tqdm
 from ms2query.query_from_sqlite_database import (get_inchikey_information,
                                                  get_precursor_mz)
 from ms2query.results_table import ResultsTable
-from ms2query.spectrum_processing import (clean_metadata,
-                                          create_spectrum_documents,
-                                          minimal_processing_multiple_spectra,
-                                          spectrum_processing_minimal)
+from ms2query.clean_and_filter_spectra import (clean_metadata,
+                                               create_spectrum_documents,
+                                               normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
                             load_pickled_file)
 
@@ -144,8 +143,8 @@ class MS2Library:
                                            query_spectrum: Spectrum,
                                            preselection_cut_off: int = 2000) -> Optional[ResultsTable]:
         """Calculates a results table for a single spectrum"""
-        query_spectrum = clean_metadata([query_spectrum])[0]
-        query_spectrum = spectrum_processing_minimal(query_spectrum)
+        query_spectrum = clean_metadata(query_spectrum)
+        query_spectrum = normalize_and_filter_peaks(query_spectrum)
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(
