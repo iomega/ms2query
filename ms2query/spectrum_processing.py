@@ -18,7 +18,6 @@ def clean_metadata(spectrum_list: List[SpectrumType]):
         s = msfilters.default_filters(s)
         s = msfilters.add_retention_index(s)
         s = msfilters.add_retention_time(s)
-        s.set("spectrum_nr", i+1)
         spectra_cleaned_metadata.append(s)
     return spectra_cleaned_metadata
 
@@ -85,10 +84,10 @@ def spectrum_processing_minimal(spectrum: SpectrumType,
     settings = set_minimal_processing_defaults(**settings)
     spectrum = msfilters.normalize_intensities(spectrum)
     spectrum = msfilters.select_by_intensity(spectrum,
-                                   intensity_from=settings["intensity_from"])
+                                             intensity_from=settings["intensity_from"])
     spectrum = msfilters.select_by_mz(spectrum,
-                            mz_from=settings["mz_from"],
-                            mz_to=np.inf)
+                                      mz_from=settings["mz_from"],
+                                      mz_to=np.inf)
     spectrum = require_peaks_below_mz(
         spectrum,
         n_required=settings["n_required_below_mz"],
@@ -172,8 +171,8 @@ def spectrum_processing_s2v(spectrum: SpectrumType,
     """
     settings = set_spec2vec_defaults(**settings)
     spectrum = msfilters.select_by_mz(spectrum,
-                            mz_from=settings["mz_from"],
-                            mz_to=settings["mz_to"])
+                                      mz_from=settings["mz_from"],
+                                      mz_to=settings["mz_to"])
     spectrum = msfilters.reduce_to_number_of_peaks(
         spectrum,
         n_required=settings["n_required"],

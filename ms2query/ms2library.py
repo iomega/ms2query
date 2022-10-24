@@ -13,7 +13,8 @@ from ms2query.query_from_sqlite_database import (get_inchikey_information,
 from ms2query.results_table import ResultsTable
 from ms2query.spectrum_processing import (clean_metadata,
                                           create_spectrum_documents,
-                                          minimal_processing_multiple_spectra)
+                                          minimal_processing_multiple_spectra,
+                                          spectrum_processing_minimal)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
                             load_pickled_file)
 
@@ -143,7 +144,8 @@ class MS2Library:
                                            query_spectrum: Spectrum,
                                            preselection_cut_off: int = 2000):
         """Calculates a results table for a single spectrum"""
-
+        query_spectrum = clean_metadata([query_spectrum])[0]
+        query_spectrum = spectrum_processing_minimal(query_spectrum)
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(
@@ -173,13 +175,12 @@ class MS2Library:
         """
         assert self.ms2query_model is not None, \
             "MS2Query model should be given when creating ms2library object"
-        query_spectra = clean_metadata(query_spectra)
-        query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
         result_tables = []
-        for query_spectrum in tqdm(query_spectra,
-                                   desc="collecting matches info",
-                                   disable=not self.settings["progress_bars"]):
+        for i, query_spectrum in tqdm(enumerate(query_spectra),
+                                      desc="collecting matches info",
+                                      disable=not self.settings["progress_bars"]):
+            query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             # To reduce the memory footprint the ms2deepscore scores are removed.
@@ -239,14 +240,12 @@ class MS2Library:
             else:
                 csv_file.write(",".join(column_names_for_output(True, True, additional_metadata_columns,
                                                                 additional_ms2query_score_columns)) + "\n")
-        # preprocess spectra
-        query_spectra = clean_metadata(query_spectra)
-        query_spectra = minimal_processing_multiple_spectra(query_spectra)
 
-        for query_spectrum in \
-                tqdm(query_spectra,
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
                      desc="collecting matches info",
                      disable=not self.settings["progress_bars"]):
+            query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
             results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
             results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
