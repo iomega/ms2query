@@ -1,9 +1,11 @@
 import os
+from tqdm import tqdm
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper
 from ms2query.create_new_library.train_spec2vec import train_spec2vec_model
 from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import save_pickled_file
+from ms2query.clean_and_filter_spectra import preprocess_library_spectra
 
 
 class SettingsTrainingModels:
@@ -20,10 +22,13 @@ class SettingsTrainingModels:
         self.ms2ds_epochs: int = default_settings["ms2ds_epochs"]
 
 
-def train_all_models(annotated_training_spectra,
-                     unannotated_training_spectra,
+def train_all_models(training_spectra,
+                     ion_mode,
                      output_folder,
                      other_settings: dict = None):
+    annotated_training_spectra, unannotated_training_spectra = preprocess_library_spectra(training_spectra,
+                                                                                          ion_mode_to_keep=ion_mode)
+
     settings = SettingsTrainingModels(other_settings)
     # set file names of new generated files
     ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")

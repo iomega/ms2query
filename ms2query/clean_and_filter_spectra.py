@@ -3,7 +3,7 @@ and inspection is expected to happen prior to running MS2Query and is not taken
 into account here. Processing here hence refers to inspecting, filtering,
 adjusting the spectrum peaks (m/z and intensities).
 """
-from typing import List
+from typing import List, Tuple
 import matchms.filtering as msfilters
 from tqdm import tqdm
 from matchms import Spectrum
@@ -96,8 +96,9 @@ def remove_wrong_ion_modes(spectra, ion_mode_to_keep):
     return spectra_to_keep
 
 
-def remove_not_fully_annotated_spectra(spectra: List[Spectrum]) -> List[Spectrum]:
+def split_annotated_spectra(spectra: List[Spectrum]) -> Tuple[List[Spectrum], List[Spectrum]]:
     fully_annotated_spectra = []
+    not_fully_annotated_spectra = []
     for spectrum in spectra:
         inchikey = spectrum.get("inchikey")
         if inchikey is not None and len(inchikey) > 13:
@@ -106,9 +107,11 @@ def remove_not_fully_annotated_spectra(spectra: List[Spectrum]) -> List[Spectrum
             if smiles is not None and len(smiles) > 0:
                 if inchi is not None and len(inchi) > 0:
                     fully_annotated_spectra.append(spectrum)
+                else:
+                    not_fully_annotated_spectra.append(spectrum)
     print(f"From {len(spectra)} spectra, "
           f"{len(spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
-    return fully_annotated_spectra
+    return fully_annotated_spectra, not_fully_annotated_spectra
 
 
 def normalize_and_filter_peaks_multiple_spectra(spectrum_list: List[SpectrumType],
@@ -135,11 +138,11 @@ def normalize_and_filter_peaks_multiple_spectra(spectrum_list: List[SpectrumType
 
 
 def preprocess_library_spectra(spectra: List[Spectrum],
-                               ion_mode_to_keep):
+                               ion_mode_to_keep) -> Tuple[List[Spectrum], List[Spectrum]]:
     spectra = [clean_metadata(s) for s in tqdm(spectra, desc="Cleaning metadata")]
+    spectra = remove_wrong_ion_modes(spectra, ion_mode_to_keep)
     spectra = [harmonize_annotation(s, do_pubchem_lookup=True) for s in tqdm(spectra, desc="Harmonizing annotations")]
     spectra = [normalize_and_filter_peaks(s) for s in tqdm(spectra,
                                                            desc="Normalizing and filtering peaks") if s is not None]
-    spectra = remove_not_fully_annotated_spectra(spectra)
-    spectra = remove_wrong_ion_modes(spectra, ion_mode_to_keep)
-    return spectra
+    annotated_spectra, unannotated_spectra = split_annotated_spectra(spectra)
+    return annotated_spectra, unannotated_spectra

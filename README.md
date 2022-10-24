@@ -94,7 +94,7 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file
 spectrum_file_location =  # The file location of the library spectra
 library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location)
 # Fill in the missing values:
-cleaned_library_spectra = preprocess_library_spectra(library_spectra, ion_mode_to_keep="") # fill in "positive" or "negative"
+cleaned_library_spectra = preprocess_library_spectra(library_spectra, ion_mode_to_keep="")[0] # fill in "positive" or "negative"
 library_creator = LibraryFilesCreator(cleaned_library_spectra,
                                       output_directory="",  # For instance "data/library_data/all_GNPS_positive_mode_"
                                       ms2ds_model_file_name="",  # The file location of the ms2ds model

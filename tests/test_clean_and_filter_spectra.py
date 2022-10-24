@@ -8,7 +8,7 @@ from ms2query.clean_and_filter_spectra import (create_spectrum_documents,
                                                normalize_and_filter_peaks,
                                                remove_wrong_ion_modes,
                                                harmonize_annotation,
-                                               remove_not_fully_annotated_spectra,
+                                               split_annotated_spectra,
                                                preprocess_library_spectra)
 
 if sys.version_info < (3, 8):
@@ -134,7 +134,7 @@ def test_remove_not_fully_annotated_spectra(tmp_path):
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
-    results = remove_not_fully_annotated_spectra(library_spectra)
+    results = split_annotated_spectra(library_spectra)[0]
     assert len(results) == 1, "Expected that 1 spectrum was removed"
     assert spectrum1.__eq__(results[0]), "Expected an unaltered spectra"
 
@@ -171,7 +171,7 @@ def test_preprocess_library_spectra():
                               0.41616014, 0.71323034, 1.], dtype="float"),
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
-    cleaned_spectra = preprocess_library_spectra([spectrum1, spectrum2], "positive")
+    cleaned_spectra = preprocess_library_spectra([spectrum1, spectrum2], "positive")[0]
     for spectrum in cleaned_spectra:
         assert isinstance(spectrum, Spectrum)
 
