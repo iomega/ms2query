@@ -13,6 +13,7 @@ class SettingsTrainingModels:
                  settings):
         default_settings = {"ms2ds_fraction_validation_spectra": 30,
                             "ms2ds_epochs": 150,
+                            "spec2vec_iterations": 30,
                             "ms2query_fraction_for_making_pairs": 40}
         if settings:
             for setting in settings:
@@ -22,6 +23,7 @@ class SettingsTrainingModels:
         self.ms2ds_fraction_validation_spectra: float = default_settings["ms2ds_fraction_validation_spectra"]
         self.ms2ds_epochs: int = default_settings["ms2ds_epochs"]
         self.ms2query_fraction_for_making_pairs: int = default_settings["ms2query_fraction_for_making_pairs"]
+        self.spec2vec_iterations = default_settings["spec2vec_iterations"]
 
 
 def train_all_models(training_spectra,
@@ -29,7 +31,8 @@ def train_all_models(training_spectra,
                      output_folder,
                      other_settings: dict = None):
     annotated_training_spectra, unannotated_training_spectra = preprocess_library_spectra(training_spectra,
-                                                                                          ion_mode_to_keep=ion_mode)
+                                                                                          ion_mode_to_keep=ion_mode,
+                                                                                          do_pubchem_lookup=False)
 
     settings = SettingsTrainingModels(other_settings)
     # set file names of new generated files
@@ -50,7 +53,7 @@ def train_all_models(training_spectra,
     spectrum_documents = create_spectrum_documents(annotated_training_spectra + unannotated_training_spectra)
 
     train_new_word2vec_model(spectrum_documents,
-                             iterations=30,
+                             iterations=settings.spec2vec_iterations,
                              filename=spec2vec_model_file_name,
                              workers=4,
                              progress_logger=True)
@@ -61,7 +64,7 @@ def train_all_models(training_spectra,
         os.path.join(output_folder, "library_files_for_training_ms2query"),
         ms2deepscore_model_file_name,
         spec2vec_model_file_name,
-        fraction_for_training=settings.ms2ds_fraction_validation_spectra)
+        fraction_for_training=settings.ms2query_fraction_for_making_pairs)
 
     save_pickled_file(ms2query_model, ms2query_model_file_name)
 
@@ -78,9 +81,14 @@ if __name__ == "__main__":
 
     data_folder = os.path.join(os.getcwd(), "../../data/")
     spectra = load_matchms_spectrum_objects_from_file(os.path.join(data_folder,
-                                                                   "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021.mgf"))
+                                                                   "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_raw_spectra.pickle"))
     spectra = spectra[:2000]
 
     train_all_models(spectra,
                      "positive",
-                     "../../data/test_dir/test_library_files_creator")
+                     "../../data/test_dir/test_train_all_models",
+                     {"ms2ds_fraction_validation_spectra": 5,
+                      "ms2ds_epochs": 10,
+                      "spec2vec_iterations": 5,
+                      "ms2query_fraction_for_making_pairs": 40}
+                     )
