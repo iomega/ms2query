@@ -125,9 +125,11 @@ def train_ms2query_model(training_spectra,
                          s2v_model_file_name,
                          fraction_for_training):
     # Select spectra belonging to a single InChIKey
-    library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(training_spectra, fraction_for_training)
+    library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(training_spectra,
+                                                                                fraction_for_training)
     # Select random spectra from the library
-    library_spectra, single_spectra_query_spectra = split_training_and_validation_spectra(library_spectra, fraction_for_training)
+    library_spectra, single_spectra_query_spectra = split_training_and_validation_spectra(library_spectra,
+                                                                                          fraction_for_training)
     query_spectra_for_training = unique_inchikey_query_spectra + single_spectra_query_spectra
 
     # Create library files for training ms2query

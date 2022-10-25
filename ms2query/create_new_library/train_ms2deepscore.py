@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from typing import List, Dict
+from typing import List, Dict, Optional
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
@@ -23,8 +23,8 @@ def train_ms2ds_model(training_spectra,
                       output_model_file_name,
                       epochs=150):
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
-    assert len(validation_spectra) >= 100, \
-        "Expected more validation spectra, too little validation spectra causes keras to crash"
+    # assert len(validation_spectra) >= 100, \
+    #     "Expected more validation spectra, too little validation spectra causes keras to crash"
     # Bin training spectra
     spectrum_binner = SpectrumBinner(10000, mz_min=10.0, mz_max=1000.0, peak_scaling=0.5,
                                      allowed_missing_percentage=100.0)
@@ -94,28 +94,34 @@ def calculate_tanimoto_scores(list_of_spectra: List[Spectrum]):
     return tanimoto_df
 
 
-def plot_history(history: Dict[str, List[float]]):
+def plot_history(history: Dict[str, List[float]],
+                 file_name: Optional[str] = None):
     plt.plot(history['loss'])
     plt.plot(history['val_loss'])
     plt.title('model loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'val'], loc='upper left')
-    plt.show()
+    if file_name:
+        plt.savefig(file_name)
+    else:
+        plt.show()
 
 
 def train_ms2deepscore_wrapper(spectra: List[Spectrum],
                                output_model_file_name,
-                               settings):
+                               fraction_validation_spectra,
+                               epochs,
+                               ms2ds_history_file_name=None):
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
     training_spectra, validation_spectra = split_spectra_on_inchikeys(spectra,
-                                                                      settings.ms2ds_fraction_validation_spectra)
+                                                                      fraction_validation_spectra)
     tanimoto_score_df = calculate_tanimoto_scores(spectra)
     history = train_ms2ds_model(training_spectra, validation_spectra,
                                 tanimoto_score_df, output_model_file_name,
-                                settings.ms2ds_epochs)
+                                epochs)
     print(f"The training history is: {history}")
-    plot_history(history)
+    plot_history(history, ms2ds_history_file_name)
 
 
 if __name__ == "__main__":
@@ -124,5 +130,7 @@ if __name__ == "__main__":
     spectra = load_matchms_spectrum_objects_from_file(os.path.join(data_folder,
                                                                    "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_positive_annotated.pickle"))
     spectra = spectra[:1000]
-    model_file_name = os.path.join("../../data/test_dir/test_library_files_creator", "new_ms2ds_model.hdf5")
-    train_ms2deepscore_wrapper(spectra, model_file_name, 5)
+    model_file_name = os.path.join("../../data/test_dir/test_library_files_creator", "new_ms2ds_model_1.hdf5")
+    history_file = os.path.join("../../data/test_dir/test_library_files_creator", "ms2ds_history.svg")
+
+    train_ms2deepscore_wrapper(spectra, model_file_name, 10, 2, history_file)
