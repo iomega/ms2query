@@ -138,11 +138,11 @@ def normalize_and_filter_peaks_multiple_spectra(spectrum_list: List[SpectrumType
 
 
 def preprocess_library_spectra(spectra: List[Spectrum],
-                               ion_mode_to_keep) -> Tuple[List[Spectrum], List[Spectrum]]:
+                               ion_mode_to_keep,
+                               do_pubchem_lookup=True) -> Tuple[List[Spectrum], List[Spectrum]]:
     spectra = [clean_metadata(s) for s in tqdm(spectra, desc="Cleaning metadata")]
     spectra = remove_wrong_ion_modes(spectra, ion_mode_to_keep)
-    spectra = [harmonize_annotation(s, do_pubchem_lookup=True) for s in tqdm(spectra, desc="Harmonizing annotations")]
-    spectra = [normalize_and_filter_peaks(s) for s in tqdm(spectra,
-                                                           desc="Normalizing and filtering peaks") if s is not None]
+    spectra = [harmonize_annotation(s, do_pubchem_lookup) for s in tqdm(spectra, desc="Harmonizing annotations")]
+    spectra = normalize_and_filter_peaks_multiple_spectra(spectra)
     annotated_spectra, unannotated_spectra = split_annotated_spectra(spectra)
     return annotated_spectra, unannotated_spectra
