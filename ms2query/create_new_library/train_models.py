@@ -59,21 +59,24 @@ def train_all_models(training_spectra,
                              progress_logger=True)
 
     # Train MS2Query model
-    ms2query_model = train_ms2query_model(
-        annotated_training_spectra,
-        os.path.join(output_folder, "library_files_for_training_ms2query"),
-        ms2deepscore_model_file_name,
-        spec2vec_model_file_name,
-        fraction_for_training=settings.ms2query_fraction_for_making_pairs)
+    ms2query_model = train_ms2query_model(annotated_training_spectra,
+                                          os.path.join(output_folder, "library_for_training_ms2query"),
+                                          ms2deepscore_model_file_name,
+                                          spec2vec_model_file_name,
+                                          fraction_for_training=settings.ms2query_fraction_for_making_pairs)
 
     save_pickled_file(ms2query_model, ms2query_model_file_name)
 
-    # Create embeddings and sqlite file for all annotated training spectra
-    library_creator = LibraryFilesCreator(annotated_training_spectra,
-                                          output_folder,
-                                          s2v_model_file_name=spec2vec_model_file_name,
-                                          ms2ds_model_file_name=ms2deepscore_model_file_name)
-    library_creator.create_all_library_files()
+    # Create library with all training spectra
+    library_files_creator = LibraryFilesCreator(annotated_training_spectra,
+                                                output_folder,
+                                                spec2vec_model_file_name,
+                                                ms2deepscore_model_file_name)
+    library_files_creator.create_all_library_files()
+
+    # Store annotated training spectra
+    save_pickled_file(annotated_training_spectra,
+                      os.path.join(output_folder, "annotated_training_spectra.pickle"))
 
 
 if __name__ == "__main__":
