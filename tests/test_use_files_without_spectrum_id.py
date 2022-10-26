@@ -14,7 +14,7 @@ else:
 
 
 @pytest.fixture
-def file_names():
+def ms2library_without_spectrum_id():
     """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -37,9 +37,14 @@ def file_names():
     spectrum_id_column_name = "spectrumid"
     ms2q_model_file_name = os.path.join(path_to_tests_dir,
         "general_test_files", "test_ms2q_rf_model.pickle")
-    return sqlite_file_loc, spec2vec_model_file_loc, \
-        s2v_pickled_embeddings_file, ms2ds_model_file_name, \
-        ms2ds_embeddings_file_name, spectrum_id_column_name, ms2q_model_file_name
+    ms2library = MS2Library(sqlite_file_loc,
+                            spec2vec_model_file_loc,
+                            ms2ds_model_file_name,
+                            s2v_pickled_embeddings_file,
+                            ms2ds_embeddings_file_name,
+                            ms2q_model_file_name,
+                            spectrum_id_column_name=spectrum_id_column_name)
+    return ms2library
 
 
 def create_test_folder_with_spectra_files(path, spectra):
@@ -52,19 +57,11 @@ def create_test_folder_with_spectra_files(path, spectra):
     return spectra_files_folder
 
 
-def test_run_complete_folder(tmp_path, file_names, test_spectra):
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name, ms2q_model_file_name = file_names
-
-    test_library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
-                              classifier_csv_file_name=None, spectrum_id_column_name=spectrum_id_column_name)
-
+def test_run_complete_folder(tmp_path, ms2library_without_spectrum_id, test_spectra):
     folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
     results_directory = os.path.join(folder_with_spectra, "results")
 
-    run_complete_folder(ms2library=test_library,
+    run_complete_folder(ms2library=ms2library_without_spectrum_id,
                         folder_with_spectra=folder_with_spectra,
                         minimal_ms2query_score=0)
     assert os.path.exists(results_directory), "Expected results directory to be created"
@@ -84,21 +81,14 @@ def test_run_complete_folder(tmp_path, file_names, test_spectra):
                 '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,16,Halovir A,,\n']
 
 
-def test_run_complete_folder_with_classifiers(tmp_path, file_names, test_spectra):
-    sqlite_file_loc, spec2vec_model_file_loc, s2v_pickled_embeddings_file, \
-        ms2ds_model_file_name, ms2ds_embeddings_file_name, \
-        spectrum_id_column_name, ms2q_model_file_name = file_names
+def test_run_complete_folder_with_classifiers(tmp_path, ms2library_without_spectrum_id, test_spectra):
     classifiers_file_location = create_test_classifier_csv_file(tmp_path)
-
-    test_library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
-                              s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
-                              classifier_csv_file_name=classifiers_file_location,
-                              spectrum_id_column_name=spectrum_id_column_name)
+    ms2library_without_spectrum_id.classifier_file_name = classifiers_file_location
 
     folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
     results_directory = os.path.join(folder_with_spectra, "results")
 
-    run_complete_folder(ms2library=test_library,
+    run_complete_folder(ms2library=ms2library_without_spectrum_id,
                         folder_with_spectra=folder_with_spectra,
                         minimal_ms2query_score=0,
                         additional_metadata_columns=("charge",),

@@ -3,7 +3,7 @@ import pytest
 import sys
 import pandas as pd
 from ms2query.create_new_library.train_ms2query_model import \
-    DataCollectorForTraining
+    DataCollectorForTraining, calculate_tanimoto_scores
 from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file
 from ms2query.ms2library import MS2Library
 
@@ -62,11 +62,10 @@ def test_get_matches_info_and_tanimoto(tmp_path, ms2library, query_spectra):
 
 
 def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
-    select_data_for_training = DataCollectorForTraining(ms2library)
     query_spectrum = query_spectra[0]
     spectra_ids_list = \
         ['CCMSLIB00000001603', 'CCMSLIB00000001652', 'CCMSLIB00000001640']
-    result = select_data_for_training.calculate_tanimoto_scores(query_spectrum, spectra_ids_list)
+    result = calculate_tanimoto_scores(ms2library.sqlite_file_name, query_spectrum, spectra_ids_list)
     expected_result = pd.DataFrame([0.199695, 0.177669, 0.192504],
                                    index=spectra_ids_list,
                                    columns=["Tanimoto_score"])
