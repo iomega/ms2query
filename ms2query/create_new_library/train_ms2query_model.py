@@ -63,7 +63,9 @@ class DataCollectorForTraining():
 
             # Get tanimoto scores
             library_spectrum_ids = list(results_table.data.index)
-            tanimoto_scores = self.calculate_tanimoto_scores(query_spectrum, library_spectrum_ids)
+            tanimoto_scores = calculate_tanimoto_scores(self.ms2library.sqlite_file_name,
+                                                        query_spectrum,
+                                                        library_spectrum_ids)
             # Add tanimoto scores for training data
             all_tanimoto_scores = \
                 all_tanimoto_scores.append(tanimoto_scores,
@@ -79,27 +81,30 @@ class DataCollectorForTraining():
                                                      ignore_index=True)
         return info_of_matches_with_tanimoto, all_tanimoto_scores
 
-    def calculate_tanimoto_scores(self, query_spectrum: Spectrum,
-                                      spectra_ids_list: List[str]):
-        # Get inchikeys belonging to spectra ids
-        metadata_dict = get_metadata_from_sqlite(
-            self.ms2library.sqlite_file_name,
-            spectra_ids_list)
-        query_spectrum_fingerprint = add_fingerprint(query_spectrum, fingerprint_type="daylight", nbits=2048).get("fingerprint")
-        fingerprints = []
-        for spectrum_id in spectra_ids_list:
-            smiles = metadata_dict[spectrum_id]["smiles"]
-            mol = Chem.MolFromSmiles(smiles)
-            fingerprint = np.array(Chem.RDKFingerprint(mol, fpSize=2048))
-            assert isinstance(fingerprint, np.ndarray) and fingerprint.sum() > 0, \
-                f"Fingerprint for 1 spectrum could not be set smiles is {smiles}"
-            fingerprints.append(fingerprint)
-        query_spectrum_fingerprint = np.array([query_spectrum_fingerprint])
-        fingerprints = np.array(fingerprints)
-        # Specify type and calculate similarities
-        tanimoto_scores = jaccard_similarity_matrix(fingerprints, query_spectrum_fingerprint)
-        tanimoto_df = pd.DataFrame(tanimoto_scores, index=spectra_ids_list, columns=["Tanimoto_score"])
-        return tanimoto_df
+
+def calculate_tanimoto_scores(sqlite_file_name,
+                              query_spectrum: Spectrum,
+                              spectra_ids_list: List[str]):
+    # Get inchikeys belonging to spectra ids
+    metadata_dict = get_metadata_from_sqlite(
+        sqlite_file_name,
+        spectra_ids_list)
+    query_spectrum_fingerprint = add_fingerprint(query_spectrum, fingerprint_type="daylight", nbits=2048).get("fingerprint")
+    assert query_spectrum_fingerprint is not None, "No fingerprint could be set for query spectrum fingerprint"
+    fingerprints = []
+    for spectrum_id in spectra_ids_list:
+        smiles = metadata_dict[spectrum_id]["smiles"]
+        mol = Chem.MolFromSmiles(smiles)
+        fingerprint = np.array(Chem.RDKFingerprint(mol, fpSize=2048))
+        assert isinstance(fingerprint, np.ndarray) and fingerprint.sum() > 0, \
+            f"Fingerprint for 1 spectrum could not be set smiles is {smiles}"
+        fingerprints.append(fingerprint)
+    query_spectrum_fingerprint = np.array([query_spectrum_fingerprint])
+    fingerprints = np.array(fingerprints)
+    # Specify type and calculate similarities
+    tanimoto_scores = jaccard_similarity_matrix(fingerprints, query_spectrum_fingerprint)
+    tanimoto_df = pd.DataFrame(tanimoto_scores, index=spectra_ids_list, columns=["Tanimoto_score"])
+    return tanimoto_df
 
 
 def train_random_forest(selection_of_training_scores,
@@ -120,7 +125,7 @@ def train_random_forest(selection_of_training_scores,
 
 
 def train_ms2query_model(training_spectra,
-                         output_folder,
+                         library_files_folder,
                          ms2ds_model_file_name,
                          s2v_model_file_name,
                          fraction_for_training):
@@ -133,7 +138,7 @@ def train_ms2query_model(training_spectra,
     query_spectra_for_training = unique_inchikey_query_spectra + single_spectra_query_spectra
 
     # Create library files for training ms2query
-    library_creator_for_training = LibraryFilesCreator(library_spectra, output_directory=output_folder,
+    library_creator_for_training = LibraryFilesCreator(library_spectra, output_directory=library_files_folder,
                                                        s2v_model_file_name=s2v_model_file_name,
                                                        ms2ds_model_file_name=ms2ds_model_file_name)
     library_creator_for_training.create_all_library_files()
