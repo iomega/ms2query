@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from typing import List, Union
 import numpy as np
 import pandas as pd
@@ -33,6 +34,12 @@ def load_ms2query_model(ms2query_model_file_name):
 def save_pickled_file(obj, filename: str):
     assert not os.path.exists(filename), "File already exists"
     pickle.dump(obj, open(filename, "wb"))
+
+
+def save_json_file(data, filename):
+    assert not os.path.exists(filename), "File already exists"
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
 
 
 def load_pickled_file(filename: str):
