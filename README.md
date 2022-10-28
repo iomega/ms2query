@@ -78,7 +78,10 @@ run_complete_folder(ms2library, ms2_spectra_directory)
 ```
 
 ## Create your own library
-If you would like to create the required library files for your own in house library. You can run the code below:
+To create your own library you also need to install RDKit, by running the following in your command line (while in the ms2query conda environment):
+```
+conda install -c conda-forge rdkit
+```
 
 It is important that the library spectra are annotated with smiles, inchi's or inchikeys in the metadata otherwise they
 are not included in the library. 
