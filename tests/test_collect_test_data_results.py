@@ -95,5 +95,6 @@ def test_get_cosines_score_results(test_spectra):
     assert result == [(0.434789196140529, 0.0058997050147492625, False),
                       (0.4955472245596076, 0.007866273352999017, False)]
 
+
 if __name__ == "__main__":
     pass
