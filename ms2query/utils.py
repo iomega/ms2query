@@ -42,6 +42,12 @@ def save_json_file(data, filename):
         json.dump(data, f)
 
 
+def load_json_file(filename):
+    with open(filename, "r", encoding='utf-8') as f:
+        data = json.load(f)
+    return data
+
+
 def load_pickled_file(filename: str):
     with open(filename, 'rb') as file:
         loaded_object = pickle.load(file)
