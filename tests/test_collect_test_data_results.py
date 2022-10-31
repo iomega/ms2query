@@ -9,7 +9,8 @@ from ms2query.benchmarking.collect_test_data_results import (generate_test_resul
                                                              get_all_ms2ds_scores,
                                                              select_highest_ms2ds_in_mass_range,
                                                              get_modified_cosine_score_results,
-                                                             get_cosines_score_results)
+                                                             get_cosines_score_results,
+                                                             create_optimal_results)
 from tests.test_use_files_without_spectrum_id import ms2library_without_spectrum_id
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 
@@ -94,6 +95,11 @@ def test_get_cosines_score_results(test_spectra):
     result = get_cosines_score_results(library_spectra, test_spectra, 100, 0.05, 3)
     assert result == [(0.434789196140529, 0.0058997050147492625, False),
                       (0.4955472245596076, 0.007866273352999017, False)]
+
+
+def test_create_optimal_results(test_spectra):
+    results = create_optimal_results(test_spectra, test_spectra)
+    assert results == [(1.0, 1.0, True), (1.0, 1.0, True)]
 
 
 if __name__ == "__main__":

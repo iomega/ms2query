@@ -3,7 +3,7 @@ from typing import List, Tuple, Union
 from tqdm import tqdm
 import random
 from matchms import Spectrum
-from ms2query.create_new_library.calculate_tanimoto_scores import calculate_single_tanimoto_score, calculate_tanimoto_scores_unique_inchikey
+from ms2query.create_new_library.calculate_tanimoto_scores import calculate_single_tanimoto_score, calculate_highest_tanimoto_score
 from ms2query.ms2library import MS2Library
 import sqlite3
 import pandas as pd
@@ -183,22 +183,14 @@ def get_cosines_score_results(lib_spectra,
 
 
 def create_optimal_results(test_spectra, training_spectra):
-    smiles_test_spectra = [spectrum.get("smiles") for spectrum in test_spectra]
-    smiles_training_spectra = [spectrum.get("smiles") for spectrum in training_spectra]
-    tanimoto_scores = calculate_tanimoto_scores_unique_inchikey(smiles_test_spectra, smiles_training_spectra)
+    highest_tanimoto_scores = calculate_highest_tanimoto_score(test_spectra, training_spectra, 1)
 
-
-    inchikeys = [spectrum.get("inchikey")[:14] for spectrum in test_spectra]
-    unique_inchikeys = list(set(inchikeys))
-
-
-    # remove inchikeys in test spectra from dataframe
-    tanimoto_scores_removed = tanimoto_scores[~tanimoto_scores.index.isin(unique_inchikeys)]
     highest_tanimoto_list = []
-    for inchikey in inchikeys:
-        highest_tanimoto_score = tanimoto_scores_removed[inchikey].max()
-        highest_tanimoto_list.append((inchikey, highest_tanimoto_score, highest_tanimoto_score, inchikey))
-
+    for spectrum in test_spectra:
+        inchikey = spectrum.get("inchikey")[:14]
+        highest_tanimoto_score = highest_tanimoto_scores[inchikey][0][1]
+        exact_match = inchikey == highest_tanimoto_scores[inchikey][0][0]
+        highest_tanimoto_list.append((highest_tanimoto_score, highest_tanimoto_score, exact_match))
     return highest_tanimoto_list
 
 
