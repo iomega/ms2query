@@ -107,8 +107,8 @@ def split_annotated_spectra(spectra: List[Spectrum]) -> Tuple[List[Spectrum], Li
             if smiles is not None and len(smiles) > 0:
                 if inchi is not None and len(inchi) > 0:
                     fully_annotated_spectra.append(spectrum)
-                else:
-                    not_fully_annotated_spectra.append(spectrum)
+                    continue
+        not_fully_annotated_spectra.append(spectrum)
     print(f"From {len(spectra)} spectra, "
           f"{len(spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
     return fully_annotated_spectra, not_fully_annotated_spectra

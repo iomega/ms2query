@@ -134,9 +134,11 @@ def test_remove_not_fully_annotated_spectra(tmp_path):
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
-    results = split_annotated_spectra(library_spectra)[0]
-    assert len(results) == 1, "Expected that 1 spectrum was removed"
-    assert spectrum1.__eq__(results[0]), "Expected an unaltered spectra"
+    results = split_annotated_spectra(library_spectra)
+    assert len(results[0]) == 1, "Expected that 1 spectrum was removed"
+    assert spectrum1.__eq__(results[0][0]), "Expected an unaltered spectra"
+    assert len(results[0]) == 1, "Expected that 1 spectrum was removed"
+    assert spectrum2.__eq__(results[1][0]), "Expected an unaltered spectra"
 
 
 def test_remove_wrong_ion_mode():
