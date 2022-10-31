@@ -1,40 +1,23 @@
 import os
-import numpy as np
 from typing import List, Tuple, Union
 from tqdm import tqdm
-from rdkit import Chem
-from matchms.similarity.vector_similarity_functions import jaccard_index
-from ms2query.create_new_library.create_sqlite_database import add_fingerprint
+import random
+from matchms import Spectrum
+from ms2query.create_new_library.calculate_tanimoto_scores import calculate_single_tanimoto_score, calculate_tanimoto_scores_unique_inchikey
 from ms2query.ms2library import MS2Library
 import sqlite3
 import pandas as pd
 from tqdm.notebook import tqdm
-from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import SiameseModel
-from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
+from spec2vec.vector_operations import cosine_similarity_matrix
 from matchms.calculate_scores import calculate_scores
 from matchms.similarity.ModifiedCosine import ModifiedCosine
 from matchms.similarity.CosineGreedy import CosineGreedy
 
 from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.utils import save_pickled_file, save_json_file
+from ms2query.utils import save_json_file
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.create_new_library.train_ms2query_model import calculate_tanimoto_scores
-
-
-def calculate_tanimoto_score(test_smiles: str,
-                             lib_smiles: str) -> float:
-    """Returns the tanimoto score and a boolean showing if the spectra are exact matches"""
-    test_spectrum_fingerprint = np.array(Chem.RDKFingerprint(Chem.MolFromSmiles(test_smiles), fpSize=2048))
-    library_fingerprint = np.array(Chem.RDKFingerprint(Chem.MolFromSmiles(lib_smiles), fpSize=2048))
-    assert isinstance(test_spectrum_fingerprint, np.ndarray) and library_fingerprint.sum() > 0, \
-        f"Fingerprint for 1 spectrum could not be set smiles is {library_fingerprint}"
-    assert isinstance(library_fingerprint, np.ndarray) and library_fingerprint.sum() > 0, \
-        f"Fingerprint for 1 spectrum could not be set smiles is {library_fingerprint}"
-    # Specify type and calculate similarities
-    tanimoto_score = float(jaccard_index(library_fingerprint, test_spectrum_fingerprint))
-    return tanimoto_score
 
 
 def generate_test_results_ms2query(ms2library: MS2Library,
@@ -53,8 +36,7 @@ def generate_test_results_ms2query(ms2library: MS2Library,
         lib_metadata = get_metadata_from_sqlite(
             ms2library.sqlite_file_name,
             [spectrum_id])[spectrum_id]
-        tanimoto_score = calculate_tanimoto_score(test_spectrum.get("smiles"),
-                                                  lib_metadata["smiles"])
+        tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
         exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
         test_results_ms2query.append((ms2query_model_prediction, tanimoto_score, exact_match))
     return test_results_ms2query
@@ -105,8 +87,7 @@ def select_highest_ms2ds_in_mass_range(ms2deepscores,
         lib_metadata = get_metadata_from_sqlite(
             sqlite_file_location,
             [spectrum_id_highest_ms2_deepscore_in_mass_range])[spectrum_id_highest_ms2_deepscore_in_mass_range]
-        tanimoto_score = calculate_tanimoto_score(test_spectrum.get("smiles"),
-                                                  lib_metadata["smiles"])
+        tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
         exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
         results_ms2deepscore.append((float(ms2deepscores[i][spectrum_id_highest_ms2_deepscore_in_mass_range]),
                                      tanimoto_score,
@@ -165,8 +146,8 @@ def get_modified_cosine_score_results(lib_spectra,
             highest_cosine_score = max(cosine_scores)
             highest_scoring_spectrum = scores_list[cosine_scores.index(highest_cosine_score)][0]
 
-            tanimoto_score = calculate_tanimoto_score(test_spectrum.get("smiles"),
-                                                      highest_scoring_spectrum.get("smiles"))
+            tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"),
+                                                             highest_scoring_spectrum.get("smiles"))
             exact_match = highest_scoring_spectrum.get("inchikey")[:14] == test_spectrum.get("inchikey")[:14]
             best_matches_for_test_spectra.append((highest_cosine_score, tanimoto_score, exact_match))
         else:
@@ -190,8 +171,8 @@ def get_cosines_score_results(lib_spectra,
                 highest_cosine_score = max(cosine_scores)
                 highest_scoring_spectrum = scores_list[cosine_scores.index(highest_cosine_score)][0]
 
-                tanimoto_score = calculate_tanimoto_score(test_spectrum.get("smiles"),
-                                                          highest_scoring_spectrum.get("smiles"))
+                tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"),
+                                                                 highest_scoring_spectrum.get("smiles"))
                 exact_match = highest_scoring_spectrum.get("inchikey")[:14] == test_spectrum.get("inchikey")[:14]
                 best_matches_for_test_spectra.append((highest_cosine_score, tanimoto_score, exact_match))
             else:
@@ -201,43 +182,88 @@ def get_cosines_score_results(lib_spectra,
     return best_matches_for_test_spectra
 
 
-def assert_correct_match(results, sqlite_file_location):
-    correct_match_list = []
-    for best_match_spectrum_id, predicted_score, test_spectrum in tqdm(results):
-        if best_match_spectrum_id is not None:
-            test_spectrum_inchikey = test_spectrum.get("inchikey")[:14]
-            best_match_inchikey = get_metadata_from_sqlite(sqlite_file_location, [best_match_spectrum_id], "spectrumid")[best_match_spectrum_id]["inchikey"][:14]
-            true_match = best_match_inchikey == test_spectrum_inchikey
-            correct_match_list.append((true_match, predicted_score))
-    return correct_match_list
+def create_optimal_results(test_spectra, training_spectra):
+    smiles_test_spectra = [spectrum.get("smiles") for spectrum in test_spectra]
+    smiles_training_spectra = [spectrum.get("smiles") for spectrum in training_spectra]
+    tanimoto_scores = calculate_tanimoto_scores_unique_inchikey(smiles_test_spectra, smiles_training_spectra)
+
+
+    inchikeys = [spectrum.get("inchikey")[:14] for spectrum in test_spectra]
+    unique_inchikeys = list(set(inchikeys))
+
+
+    # remove inchikeys in test spectra from dataframe
+    tanimoto_scores_removed = tanimoto_scores[~tanimoto_scores.index.isin(unique_inchikeys)]
+    highest_tanimoto_list = []
+    for inchikey in inchikeys:
+        highest_tanimoto_score = tanimoto_scores_removed[inchikey].max()
+        highest_tanimoto_list.append((inchikey, highest_tanimoto_score, highest_tanimoto_score, inchikey))
+
+    return highest_tanimoto_list
+
+
+def create_random_results(test_spectra: List[Spectrum],
+                          training_spectra: List[Spectrum]) -> List[Tuple[float, float, bool]]:
+    random_predictions = []
+    for test_spectrum in test_spectra:
+        random_lib_spectrum = random.choice(training_spectra)
+        tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), random_lib_spectrum.get("smiles"))
+        exact_match = random_lib_spectrum.get("inchikey")[:14] == test_spectrum.get("inchikey")[:14]
+        random_predictions.append((random.random(), tanimoto_score, exact_match))
+    return random_predictions
 
 
 def generate_test_results(folder_with_models,
                           training_spectra,
                           test_spectra,
                           output_folder):
+    assert os.path.isdir(output_folder)
     ms2library = create_library_object_from_one_dir(folder_with_models)
+    # todo add assert statements to test that training spectra is matching the sqlite file
 
     # Output of all tools is in the format: [lib_spec_id_highest_score, predicted_score, test_spectrum]
     # Generate MS2Query results
-    ms2query_test_results = generate_test_results_ms2query(ms2library,
-                                                           test_spectra,
-                                                           os.path.join(output_folder, "temporary_ms2query_results.csv"))
-    save_json_file(ms2query_test_results,
-                   os.path.join(output_folder, "ms2query_test_results.json"))
+    # todo replace temporary file name with a temp dir (no risk of accidentally storing)
+    ms2query_test_results = generate_test_results_ms2query(
+        ms2library,
+        test_spectra,
+        os.path.join(output_folder, "temporary_ms2query_results.csv"))
 
     # Generate MS2Deepscore results
     ms2ds_scores = get_all_ms2ds_scores(ms2library.ms2ds_model,
                                         ms2library.ms2ds_embeddings,
                                         test_spectra)
 
-    sqlite_file_name = ms2library.sqlite_file_name
     ms2ds_test_results = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                             test_spectra,
                                                             ms2library.sqlite_file_name,
                                                             allowed_mass_diff=100)
-    # store as json file
-    save_json_file(ms2ds_test_results,
-                   os.path.join(output_folder, "ms2deepscore_test_results.json"))
 
     # Generate Modified cosine results
+    modified_cosine_results = get_modified_cosine_score_results(training_spectra, test_spectra, mass_tolerance=100)
+
+    cosine_results = get_cosines_score_results(training_spectra,
+                                               test_spectra,
+                                               mass_tolerance=100,
+                                               fragment_mass_tolerance=0.25,
+                                               minimum_matched_peaks=0)
+
+
+    # store as json file
+    save_json_file({"ms2deepscore": ms2ds_test_results,
+                    "modified cosine score": modified_cosine_results,
+                    "cosine_score": cosine_results,
+                    "ms2query": ms2query_test_results},
+                   os.path.join(output_folder, "test_results.json"))
+
+
+if __name__ == "__main__":
+    from ms2query.utils import load_matchms_spectrum_objects_from_file
+
+    training_spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_train_all_models/training_spectra_used/cleaned_training_spectra.pickle")
+    test_spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_train_all_models/training_spectra_used/cleaned_test_spectra.pickle")
+
+    generate_test_results("../../data/test_dir/test_train_all_models",
+                          training_spectra,
+                          test_spectra,
+                          "../../data/test_dir/test_generate_test_results")

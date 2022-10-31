@@ -8,18 +8,11 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
-import pytest
-from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper, calculate_closest_related_inchikeys
+from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
 
-
-@pytest.fixture
-def path_to_general_test_files() -> str:
-    return os.path.join(
-        os.getcwd(),
-        'tests/test_files/general_test_files')
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     """Raises an error if the two sqlite files are not equal"""
@@ -126,22 +119,3 @@ def test_get_metadata_from_sqlite():
                 "Expected keys of metadata to be string"
             assert isinstance(metadata[key], (str, float, int, list)), \
                 f"Expected values of metadata to be string {metadata[key]}"
-
-
-def test_calculate_tanimoto_scores(tmp_path, path_to_general_test_files):
-    list_of_spectra = load_pickled_file(os.path.join(
-        path_to_general_test_files, "100_test_spectra.pickle"))
-    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
-    result = calculate_closest_related_inchikeys(list_of_spectra)
-    assert isinstance(result, dict), "expected a dictionary"
-    assert len(result) == 61
-    for inchikey in result:
-        assert isinstance(inchikey, str), "Expected inchikey to be string"
-        assert len(inchikey) ==14, "Expected an inchikey of length 14"
-        assert isinstance(result[inchikey], list), "Expected a dictionary with as keys a list"
-        assert len(result[inchikey]) == 10
-        for score in result[inchikey]:
-            assert isinstance(score, tuple)
-            assert isinstance(score[0], str), "Expected inchikey to be string"
-            assert len(score[0]) == 14, "Expected an inchikey of length 14"
-            assert isinstance(score[1], float)

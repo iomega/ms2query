@@ -10,10 +10,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from ms2query import MS2Library
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.create_new_library.create_sqlite_database import add_fingerprint
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
-from ms2query.create_new_library.utils_train_models import calculate_tanimoto_scores
+from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -90,7 +89,7 @@ def calculate_tanimoto_scores_with_library(sqlite_file_name,
         sqlite_file_name,
         spectra_ids_list)
     library_smiles_list = [metadata_dict[spectrum_id]["smiles"] for spectrum_id in spectra_ids_list]
-    tanimoto_scores = calculate_tanimoto_scores(library_smiles_list, [query_spectrum.get("smiles")])
+    tanimoto_scores = calculate_tanimoto_scores_from_smiles(library_smiles_list, [query_spectrum.get("smiles")])
     tanimoto_df = pd.DataFrame(tanimoto_scores, index=spectra_ids_list, columns=["Tanimoto_score"])
     return tanimoto_df
 

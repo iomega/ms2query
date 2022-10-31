@@ -1,12 +1,9 @@
 import sqlite3
-import numpy as np
-from collections import Counter
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from matchms import Spectrum
-from matchms import calculate_scores
-from matchms.filtering import add_fingerprint
-from matchms.similarity import FingerprintSimilarity
 from tqdm import tqdm
+
+from ms2query.create_new_library.calculate_tanimoto_scores import calculate_highest_tanimoto_score
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
@@ -182,7 +179,7 @@ def fill_inchikeys_table(sqlite_file_name: str,
     conn = sqlite3.connect(sqlite_file_name)
     cur = conn.cursor()
 
-    closest_related_inchikey14s = calculate_closest_related_inchikeys(list_of_spectra)
+    closest_related_inchikey14s = calculate_highest_tanimoto_score(list_of_spectra, list_of_spectra, 10)
 
     # Fill table
     for inchikey14 in tqdm(spectra_belonging_to_inchikey14,
@@ -218,62 +215,3 @@ def get_spectra_belonging_to_inchikey14(spectra: List[Spectrum]
         else:
             spectra_belonging_to_inchikey14[inchikey14_of_spectrum] = [spectrum_id]
     return spectra_belonging_to_inchikey14
-
-
-def select_inchi_for_unique_inchikeys(list_of_spectra: List[Spectrum]) -> (List[Spectrum], List[str]):
-    """"Select spectra with most frequent inchi for unique inchikeys
-
-    Method needed to calculate tanimoto scores"""
-    # Select all inchi's and inchikeys from spectra metadata
-    inchikeys_list = []
-    inchi_list = []
-    for s in list_of_spectra:
-        inchikeys_list.append(s.get("inchikey"))
-        inchi_list.append(s.get("inchi"))
-    inchi_array = np.array(inchi_list)
-    inchikeys14_array = np.array([x[:14] for x in inchikeys_list])
-
-    # Select unique inchikeys
-    inchikeys14_unique = sorted(list({x[:14] for x in inchikeys_list}))
-
-    spectra_with_most_frequent_inchi_per_unique_inchikey = []
-    for inchikey14 in inchikeys14_unique:
-        # Select inchis for inchikey14
-        idx = np.where(inchikeys14_array == inchikey14)[0]
-        inchis_for_inchikey14 = [list_of_spectra[i].get("inchi") for i in idx]
-        # Select the most frequent inchi per inchikey
-        inchi = Counter(inchis_for_inchikey14).most_common(1)[0][0]
-        # Store the ID of the spectrum with the most frequent inchi
-        ID = idx[np.where(inchi_array[idx] == inchi)[0][0]]
-        spectra_with_most_frequent_inchi_per_unique_inchikey.append(list_of_spectra[ID].clone())
-    return spectra_with_most_frequent_inchi_per_unique_inchikey, inchikeys14_unique
-
-
-def calculate_closest_related_inchikeys(list_of_spectra: List[Spectrum]) -> Dict[str, List[Tuple[str, float]]]:
-    spectra_with_most_frequent_inchi_per_inchikey, inchikeys14_unique = select_inchi_for_unique_inchikeys(list_of_spectra)
-    # Add fingerprints
-    fingerprint_spectra = []
-    for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey,
-                         desc="Calculating fingerprints for tanimoto scores"):
-        spectrum_with_fingerprint = add_fingerprint(spectrum,
-                                                    fingerprint_type="daylight",
-                                                    nbits=2048)
-        fingerprint_spectra.append(spectrum_with_fingerprint)
-
-        assert spectrum_with_fingerprint.get("fingerprint") is not None, \
-            f"Fingerprint for 1 spectrum could not be set smiles is {spectrum.get('smiles')}, inchi is {spectrum.get('inchi')}"
-
-    # Specify type and calculate similarities
-    similarity_measure = FingerprintSimilarity("jaccard")
-    closest_related_inchikeys_dict = {}
-    for fingerprint_spectrum in tqdm(fingerprint_spectra,
-                                     desc="Calculating Tanimoto scores"):
-        scores = calculate_scores([fingerprint_spectrum], fingerprint_spectra,
-                                  similarity_measure,
-                                  is_symmetric=False).scores[0]
-        index_highest_scores = np.argpartition(scores, -10)[-10:]
-        sorted_index_highest_scores = np.flip(index_highest_scores[np.argsort(scores[index_highest_scores])])
-        inchikey_and_highest_scores = [(inchikeys14_unique[i], scores[i]) for i in sorted_index_highest_scores]
-
-        closest_related_inchikeys_dict[fingerprint_spectrum.get("inchikey")[:14]] = inchikey_and_highest_scores
-    return closest_related_inchikeys_dict

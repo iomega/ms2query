@@ -1,20 +1,17 @@
 import os
-import pandas as pd
 from typing import List, Dict, Optional
-from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from matchms import Spectrum, calculate_scores
-from matchms.similarity import FingerprintSimilarity
+from matchms import Spectrum
 from ms2deepscore import SpectrumBinner
 from ms2deepscore.data_generators import DataGeneratorAllInchikeys
 from ms2deepscore.models import SiameseModel
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
-from ms2query.create_new_library.create_sqlite_database import select_inchi_for_unique_inchikeys, add_fingerprint
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys
+from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_unique_inchikey
 
 
 def train_ms2ds_model(training_spectra,
@@ -71,29 +68,6 @@ def train_ms2ds_model(training_spectra,
     return history.history
 
 
-def calculate_tanimoto_scores(list_of_spectra: List[Spectrum]):
-    spectra_with_most_frequent_inchi_per_inchikey, unique_inchikeys = select_inchi_for_unique_inchikeys(list_of_spectra)
-    # Add fingerprints
-    fingerprint_spectra = []
-    for spectrum in tqdm(spectra_with_most_frequent_inchi_per_inchikey,
-                         desc="Calculating fingerprints for tanimoto scores"):
-        spectrum_with_fingerprint = add_fingerprint(spectrum,
-                                                    fingerprint_type="daylight",
-                                                    nbits=2048)
-        fingerprint_spectra.append(spectrum_with_fingerprint)
-
-        assert spectrum_with_fingerprint.get("fingerprint") is not None, \
-            f"Fingerprint for 1 spectrum could not be set smiles is {spectrum.get('smiles')}, inchi is {spectrum.get('inchi')}"
-
-    # Specify type and calculate similarities
-    similarity_measure = FingerprintSimilarity("jaccard")
-    tanimoto_scores = calculate_scores(fingerprint_spectra, fingerprint_spectra,
-                                       similarity_measure,
-                                       is_symmetric=True).scores
-    tanimoto_df = pd.DataFrame(tanimoto_scores, index=unique_inchikeys, columns=unique_inchikeys)
-    return tanimoto_df
-
-
 def plot_history(history: Dict[str, List[float]],
                  file_name: Optional[str] = None):
     plt.plot(history['loss'])
@@ -116,7 +90,7 @@ def train_ms2deepscore_wrapper(spectra: List[Spectrum],
     assert not os.path.isfile(output_model_file_name), "The MS2Deepscore output model file name already exists"
     training_spectra, validation_spectra = split_spectra_on_inchikeys(spectra,
                                                                       fraction_validation_spectra)
-    tanimoto_score_df = calculate_tanimoto_scores(spectra)
+    tanimoto_score_df = calculate_tanimoto_scores_unique_inchikey(spectra, spectra)
     history = train_ms2ds_model(training_spectra, validation_spectra,
                                 tanimoto_score_df, output_model_file_name,
                                 epochs)
