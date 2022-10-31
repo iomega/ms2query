@@ -145,4 +145,5 @@ def preprocess_library_spectra(spectra: List[Spectrum],
     spectra = [harmonize_annotation(s, do_pubchem_lookup) for s in tqdm(spectra, desc="Harmonizing annotations")]
     spectra = normalize_and_filter_peaks_multiple_spectra(spectra)
     annotated_spectra, unannotated_spectra = split_annotated_spectra(spectra)
+    # Both annotated and unannotated spectra are returned to make it possible to still use them for Spec2Vec training
     return annotated_spectra, unannotated_spectra
