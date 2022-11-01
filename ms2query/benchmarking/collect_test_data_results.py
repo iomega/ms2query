@@ -211,15 +211,14 @@ def create_random_results(test_spectra: List[Spectrum],
 def generate_test_results(folder_with_models,
                           training_spectra,
                           test_spectra,
-                          output_folder):
-    assert os.path.isdir(output_folder)
+                          results_file_name):
+    assert not os.path.isfile(results_file_name), "File already exists"
     ms2library = create_library_object_from_one_dir(folder_with_models)
     assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
         "The number of spectra in the library is not equal to the number of training spectra"
 
     # Output of all tools is in the format: [lib_spec_id_highest_score, predicted_score, test_spectrum]
     # Generate MS2Query results
-    # todo replace temporary file name with a temp dir (no risk of accidentally storing)
     ms2query_test_results = generate_test_results_ms2query(ms2library, test_spectra)
 
     # Generate MS2Deepscore results
@@ -251,7 +250,7 @@ def generate_test_results(folder_with_models,
                     "ms2query": ms2query_test_results,
                     "optimal": optimal_results,
                     "random": random_results},
-                   os.path.join(output_folder, "test_results.json"))
+                   results_file_name)
 
 
 if __name__ == "__main__":
