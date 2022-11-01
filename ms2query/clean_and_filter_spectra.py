@@ -75,13 +75,14 @@ def harmonize_annotation(spectrum: Spectrum,
     spectrum = msfilters.derive_inchikey_from_inchi(spectrum)
 
     # Adding parent mass is relevant for pubchem lookup
-    spectrum = msfilters.add_parent_mass(spectrum, estimate_from_adduct=True)
     if do_pubchem_lookup:
-        spectrum = pubchem_metadata_lookup(spectrum,
-                                           mass_tolerance=2.0,
-                                           allowed_differences=[(18.03, 0.01),
-                                                                (18.01, 0.01)],
-                                           name_search_depth=15)
+        if not check_fully_annotated(spectrum):
+            spectrum = msfilters.add_parent_mass(spectrum, estimate_from_adduct=True)
+            spectrum = pubchem_metadata_lookup(spectrum,
+                                               mass_tolerance=2.0,
+                                               allowed_differences=[(18.03, 0.01),
+                                                                    (18.01, 0.01)],
+                                               name_search_depth=15)
     return spectrum
 
 
@@ -96,19 +97,26 @@ def remove_wrong_ion_modes(spectra, ion_mode_to_keep):
     return spectra_to_keep
 
 
+def check_fully_annotated(spectrum: Spectrum) -> bool:
+    inchikey = spectrum.get("inchikey")
+    if inchikey is not None and len(inchikey) > 13:
+        smiles = spectrum.get("smiles")
+        inchi = spectrum.get("inchi")
+        if smiles is not None and len(smiles) > 0:
+            if inchi is not None and len(inchi) > 0:
+                return True
+    return False
+
+
 def split_annotated_spectra(spectra: List[Spectrum]) -> Tuple[List[Spectrum], List[Spectrum]]:
     fully_annotated_spectra = []
     not_fully_annotated_spectra = []
     for spectrum in spectra:
-        inchikey = spectrum.get("inchikey")
-        if inchikey is not None and len(inchikey) > 13:
-            smiles = spectrum.get("smiles")
-            inchi = spectrum.get("inchi")
-            if smiles is not None and len(smiles) > 0:
-                if inchi is not None and len(inchi) > 0:
-                    fully_annotated_spectra.append(spectrum)
-                    continue
-        not_fully_annotated_spectra.append(spectrum)
+        fully_annotated = check_fully_annotated(spectrum)
+        if fully_annotated:
+            fully_annotated_spectra.append(spectrum)
+        else:
+            not_fully_annotated_spectra.append(spectrum)
     print(f"From {len(spectra)} spectra, "
           f"{len(spectra) - len(fully_annotated_spectra)} are removed since they are not fully annotated")
     return fully_annotated_spectra, not_fully_annotated_spectra
@@ -137,9 +145,9 @@ def normalize_and_filter_peaks_multiple_spectra(spectrum_list: List[SpectrumType
     return [spectrum for spectrum in spectrum_list if spectrum]
 
 
-def preprocess_library_spectra(spectra: List[Spectrum],
-                               ion_mode_to_keep,
-                               do_pubchem_lookup=True) -> Tuple[List[Spectrum], List[Spectrum]]:
+def clean_normalize_and_split_annotated_spectra(spectra: List[Spectrum],
+                                                ion_mode_to_keep,
+                                                do_pubchem_lookup=True) -> Tuple[List[Spectrum], List[Spectrum]]:
     spectra = [clean_metadata(s) for s in tqdm(spectra, desc="Cleaning metadata")]
     spectra = remove_wrong_ion_modes(spectra, ion_mode_to_keep)
     spectra = [harmonize_annotation(s, do_pubchem_lookup) for s in tqdm(spectra, desc="Harmonizing annotations")]
