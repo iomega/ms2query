@@ -14,16 +14,19 @@ from tqdm import tqdm
 
 def get_fingerprint(smiles: str):
     fingerprint = np.array(Chem.RDKFingerprint(Chem.MolFromSmiles(smiles), fpSize=2048))
-    assert isinstance(fingerprint, np.ndarray) and fingerprint.sum() > 0, \
-        f"Fingerprint for 1 spectrum could not be set smiles is {fingerprint}"
+    assert isinstance(fingerprint, np.ndarray), \
+        f"Fingerprint for 1 spectrum could not be set smiles is {smiles}"
     return fingerprint
 
 
 def calculate_tanimoto_scores_from_smiles(list_of_smiles_1: List[str],
                                           list_of_smiles_2: List[str]) -> np.ndarray:
     """Returns a 2d ndarray containing the tanimoto scores between the smiles"""
-    fingerprints_1 = np.array([get_fingerprint(spectrum) for spectrum in list_of_smiles_1])
-    fingerprints_2 = np.array([get_fingerprint(spectrum) for spectrum in list_of_smiles_2])
+    fingerprints_1 = np.array([get_fingerprint(spectrum) for spectrum in tqdm(list_of_smiles_1,
+                                                                              desc="Calculating fingerprints")])
+    fingerprints_2 = np.array([get_fingerprint(spectrum) for spectrum in tqdm(list_of_smiles_2,
+                                                                              desc="Calculating fingerprints")])
+    print("Calculating tanimoto scores")
     tanimoto_scores = jaccard_similarity_matrix(fingerprints_1, fingerprints_2)
     return tanimoto_scores
 
