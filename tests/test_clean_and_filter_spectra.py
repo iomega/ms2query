@@ -9,7 +9,7 @@ from ms2query.clean_and_filter_spectra import (create_spectrum_documents,
                                                remove_wrong_ion_modes,
                                                harmonize_annotation,
                                                split_annotated_spectra,
-                                               preprocess_library_spectra)
+                                               clean_normalize_and_split_annotated_spectra)
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -127,7 +127,7 @@ def test_remove_not_fully_annotated_spectra(tmp_path):
         intensities=np.array([0.11106008, 0.12347332, 0.16352988, 0.17101522, 0.17312992, 0.19262333, 0.21442898,
                               0.42173288, 0.51071955, 1.], dtype="float"),
         metadata={'pepmass': (907.0, None), 'spectrumid': 'CCMSLIB00000001760', 'precursor_mz': 907.0,
-                  'smiles': 'CCCC', "inchikey": "AAAAAAAAAAAAAAAA", "inchi": "this is a test inci", 'ionmode': "positive", "charge": 1})
+                  'smiles': 'CCCC', "inchikey": "CZMRCDWAGMRECN-UGDNZRGBSA-N", "inchi": "InChI=1S/C12H22O11/c13-1-4-6(16)8(18)9(19)11(21-4)23-12(3-15)10(20)7(17)5(2-14)22-12/h4-11,13-20H,1-3H2/t4-,5-,6-,7-,8+,9-,10+,11-,12+/m1/s1", 'ionmode': "positive", "charge": 1})
     spectrum2 = Spectrum(
         mz=np.array([538.003174, 539.217773], dtype="float"),
         intensities=np.array([0.28046377, 0.28900242], dtype="float"),
@@ -173,7 +173,7 @@ def test_preprocess_library_spectra():
                               0.41616014, 0.71323034, 1.], dtype="float"),
         metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
-    cleaned_spectra = preprocess_library_spectra([spectrum1, spectrum2], "positive")[0]
+    cleaned_spectra = clean_normalize_and_split_annotated_spectra([spectrum1, spectrum2], "positive")[0]
     for spectrum in cleaned_spectra:
         assert isinstance(spectrum, Spectrum)
 
