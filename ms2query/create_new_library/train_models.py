@@ -5,7 +5,7 @@ from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wr
 from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import save_pickled_file
-from ms2query.clean_and_filter_spectra import preprocess_library_spectra, create_spectrum_documents
+from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra, create_spectrum_documents
 
 
 class SettingsTrainingModels:
@@ -26,14 +26,10 @@ class SettingsTrainingModels:
         self.spec2vec_iterations = default_settings["spec2vec_iterations"]
 
 
-def train_all_models(training_spectra,
-                     ion_mode,
+def train_all_models(annotated_training_spectra,
+                     unannotated_training_spectra,
                      output_folder,
                      other_settings: dict = None):
-    annotated_training_spectra, unannotated_training_spectra = preprocess_library_spectra(training_spectra,
-                                                                                          ion_mode_to_keep=ion_mode,
-                                                                                          do_pubchem_lookup=False)
-
     settings = SettingsTrainingModels(other_settings)
     # set file names of new generated files
     ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")
