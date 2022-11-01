@@ -88,13 +88,14 @@ The models for spec2vec, ms2deepscore and ms2query can be downloaded from the ze
 
 ```python
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
-from ms2query.clean_and_filter_spectra import preprocess_library_spectra
+from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra
 from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 spectrum_file_location =  # The file location of the library spectra
 library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location)
 # Fill in the missing values:
-cleaned_library_spectra = preprocess_library_spectra(library_spectra, ion_mode_to_keep="")[0] # fill in "positive" or "negative"
+cleaned_library_spectra = clean_normalize_and_split_annotated_spectra(library_spectra, ion_mode_to_keep="")[
+    0]  # fill in "positive" or "negative"
 library_creator = LibraryFilesCreator(cleaned_library_spectra,
                                       output_directory="",  # For instance "data/library_data/all_GNPS_positive_mode_"
                                       ms2ds_model_file_name="",  # The file location of the ms2ds model
