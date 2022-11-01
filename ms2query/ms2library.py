@@ -105,6 +105,13 @@ class MS2Library:
         self.precursors_library = get_precursor_mz(
             self.sqlite_file_name)
 
+        assert self.ms2ds_embeddings.shape[0] == self.s2v_embeddings.shape[0], \
+            "The number ms2deepscore embeddings is not equal to the number of spectra with s2v embeddings"
+
+        assert self.ms2ds_embeddings.shape[0] == len(self.precursors_library), \
+            "Mismatch of library files. " \
+            "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
+
         # Load inchikey information into memory
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
