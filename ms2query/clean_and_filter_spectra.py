@@ -7,7 +7,9 @@ from typing import List, Tuple
 import matchms.filtering as msfilters
 from tqdm import tqdm
 from matchms import Spectrum
+from matchms.utils import is_valid_inchi, is_valid_inchikey, is_valid_smiles
 from matchms.typing import SpectrumType
+from matchms.logging_functions import set_matchms_logger_level
 from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from spec2vec import SpectrumDocument
 
@@ -59,6 +61,7 @@ def create_spectrum_documents(query_spectra: List[Spectrum],
 
 def harmonize_annotation(spectrum: Spectrum,
                          do_pubchem_lookup) -> Spectrum:
+    set_matchms_logger_level("CRITICAL")
     # Here, undefiend entries will be harmonized (instead of having a huge variation of None,"", "N/A" etc.)
     spectrum = msfilters.harmonize_undefined_inchikey(spectrum)
     spectrum = msfilters.harmonize_undefined_inchi(spectrum)
@@ -98,20 +101,20 @@ def remove_wrong_ion_modes(spectra, ion_mode_to_keep):
 
 
 def check_fully_annotated(spectrum: Spectrum) -> bool:
-    inchikey = spectrum.get("inchikey")
-    if inchikey is not None and len(inchikey) > 13:
-        smiles = spectrum.get("smiles")
-        inchi = spectrum.get("inchi")
-        if smiles is not None and len(smiles) > 0:
-            if inchi is not None and len(inchi) > 0:
-                return True
-    return False
+    if not is_valid_smiles(spectrum.get("smiles")):
+        return False
+    if not is_valid_inchikey(spectrum.get("inchikey")):
+        return False
+    if not is_valid_inchi(spectrum.get("inchi")):
+        return False
+    return True
 
 
 def split_annotated_spectra(spectra: List[Spectrum]) -> Tuple[List[Spectrum], List[Spectrum]]:
     fully_annotated_spectra = []
     not_fully_annotated_spectra = []
-    for spectrum in spectra:
+    for spectrum in tqdm(spectra,
+                         desc="Splitting annotated and unannotated spectra"):
         fully_annotated = check_fully_annotated(spectrum)
         if fully_annotated:
             fully_annotated_spectra.append(spectrum)
