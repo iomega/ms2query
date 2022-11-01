@@ -2,6 +2,7 @@ import os
 from typing import List, Tuple, Union
 from tqdm import tqdm
 import random
+import tempfile
 from matchms import Spectrum
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_single_tanimoto_score, calculate_highest_tanimoto_score
 from ms2query.ms2library import MS2Library
@@ -21,13 +22,15 @@ from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 
 def generate_test_results_ms2query(ms2library: MS2Library,
-                                   test_spectra,
-                                   temporary_file_csv_results) -> List[Tuple[float, float, bool]]:
-    assert not os.path.isfile(temporary_file_csv_results), "file already exists"
-    ms2library.analog_search_store_in_csv(test_spectra,
-                                          results_csv_file_location=temporary_file_csv_results)
-    df_results_ms2query = pd.read_csv(temporary_file_csv_results)
-    os.remove(temporary_file_csv_results)
+                                   test_spectra: List[Spectrum]
+                                   ) -> List[Tuple[float, float, bool]]:
+    # Create a temporary directory for the csv results
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        temporary_file_csv_results = os.path.join(tmpdirname, "temporary_csv_file.csv")
+        ms2library.analog_search_store_in_csv(test_spectra,
+                                              results_csv_file_location=temporary_file_csv_results)
+        df_results_ms2query = pd.read_csv(temporary_file_csv_results)
+
     test_results_ms2query = []
     for spectrum_id, ms2query_model_prediction, query_spectrum_nr in df_results_ms2query[
         ["spectrum_ids", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
@@ -211,15 +214,13 @@ def generate_test_results(folder_with_models,
                           output_folder):
     assert os.path.isdir(output_folder)
     ms2library = create_library_object_from_one_dir(folder_with_models)
-    # todo add assert statements to test that training spectra is matching the sqlite file
+    assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
+        "The number of spectra in the library is not equal to the number of training spectra"
 
     # Output of all tools is in the format: [lib_spec_id_highest_score, predicted_score, test_spectrum]
     # Generate MS2Query results
     # todo replace temporary file name with a temp dir (no risk of accidentally storing)
-    ms2query_test_results = generate_test_results_ms2query(
-        ms2library,
-        test_spectra,
-        os.path.join(output_folder, "temporary_ms2query_results.csv"))
+    ms2query_test_results = generate_test_results_ms2query(ms2library, test_spectra)
 
     # Generate MS2Deepscore results
     ms2ds_scores = get_all_ms2ds_scores(ms2library.ms2ds_model,
@@ -240,12 +241,16 @@ def generate_test_results(folder_with_models,
                                                fragment_mass_tolerance=0.25,
                                                minimum_matched_peaks=0)
 
+    optimal_results = create_optimal_results(test_spectra, training_spectra)
+    random_results = create_random_results(test_spectra, training_spectra)
 
     # store as json file
     save_json_file({"ms2deepscore": ms2ds_test_results,
                     "modified cosine score": modified_cosine_results,
                     "cosine_score": cosine_results,
-                    "ms2query": ms2query_test_results},
+                    "ms2query": ms2query_test_results,
+                    "optimal": optimal_results,
+                    "random": random_results},
                    os.path.join(output_folder, "test_results.json"))
 
 

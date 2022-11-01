@@ -44,10 +44,8 @@ def test_spectra():
     return [spectrum1, spectrum2]
 
 
-def test_generate_test_results_ms2query(ms2library_without_spectrum_id, test_spectra, tmp_path):
-    result = generate_test_results_ms2query(ms2library_without_spectrum_id,
-                                            test_spectra,
-                                            os.path.join(tmp_path, "temporary.csv"))
+def test_generate_test_results_ms2query(ms2library_without_spectrum_id, test_spectra):
+    result = generate_test_results_ms2query(ms2library_without_spectrum_id, test_spectra)
     assert result[0] == (0.5645, 0.003861003861003861, False)
     assert result[1] == (0.409, 0.010610079575596816, False)
 
