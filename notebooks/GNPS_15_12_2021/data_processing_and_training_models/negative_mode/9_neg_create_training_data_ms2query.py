@@ -1,5 +1,5 @@
 import os
-from ms2query.create_new_library.select_data_for_training_ms2query_nn import \
+from ms2query.create_new_library.train_ms2query_model import \
     DataCollectorForTraining
 
 
