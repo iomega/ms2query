@@ -12,6 +12,8 @@ def split_k_fold_cross_validation(spectra: List[Spectrum],
                                   k: int,
                                   ion_mode,
                                   output_folder):
+    if not os.path.isdir(output_folder):
+        os.mkdir(output_folder)
     annotated_spectra, unnnotated_spectra = clean_normalize_and_split_annotated_spectra(spectra,
                                                                                         ion_mode,
                                                                                         True)
