@@ -6,6 +6,8 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file, save_pickled
 from ms2query.create_new_library.train_models import train_all_models
 from ms2query.benchmarking.collect_test_data_results import generate_test_results
 from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra
+from ms2query.ms2library import create_library_object_from_one_dir
+from ms2query.utils import save_json_file
 
 
 def split_k_fold_cross_validation(spectra: List[Spectrum],
@@ -54,18 +56,24 @@ def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder,
 
 def train_models_and_create_test_results(annotated_training_spectra: List[Spectrum],
                                          unannotated_training_spectra: List[Spectrum],
-                                         test_spectra,
+                                         test_spectra: List[Spectrum],
                                          output_folder: str
                                          ):
     models_folder = os.path.join(output_folder, "models")
-    train_all_models(annotated_training_spectra,
-                     unannotated_training_spectra,
-                     models_folder
-                     )
-
+    if not os.path.isdir(models_folder):
+        os.mkdir(models_folder)
     test_results_file_name = os.path.join(output_folder,
                                           "test_results.json")
-    generate_test_results(models_folder,
-                          annotated_training_spectra,
-                          test_spectra,
-                          test_results_file_name)
+    assert not os.path.isfile(test_results_file_name), "File already exists"
+
+    train_all_models(annotated_training_spectra,
+                     unannotated_training_spectra,
+                     models_folder)
+
+    ms2library = create_library_object_from_one_dir(models_folder)
+    test_results = generate_test_results(ms2library,
+                                         annotated_training_spectra,
+                                         test_spectra)
+    # store as json file
+    save_json_file(test_results,
+                   test_results_file_name)

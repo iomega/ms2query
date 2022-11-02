@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 from tqdm import tqdm
 import random
 import tempfile
@@ -15,8 +15,6 @@ from matchms.calculate_scores import calculate_scores
 from matchms.similarity.ModifiedCosine import ModifiedCosine
 from matchms.similarity.CosineGreedy import CosineGreedy
 
-from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.utils import save_json_file
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 
 
@@ -209,12 +207,9 @@ def create_random_results(test_spectra: List[Spectrum],
     return random_predictions
 
 
-def generate_test_results(folder_with_models,
-                          training_spectra,
-                          test_spectra,
-                          results_file_name):
-    assert not os.path.isfile(results_file_name), "File already exists"
-    ms2library = create_library_object_from_one_dir(folder_with_models)
+def generate_test_results(ms2library: MS2Library,
+                          training_spectra: List[Spectrum],
+                          test_spectra: List[Spectrum]) -> Dict[str, List[Tuple[float, float, bool]]]:
     assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
         "The number of spectra in the library is not equal to the number of training spectra"
 
@@ -244,11 +239,10 @@ def generate_test_results(folder_with_models,
     optimal_results = create_optimal_results(test_spectra, training_spectra)
     random_results = create_random_results(test_spectra, training_spectra)
 
-    # store as json file
-    save_json_file({"ms2deepscore": ms2ds_test_results,
-                    "modified cosine score": modified_cosine_results,
-                    "cosine_score": cosine_results,
-                    "ms2query": ms2query_test_results,
-                    "optimal": optimal_results,
-                    "random": random_results},
-                   results_file_name)
+    dictionary_with_results = {"ms2deepscore": ms2ds_test_results,
+                               "modified cosine score": modified_cosine_results,
+                               "cosine_score": cosine_results,
+                               "ms2query": ms2query_test_results,
+                               "optimal": optimal_results,
+                               "random": random_results}
+    return dictionary_with_results

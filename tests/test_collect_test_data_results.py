@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import pytest
+from typing import Dict, List, Tuple
 import numpy as np
 from matchms import Spectrum
 from ms2query.benchmarking.collect_test_data_results import (generate_test_results_ms2query,
@@ -8,9 +9,13 @@ from ms2query.benchmarking.collect_test_data_results import (generate_test_resul
                                                              select_highest_ms2ds_in_mass_range,
                                                              get_modified_cosine_score_results,
                                                              get_cosines_score_results,
-                                                             create_optimal_results)
+                                                             create_optimal_results,
+                                                             create_random_results,
+                                                             generate_test_results)
+
 from tests.test_use_files_without_spectrum_id import ms2library_without_spectrum_id
 from ms2query.utils import load_matchms_spectrum_objects_from_file
+from tests.test_utils import path_to_general_test_files
 
 
 @pytest.fixture
@@ -98,6 +103,22 @@ def test_get_cosines_score_results(test_spectra):
 def test_create_optimal_results(test_spectra):
     results = create_optimal_results(test_spectra, test_spectra)
     assert results == [(1.0, 1.0, True), (1.0, 1.0, True)]
+
+
+def test_random_results(test_spectra):
+    results = create_random_results(test_spectra,
+                                    test_spectra)
+    assert len(results) == len(test_spectra)
+
+
+def test_generate_test_results(test_spectra, ms2library_without_spectrum_id, path_to_general_test_files):
+    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
+        path_to_general_test_files,
+        '100_test_spectra.pickle'))
+    result = generate_test_results(ms2library_without_spectrum_id,
+                                   library_spectra,
+                                   test_spectra)
+    assert isinstance(result, dict)
 
 
 if __name__ == "__main__":
