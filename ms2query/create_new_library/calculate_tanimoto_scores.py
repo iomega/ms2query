@@ -1,11 +1,9 @@
 from collections import Counter
-from typing import List, Dict, Tuple
+from typing import List
 
 import pandas as pd
-from matchms import Spectrum, calculate_scores
+from matchms import Spectrum
 import numpy as np
-from matchms.filtering import add_fingerprint
-from matchms.similarity import FingerprintSimilarity
 
 from matchms.similarity.vector_similarity_functions import jaccard_similarity_matrix, jaccard_index
 from rdkit import Chem

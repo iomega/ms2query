@@ -33,7 +33,8 @@ def load_ms2query_model(ms2query_model_file_name):
 
 def save_pickled_file(obj, filename: str):
     assert not os.path.exists(filename), "File already exists"
-    pickle.dump(obj, open(filename, "wb"))
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
 
 
 def save_json_file(data, filename):

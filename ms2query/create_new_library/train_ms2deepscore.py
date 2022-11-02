@@ -96,15 +96,3 @@ def train_ms2deepscore_wrapper(spectra: List[Spectrum],
                                 epochs)
     print(f"The training history is: {history}")
     plot_history(history, ms2ds_history_file_name)
-
-
-if __name__ == "__main__":
-    from ms2query.utils import load_matchms_spectrum_objects_from_file
-    data_folder = os.path.join(os.getcwd(), "../../data/")
-    spectra = load_matchms_spectrum_objects_from_file(os.path.join(data_folder,
-                                                                   "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_positive_annotated.pickle"))
-    spectra = spectra[:1000]
-    model_file_name = os.path.join("../../data/test_dir/test_library_files_creator", "new_ms2ds_model_1.hdf5")
-    history_file = os.path.join("../../data/test_dir/test_library_files_creator", "ms2ds_history.svg")
-
-    train_ms2deepscore_wrapper(spectra, model_file_name, 10, 2, history_file)

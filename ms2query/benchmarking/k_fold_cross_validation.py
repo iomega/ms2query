@@ -69,28 +69,3 @@ def train_models_and_create_test_results(annotated_training_spectra: List[Spectr
                           annotated_training_spectra,
                           test_spectra,
                           test_results_file_name)
-
-
-if __name__ == "__main__":
-    from ms2query.utils import load_matchms_spectrum_objects_from_file
-
-    data_folder = os.path.join(os.getcwd(), "../../data/")
-    # spectra = load_matchms_spectrum_objects_from_file(os.path.join(data_folder,
-    #                                                                "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_raw_spectra.pickle"))
-    # spectra = spectra[:2000]
-    # annotated_library_spectra, unnnotated_library_spectra = clean_normalize_and_split_annotated_spectra(spectra,
-    #                                                                                                     "positive",
-    #                                                                                                     True)
-    # spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_train_all_models/training_spectra_used/cleaned_training_spectra.pickle")
-    # test_spectra = spectra[:10]
-    # annotated_library_spectra = spectra[10:-10]
-    # unannotated_library_spectra = spectra[-10:]
-    #
-    # generate_test_results(os.path.join(data_folder, "test_dir/test_k_fold_cross_validation", "models"),
-    #                       annotated_library_spectra,
-    #                       test_spectra,
-    #                       os.path.join(data_folder, "test_dir/test_k_fold_cross_validation", "test_results.json"))
-    # train_models_and_create_test_results(annotated_library_spectra,
-    #                                      unannotated_library_spectra,
-    #                                      test_spectra,
-    #                                      os.path.join(data_folder, "test_dir/test_k_fold_cross_validation"))

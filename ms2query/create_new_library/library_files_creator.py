@@ -60,7 +60,6 @@ class LibraryFilesCreator:
         ms2ds_model_file_name:
             File name of a ms2ds model
         """
-        # pylint: disable=too-many-arguments
         self.progress_bars = True
         self.output_directory = output_directory
         if not os.path.exists(self.output_directory):

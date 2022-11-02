@@ -1,11 +1,10 @@
 import os
-from tqdm import tqdm
 from spec2vec.model_building import train_new_word2vec_model
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper
 from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.utils import save_pickled_file
-from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra, create_spectrum_documents
+from ms2query.clean_and_filter_spectra import create_spectrum_documents
 
 
 class SettingsTrainingModels:
@@ -17,7 +16,7 @@ class SettingsTrainingModels:
                             "ms2query_fraction_for_making_pairs": 40}
         if settings:
             for setting in settings:
-                assert setting in list(default_settings.keys()), \
+                assert setting in default_settings, \
                     f"Available settings are {default_settings.keys()}"
                 default_settings[setting] = settings[setting]
         self.ms2ds_fraction_validation_spectra: float = default_settings["ms2ds_fraction_validation_spectra"]
@@ -75,8 +74,9 @@ if __name__ == "__main__":
     from ms2query.utils import load_matchms_spectrum_objects_from_file
 
     data_folder = os.path.join(os.getcwd(), "../../data/")
-    spectra = load_matchms_spectrum_objects_from_file(os.path.join(data_folder,
-                                                                   "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_raw_spectra.pickle"))
+    spectra = load_matchms_spectrum_objects_from_file(
+        os.path.join(data_folder,
+                     "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_raw_spectra.pickle"))
     spectra = spectra[:2000]
 
     train_all_models(spectra,

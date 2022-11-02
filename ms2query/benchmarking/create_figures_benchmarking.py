@@ -1,9 +1,6 @@
-import os
-import pandas as pd
 from typing import List, Tuple, Dict
 import numpy as np
 from matplotlib import pyplot as plt
-from ms2query.utils import load_pickled_file
 
 
 def select_threshold_for_recall(predictions: List[Tuple[float, float, bool]],
@@ -79,9 +76,9 @@ def avg_tanimoto_vs_percentage_found(selection_criteria_and_tanimoto,
     plt.legend(loc="lower right",
                title="Select on:")
 
-
-def add_colour_and_linetype_labels(test_results):
-    pass
+#
+# def add_colour_and_linetype_labels(test_results):
+#     pass
 
 
 if __name__ == "__main__":

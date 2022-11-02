@@ -1,11 +1,7 @@
-import numpy as np
-import sys
 from typing import List
 import pandas as pd
 from tqdm import tqdm
-from rdkit import Chem
 from matchms import Spectrum
-from matchms.similarity.vector_similarity_functions import jaccard_similarity_matrix
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from ms2query import MS2Library
@@ -13,11 +9,6 @@ from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
-
-if sys.version_info < (3, 8):
-    import pickle5 as pickle
-else:
-    import pickle
 
 
 class DataCollectorForTraining():
@@ -33,7 +24,6 @@ class DataCollectorForTraining():
             The number of highest scoring matches of MS2Deepscore that are used. For these top library matches all
             scores are calculated
         """
-        # pylint: disable=too-many-arguments
         self.ms2library = ms2library
         self.preselection_cut_off = preselection_cut_off
 

@@ -20,7 +20,7 @@ def split_spectra_in_random_inchikey_sets(spectra: List[Spectrum],
     unique_inchikeys = select_unique_inchikeys(spectra)
     random.shuffle(unique_inchikeys)
     fraction_size = len(unique_inchikeys) // k
-    for i in range(k):
+    for _ in range(k):
         validation_inchikeys = unique_inchikeys[-fraction_size:]
         unique_inchikeys = unique_inchikeys[:-fraction_size]
         spectrum_set, spectra = select_spectra_belonging_to_inchikey(spectra, validation_inchikeys)

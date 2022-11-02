@@ -2,7 +2,7 @@ import ast
 import io
 import os
 import sqlite3
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum

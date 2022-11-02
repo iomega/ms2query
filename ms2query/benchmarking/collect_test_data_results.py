@@ -8,7 +8,6 @@ from ms2query.create_new_library.calculate_tanimoto_scores import calculate_sing
 from ms2query.ms2library import MS2Library
 import sqlite3
 import pandas as pd
-from tqdm.notebook import tqdm
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import SiameseModel
 from spec2vec.vector_operations import cosine_similarity_matrix
@@ -127,7 +126,7 @@ def select_spectra_within_mass_range(spectra, lower_bound, upper_bound):
     selected_spectra = []
     for spectrum in spectra:
         precursor_mz = spectrum.get('precursor_mz')
-        if precursor_mz <= upper_bound and precursor_mz >= lower_bound:
+        if upper_bound >= precursor_mz >= lower_bound:
             selected_spectra.append(spectrum)
     return selected_spectra
 
@@ -168,7 +167,9 @@ def get_cosines_score_results(lib_spectra,
         precursor_mz = test_spectrum.get("precursor_mz")
         selected_lib_spectra = select_spectra_within_mass_range(lib_spectra, precursor_mz-mass_tolerance, precursor_mz+mass_tolerance)
         if len(selected_lib_spectra) != 0:
-            scores_list = calculate_scores(selected_lib_spectra, [test_spectrum], CosineGreedy(tolerance=fragment_mass_tolerance)).scores_by_query(test_spectrum)
+            scores_list = calculate_scores(selected_lib_spectra,
+                                           [test_spectrum],
+                                           CosineGreedy(tolerance=fragment_mass_tolerance)).scores_by_query(test_spectrum)
             cosine_scores = [scores_tuple[1].item()[0] for scores_tuple in scores_list if scores_tuple[1].item()[1] >= minimum_matched_peaks]
             if len(cosine_scores) != 0:
                 highest_cosine_score = max(cosine_scores)
@@ -251,15 +252,3 @@ def generate_test_results(folder_with_models,
                     "optimal": optimal_results,
                     "random": random_results},
                    results_file_name)
-
-
-if __name__ == "__main__":
-    from ms2query.utils import load_matchms_spectrum_objects_from_file
-
-    training_spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_train_all_models/training_spectra_used/cleaned_training_spectra.pickle")
-    test_spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_train_all_models/training_spectra_used/cleaned_test_spectra.pickle")
-
-    generate_test_results("../../data/test_dir/test_train_all_models",
-                          training_spectra,
-                          test_spectra,
-                          "../../data/test_dir/test_generate_test_results")
