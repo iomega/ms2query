@@ -70,10 +70,6 @@ def train_all_models(annotated_training_spectra,
                                                 ms2deepscore_model_file_name)
     library_files_creator.create_all_library_files()
 
-    # Store annotated training spectra
-    save_pickled_file(annotated_training_spectra,
-                      os.path.join(output_folder, "annotated_training_spectra.pickle"))
-
 
 if __name__ == "__main__":
     from ms2query.utils import load_matchms_spectrum_objects_from_file
