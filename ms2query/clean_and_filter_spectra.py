@@ -18,6 +18,7 @@ def clean_metadata(spectrum: Spectrum) -> Spectrum:
     spectrum = msfilters.default_filters(spectrum)
     spectrum = msfilters.add_retention_index(spectrum)
     spectrum = msfilters.add_retention_time(spectrum)
+    spectrum = msfilters.require_precursor_mz(spectrum)
     return spectrum
 
 
