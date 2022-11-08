@@ -80,18 +80,24 @@ def select_highest_ms2ds_in_mass_range(ms2deepscores,
                                                                   precursor_mz_query_spectrum - allowed_mass_diff,
                                                                   precursor_mz_query_spectrum + allowed_mass_diff)
             spectrum_ids = [spectrum_and_mass[0] for spectrum_and_mass in spectrum_ids_and_mass]
-            spectrum_id_highest_ms2_deepscore_in_mass_range = ms2deepscores[i].loc[spectrum_ids].idxmax()
+            if len(spectrum_ids) == 0:
+                spectrum_id_highest_ms2_deepscore_in_mass_range = None
+            else:
+                spectrum_id_highest_ms2_deepscore_in_mass_range = ms2deepscores[i].loc[spectrum_ids].idxmax()
         else:
             spectrum_id_highest_ms2_deepscore_in_mass_range = ms2deepscores[i].idxmax()
-        # Get metadata belonging to spectra ids
-        lib_metadata = get_metadata_from_sqlite(
-            sqlite_file_location,
-            [spectrum_id_highest_ms2_deepscore_in_mass_range])[spectrum_id_highest_ms2_deepscore_in_mass_range]
-        tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
-        exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
-        results_ms2deepscore.append((float(ms2deepscores[i][spectrum_id_highest_ms2_deepscore_in_mass_range]),
-                                     tanimoto_score,
-                                     exact_match))
+        if spectrum_id_highest_ms2_deepscore_in_mass_range is not None:
+            # Get metadata belonging to spectra ids
+            lib_metadata = get_metadata_from_sqlite(
+                sqlite_file_location,
+                [spectrum_id_highest_ms2_deepscore_in_mass_range])[spectrum_id_highest_ms2_deepscore_in_mass_range]
+            tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
+            exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
+            results_ms2deepscore.append((float(ms2deepscores[i][spectrum_id_highest_ms2_deepscore_in_mass_range]),
+                                         tanimoto_score,
+                                         exact_match))
+        else:
+            results_ms2deepscore.append((None, None, None))
     return results_ms2deepscore
 
 
@@ -210,10 +216,12 @@ def create_random_results(test_spectra: List[Spectrum],
 def generate_test_results(ms2library: MS2Library,
                           training_spectra: List[Spectrum],
                           test_spectra: List[Spectrum]) -> Dict[str, List[Tuple[float, float, bool]]]:
+    """Returns test predictions for multiple tools
+    in the format [lib_spec_id_highest_score, predicted_score, test_spectrum]
+"""
     assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
         "The number of spectra in the library is not equal to the number of training spectra"
 
-    # Output of all tools is in the format: [lib_spec_id_highest_score, predicted_score, test_spectrum]
     # Generate MS2Query results
     ms2query_test_results = generate_test_results_ms2query(ms2library, test_spectra)
 
@@ -222,10 +230,15 @@ def generate_test_results(ms2library: MS2Library,
                                         ms2library.ms2ds_embeddings,
                                         test_spectra)
 
+    ms2ds_test_results_mass_diff_100 = select_highest_ms2ds_in_mass_range(ms2ds_scores,
+                                                                          test_spectra,
+                                                                          ms2library.sqlite_file_name,
+                                                                          allowed_mass_diff=100)
+
     ms2ds_test_results = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                             test_spectra,
                                                             ms2library.sqlite_file_name,
-                                                            allowed_mass_diff=100)
+                                                            allowed_mass_diff=None)
 
     # Generate Modified cosine results
     modified_cosine_results = get_modified_cosine_score_results(training_spectra, test_spectra, mass_tolerance=100)
@@ -233,15 +246,16 @@ def generate_test_results(ms2library: MS2Library,
     cosine_results = get_cosines_score_results(training_spectra,
                                                test_spectra,
                                                mass_tolerance=100,
-                                               fragment_mass_tolerance=0.25,
+                                               fragment_mass_tolerance=0.05,
                                                minimum_matched_peaks=0)
 
     optimal_results = create_optimal_results(test_spectra, training_spectra)
     random_results = create_random_results(test_spectra, training_spectra)
 
-    dictionary_with_results = {"ms2deepscore": ms2ds_test_results,
-                               "modified cosine score": modified_cosine_results,
-                               "cosine_score": cosine_results,
+    dictionary_with_results = {"ms2deepscore no mass tolerance": ms2ds_test_results,
+                               "ms2deepscore mass tolerance 100 Da": ms2ds_test_results_mass_diff_100,
+                               "modified cosine score mass tolerance 100 Da ": modified_cosine_results,
+                               "cosine score": cosine_results,
                                "ms2query": ms2query_test_results,
                                "optimal": optimal_results,
                                "random": random_results}
