@@ -98,7 +98,7 @@ def select_highest_ms2ds_in_mass_range(ms2deepscores,
                                          tanimoto_score,
                                          exact_match))
         else:
-            results_ms2deepscore.append((None, None, None))
+            results_ms2deepscore.append(None)
     return results_ms2deepscore
 
 
