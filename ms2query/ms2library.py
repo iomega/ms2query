@@ -152,6 +152,8 @@ class MS2Library:
         """Calculates a results table for a single spectrum"""
         query_spectrum = clean_metadata(query_spectrum)
         query_spectrum = normalize_and_filter_peaks(query_spectrum)
+        if query_spectrum is None:
+            return None
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(
