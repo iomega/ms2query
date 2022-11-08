@@ -83,14 +83,15 @@ def avg_tanimoto_vs_percentage_found(selection_criteria_and_tanimoto,
 
 if __name__ == "__main__":
     from ms2query.utils import load_json_file
-    test_results = load_json_file("../../data/test_dir/test_generate_test_results/test_results.json")
-    ms2query_test_results = test_results["ms2query_results"]
-    cosine_test_results = test_results["cosine_results"]
-    modified_cosine_test_results = test_results["modified_cosine_results"]
-    ms2deepscore_test_results = test_results["ms2ds_results"]
+    # test_results = load_json_file("../../data/test_dir/test_generate_test_results/test_results.json")
+    # ms2query_test_results = test_results["ms2query_results"]
+    # cosine_test_results = test_results["cosine_results"]
+    # modified_cosine_test_results = test_results["modified_cosine_results"]
+    # ms2deepscore_test_results = test_results["ms2ds_results"]
+    ms2query_test_results = load_json_file("../../data/test_dir/train_and_test_library/test_results_ms2query.json")
     avg_tanimoto_vs_percentage_found(ms2query_test_results, "MS2Query", '#3C5289', "-")
-    avg_tanimoto_vs_percentage_found(ms2deepscore_test_results, "MS2Deepscore", '#49C16D', "-")
-    avg_tanimoto_vs_percentage_found(modified_cosine_test_results, "Modified Cosine", '#F5E21D', "-")
+    # avg_tanimoto_vs_percentage_found(ms2deepscore_test_results, "MS2Deepscore", '#49C16D', "-")
+    # avg_tanimoto_vs_percentage_found(modified_cosine_test_results, "Modified Cosine", '#F5E21D', "-")
     plt.show()
     # avg_tanimoto_vs_percentage_found(optimal_results, "Optimal", '#000000', "--")
     # avg_tanimoto_vs_percentage_found(random_results, "Random", '#808080', "--")

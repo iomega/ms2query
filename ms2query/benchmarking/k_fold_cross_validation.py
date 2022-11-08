@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List
 from matchms import Spectrum
 from ms2query.create_new_library.split_data_for_training import split_spectra_in_random_inchikey_sets
@@ -77,3 +78,9 @@ def train_models_and_create_test_results(annotated_training_spectra: List[Spectr
     # store as json file
     save_json_file(test_results,
                    test_results_file_name)
+
+
+if __name__ == "__main__":
+    k_fold_split_number = sys.argv[1]
+    train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/k_fold_splits",
+                                                    k_fold_split_number)
