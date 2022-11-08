@@ -154,7 +154,7 @@ def clean_normalize_and_split_annotated_spectra(spectra: List[Spectrum],
     spectra = [clean_metadata(s) for s in tqdm(spectra, desc="Cleaning metadata")]
     spectra = remove_wrong_ion_modes(spectra, ion_mode_to_keep)
     spectra = [harmonize_annotation(s, do_pubchem_lookup) for s in tqdm(spectra, desc="Harmonizing annotations")]
-    spectra = normalize_and_filter_peaks_multiple_spectra(spectra)
+    spectra = normalize_and_filter_peaks_multiple_spectra(spectra, progress_bar=True)
     annotated_spectra, unannotated_spectra = split_annotated_spectra(spectra)
     # Both annotated and unannotated spectra are returned to make it possible to still use them for Spec2Vec training
     return annotated_spectra, unannotated_spectra
