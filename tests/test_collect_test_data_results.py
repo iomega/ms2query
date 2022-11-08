@@ -14,7 +14,7 @@ from ms2query.benchmarking.collect_test_data_results import (generate_test_resul
                                                              generate_test_results)
 
 from tests.test_use_files_without_spectrum_id import ms2library_without_spectrum_id
-from ms2query.utils import load_matchms_spectrum_objects_from_file
+from ms2query.utils import load_matchms_spectrum_objects_from_file, load_json_file
 from tests.test_utils import path_to_general_test_files
 
 
@@ -111,14 +111,24 @@ def test_random_results(test_spectra):
     assert len(results) == len(test_spectra)
 
 
-def test_generate_test_results(test_spectra, ms2library_without_spectrum_id, path_to_general_test_files):
+def test_generate_test_results(test_spectra,
+                               ms2library_without_spectrum_id,
+                               path_to_general_test_files,
+                               tmp_path):
     library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         path_to_general_test_files,
         '100_test_spectra.pickle'))
-    result = generate_test_results(ms2library_without_spectrum_id,
-                                   library_spectra,
-                                   test_spectra)
-    assert isinstance(result, dict)
+    generate_test_results(ms2library_without_spectrum_id,
+                          library_spectra,
+                          test_spectra,
+                          tmp_path)
+    files_made = os.listdir(tmp_path)
+    assert files_made == ['cosine_score_100_da_test_results.json', 'modified_cosine_score_100_Da_test_results.json',
+                          'ms2deepscore_test_results_100_Da.json', 'ms2deepscore_test_results_all.json',
+                          'ms2query_test_results.json', 'optimal_results.json', 'random_results.json']
+    for file in files_made:
+        result = load_json_file(os.path.join(tmp_path, file))
+        assert isinstance(result, list)
 
 
 if __name__ == "__main__":
