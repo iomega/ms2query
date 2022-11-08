@@ -42,45 +42,33 @@ def split_k_fold_cross_validation(spectra: List[Spectrum],
 
 def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder,
                                                     i):
+    folder_name = f"test_split_{i}"
+    output_folder = os.path.join(k_fold_split_folder, folder_name)
+    models_folder = os.path.join(output_folder, "models_100")
+    test_results_folder = os.path.join(output_folder, "test_results")
+
+    # Load in spectra
     unannotated_training_spectra = load_matchms_spectrum_objects_from_file(
         os.path.join(k_fold_split_folder, "unannotated_training_spectra.pickle"))
-    folder_name = f"test_split_{i}"
     annotated_training_spectra = load_matchms_spectrum_objects_from_file(
         os.path.join(k_fold_split_folder, folder_name, "annotated_training_spectra.pickle"))
     test_spectra = load_matchms_spectrum_objects_from_file(
         os.path.join(k_fold_split_folder, folder_name, "test_spectra.pickle"))
-    train_models_and_create_test_results(annotated_training_spectra,
-                                         unannotated_training_spectra,
-                                         test_spectra,
-                                         output_folder=os.path.join(k_fold_split_folder, folder_name))
 
-
-def train_models_and_create_test_results(annotated_training_spectra: List[Spectrum],
-                                         unannotated_training_spectra: List[Spectrum],
-                                         test_spectra: List[Spectrum],
-                                         output_folder: str
-                                         ):
-    models_folder = os.path.join(output_folder, "models")
-    if not os.path.isdir(models_folder):
-        os.mkdir(models_folder)
-    test_results_file_name = os.path.join(output_folder,
-                                          "test_results.json")
-    assert not os.path.isfile(test_results_file_name), "File already exists"
-
+    # Train all models
     train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
                      models_folder)
 
+    # Generate test results
     ms2library = create_library_object_from_one_dir(models_folder)
-    test_results = generate_test_results(ms2library,
-                                         annotated_training_spectra,
-                                         test_spectra)
-    # store as json file
-    save_json_file(test_results,
-                   test_results_file_name)
+    generate_test_results(ms2library,
+                          annotated_training_spectra,
+                          test_spectra,
+                          test_results_folder)
 
 
 if __name__ == "__main__":
     k_fold_split_number = sys.argv[1]
-    train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/k_fold_splits",
+    train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits",
                                                     k_fold_split_number)

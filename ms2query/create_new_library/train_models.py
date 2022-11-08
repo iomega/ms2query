@@ -29,6 +29,8 @@ def train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
                      output_folder,
                      other_settings: dict = None):
+    if not os.path.isdir(output_folder):
+        os.mkdir(output_folder)
     settings = SettingsTrainingModels(other_settings)
     # set file names of new generated files
     ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")
