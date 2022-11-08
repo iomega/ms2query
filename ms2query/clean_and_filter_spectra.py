@@ -107,6 +107,9 @@ def check_fully_annotated(spectrum: Spectrum) -> bool:
         return False
     if not is_valid_inchi(spectrum.get("inchi")):
         return False
+    spectrum = msfilters.require_precursor_mz(spectrum)
+    if spectrum is None:
+        return False
     return True
 
 
