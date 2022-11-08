@@ -52,6 +52,13 @@ def test_generate_test_results_ms2query(ms2library_without_spectrum_id, test_spe
     np.testing.assert_almost_equal(result[0], (0.5645, 0.003861003861003861, False))
     np.testing.assert_almost_equal(result[1], (0.409, 0.010610079575596816, False))
 
+    # test if a spectrum that does not pass the tests is not added to the results
+    test_spectra[0] = test_spectra[0].set("precursor_mz", None)
+    test_spectra[0] = test_spectra[0].set("pepmass", None)
+    result = generate_test_results_ms2query(ms2library_without_spectrum_id, test_spectra)
+    assert result[0] is None
+    np.testing.assert_almost_equal(result[1], (0.409, 0.010610079575596816, False))
+
 
 def test_get_all_ms2ds_scores(ms2library_without_spectrum_id, test_spectra):
     result = get_all_ms2ds_scores(ms2library_without_spectrum_id.ms2ds_model,

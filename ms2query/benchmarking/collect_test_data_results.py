@@ -30,16 +30,22 @@ def generate_test_results_ms2query(ms2library: MS2Library,
         df_results_ms2query = pd.read_csv(temporary_file_csv_results)
 
     test_results_ms2query = []
-    for spectrum_id, ms2query_model_prediction, query_spectrum_nr in df_results_ms2query[
-        ["spectrum_ids", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
-        test_spectrum = test_spectra[int(query_spectrum_nr) - 1]
-        # Get metadata belonging to spectra ids
-        lib_metadata = get_metadata_from_sqlite(
-            ms2library.sqlite_file_name,
-            [spectrum_id])[spectrum_id]
-        tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
-        exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
-        test_results_ms2query.append((ms2query_model_prediction, tanimoto_score, exact_match))
+    for i, test_spectrum in enumerate(test_spectra):
+        query_spectrum_id = i + 1
+        annotated = False
+        for spectrum_id, ms2query_model_prediction, query_spectrum_id_in_df in df_results_ms2query[
+            ["spectrum_ids", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
+            if query_spectrum_id == query_spectrum_id_in_df:
+                # Get metadata belonging to spectra ids
+                lib_metadata = get_metadata_from_sqlite(
+                    ms2library.sqlite_file_name,
+                    [spectrum_id])[spectrum_id]
+                tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
+                exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
+                test_results_ms2query.append((ms2query_model_prediction, tanimoto_score, exact_match))
+                annotated = True
+        if not annotated:
+            test_results_ms2query.append(None)
     return test_results_ms2query
 
 
