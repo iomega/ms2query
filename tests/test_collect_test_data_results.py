@@ -103,6 +103,11 @@ def test_get_cosines_score_results(test_spectra):
     np.testing.assert_almost_equal(result,
                                    [(0.434789196140529, 0.0058997050147492625, False),
                                     (0.4955472245596076, 0.007866273352999017, False)])
+    # Test if no error happens when only 1 or 0 library spectra within mass range
+    result = get_cosines_score_results(library_spectra, test_spectra, 5.56, 0.05, 0)
+    np.testing.assert_almost_equal(result[0],
+                                   (0.0, 0.004461, False))
+    assert result[1] is None
 
 
 def test_create_optimal_results(test_spectra):
