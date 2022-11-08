@@ -1,3 +1,4 @@
+import os
 from typing import List
 import pandas as pd
 from tqdm import tqdm
@@ -9,13 +10,14 @@ from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
+from ms2query.utils import save_pickled_file
 
 
 class DataCollectorForTraining():
     """Class to collect data needed to train a ms2query random forest"""
     def __init__(self,
                  ms2library: MS2Library,
-                 preselection_cut_off: int = 2000):
+                 preselection_cut_off: int = 100):
         """Parameters
         ----------
         ms2library:
@@ -131,6 +133,10 @@ def train_ms2query_model(training_spectra,
     # Create training data MS2Query model
     collector = DataCollectorForTraining(ms2library_for_training)
     training_scores, training_labels = collector.get_matches_info_and_tanimoto(query_spectra_for_training)
+
+    save_pickled_file(training_scores, os.path.join(library_files_folder, "training_scores_ms2query"))
+    save_pickled_file(training_labels, os.path.join(library_files_folder, "training_labels_ms2query"))
+
     # Train MS2Query model
     ms2query_model = train_random_forest(training_scores, training_labels)
     return ms2query_model
