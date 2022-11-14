@@ -156,7 +156,7 @@ def get_modified_cosine_score_results(lib_spectra,
                                            [test_spectrum], ModifiedCosine()).scores_by_query(test_spectrum)
             # Scores list is a List[spectrum, (mod_cos, matching_peaks)
             cosine_scores = [scores_tuple[1]["score"] for scores_tuple in scores_list]
-            highest_cosine_score = max(cosine_scores)
+            highest_cosine_score = float(max(cosine_scores))
             highest_scoring_spectrum = scores_list[cosine_scores.index(highest_cosine_score)][0]
 
             tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"),
