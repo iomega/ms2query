@@ -73,21 +73,21 @@ def test_select_highest_ms2ds_in_mass_range(ms2library_without_spectrum_id, test
                                  ms2library_without_spectrum_id.ms2ds_embeddings,
                                  test_spectra)
 
-    # # test with mass 100 preselection
-    # result = select_highest_ms2ds_in_mass_range(ms2ds,
-    #                                             test_spectra,
-    #                                             ms2library_without_spectrum_id.sqlite_file_name,
-    #                                             100)
-    # np.testing.assert_almost_equal(result[0], (0.8492529314990583, 0.003861003861003861, False))
-    # np.testing.assert_almost_equal(result[1], (0.6413115894635883, 0.013745704467353952, False))
-    #
-    # # test without mass preselection
-    # result_without_mass_range = select_highest_ms2ds_in_mass_range(ms2ds,
-    #                                                                test_spectra,
-    #                                                                ms2library_without_spectrum_id.sqlite_file_name,
-    #                                                                None)
-    # np.testing.assert_almost_equal(result_without_mass_range[0], (0.8492529314990583, 0.003861003861003861, False))
-    # np.testing.assert_almost_equal(result_without_mass_range[1], (0.8514114889698237, 0.007292616226071103, False))
+    # test with mass 100 preselection
+    result = select_highest_ms2ds_in_mass_range(ms2ds,
+                                                test_spectra,
+                                                ms2library_without_spectrum_id.sqlite_file_name,
+                                                100)
+    np.testing.assert_almost_equal(result[0], (0.8492529314990583, 0.003861003861003861, False))
+    np.testing.assert_almost_equal(result[1], (0.6413115894635883, 0.013745704467353952, False))
+
+    # test without mass preselection
+    result_without_mass_range = select_highest_ms2ds_in_mass_range(ms2ds,
+                                                                   test_spectra,
+                                                                   ms2library_without_spectrum_id.sqlite_file_name,
+                                                                   None)
+    np.testing.assert_almost_equal(result_without_mass_range[0], (0.8492529314990583, 0.003861003861003861, False))
+    np.testing.assert_almost_equal(result_without_mass_range[1], (0.8514114889698237, 0.007292616226071103, False))
 
     # test with mass preselection resulting in 0 and 1 library spectra within mass range
     result = select_highest_ms2ds_in_mass_range(ms2ds,
