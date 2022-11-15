@@ -1,8 +1,3 @@
-"""Functions to handle spectrum processing steps. Any metadata related cleaning
-and inspection is expected to happen prior to running MS2Query and is not taken
-into account here. Processing here hence refers to inspecting, filtering,
-adjusting the spectrum peaks (m/z and intensities).
-"""
 from typing import List, Tuple
 import matchms.filtering as msfilters
 from tqdm import tqdm
