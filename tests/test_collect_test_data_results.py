@@ -151,9 +151,9 @@ def test_generate_test_results(test_spectra,
                           test_spectra,
                           tmp_path)
     files_made = os.listdir(tmp_path)
-    assert files_made == ['cosine_score_100_da_test_results.json', 'modified_cosine_score_100_Da_test_results.json',
+    assert set(files_made) == {'cosine_score_100_da_test_results.json', 'modified_cosine_score_100_Da_test_results.json',
                           'ms2deepscore_test_results_100_Da.json', 'ms2deepscore_test_results_all.json',
-                          'ms2query_test_results.json', 'optimal_results.json', 'random_results.json']
+                          'ms2query_test_results.json', 'optimal_results.json', 'random_results.json'}
     for file in files_made:
         result = load_json_file(os.path.join(tmp_path, file))
         assert isinstance(result, list)
