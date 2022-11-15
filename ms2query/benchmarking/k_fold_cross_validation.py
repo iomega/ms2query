@@ -8,7 +8,6 @@ from ms2query.create_new_library.train_models import train_all_models
 from ms2query.benchmarking.collect_test_data_results import generate_test_results
 from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra
 from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.utils import save_json_file
 
 
 def split_k_fold_cross_validation(spectra: List[Spectrum],
@@ -40,11 +39,11 @@ def split_k_fold_cross_validation(spectra: List[Spectrum],
                           os.path.join(output_folder, folder_name, "test_spectra.pickle"))
 
 
-def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder,
-                                                    i):
+def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder :str,
+                                                    i: str):
     folder_name = f"test_split_{i}"
     output_folder = os.path.join(k_fold_split_folder, folder_name)
-    models_folder = os.path.join(output_folder, "models_100")
+    models_folder = os.path.join(output_folder, "models")
     test_results_folder = os.path.join(output_folder, "test_results")
 
     # Load in spectra
@@ -72,3 +71,23 @@ if __name__ == "__main__":
     k_fold_split_number = sys.argv[1]
     train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits",
                                                     k_fold_split_number)
+    # k_fold_split_folder = "../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits"
+    # folder_name = f"test_split_{k_fold_split_number}"
+    # output_folder = os.path.join(k_fold_split_folder, folder_name)
+    # models_folder = os.path.join(output_folder, "models_100")
+    # test_results_folder = os.path.join(output_folder, "test_results")
+    #
+    # # Load in spectra
+    # unannotated_training_spectra = load_matchms_spectrum_objects_from_file(
+    #     os.path.join(k_fold_split_folder, "unannotated_training_spectra.pickle"))
+    # annotated_training_spectra = load_matchms_spectrum_objects_from_file(
+    #     os.path.join(k_fold_split_folder, folder_name, "annotated_training_spectra.pickle"))
+    # test_spectra = load_matchms_spectrum_objects_from_file(
+    #     os.path.join(k_fold_split_folder, folder_name, "test_spectra.pickle"))
+    #
+    # # Generate test results
+    # ms2library = create_library_object_from_one_dir(models_folder)
+    # generate_test_results(ms2library,
+    #                       annotated_training_spectra,
+    #                       test_spectra,
+    #                       test_results_folder)

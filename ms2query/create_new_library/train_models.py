@@ -101,7 +101,6 @@ def clean_and_train_models(spectrum_file: str,
 
 
 if __name__ == "__main__":
-    pass
     data_folder = os.path.join(os.getcwd(), "../../data/")
     spectra = load_matchms_spectrum_objects_from_file(
         os.path.join(data_folder,

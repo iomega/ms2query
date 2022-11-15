@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union
 from tqdm import tqdm
 import random
 import tempfile
@@ -22,6 +22,7 @@ from ms2query.utils import save_json_file
 def generate_test_results_ms2query(ms2library: MS2Library,
                                    test_spectra: List[Spectrum]
                                    ) -> List[Tuple[float, float, bool]]:
+    # pylint:disable=too-many-locals
     # Create a temporary directory for the csv results
     with tempfile.TemporaryDirectory() as tmpdirname:
         temporary_file_csv_results = os.path.join(tmpdirname, "temporary_csv_file.csv")
@@ -227,6 +228,8 @@ def generate_test_results(ms2library: MS2Library,
     """Returns test predictions for multiple tools
     in the format [lib_spec_id_highest_score, predicted_score, test_spectrum]
 """
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
     assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
         "The number of spectra in the library is not equal to the number of training spectra"
 
@@ -267,7 +270,7 @@ def generate_test_results(ms2library: MS2Library,
         else:
             print(f"File already exists so not remade: {ms2ds_results_all_file_name}")
     else:
-        print(f"MS2Deepscore files already exist")
+        print("MS2Deepscore files already exist")
 
     modified_cosine_score_file_name = os.path.join(output_dir, "modified_cosine_score_100_Da_test_results.json")
     if not os.path.isfile(modified_cosine_score_file_name):
