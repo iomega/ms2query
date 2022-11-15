@@ -3,8 +3,8 @@ from spec2vec.model_building import train_new_word2vec_model
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper
 from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
-from ms2query.utils import save_pickled_file
-from ms2query.clean_and_filter_spectra import create_spectrum_documents
+from ms2query.utils import save_pickled_file, load_matchms_spectrum_objects_from_file
+from ms2query.clean_and_filter_spectra import create_spectrum_documents, clean_normalize_and_split_annotated_spectra
 
 
 class SettingsTrainingModels:
@@ -72,9 +72,36 @@ def train_all_models(annotated_training_spectra,
     library_files_creator.create_all_library_files()
 
 
-if __name__ == "__main__":
-    from ms2query.utils import load_matchms_spectrum_objects_from_file
+def clean_and_train_models(spectrum_file: str,
+                           ion_mode: str,
+                           output_folder,
+                           model_train_settings = None):
+    """Trains a new MS2Deepscore, Spec2Vec and MS2Query model and creates all needed library files
 
+    :param spectrum_file:
+        The file name of the library spectra
+    :param ion_mode:
+        The ion mode of the spectra you want to use for training the models, choose from "positive" or "negative"
+    :param output_folder:
+        The folder in which the models and library files are stored.
+    """
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+    assert os.path.isdir(output_folder), "The specified folder is not a folder"
+    assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
+
+    spectra = load_matchms_spectrum_objects_from_file(spectrum_file)
+    annotated_spectra, unnnotated_spectra = clean_normalize_and_split_annotated_spectra(spectra,
+                                                                                        ion_mode,
+                                                                                        do_pubchem_lookup=True)
+    train_all_models(annotated_spectra,
+                     unnnotated_spectra,
+                     output_folder,
+                     model_train_settings)
+
+
+if __name__ == "__main__":
+    pass
     data_folder = os.path.join(os.getcwd(), "../../data/")
     spectra = load_matchms_spectrum_objects_from_file(
         os.path.join(data_folder,

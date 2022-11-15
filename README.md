@@ -77,8 +77,9 @@ run_complete_folder(ms2library, ms2_spectra_directory)
 
 ```
 
-## Create your own library
-If you would like to create the required library files for your own in house library. You can run the code below:
+## Create your own library (without training new models)
+The code below creates all required library files for your own in house library. 
+No new models for MS2deepscore, Spec2Vec and MS2Query will be trained, to do this see the next section.
 
 It is important that the library spectra are annotated with smiles, inchi's or inchikeys in the metadata otherwise they
 are not included in the library. 
@@ -138,6 +139,46 @@ ms2library = MS2Library(sqlite_file_name= ,
                         classifier_csv_file_name= , #Leave None if not available
                         )
 ```
+
+# Create your own library and train new models
+The code trains new MS2Deepscore, Spec2Vec and MS2Query models for your in house library, 
+and creates all needed files for running MS2Query. 
+
+It is important that the library spectra are annotated with smiles, inchi's or inchikeys in the metadata otherwise they
+are not included in the library and training. 
+
+Fill in the blank spots below and run the code (can take several days). 
+The models will be stored in the specified output_folder. MS2Query can be run
+
+```python
+from ms2query.create_new_library.train_models import clean_and_train_models
+clean_and_train_models(spectrum_file=, #Fill in the location of the file containing the library spectra
+                       # Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
+                       ion_mode=, # Fill in the ion mode, choose from "positive" or "negative"
+                       output_folder= # The output folder in which all the models are stored. 
+                       )
+```
+
+To run MS2Query on your own created library run the code below (again fill in the blanks).
+
+```python
+from ms2query.run_ms2query import run_complete_folder
+from ms2query.ms2library import create_library_object_from_one_dir
+
+# Define the folder in which your query spectra are stored.
+# Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object. 
+ms2_spectra_directory = # Specify the folder containing the query spectra you want to run against the library
+ms2_library_directory = # Specify the directory containing all the library and model files
+
+# Create a MS2Library object from one directory
+# If this does not work (because files have unexpected names or are not in one dir) see below.
+ms2library = create_library_object_from_one_dir(ms2_library_directory)
+
+# Run library search and analog search on your files.
+run_complete_folder(ms2library, ms2_spectra_directory)
+```
+
+After running the model can be loaded 
 
 ## Documentation for developers
 ### Prepare environmnent
