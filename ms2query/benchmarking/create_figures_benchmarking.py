@@ -1,3 +1,7 @@
+"""
+This script is not needed for normally running MS2Query, instead it was used to visualize
+test results for benchmarking MS2Query against other tools.
+"""
 import os
 import random
 from typing import List, Tuple, Dict
@@ -73,18 +77,34 @@ def calculate_recall_vs_tanimoto_scores(selection_criteria_and_tanimoto):
     return percentages_found, average_tanimoto_score
 
 
-def avg_tanimoto_vs_percentage_found(selection_criteria_and_tanimoto,
+def calculate_recall_vs_tanimoto_scores_average(selection_criteria_and_tanimoto):
+    percentages_found = []
+    average_tanimoto_score = []
+    # Shuffeling to make sure there is a random order for the matches with the same MS2Query score.
+    # random.shuffle(selection_criteria_and_tanimoto)
+    # remove None values
+    not_none_scores = [score for score in selection_criteria_and_tanimoto if score is not None]
+    sorted_scores = sorted(not_none_scores, key=lambda tup: tup[0], reverse=True)
+    unique_scores = sorted(set([scores[0] for scores in sorted_scores]))
+    # sorted_tanimoto_scores = [scores[1] for scores in sorted_scores]
+    for unique_score in tqdm(unique_scores,
+                             desc="Calculating average Tanimoto score"):
+        tanimoto_scores = [scores[1] for scores in sorted_scores if scores[0] >= unique_score]
+        percentages_found.append(len(tanimoto_scores)/len(selection_criteria_and_tanimoto)*100)
+        average_tanimoto_score.append(sum(tanimoto_scores)/len(tanimoto_scores))
+    return percentages_found, average_tanimoto_score
+
+
+def avg_tanimoto_vs_percentage_found(percentages_found, average_tanimoto_score,
                                      legend_label,
                                      color_code,
                                      line_style):
     """Plots the average tanimoto vs recall"""
-    percentages_found, average_tanimoto_score = calculate_recall_vs_tanimoto_scores(selection_criteria_and_tanimoto)
-
     plt.plot(percentages_found, average_tanimoto_score,
              label=legend_label,
              color=color_code,
              linestyle=line_style)
-    plt.xlim(100, 10)
+    plt.xlim(100, 0)
     # plt.ylim(0.4, 1)
     plt.xlabel("Recall (%)")
     plt.ylabel("Average Tanimoto score")
@@ -114,7 +134,9 @@ def plot_results(dict_with_results):
                "Optimal": ('#000000', "--"),
                "Random": ('#808080', "--")}
     for results_name, scores in dict_with_results.items():
-        avg_tanimoto_vs_percentage_found(scores, results_name, colours[results_name][0], colours[results_name][1])
+        percentages_found, average_tanimoto_score = calculate_recall_vs_tanimoto_scores(
+            scores)
+        avg_tanimoto_vs_percentage_found(percentages_found, average_tanimoto_score, results_name, colours[results_name][0], colours[results_name][1])
     plt.show()
 
 
@@ -127,7 +149,7 @@ def combine_all_test_results():
                     "Modified cosine score 100 Da": [],
                     "Optimal": [],
                     "Random": []}
-    for i in range(20):
+    for i in range(5):
         test_results_directory = os.path.join(base_directory, f"test_split_{i}", "test_results")
         try:
             results = load_results_from_folder(test_results_directory)
