@@ -1,3 +1,7 @@
+"""
+This script is not needed for normally running MS2Query, it is only needed to generate a new library or to train
+new models
+"""
 from collections import Counter
 from typing import List
 

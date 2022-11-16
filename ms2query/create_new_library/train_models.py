@@ -1,3 +1,8 @@
+"""
+This script is not needed for normally running MS2Query, it is only needed to to train
+new models
+"""
+
 import os
 from spec2vec.model_building import train_new_word2vec_model
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper

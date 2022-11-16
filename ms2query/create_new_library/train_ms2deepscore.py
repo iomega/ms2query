@@ -1,3 +1,8 @@
+"""
+This script is not needed for normally running MS2Query, it is only needed to to train
+new models
+"""
+
 import os
 from typing import List, Dict, Optional
 import numpy as np

@@ -1,3 +1,7 @@
+"""
+This script is not needed for normally running MS2Query, instead it was used to split data for 20 fold
+cross validation for the MS2Query manuscript
+"""
 import os
 import sys
 from typing import List
@@ -71,23 +75,3 @@ if __name__ == "__main__":
     k_fold_split_number = sys.argv[1]
     train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits",
                                                     k_fold_split_number)
-    # k_fold_split_folder = "../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits"
-    # folder_name = f"test_split_{k_fold_split_number}"
-    # output_folder = os.path.join(k_fold_split_folder, folder_name)
-    # models_folder = os.path.join(output_folder, "models_100")
-    # test_results_folder = os.path.join(output_folder, "test_results")
-    #
-    # # Load in spectra
-    # unannotated_training_spectra = load_matchms_spectrum_objects_from_file(
-    #     os.path.join(k_fold_split_folder, "unannotated_training_spectra.pickle"))
-    # annotated_training_spectra = load_matchms_spectrum_objects_from_file(
-    #     os.path.join(k_fold_split_folder, folder_name, "annotated_training_spectra.pickle"))
-    # test_spectra = load_matchms_spectrum_objects_from_file(
-    #     os.path.join(k_fold_split_folder, folder_name, "test_spectra.pickle"))
-    #
-    # # Generate test results
-    # ms2library = create_library_object_from_one_dir(models_folder)
-    # generate_test_results(ms2library,
-    #                       annotated_training_spectra,
-    #                       test_spectra,
-    #                       test_results_folder)

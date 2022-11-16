@@ -1,3 +1,8 @@
+"""
+This script is not needed for running MS2Query, instead it was used to generate
+test results for benchmarking MS2Query against other tools.
+"""
+
 import os
 from typing import List, Tuple, Union
 from tqdm import tqdm

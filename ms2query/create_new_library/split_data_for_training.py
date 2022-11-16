@@ -1,3 +1,8 @@
+"""
+This script is not needed for normally running MS2Query, it is only needed to generate a new library or to train
+new models
+"""
+
 from typing import List
 from matchms import Spectrum
 import random
