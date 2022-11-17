@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from matplotlib import pyplot as plt
 
-from ms2query.utils import load_json_file, save_pickled_file, load_pickled_file
+from ms2query.utils import load_json_file, load_pickled_file
 
 
 def plot_all_with_standard_deviation(means_and_standars_deviation,
@@ -24,14 +24,16 @@ def plot_all_with_standard_deviation(means_and_standars_deviation,
         "Random": ('#808080', "--")
     }
 
-    for test_type in colours:
+    for test_type, colour_and_line_type in colours.items():
+        colour = colour_and_line_type[0]
+        line_type = colour_and_line_type[1]
         binned_percentages, means, standard_deviations = means_and_standars_deviation[test_type]
         plt.plot(binned_percentages, means,
                  label=test_type,
-                 color=colours[test_type][0],
-                 linestyle=colours[test_type][1])
+                 color=colour,
+                 linestyle=line_type)
         plt.fill_between(binned_percentages, means - standard_deviations, means + standard_deviations, alpha=0.3,
-                         color=colours[test_type][0],
+                         color=colour,
                          )
 
     plt.xlim(100, 0)
@@ -68,9 +70,9 @@ def load_all_test_results(nr_of_test_results):
         test_results_directory = os.path.join(base_directory, f"test_split_{i}", "test_results")
         try:
             results = load_results_from_folder(test_results_directory)
-            for key in results_dict:
+            for key in results_dict:  # pylint: disable=consider-using-dict-items
                 results_dict[key].append(results[key])
-        except:
+        except IOError:
             print(f"not all test results were generated for : {test_results_directory}")
     return results_dict
 
@@ -139,6 +141,6 @@ if __name__ == "__main__":
     # means_and_standard_deviation = calculate_all_means_and_standard_deviation(dict_with_results)
     means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, "means_and_standard_deviations_18_fold.json"))
     plot_all_with_standard_deviation(means_and_standard_deviation,
-                                     # save_figure_file_name=os.path.join(test_results_folder, "recall_vs_accuracy_18.svg")
+                                     save_figure_file_name=os.path.join(test_results_folder, "recall_vs_accuracy_18_separate_legend.svg")
                                      )
     # save_pickled_file(means_and_standard_deviation, os.path.join(test_results_folder, "means_and_standard_deviations_18_fold.json"))
