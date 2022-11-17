@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from typing import List, Union
 import numpy as np
 import pandas as pd
@@ -28,6 +29,24 @@ def load_ms2query_model(ms2query_model_file_name):
         return load_pickled_file(ms2query_model_file_name)
 
     raise ValueError("The MS2Query model file is expected to end on .pickle")
+
+
+def save_pickled_file(obj, filename: str):
+    assert not os.path.exists(filename), "File already exists"
+    with open(filename, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def save_json_file(data, filename):
+    assert not os.path.exists(filename), "File already exists"
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+
+def load_json_file(filename):
+    with open(filename, "r", encoding='utf-8') as f:
+        data = json.load(f)
+    return data
 
 
 def load_pickled_file(filename: str):

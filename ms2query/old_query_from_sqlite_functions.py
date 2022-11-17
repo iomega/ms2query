@@ -2,7 +2,7 @@ import ast
 import io
 import os
 import sqlite3
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
@@ -234,39 +234,6 @@ def get_tanimoto_from_sqlite(sqlite_file_name: str,
                                     columns=list_of_identifiers_2)
     conn.close()
     return result_dataframe
-
-
-def get_precursor_mz_within_range(sqlite_file_name: str,
-                                 lower_bound: Union[float, int],
-                                 upper_bound: Union[float, int],
-                                 spectrum_id_storage_name: str = "spectrumid",
-                                 table_name: str = "spectrum_data"
-                                 ) -> List[Tuple[str, float]]:
-    """Returns spectrum_ids with precursor m/z between lower and upper bound
-
-    Args:
-    -----
-    sqlite_file_name:
-        The sqlite file in which the spectra data is stored.
-    lower_bound:
-        The lower bound of the allowed precursor m/z
-    upper_bound:
-        The upper bound of the allowed precursor m/z
-    spectrum_id_storage_name:
-        The name under which the spectrum ids are stored in the metadata.
-        Default = 'spectrumid'
-    table_name:
-        The name of the table in the sqlite file in which the metadata is
-        stored. Default = "spectrum_data"
-    """
-    conn = sqlite3.connect(sqlite_file_name)
-    sqlite_command = \
-        f"""SELECT {spectrum_id_storage_name}, precursor_mz FROM {table_name} 
-        WHERE precursor_mz BETWEEN {lower_bound} and {upper_bound}"""
-    cur = conn.cursor()
-    cur.execute(sqlite_command)
-    spectrum_ids_within_range = cur.fetchall()
-    return spectrum_ids_within_range
 
 
 def test_get_tanimoto_scores():

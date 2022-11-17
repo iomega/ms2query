@@ -8,6 +8,13 @@ from ms2query.utils import (add_unknown_charges_to_spectra,
                             get_classifier_from_csv_file, load_pickled_file)
 
 
+@pytest.fixture(scope="package")
+def path_to_general_test_files() -> str:
+    return os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/general_test_files')
+
+
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
     """Tests if unknown file raises an Assertion error"""
     with pytest.raises(AssertionError):
