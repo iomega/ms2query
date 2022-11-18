@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2]
+### Changed
+- Remove tensorflow warnings about feature names
+
 ## [0.5.1]
 ### Changed
 - Remove rdkit dependency for running MS2Query 
