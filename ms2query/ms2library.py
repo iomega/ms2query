@@ -444,11 +444,11 @@ def get_ms2query_model_prediction_single_spectrum(
     ms2query_model_file_name:
         File name of a hdf5 name containing the ms2query model.
     """
-    current_query_matches_info = result_table.get_training_data().copy()
+    # .values removes feature names, since this will cause a warning since the model was trained without feature names.
+    current_query_matches_info = result_table.get_training_data().copy().values
     predictions = ms2query_nn_model.predict(current_query_matches_info)
 
     result_table.add_ms2query_meta_score(predictions)
-
     return result_table
 
 
