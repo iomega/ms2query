@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5]
+### Changed
+- Set tensorflow version to <= 2.4.1
+
 ## [0.5.3]
 ### Changed
 - Set tensorflow version to <= 2.10.1
