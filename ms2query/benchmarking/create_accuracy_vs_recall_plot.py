@@ -137,10 +137,11 @@ def calculate_recall_vs_tanimoto_scores(selection_criteria_and_tanimoto):
 
 if __name__ == "__main__":
     test_results_folder = "../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits/"
-    # dict_with_results = load_all_test_results(20)
-    # means_and_standard_deviation = calculate_all_means_and_standard_deviation(dict_with_results)
-    means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, "means_and_standard_deviations_18_fold.json"))
+    dict_with_results = load_all_test_results(20)
+    means_and_standard_deviation = calculate_all_means_and_standard_deviation(dict_with_results)
+    # means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, "means_and_standard_deviations_20_fold.pickle"))
     plot_all_with_standard_deviation(means_and_standard_deviation,
-                                     save_figure_file_name=os.path.join(test_results_folder, "recall_vs_accuracy_18_separate_legend.svg")
+                                     save_figure_file_name=os.path.join(test_results_folder, "recall_vs_accuracy_20_fold.svg")
                                      )
-    # save_pickled_file(means_and_standard_deviation, os.path.join(test_results_folder, "means_and_standard_deviations_18_fold.json"))
+    from ms2query.utils import save_pickled_file
+    save_pickled_file(means_and_standard_deviation, os.path.join(test_results_folder, "means_and_standard_deviations_20_fold.pickle"))
