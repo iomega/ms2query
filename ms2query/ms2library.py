@@ -187,7 +187,8 @@ class MS2Library:
         result_tables = []
         for i, query_spectrum in tqdm(enumerate(query_spectra),
                                       desc="collecting matches info",
-                                      disable=not self.settings["progress_bars"]):
+                                      disable=not self.settings["progress_bars"],
+                                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
             if results_table is not None:
@@ -255,7 +256,8 @@ class MS2Library:
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
                      desc="collecting matches info",
-                     disable=not self.settings["progress_bars"]):
+                     disable=not self.settings["progress_bars"],
+                     total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
             if results_table is None:
