@@ -294,7 +294,7 @@ def generate_test_results(ms2library: MS2Library,
                                                    minimum_matched_peaks=0)
         save_json_file(cosine_results, cosine_score_file_name)
     else:
-        print(f"File already exists so not remade: {modified_cosine_score_file_name}")
+        print(f"File already exists so not remade: {cosine_score_file_name}")
 
     optimal_results_file_name = os.path.join(output_dir, "optimal_results.json")
     if not os.path.isfile(optimal_results_file_name):
