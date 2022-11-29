@@ -32,7 +32,7 @@ setup(
         "numpy",
         "spec2vec>=0.6.0",
         "h5py<3.0.0",
-        "tensorflow",
+        "tensorflow<=2.10.1",
         "scikit-learn",
         "ms2deepscore",
         "gensim>=4.0.0",

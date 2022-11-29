@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6]
+### Changed
+- Set tensorflow version to <= 2.10.1
+
+## [0.5.5]
+### Changed
+- Set tensorflow version to <= 2.4.1
+
+## [0.5.3]
+### Changed
+- Set tensorflow version to <= 2.10.1
+
 ## [0.5.2]
 ### Changed
 - Remove tensorflow warnings about feature names
@@ -132,9 +144,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First test workflow and basic batches.
 - Licence.
 
-[Unreleased]: https://github.com/iomega/ms2query/compare/0.5.1...HEAD
-[0.4.3]: https://github.com/iomega/ms2query/compare/0.4.3...0.5.1
-[0.4.3]: https://github.com/iomega/ms2query/compare/0.4.3...0.5.0
+[Unreleased]: https://github.com/iomega/ms2query/compare/0.5.6...HEAD
+[0.5.6]: https://github.com/iomega/ms2query/compare/0.5.3...0.5.6
+[0.5.3]: https://github.com/iomega/ms2query/compare/0.5.2...0.5.3
+[0.5.2]: https://github.com/iomega/ms2query/compare/0.5.1...0.5.2
+[0.5.1]: https://github.com/iomega/ms2query/compare/0.4.3...0.5.1
+[0.5.0]: https://github.com/iomega/ms2query/compare/0.4.3...0.5.0
 [0.4.3]: https://github.com/iomega/ms2query/compare/0.4.1...0.4.3
 [0.4.1]: https://github.com/iomega/ms2query/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/iomega/ms2query/compare/0.3.3...0.4.0
