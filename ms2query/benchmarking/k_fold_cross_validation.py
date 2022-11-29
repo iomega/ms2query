@@ -64,9 +64,12 @@ def split_k_fold_cross_validation_exact_match_test_set(annotated_spectra: List[S
         training_spectra = []
         test_spectra = []
         for unique_inchikey, spectra in spectra_per_unique_inchikey.items():
-            random.shuffle(spectra)
-            test_spectra.append(spectra[0])
-            training_spectra += spectra[1:]
+            if len(spectra) == 1:
+                training_spectra += spectra
+            else:
+                random.shuffle(spectra)
+                test_spectra.append(spectra[0])
+                training_spectra += spectra[1:]
 
         folder_name = f"test_split_{i}"
         os.mkdir(os.path.join(output_folder, folder_name))
@@ -105,20 +108,24 @@ def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder:str,
 
 
 if __name__ == "__main__":
-    # base_dir = "../../data/libraries_and_models/gnps_01_11_2022/"
-    # annotated_spectra, unannotated_spectra = split_and_store_annotated_unannotated(
-    #     os.path.join(base_dir, "ALL_GNPS_NO_PROPOGATED.mgf"),
-    #     "negative",
-    #     os.path.join(base_dir, "negative_mode"))
-    # split_k_fold_cross_validation_analogue_test_set(annotated_spectra,
-    #                                                 20,
-    #                                                 os.path.join(base_dir, "negative_mode/analogue_test_sets/"))
+    base_dir = "../../data/libraries_and_models/gnps_01_11_2022/negative_mode"
+    # # annotated_spectra, unannotated_spectra = split_and_store_annotated_unannotated(
+    # #     os.path.join(base_dir, "ALL_GNPS_NO_PROPOGATED.mgf"),
+    # #     "negative",
+    # #     os.path.join(base_dir, "negative_mode"))
+    # annotated_spectra = load_matchms_spectrum_objects_from_file(
+    #     os.path.join(base_dir, "annotated_training_spectra.pickle"))
+    # # split_k_fold_cross_validation_analogue_test_set(annotated_spectra,
+    # #                                                 20,
+    # #                                                 os.path.join(base_dir, "negative_mode/analogue_test_sets/"))
     # split_k_fold_cross_validation_exact_match_test_set(annotated_spectra,
     #                                                    20,
-    #                                                    os.path.join(base_dir, "negative_mode/exact_matches_test_sets/"))
+    #                                                    os.path.join(base_dir, "exact_matches_test_sets_1"))
 
     k_fold_split_number = sys.argv[1]
-    train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/exact_matches_split/",
+    # train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/negative_mode/exact_matches_test_sets_1/",
+    #                                                 k_fold_split_number)
+    train_models_and_test_result_from_k_fold_folder("../../data/libraries_and_models/gnps_01_11_2022/exact_matches_split_1/",
                                                     k_fold_split_number)
     # spectra = load_matchms_spectrum_objects_from_file("../../data/libraries_and_models/gnps_01_11_2022/ALL_GNPS_NO_PROPOGATED.mgf")
     # split_k_fold_cross_validation_exact_match_test_set(spectra,
