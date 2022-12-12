@@ -5,25 +5,31 @@
 
 # MS2Query - Reliable and fast MS/MS spectral-based analogue search 
 
-## The preprint is out now and can be found on: https://www.biorxiv.org/content/10.1101/2022.07.22.501125v1
+# Contents
+* [Overview](https://github.com/iomega/ms2query#overview)
+* [Installation guide](https://github.com/iomega/ms2query#Installation-guide)
+* [Create your own library](https://github.com/iomega/ms2query#Create-your-own-library-without-training-new-models)
+* [Train new models](https://github.com/iomega/ms2query#Create-your-own-library-and-train-new-models)
+* [Documentation for developers](https://github.com/iomega/ms2query#Documentation-for-developers)
+* [Contributing](https://github.com/iomega/ms2query#Contributing)
+* [License](https://github.com/iomega/ms2query#License)
 
-MS2Query is able to search for both analogues and exact matches in large libraries. 
 
-Metabolomics of natural extracts remains hampered by the grand challenge of metabolite annotation and identification. Only a tiny fraction of all metabolites has an annotated spectrum in a library; hence, when searching only for exact library matches such an approach generally has a low recall. An attractive alternative is searching for so-called analogues as a starting point for structural annotations; analogues are library molecules which are not exact matches, but display a high chemical similarity. However, current analogue search implementations are not very reliable yet and are relatively slow. Here, we present MS2Query, a machine learning-based tool that integrates mass spectrum-based chemical similarity predictors (Spec2Vec and MS2Deepscore) as well as detected precursor masses to rank potential analogues and exact matches. The reliability and scalability of MS2Query are encouraging steps toward higher-throughput large-scale untargeted metabolomics workflows. This offers entirely new opportunities for further increasing the annotation rate of complex metabolite mixtures.
+## Overview
+
+**The preprint is out now and can be found on: https://www.biorxiv.org/content/10.1101/2022.07.22.501125v1**
+
+MS2Query uses MS2 mass spectral data to find the best match in a library and is able to search for both analogues and exact matches. A pretrained library for MS2Query is available based on the GNPS library. In our benchmarking we show that MS2Query performs better compared to current standards in the field like Cosine Score and the Modified Cosine score. MS2Query is easy to install (see below) and is scalable to large numbers of MS2 spectra. 
 
 <img src="https://github.com/iomega/ms2query/blob/main/images/workflow_ms2query.png" width="1000">
 
-
 ### Workflow
-MS2Query is a tool for MSMS library matching, searching both for analogues and exact matches in one run. The workflow for running MS2Query first uses MS2Deepscore to calculate spectral similarity scores between all library spectra and a query spectrum. By using pre-computed MS2Deepscore embeddings for library spectra, this full-library comparison can be computed very quickly. The top 2000 spectra with the highest MS2Deepscore are selected. In contrast to other analogue search methods, no preselection on precursor m/z is performed. MS2Query optimizes re-ranking the best analogue or exact match at the top by using a random forest that combines 5 features. The random forest predicts a score between 0 and 1 between each library and query spectrum and the highest scoring library match is selected. By using a minimum threshold for this score, unreliable matches can be filtered out.
-
-### Preliminary results
-MS2Query can reliably predict good analogues and exact library matches. We demonstrate that MS2Query is able to find reliable analogues for 35% of the mass spectra during benchmarking with an average Tanimoto score of 0.67 (chemical similarity). For the benchmarking test set, any exact library matches were purposely removed from the reference library, to make sure the best possible match is an analogue. This is a large improvement compared to a modified cosine score based method, which resulted in an average Tanimoto score of 0.45 with settings that resulted in a recall of 35% on the same test set. The workflow of MS2Query is fully automated and optimized for scalability and speed. This makes it possible to run MS2Query on 1000 query spectra against a library of over 300.000 spectra in less than 15 minutes on a normal laptop. The scalability of MS2Query is an encouraging step toward higher-throughput large-scale untargeted metabolomics workflows, thereby creating the opportunity to develop entirely novel large-scale full sample comparisons. The good performance for larger molecules offers a lot of new opportunities for further increasing the annotation rate of complex metabolite mixtures, in particular for natural product relevant mass ranges. Finally, MS2Query is provided as a tested, open source Python library which grants easy access for researchers and developers. 
+MS2Query is a tool for MSMS library matching, searching both for analogues and exact matches in one run. The workflow for running MS2Query first uses MS2Deepscore to calculate spectral similarity scores between all library spectra and a query spectrum. By using pre-computed MS2Deepscore embeddings for library spectra, this full-library comparison can be computed very quickly. The top 2000 spectra with the highest MS2Deepscore are selected. In contrast to other analogue search methods, no preselection on precursor m/z is performed. MS2Query optimizes re-ranking the best analogue or exact match at the top by using a random forest that combines 5 features. The random forest predicts a score between 0 and 1 between each library and query spectrum and the highest scoring library match is selected. By using a minimum threshold for this score, unreliable matches are filtered out.
 
 For questions regarding MS2Query you can contact niek.dejonge@wur.nl
 
 
-## Documentation for users
+## Installation guide
 ### Prepare environmnent
 We recommend to create an Anaconda environment with
 
@@ -36,6 +42,8 @@ MS2Query can simply be installed by running:
 ```
 pip install ms2query
 ```
+All dependencies are automatically installed, the dependencies can be found in setup.py. The installation is expected to take about 2 minutes. MS2Query was tested by continous integration on MacOS, Windows and Ubuntu for python version 3.7 and 3.8. 
+
 
 ### Run MS2Query
 Below you can find an example script for running MS2Query.
@@ -76,6 +84,8 @@ ms2library = create_library_object_from_one_dir(ms2query_library_files_directory
 run_complete_folder(ms2library, ms2_spectra_directory)
 
 ```
+
+To do a test run with dummy data you can download the file [dummy_spectra.mgf](https://github.com/iomega/ms2query/blob/main/dummy_data/dummy_spectra.mgf). The expected results can be found in [expected_results_dummy_data.csv](https://github.com/iomega/ms2query/blob/main/dummy_data/expected_results_dummy_data.csv). After downloading the library files, running on the dummy data is expected to take less than half a minute. 
 
 ## Create your own library (without training new models)
 The code below creates all required library files for your own in house library. 
@@ -206,6 +216,7 @@ To run all unit tests, to check if everything was installed successfully run:
 ```
 pytest
 ```
+
 
 ## Contributing
 
