@@ -3,7 +3,6 @@ This script is not needed for normally running MS2Query, instead it was used to 
 cross validation for the MS2Query manuscript
 """
 import os
-import sys
 import random
 from typing import List
 from matchms import Spectrum
@@ -81,7 +80,8 @@ def split_k_fold_cross_validation_exact_match_test_set(annotated_spectra: List[S
 
 
 def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder:str,
-                                                    i: str):
+                                                    i: str,
+                                                    exact_matches=False):
     folder_name = f"test_split_{i}"
     output_folder = os.path.join(k_fold_split_folder, folder_name)
     models_folder = os.path.join(output_folder, "models")
@@ -102,7 +102,13 @@ def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder:str,
 
     # Generate test results
     ms2library = create_library_object_from_one_dir(models_folder)
-    generate_exact_matches_test_results(ms2library,
-                                        annotated_training_spectra,
-                                        test_spectra,
-                                        test_results_folder)
+    if not exact_matches:
+        generate_exact_matches_test_results(ms2library,
+                                            annotated_training_spectra,
+                                            test_spectra,
+                                            test_results_folder)
+    else:
+        generate_test_results(ms2library,
+                              annotated_training_spectra,
+                              test_spectra,
+                              test_results_folder)
