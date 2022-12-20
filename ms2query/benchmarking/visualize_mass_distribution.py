@@ -2,7 +2,6 @@ import os
 from typing import Dict, List, Tuple
 from matchms import Spectrum
 from create_accuracy_vs_recall_plot import load_results_from_folder, \
-    calculate_all_means_and_standard_deviation, load_all_test_results, plot_all_with_standard_deviation, \
     calculate_means_and_standard_deviation
 from ms2query.utils import load_matchms_spectrum_objects_from_file, load_pickled_file
 from matplotlib import pyplot as plt
@@ -94,13 +93,15 @@ def plot_all_with_standard_deviation_mass(all_means_and_standars_deviation,
     plt.ylim(0, 1.05)
     plt.xlabel("Recall (%)")
     plt.ylabel("Average Tanimoto score")
-    plt.suptitle(f"Analogues test set per mass bin for {type_to_plot}")
-    plt.legend(loc="lower left")
+    plt.suptitle(f"{type_to_plot}")
+    plt.legend(loc="lower left", title="Mass bin (Da)")
     if save_figure_file_name is None:
         plt.show()
     else:
         assert not os.path.isfile(save_figure_file_name)
         plt.savefig(save_figure_file_name, format="svg")
+        plt.show()
+
 
 if __name__ == "__main__":
     test_results_folder = "../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits/"
@@ -116,8 +117,8 @@ if __name__ == "__main__":
                     "Optimal": [],
                     "Random": []}:
         plot_all_with_standard_deviation_mass(means_and_standard_deviation,
-                                              type
-                                              # save_figure_file_name=os.path.join(test_results_folder, "recall_vs_accuracy_neg_exact.svg")
+                                              type,
+                                              save_figure_file_name=os.path.join("../../data/libraries_and_models/gnps_01_11_2022/mass_bins/", f"mass_bins_{type}.svg")
                                               )
 
     # from ms2query.utils import save_pickled_file
