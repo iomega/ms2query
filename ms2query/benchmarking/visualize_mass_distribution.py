@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 def split_results_mass(list_of_test_spectra: List[List[Spectrum]],
                        list_of_test_results: List[List[Tuple[float, float, bool]]],
                        bin_borders) -> Dict[str, List[List[Tuple[float, float, bool]]]]:
+    # pylint: disable=too-many-locals
     assert len(list_of_test_spectra) == len(list_of_test_results)
 
     results_all_bins = {}
@@ -109,17 +110,19 @@ if __name__ == "__main__":
     # means_and_standard_deviation = split_results_mass_all_results(dict_with_results, all_test_spectra)
     means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, "means_and_standard_deviations_mass_bins.pickle"))
 
-    for type in {"MS2Query": [],
+    for test_type in {"MS2Query": [],
                     "MS2Deepscore": [],
                     "MS2Deepscore 100 Da": [],
                     "Cosine score 100 Da": [],
                     "Modified cosine score 100 Da": [],
                     "Optimal": [],
                     "Random": []}:
-        plot_all_with_standard_deviation_mass(means_and_standard_deviation,
-                                              type,
-                                              save_figure_file_name=os.path.join("../../data/libraries_and_models/gnps_01_11_2022/mass_bins/", f"mass_bins_{type}.svg")
-                                              )
+        plot_all_with_standard_deviation_mass(
+            means_and_standard_deviation,
+            test_type,
+            save_figure_file_name=os.path.join(
+                "../../data/libraries_and_models/gnps_01_11_2022/mass_bins/", f"mass_bins_{type}.svg"))
 
     # from ms2query.utils import save_pickled_file
-    # save_pickled_file(means_and_standard_deviation, os.path.join(test_results_folder, "means_and_standard_deviations_mass_bins.pickle"))
+    # save_pickled_file(means_and_standard_deviation, os.path.join(test_results_folder,
+    # "means_and_standard_deviations_mass_bins.pickle"))

@@ -63,7 +63,7 @@ def split_k_fold_cross_validation_exact_match_test_set(annotated_spectra: List[S
     for i in range(k):
         training_spectra = []
         test_spectra = []
-        for unique_inchikey, spectra in spectra_per_unique_inchikey.items():
+        for _, spectra in spectra_per_unique_inchikey.items():
             if len(spectra) == 1:
                 training_spectra += spectra
             else:

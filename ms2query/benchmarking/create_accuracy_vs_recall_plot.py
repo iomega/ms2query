@@ -99,7 +99,6 @@ def calculate_all_means_and_standard_deviation(dict_with_results,
 
 
 def load_all_test_results(nr_of_test_results, base_directory, exact_match=False):
-
     results_dict = {}
     for i in range(nr_of_test_results):
         test_results_directory = os.path.join(base_directory, f"test_split_{i}", "test_results")
@@ -107,7 +106,7 @@ def load_all_test_results(nr_of_test_results, base_directory, exact_match=False)
             results = load_results_from_folder(test_results_directory,
                                                exact_matches=exact_match)
             for key in results:  # pylint: disable=consider-using-dict-items
-                if key in list(results_dict.keys()):
+                if key in results_dict:
                     results_dict[key].append(results[key])
                 else:
                     results_dict[key] = [results[key]]
