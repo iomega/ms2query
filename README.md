@@ -5,25 +5,31 @@
 
 # MS2Query - Reliable and fast MS/MS spectral-based analogue search 
 
-## The preprint is out now and can be found on: https://www.biorxiv.org/content/10.1101/2022.07.22.501125v1
+# Contents
+* [Overview](https://github.com/iomega/ms2query#overview)
+* [Installation guide](https://github.com/iomega/ms2query#Installation-guide)
+* [Create your own library](https://github.com/iomega/ms2query#Create-your-own-library-without-training-new-models)
+* [Train new models](https://github.com/iomega/ms2query#Create-your-own-library-and-train-new-models)
+* [Documentation for developers](https://github.com/iomega/ms2query#Documentation-for-developers)
+* [Contributing](https://github.com/iomega/ms2query#Contributing)
+* [License](https://github.com/iomega/ms2query#License)
 
-MS2Query is able to search for both analogues and exact matches in large libraries. 
 
-Metabolomics of natural extracts remains hampered by the grand challenge of metabolite annotation and identification. Only a tiny fraction of all metabolites has an annotated spectrum in a library; hence, when searching only for exact library matches such an approach generally has a low recall. An attractive alternative is searching for so-called analogues as a starting point for structural annotations; analogues are library molecules which are not exact matches, but display a high chemical similarity. However, current analogue search implementations are not very reliable yet and are relatively slow. Here, we present MS2Query, a machine learning-based tool that integrates mass spectrum-based chemical similarity predictors (Spec2Vec and MS2Deepscore) as well as detected precursor masses to rank potential analogues and exact matches. The reliability and scalability of MS2Query are encouraging steps toward higher-throughput large-scale untargeted metabolomics workflows. This offers entirely new opportunities for further increasing the annotation rate of complex metabolite mixtures.
+## Overview
+
+**The preprint is out now and can be found on: https://www.biorxiv.org/content/10.1101/2022.07.22.501125v1**
+
+MS2Query uses MS2 mass spectral data to find the best match in a library and is able to search for both analogues and exact matches. A pretrained library for MS2Query is available based on the GNPS library. In our benchmarking we show that MS2Query performs better compared to current standards in the field like Cosine Score and the Modified Cosine score. MS2Query is easy to install (see below) and is scalable to large numbers of MS2 spectra. 
 
 <img src="https://github.com/iomega/ms2query/blob/main/images/workflow_ms2query.png" width="1000">
 
-
 ### Workflow
-MS2Query is a tool for MSMS library matching, searching both for analogues and exact matches in one run. The workflow for running MS2Query first uses MS2Deepscore to calculate spectral similarity scores between all library spectra and a query spectrum. By using pre-computed MS2Deepscore embeddings for library spectra, this full-library comparison can be computed very quickly. The top 2000 spectra with the highest MS2Deepscore are selected. In contrast to other analogue search methods, no preselection on precursor m/z is performed. MS2Query optimizes re-ranking the best analogue or exact match at the top by using a random forest that combines 5 features. The random forest predicts a score between 0 and 1 between each library and query spectrum and the highest scoring library match is selected. By using a minimum threshold for this score, unreliable matches can be filtered out.
-
-### Preliminary results
-MS2Query can reliably predict good analogues and exact library matches. We demonstrate that MS2Query is able to find reliable analogues for 35% of the mass spectra during benchmarking with an average Tanimoto score of 0.67 (chemical similarity). For the benchmarking test set, any exact library matches were purposely removed from the reference library, to make sure the best possible match is an analogue. This is a large improvement compared to a modified cosine score based method, which resulted in an average Tanimoto score of 0.45 with settings that resulted in a recall of 35% on the same test set. The workflow of MS2Query is fully automated and optimized for scalability and speed. This makes it possible to run MS2Query on 1000 query spectra against a library of over 300.000 spectra in less than 15 minutes on a normal laptop. The scalability of MS2Query is an encouraging step toward higher-throughput large-scale untargeted metabolomics workflows, thereby creating the opportunity to develop entirely novel large-scale full sample comparisons. The good performance for larger molecules offers a lot of new opportunities for further increasing the annotation rate of complex metabolite mixtures, in particular for natural product relevant mass ranges. Finally, MS2Query is provided as a tested, open source Python library which grants easy access for researchers and developers. 
+MS2Query is a tool for MSMS library matching, searching both for analogues and exact matches in one run. The workflow for running MS2Query first uses MS2Deepscore to calculate spectral similarity scores between all library spectra and a query spectrum. By using pre-computed MS2Deepscore embeddings for library spectra, this full-library comparison can be computed very quickly. The top 2000 spectra with the highest MS2Deepscore are selected. In contrast to other analogue search methods, no preselection on precursor m/z is performed. MS2Query optimizes re-ranking the best analogue or exact match at the top by using a random forest that combines 5 features. The random forest predicts a score between 0 and 1 between each library and query spectrum and the highest scoring library match is selected. By using a minimum threshold for this score, unreliable matches are filtered out.
 
 For questions regarding MS2Query you can contact niek.dejonge@wur.nl
 
 
-## Documentation for users
+## Installation guide
 ### Prepare environmnent
 We recommend to create an Anaconda environment with
 
@@ -36,6 +42,8 @@ MS2Query can simply be installed by running:
 ```
 pip install ms2query
 ```
+All dependencies are automatically installed, the dependencies can be found in setup.py. The installation is expected to take about 2 minutes. MS2Query was tested by continous integration on MacOS, Windows and Ubuntu for python version 3.7 and 3.8. 
+
 
 ### Run MS2Query
 Below you can find an example script for running MS2Query.
@@ -76,6 +84,8 @@ ms2library = create_library_object_from_one_dir(ms2query_library_files_directory
 run_complete_folder(ms2library, ms2_spectra_directory)
 
 ```
+
+To do a test run with dummy data you can download the file [dummy_spectra.mgf](https://github.com/iomega/ms2query/blob/main/dummy_data/dummy_spectra.mgf). The expected results can be found in [expected_results_dummy_data.csv](https://github.com/iomega/ms2query/blob/main/dummy_data/expected_results_dummy_data.csv). After downloading the library files, running on the dummy data is expected to take less than half a minute. 
 
 ## Create your own library (without training new models)
 The code below creates all required library files for your own in house library. 
@@ -206,6 +216,62 @@ To run all unit tests, to check if everything was installed successfully run:
 ```
 pytest
 ```
+
+## Recreate Results Manuscript
+
+To recreate the results in Figure 2 in the MS2Query manuscript download the in between results from https://zenodo.org/record/7427094. 
+Install MS2Query as described above (no need to download the models) and run the code below. This code should work with version 0.5.7. 
+```python
+from ms2query.benchmarking.create_accuracy_vs_recall_plot import create_plot
+
+# The folder where the benchmarking results are stored. These can be downloaded from https://zenodo.org/record/7427094
+base_folder = "./benchmarking_results"
+
+create_plot(exact_matches=True, # Change to switch between the plot for the exact matches test st and the analogues test set
+            positive=False, # Change to switch between the positive and negative ionization mode results
+            recalculate_means=True, 
+            save_figure=False, # If you want to save the figure, change to true
+            base_folder=base_folder
+            )
+```
+
+Above code only recreates the figures based on the already generated test results. To reproduce the test results from scratch the models have to be retrained. The test split is random and the models trained have a random component to it, so the results could vary sligtly, but the general conclusions from the results are expected to be the same.
+From https://zenodo.org/record/7427094 download the ALL_GNPS_NO_PROPOGATED.mgf file to use the same starting data as used for the 20-fold cross-validation, this set was downloaded from https://gnps-external.ucsd.edu/gnpslibrary on 01-11-2022, alternatively a more recent version could be downloaded. To redo the analysis with exactly the same test split as in the Manuscript the test sets can be downloaded from https://zenodo.org/record/7427094 the training data can be constructed by combining the 19 other test sets together for each of the 20 data splits.
+
+If you want to randomly recreate the test splits from scratch run:
+
+```python
+from ms2query.benchmarking.k_fold_cross_validation import split_and_store_annotated_unannotated, split_k_fold_cross_validation_analogue_test_set, split_k_fold_cross_validation_exact_match_test_set
+
+spectrum_file_name = "./ALL_GNPS_NO_PROPOGATED.mgf"
+split_and_store_annotated_unannotated(spectrum_file_name, ionmode="positive", output_folder="./positive_mode_data_split")
+split_and_store_annotated_unannotated(spectrum_file_name, ionmode="negative", output_folder="./negative_mode_data_split")
+
+positive_annotated_spectra = load_matchms_spectrum_objects_from_file("positive_mode_data_split/annotated_training_spectra.pickle")
+negative_annotated_spectra = load_matchms_spectrum_objects_from_file("negative_mode_data_split/annotated_training_spectra.pickle")
+
+# Run for positive mode spectra
+split_k_fold_cross_validation_analogue_test_set(positive_annotated_spectra, 20, output_folder = "./positive_mode/analogue_test_sets_splits/)
+split_k_fold_cross_validation_exact_match_test_set(positive_annotated_spectra, 20, output_folder = "./positive_mode/exact_matches_test_sets_splits/)
+
+# Run for negative mode spectra
+split_k_fold_cross_validation_analogue_test_set(negative_annotated_spectra, 20, output_folder = "./negative_mode/analogue_test_sets_splits/)
+split_k_fold_cross_validation_exact_match_test_set(negative_annotated_spectra, 20, output_folder = "./negative_mode/exact_matches_test_sets_splits/)
+
+# The 20 different datasplits will be stored in the specified folders
+```
+
+To train the models and to create the test results for MS2Query and all benchmarking methods (cosine, modified cosine and MS2Deepscore) run for each of the test split. So the script should be started 20 times for each type of test split. The running time for this script is a few days, since it trains all models and creates all test results. 
+
+```python
+from ms2query.benchmarking.k_fold_cross_validation import train_models_and_test_result_from_k_fold_folder
+k_fold_split_number = 0 # Vary this number between 0 and 19
+train_models_and_test_result_from_k_fold_folder(
+    "./benchmarking_test_sets/exact_matches_test_sets_splits/",
+    k_fold_split_number,
+    exact_matches=True) # Change for analogue test set, this will change the precursor m/z prefiltering to match exact matches or analogue search for the reference benchmarking methods. 
+```
+After creating all the results, run the create_plot (the first block of python code) to create the new plots. 
 
 ## Contributing
 
