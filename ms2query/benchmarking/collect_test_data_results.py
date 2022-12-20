@@ -154,9 +154,12 @@ def get_modified_cosine_score_results(lib_spectra,
     best_matches_for_test_spectra = []
     for test_spectrum in tqdm(test_spectra):
         precursor_mz = test_spectrum.get("precursor_mz")
-        selected_lib_spectra = select_spectra_within_mass_range(lib_spectra,
-                                                                precursor_mz-mass_tolerance,
-                                                                precursor_mz+mass_tolerance)
+        if mass_tolerance is not None:
+            selected_lib_spectra = select_spectra_within_mass_range(lib_spectra,
+                                                                    precursor_mz-mass_tolerance,
+                                                                    precursor_mz+mass_tolerance)
+        else:
+            selected_lib_spectra = lib_spectra
         if len(selected_lib_spectra) != 0:
             scores_list = calculate_scores(selected_lib_spectra,
                                            [test_spectrum], ModifiedCosine()).scores_by_query(test_spectrum)
@@ -182,7 +185,10 @@ def get_cosines_score_results(lib_spectra,
     best_matches_for_test_spectra = []
     for test_spectrum in tqdm(test_spectra):
         precursor_mz = test_spectrum.get("precursor_mz")
-        selected_lib_spectra = select_spectra_within_mass_range(lib_spectra, precursor_mz-mass_tolerance, precursor_mz+mass_tolerance)
+        if mass_tolerance is not None:
+            selected_lib_spectra = select_spectra_within_mass_range(lib_spectra, precursor_mz-mass_tolerance, precursor_mz+mass_tolerance)
+        else:
+            selected_lib_spectra = lib_spectra
         if len(selected_lib_spectra) != 0:
             scores_list = calculate_scores(selected_lib_spectra,
                                            [test_spectrum],
@@ -309,3 +315,86 @@ def generate_test_results(ms2library: MS2Library,
         save_json_file(random_results, random_results_file_name)
     else:
         print(f"File already exists so not remade: {random_results_file_name}")
+
+
+def generate_exact_matches_test_results(ms2library: MS2Library,
+                                        training_spectra: List[Spectrum],
+                                        test_spectra: List[Spectrum],
+                                        output_dir: str):
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
+    assert ms2library.ms2ds_embeddings.shape[0] == len(training_spectra), \
+        "The number of spectra in the library is not equal to the number of training spectra"
+
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    ms2query_results_file_name = os.path.join(output_dir, "ms2query_test_results.json")
+    if not os.path.isfile(ms2query_results_file_name):
+        # Generate MS2Query results
+        ms2query_test_results = generate_test_results_ms2query(ms2library, test_spectra)
+        save_json_file(ms2query_test_results, ms2query_results_file_name)
+    else:
+        print(f"File already exists so not remade: {ms2query_results_file_name}")
+
+    ms2ds_results_0_25_file_name = os.path.join(output_dir, "ms2deepscore_test_results_0_25_Da.json")
+    ms2ds_results_all_file_name = os.path.join(output_dir, "ms2deepscore_test_results_all.json")
+
+    if not os.path.isfile(ms2ds_results_0_25_file_name) or not os.path.join(ms2ds_results_all_file_name):
+        # Generate MS2Deepscore results
+        ms2ds_scores = get_all_ms2ds_scores(ms2library.ms2ds_model,
+                                            ms2library.ms2ds_embeddings,
+                                            test_spectra)
+        if not os.path.isfile(ms2ds_results_0_25_file_name):
+            ms2ds_test_results_mass_diff_100 = select_highest_ms2ds_in_mass_range(ms2ds_scores,
+                                                                                  test_spectra,
+                                                                                  ms2library.sqlite_file_name,
+                                                                                  allowed_mass_diff=0.25)
+            save_json_file(ms2ds_test_results_mass_diff_100, ms2ds_results_0_25_file_name)
+        else:
+            print(f"File already exists so not remade: {ms2ds_results_0_25_file_name}")
+
+        if not os.path.isfile(ms2ds_results_all_file_name):
+            ms2ds_test_results_all = select_highest_ms2ds_in_mass_range(ms2ds_scores,
+                                                                        test_spectra,
+                                                                        ms2library.sqlite_file_name,
+                                                                        allowed_mass_diff=None)
+            save_json_file(ms2ds_test_results_all, ms2ds_results_all_file_name)
+        else:
+            print(f"File already exists so not remade: {ms2ds_results_all_file_name}")
+    else:
+        print("MS2Deepscore files already exist")
+
+    modified_cosine_score_0_25_file_name = os.path.join(output_dir, "modified_cosine_score_0_25_Da_test_results.json")
+    if not os.path.isfile(modified_cosine_score_0_25_file_name):
+        # Generate Modified cosine results
+        modified_cosine_results = get_modified_cosine_score_results(training_spectra, test_spectra,
+                                                                    mass_tolerance=0.25)
+        save_json_file(modified_cosine_results, modified_cosine_score_0_25_file_name)
+    else:
+        print(f"File already exists so not remade: {modified_cosine_score_0_25_file_name}")
+
+    cosine_score_0_25_file_name = os.path.join(output_dir, "cosine_score_0_25_da_test_results.json")
+    if not os.path.isfile(cosine_score_0_25_file_name):
+        cosine_results = get_cosines_score_results(training_spectra,
+                                                   test_spectra,
+                                                   mass_tolerance=0.25,
+                                                   fragment_mass_tolerance=0.05,
+                                                   minimum_matched_peaks=0)
+        save_json_file(cosine_results, cosine_score_0_25_file_name)
+    else:
+        print(f"File already exists so not remade: {cosine_score_0_25_file_name}")
+
+    random_results_file_name = os.path.join(output_dir, "random_results.json")
+    if not os.path.isfile(random_results_file_name):
+        random_results = create_random_results(test_spectra, training_spectra)
+        save_json_file(random_results, random_results_file_name)
+    else:
+        print(f"File already exists so not remade: {random_results_file_name}")
+
+    optimal_results_file_name = os.path.join(output_dir, "optimal_results.json")
+    if not os.path.isfile(optimal_results_file_name):
+        optimal_results = create_optimal_results(test_spectra, training_spectra)
+        save_json_file(optimal_results, optimal_results_file_name)
+    else:
+        print(f"File already exists so not remade: {optimal_results_file_name}")
