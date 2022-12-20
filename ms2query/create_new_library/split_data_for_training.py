@@ -3,7 +3,7 @@ This script is not needed for normally running MS2Query, it is only needed to ge
 new models
 """
 
-from typing import List
+from typing import List, Dict
 from matchms import Spectrum
 import random
 
@@ -37,6 +37,17 @@ def split_spectra_in_random_inchikey_sets(spectra: List[Spectrum],
         spectrum_set, spectra = select_spectra_belonging_to_inchikey(spectra, [inchikey])
         spectrum_sets[set_nr] += spectrum_set
     return spectrum_sets
+
+
+def select_spectra_per_unique_inchikey(spectra: List[Spectrum]) -> Dict[str, List[Spectrum]]:
+    inchikey_dict = {}
+    for spectrum in spectra:
+        inchikey = spectrum.get("inchikey")[:14]
+        if inchikey in inchikey_dict:
+            inchikey_dict[inchikey].append(spectrum)
+        else:
+            inchikey_dict[inchikey] = [spectrum]
+    return inchikey_dict
 
 
 def select_spectra_belonging_to_inchikey(spectra: List[Spectrum],
