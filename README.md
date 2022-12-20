@@ -217,6 +217,60 @@ To run all unit tests, to check if everything was installed successfully run:
 pytest
 ```
 
+## Recreate Results Manuscript
+
+To recreate the results in Figure 2 in the MS2Query manuscript download the in between results from https://zenodo.org/record/7427094. 
+Install MS2Query as described above (no need to download the models) and run the code below. This code should work with version 0.5.7. 
+```python
+from ms2query.benchmarking.create_accuracy_vs_recall_plot import create_plot
+
+# The folder where the benchmarking results are stored. These can be downloaded from https://zenodo.org/record/7427094
+base_folder = "./benchmarking_results"
+
+create_plot(exact_matches=True, # Change to switch between the plot for the exact matches test st and the analogues test set
+            positive=False, # Change to switch between the positive and negative ionization mode results
+            recalculate_means=True, 
+            save_figure=False, # If you want to save the figure, change to true
+            base_folder=base_folder
+            )
+```
+
+Above code only recreates the figures based on the already generated test results. To reproduce the test results from scratch the models have to be retrained. The test split is random and the models trained have a random component to it, so the results could vary sligtly, but the general conclusions from the results are expected to be the same.
+From https://zenodo.org/record/7427094 download the ALL_GNPS_NO_PROPOGATED.mgf file to use the same starting data as used for the 20-fold cross-validation, this set was downloaded from https://gnps-external.ucsd.edu/gnpslibrary on 01-11-2022, alternatively a more recent version could be downloaded. To redo the analysis with exactly the same test split as in the Manuscript the test sets can be downloaded from https://zenodo.org/record/7427094 the training data can be constructed by combining the 19 other test sets together for each of the 20 data splits.
+
+If you want to randomly recreate the test splits from scratch run:
+
+```python
+from ms2query.benchmarking.k_fold_cross_validation import split_and_store_annotated_unannotated, split_k_fold_cross_validation_analogue_test_set, split_k_fold_cross_validation_exact_match_test_set
+
+spectrum_file_name = "./ALL_GNPS_NO_PROPOGATED.mgf"
+split_and_store_annotated_unannotated(spectrum_file_name, ionmode="positive", output_folder="./positive_mode_data_split")
+split_and_store_annotated_unannotated(spectrum_file_name, ionmode="negative", output_folder="./negative_mode_data_split")
+
+positive_annotated_spectra = load_matchms_spectrum_objects_from_file("positive_mode_data_split/annotated_training_spectra.pickle")
+negative_annotated_spectra = load_matchms_spectrum_objects_from_file("negative_mode_data_split/annotated_training_spectra.pickle")
+
+# Run for positive mode spectra
+split_k_fold_cross_validation_analogue_test_set(positive_annotated_spectra, 20, output_folder = "./positive_mode/analogue_test_sets_splits/)
+split_k_fold_cross_validation_exact_match_test_set(positive_annotated_spectra, 20, output_folder = "./positive_mode/exact_matches_test_sets_splits/)
+
+# Run for negative mode spectra
+split_k_fold_cross_validation_analogue_test_set(negative_annotated_spectra, 20, output_folder = "./negative_mode/analogue_test_sets_splits/)
+split_k_fold_cross_validation_exact_match_test_set(negative_annotated_spectra, 20, output_folder = "./negative_mode/exact_matches_test_sets_splits/)
+
+# The 20 different datasplits will be stored in the specified folders
+```
+
+To train the models and to create the test results for MS2Query and all benchmarking methods (cosine, modified cosine and MS2Deepscore) run for each of the test split. So the script should be started 20 times for each type of test split. The running time for this script is a few days, since it trains all models and creates all test results. 
+
+```python
+from ms2query.benchmarking.k_fold_cross_validation import train_models_and_test_result_from_k_fold_folder
+k_fold_split_number = 0 # Vary this number between 0 and 19
+train_models_and_test_result_from_k_fold_folder(
+    "./benchmarking_test_sets/exact_matches_test_sets_splits/",
+    k_fold_split_number)
+```
+After creating all the results, run the create_plot (the first block of python code) to create the new plots. 
 
 ## Contributing
 
