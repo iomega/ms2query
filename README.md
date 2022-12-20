@@ -268,7 +268,8 @@ from ms2query.benchmarking.k_fold_cross_validation import train_models_and_test_
 k_fold_split_number = 0 # Vary this number between 0 and 19
 train_models_and_test_result_from_k_fold_folder(
     "./benchmarking_test_sets/exact_matches_test_sets_splits/",
-    k_fold_split_number)
+    k_fold_split_number,
+    exact_matches=True) # Change for analogue test set, this will change the precursor m/z prefiltering to match exact matches or analogue search for the reference benchmarking methods. 
 ```
 After creating all the results, run the create_plot (the first block of python code) to create the new plots. 
 
