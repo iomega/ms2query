@@ -15,7 +15,7 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file)
+                            load_pickled_file, return_non_existing_file_name)
 
 
 class MS2Library:
@@ -239,7 +239,7 @@ class MS2Library:
             "average_tanimoto_score_library_structures"
         """
         # pylint: disable=too-many-arguments
-
+        results_csv_file_location = return_non_existing_file_name(results_csv_file_location)
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         assert self.ms2query_model is not None, \

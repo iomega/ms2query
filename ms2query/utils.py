@@ -199,3 +199,17 @@ def column_names_for_output(return_non_classifier_columns: bool,
     if return_non_classifier_columns:
         return standard_columns
     return []
+
+
+def return_non_existing_file_name(file_name):
+    """Checks if a path already exists, otherwise creates a new filename with (1)"""
+    if not os.path.exists(file_name):
+        return file_name
+    print(f"The file name already exists: {file_name}")
+    file_name_base, file_extension = os.path.splitext(file_name)
+    i = 1
+    new_file_name = f"{file_name_base}({i}){file_extension}"
+    while os.path.exists(new_file_name):
+        i += 1
+    print(f"Instead the file will be stored in {new_file_name}")
+    return new_file_name
