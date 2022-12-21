@@ -15,7 +15,8 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file, return_non_existing_file_name)
+                            load_pickled_file)
+from ms2query.utils import SettingsRunMS2Query
 
 
 class MS2Library:
@@ -204,11 +205,7 @@ class MS2Library:
     def analog_search_store_in_csv(self,
                                    query_spectra: List[Spectrum],
                                    results_csv_file_location: str,
-                                   preselection_cut_off: int = 2000,
-                                   nr_of_top_analogs_to_save: int = 1,
-                                   minimal_ms2query_metascore: Union[float, int] = 0.0,
-                                   additional_metadata_columns: List[str] = None,
-                                   additional_ms2query_score_columns: List[str] = None
+                                   settings: Optional[SettingsRunMS2Query] = None
                                    ) -> None:
         """Stores the results of an analog in csv files.
 
@@ -222,24 +219,12 @@ class MS2Library:
             List of query spectra for which the best matches should be found
         results_csv_file_location:
             file location were a csv file is created that stores the results
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected. Default = 2000
-        nr_of_top_analogs_to_save:
-            The number of returned analogs that are stored.
-        minimal_ms2query_metascore:
-            The minimal ms2query metascore needed to be stored in the csv file.
-            Spectra for which no analog with this minimal metascore was found,
-            will not be stored in the csv file.
-        additional_metadata_columns:
-            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
-        additional_ms2query_score_columns:
-            Additional columns with scores used for calculating the ms2query metascore
-            Options are: "s2v_score", "ms2ds_score", "average_ms2deepscore_multiple_library_structures",
-            "average_tanimoto_score_library_structures"
+        settings:
+            Settings for running MS2Query, see SettingsRunMS2Query for details.
         """
+        if settings is None:
+            settings = SettingsRunMS2Query()
         # pylint: disable=too-many-arguments
-        results_csv_file_location = return_non_existing_file_name(results_csv_file_location)
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         assert self.ms2query_model is not None, \
@@ -247,11 +232,11 @@ class MS2Library:
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_name is None:
-                csv_file.write(",".join(column_names_for_output(True, False, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) + "\n")
+                csv_file.write(",".join(column_names_for_output(True, False, settings.additional_metadata_columns,
+                                                                settings.additional_ms2query_score_columns)) + "\n")
             else:
-                csv_file.write(",".join(column_names_for_output(True, True, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) + "\n")
+                csv_file.write(",".join(column_names_for_output(True, True, settings.additional_metadata_columns,
+                                                                settings.additional_ms2query_score_columns)) + "\n")
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
@@ -259,15 +244,16 @@ class MS2Library:
                      disable=not self.settings["progress_bars"],
                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
-            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off)
             if results_table is None:
                 print(f"Spectrum nr {i} was not stored, since it did not pass all cleaning steps")
             else:
                 results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-                results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
-                                                               minimal_ms2query_metascore,
-                                                               additional_metadata_columns=additional_metadata_columns,
-                                                               additional_ms2query_score_columns=additional_ms2query_score_columns)
+                results_df = results_table.export_to_dataframe(
+                    settings.nr_of_top_analogs_to_save,
+                    settings.minimal_ms2query_metascore,
+                    additional_metadata_columns=settings.additional_metadata_columns,
+                    additional_ms2query_score_columns=settings.additional_ms2query_score_columns)
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,

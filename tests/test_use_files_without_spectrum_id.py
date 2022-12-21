@@ -2,6 +2,7 @@ import os
 import sys
 import pytest
 from ms2query.run_ms2query import run_complete_folder
+from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import (MS2Library,
                                    test_spectra)
 from tests.test_utils import create_test_classifier_csv_file
@@ -62,8 +63,7 @@ def test_run_complete_folder(tmp_path, ms2library_without_spectrum_id, test_spec
     results_directory = os.path.join(folder_with_spectra, "results")
 
     run_complete_folder(ms2library=ms2library_without_spectrum_id,
-                        folder_with_spectra=folder_with_spectra,
-                        minimal_ms2query_score=0)
+                        folder_with_spectra=folder_with_spectra)
     assert os.path.exists(results_directory), "Expected results directory to be created"
 
     assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
@@ -87,12 +87,12 @@ def test_run_complete_folder_with_classifiers(tmp_path, ms2library_without_spect
 
     folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
     results_directory = os.path.join(folder_with_spectra, "results")
-
+    settings = SettingsRunMS2Query(minimal_ms2query_metascore=0,
+                                   additional_metadata_columns=("charge",),
+                                   additional_ms2query_score_columns=("s2v_score", "ms2ds_score"))
     run_complete_folder(ms2library=ms2library_without_spectrum_id,
                         folder_with_spectra=folder_with_spectra,
-                        minimal_ms2query_score=0,
-                        additional_metadata_columns=("charge",),
-                        additional_ms2query_score_columns=["s2v_score", "ms2ds_score"]
+                        settings=settings
                         )
     assert os.path.exists(results_directory), "Expected results directory to be created"
 

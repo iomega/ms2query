@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Tuple, Union
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
@@ -102,8 +102,8 @@ class ResultsTable:
             self,
             nr_of_top_spectra: int,
             minimal_ms2query_score: Union[float, int] = 0.0,
-            additional_metadata_columns: List[str] = None,
-            additional_ms2query_score_columns: List[str] = None
+            additional_metadata_columns: Tuple[str] = None,
+            additional_ms2query_score_columns: Tuple[str] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
 

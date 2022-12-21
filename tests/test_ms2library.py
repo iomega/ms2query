@@ -9,7 +9,7 @@ from ms2query.ms2library import (MS2Library,
                                  create_library_object_from_one_dir,
                                  get_ms2query_model_prediction_single_spectrum)
 from ms2query.results_table import ResultsTable
-from ms2query.utils import load_ms2query_model, load_pickled_file
+from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS2Query
 
 
 @pytest.fixture
@@ -211,7 +211,8 @@ def test_get_ms2query_model_prediction_single_spectrum():
 
 def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
     results_csv_file = os.path.join(tmp_path, "test_csv_analog_search")
-    ms2library.analog_search_store_in_csv(test_spectra, results_csv_file)
+    settings = SettingsRunMS2Query(additional_metadata_columns=())
+    ms2library.analog_search_store_in_csv(test_spectra, results_csv_file, settings)
     assert os.path.exists(results_csv_file)
     with open(results_csv_file, "r") as test_file:
         assert test_file.readlines() == \
