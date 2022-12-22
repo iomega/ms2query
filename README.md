@@ -11,6 +11,7 @@
 * [Create your own library](https://github.com/iomega/ms2query#Create-your-own-library-without-training-new-models)
 * [Train new models](https://github.com/iomega/ms2query#Create-your-own-library-and-train-new-models)
 * [Documentation for developers](https://github.com/iomega/ms2query#Documentation-for-developers)
+* [Recreate Results Manuscript](http://github.com/iomega/ms2query#Recreate-Results-Manuscript)
 * [Contributing](https://github.com/iomega/ms2query#Contributing)
 * [License](https://github.com/iomega/ms2query#License)
 
