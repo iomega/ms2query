@@ -224,7 +224,6 @@ class MS2Library:
         """
         if settings is None:
             settings = SettingsRunMS2Query()
-        # pylint: disable=too-many-arguments
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         assert self.ms2query_model is not None, \

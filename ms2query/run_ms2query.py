@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple, Union, Optional
 from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
-from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query
+from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query, return_non_existing_file_name
 
 
 def download_zenodo_files(zenodo_doi: int,
@@ -57,26 +57,55 @@ def run_complete_folder(ms2library: MS2Library,
     settings:
         Settings for running MS2Query, see SettingsRunMS2Query for details.
     """
-    # pylint: disable=too-many-arguments
-
-    if results_folder is None:
-        results_folder = os.path.join(folder_with_spectra, "results")
-    # check if there is a results folder otherwise create one
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
-
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
             if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
-                spectra = load_matchms_spectrum_objects_from_file(os.path.join(folder_with_spectra, file_name))
-                analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
-                ms2library.analog_search_store_in_csv(spectra,
-                                                      analogs_results_file_name,
-                                                      settings)
-                print(f"Results stored in {analogs_results_file_name}")
+                run_ms2query_single_file(spectrum_file_name=file_name,
+                                         folder_with_spectra=folder_with_spectra,
+                                         results_folder=results_folder,
+                                         ms2library=ms2library, settings=settings)
             else:
                 print(f'The file extension of the file {file_name} is not recognized, '
                       f'accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+
+
+def run_ms2query_single_file(spectrum_file_name,
+                             folder_with_spectra,
+                             results_folder,
+                             ms2library,
+                             settings):
+    """Runs MS2Query on a single file
+
+    Args:
+    ------
+    spectrum_file_name:
+        The file name of a file contain mass spectra, accepted file types are
+        ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"
+    folder_with_spectra:
+        Path to folder containing spectra on which analog search should be run.
+    results_folder:
+        Path to folder in which the results are stored, folder does not have to exist yet.
+        In this folder the csv files with results are stored. When None results_folder is set to
+        folder_with_spectra/result.
+    ms2library:
+        MS2Library object
+    settings:
+        Settings for running MS2Query, see SettingsRunMS2Query for details.
+    """
+    if results_folder is None:
+        results_folder = os.path.join(folder_with_spectra, "results")
+    # check if there is a results folder otherwise create one
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
+
+    spectra = load_matchms_spectrum_objects_from_file(os.path.join(folder_with_spectra, spectrum_file_name))
+    analogs_results_file_name = return_non_existing_file_name(
+        os.path.join(results_folder,
+                     os.path.splitext(spectrum_file_name)[0] + ".csv"))
+    ms2library.analog_search_store_in_csv(spectra,
+                                          analogs_results_file_name,
+                                          settings)
+    print(f"Results stored in {analogs_results_file_name}")
