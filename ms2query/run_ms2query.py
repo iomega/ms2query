@@ -62,14 +62,14 @@ def run_complete_folder(ms2library: MS2Library,
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
+            if os.path.splitext(file_name)[1].lower() in {".mzml", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
                 run_ms2query_single_file(spectrum_file_name=file_name,
                                          folder_with_spectra=folder_with_spectra,
                                          results_folder=results_folder,
                                          ms2library=ms2library, settings=settings)
             else:
                 print(f'The file extension of the file {file_name} is not recognized, '
-                      f'accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+                      f'accepted file types are ".mzml", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
 
 
 def run_ms2query_single_file(spectrum_file_name,
