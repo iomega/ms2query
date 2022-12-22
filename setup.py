@@ -36,7 +36,7 @@ setup(
         "tensorflow-macos<=2.10.1;platform_machine=='arm64'",
         "tensorflow-metal<=2.10.1;platform_machine=='arm64'",
         "tensorflow<=2.10.1;platform_machine!='arm64'",
-        "scikit-learn",
+        "scikit-learn==0.24.2",
         "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5",
