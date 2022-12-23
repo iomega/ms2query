@@ -112,8 +112,7 @@ class MS2Library:
             "Mismatch of library files. " \
             "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
 
-        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name,
-                                                           self.settings["spectrum_id_column_name"])
+        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name)
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
             get_inchikey_information(self.sqlite_file_name)
