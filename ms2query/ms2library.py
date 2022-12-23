@@ -9,13 +9,13 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
 from ms2query.query_from_sqlite_database import (get_inchikey_information,
-                                                 get_precursor_mz)
+                                                 get_precursor_mz, get_ionization_mode_library)
 from ms2query.results_table import ResultsTable
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file)
+                            load_pickled_file, SettingsRunMS2Query)
 
 
 class MS2Library:
@@ -112,7 +112,7 @@ class MS2Library:
             "Mismatch of library files. " \
             "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
 
-        # Load inchikey information into memory
+        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name)
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
             get_inchikey_information(self.sqlite_file_name)
@@ -148,12 +148,27 @@ class MS2Library:
 
     def calculate_features_single_spectrum(self,
                                            query_spectrum: Spectrum,
-                                           preselection_cut_off: int = 2000) -> Optional[ResultsTable]:
+                                           preselection_cut_off: int = 2000,
+                                           filter_on_ionmode: Optional[str] = None) -> Optional[ResultsTable]:
         """Calculates a results table for a single spectrum"""
         query_spectrum = clean_metadata(query_spectrum)
         query_spectrum = normalize_and_filter_peaks(query_spectrum)
         if query_spectrum is None:
             return None
+
+        # Check if the ionization mode matches that of the library
+        query_ionmode = query_spectrum.get("ionmode")
+        if filter_on_ionmode is not None:
+            if query_ionmode != filter_on_ionmode:
+                print(f"This spectrum is not analyzed since it was not in {filter_on_ionmode} ionization mode. "
+                      f"Instead the spectrum is in {query_ionmode} ionization mode.")
+                return None
+        if query_ionmode != "n/a" and self.ionization_mode is not None:
+            assert query_ionmode == self.ionization_mode, \
+                f"The spectrum is in {query_ionmode} ionization mode, while the library is for {self.ionization_mode} ionization mode. " \
+                f"Check the readme to download a library in the {query_ionmode} ionization mode"
+
+
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(
@@ -187,7 +202,8 @@ class MS2Library:
         result_tables = []
         for i, query_spectrum in tqdm(enumerate(query_spectra),
                                       desc="collecting matches info",
-                                      disable=not self.settings["progress_bars"]):
+                                      disable=not self.settings["progress_bars"],
+                                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
             if results_table is not None:
@@ -203,11 +219,7 @@ class MS2Library:
     def analog_search_store_in_csv(self,
                                    query_spectra: List[Spectrum],
                                    results_csv_file_location: str,
-                                   preselection_cut_off: int = 2000,
-                                   nr_of_top_analogs_to_save: int = 1,
-                                   minimal_ms2query_metascore: Union[float, int] = 0.0,
-                                   additional_metadata_columns: List[str] = None,
-                                   additional_ms2query_score_columns: List[str] = None
+                                   settings: Optional[SettingsRunMS2Query] = None
                                    ) -> None:
         """Stores the results of an analog in csv files.
 
@@ -221,24 +233,11 @@ class MS2Library:
             List of query spectra for which the best matches should be found
         results_csv_file_location:
             file location were a csv file is created that stores the results
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected. Default = 2000
-        nr_of_top_analogs_to_save:
-            The number of returned analogs that are stored.
-        minimal_ms2query_metascore:
-            The minimal ms2query metascore needed to be stored in the csv file.
-            Spectra for which no analog with this minimal metascore was found,
-            will not be stored in the csv file.
-        additional_metadata_columns:
-            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
-        additional_ms2query_score_columns:
-            Additional columns with scores used for calculating the ms2query metascore
-            Options are: "s2v_score", "ms2ds_score", "average_ms2deepscore_multiple_library_structures",
-            "average_tanimoto_score_library_structures"
+        settings:
+            Settings for running MS2Query, see SettingsRunMS2Query for details.
         """
-        # pylint: disable=too-many-arguments
-
+        if settings is None:
+            settings = SettingsRunMS2Query()
         # Create csv file if it does not exist already
         assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         assert self.ms2query_model is not None, \
@@ -246,26 +245,29 @@ class MS2Library:
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
             if self.classifier_file_name is None:
-                csv_file.write(",".join(column_names_for_output(True, False, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) + "\n")
+                csv_file.write(",".join(column_names_for_output(True, False, settings.additional_metadata_columns,
+                                                                settings.additional_ms2query_score_columns)) + "\n")
             else:
-                csv_file.write(",".join(column_names_for_output(True, True, additional_metadata_columns,
-                                                                additional_ms2query_score_columns)) + "\n")
+                csv_file.write(",".join(column_names_for_output(True, True, settings.additional_metadata_columns,
+                                                                settings.additional_ms2query_score_columns)) + "\n")
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
-                     desc="collecting matches info",
-                     disable=not self.settings["progress_bars"]):
+                     desc="Predicting matches for query spectra",
+                     disable=not self.settings["progress_bars"],
+                     total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
-            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off,
+                                                                    settings.filter_on_ion_mode)
             if results_table is None:
                 print(f"Spectrum nr {i} was not stored, since it did not pass all cleaning steps")
             else:
                 results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-                results_df = results_table.export_to_dataframe(nr_of_top_analogs_to_save,
-                                                               minimal_ms2query_metascore,
-                                                               additional_metadata_columns=additional_metadata_columns,
-                                                               additional_ms2query_score_columns=additional_ms2query_score_columns)
+                results_df = results_table.export_to_dataframe(
+                    settings.nr_of_top_analogs_to_save,
+                    settings.minimal_ms2query_metascore,
+                    additional_metadata_columns=settings.additional_metadata_columns,
+                    additional_ms2query_score_columns=settings.additional_ms2query_score_columns)
                 results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,

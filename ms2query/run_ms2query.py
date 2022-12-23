@@ -1,9 +1,9 @@
 import json
 import os
-from typing import List, Tuple, Union
+from typing import Union
 from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
-from ms2query.utils import load_matchms_spectrum_objects_from_file
+from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query, return_non_existing_file_name
 
 
 def download_zenodo_files(zenodo_doi: int,
@@ -40,10 +40,7 @@ def download_zenodo_files(zenodo_doi: int,
 def run_complete_folder(ms2library: MS2Library,
                         folder_with_spectra: str,
                         results_folder: Union[str, None] = None,
-                        nr_of_analogs_to_store: int = 1,
-                        minimal_ms2query_score: Union[int, float] = 0.0,
-                        additional_metadata_columns: Tuple[str] = ("retention_time", "retention_index",),
-                        additional_ms2query_score_columns: List[str] = None
+                        settings: SettingsRunMS2Query = None
                         ) -> None:
     """Stores analog and library search results for all spectra files in folder
 
@@ -57,51 +54,64 @@ def run_complete_folder(ms2library: MS2Library,
         Path to folder in which the results are stored, folder does not have to exist yet.
         In this folder the csv files with results are stored. When None results_folder is set to
         folder_with_spectra/result.
-    nr_of_top_analogs_to_store:
-        The number of returned analogs that are stored.
-    minimal_ms2query_score:
-        The minimal ms2query metascore needed to be stored in the csv file.
-        Spectra for which no analog with this minimal metascore was found,
-        will not be stored in the csv file.
-    additional_metadata_columns:
-        Additional columns with query spectrum metadata that should be added. For instance "retention_time".
-    additional_ms2query_score_columns:
-        Additional columns with scores used for calculating the ms2query metascore
-        Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
-        "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
-        "average_tanimoto_score_for_chemical_neighbourhood_score",
-        "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
-    set_charge_to:
-        The charge of all spectra that have no charge is set to this value. This is important for precursor m/z
-        calculations. It is important that for positive mode charge is set to 1 and at negative mode charge is set to -1
-        for correct precursor m/z calculations.
-    change_all_charges:
-        If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
-        charge will be changed.
+    settings:
+        Settings for running MS2Query, see SettingsRunMS2Query for details.
     """
-    # pylint: disable=too-many-arguments
-
-    if results_folder is None:
-        results_folder = os.path.join(folder_with_spectra, "results")
-    # check if there is a results folder otherwise create one
-    if not os.path.exists(results_folder):
-        os.mkdir(results_folder)
+    folder_contained_spectrum_file = False
 
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
         file_path = os.path.join(folder_with_spectra, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            if os.path.splitext(file_name)[1] in {".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
-                spectra = load_matchms_spectrum_objects_from_file(os.path.join(folder_with_spectra, file_name))
-                analogs_results_file_name = os.path.join(results_folder, os.path.splitext(file_name)[0] + ".csv")
-                ms2library.analog_search_store_in_csv(spectra,
-                                                      analogs_results_file_name,
-                                                      nr_of_top_analogs_to_save=nr_of_analogs_to_store,
-                                                      minimal_ms2query_metascore=minimal_ms2query_score,
-                                                      additional_metadata_columns=additional_metadata_columns,
-                                                      additional_ms2query_score_columns=additional_ms2query_score_columns)
-                print(f"Results stored in {analogs_results_file_name}")
+            if os.path.splitext(file_name)[1].lower() in {".mzml", ".json", ".mgf", ".msp", ".mzxml", ".usi", ".pickle"}:
+                run_ms2query_single_file(spectrum_file_name=file_name,
+                                         folder_with_spectra=folder_with_spectra,
+                                         results_folder=results_folder,
+                                         ms2library=ms2library, settings=settings)
+                folder_contained_spectrum_file = True
             else:
-                print(f'The file extension of the file {file_name} is not recognized, '
-                      f'accepted file types are ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+                print(f'The file extension of the file {file_name} is not recognized, this file was therefore skipped, '
+                      f'accepted file types are ".mzml", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+    if folder_contained_spectrum_file is False:
+        print(f"The specified spectra folder does not contain any file with spectra. "
+              f"The folder given is {folder_with_spectra}")
+
+
+def run_ms2query_single_file(spectrum_file_name,
+                             folder_with_spectra,
+                             results_folder,
+                             ms2library,
+                             settings):
+    """Runs MS2Query on a single file
+
+    Args:
+    ------
+    spectrum_file_name:
+        The file name of a file contain mass spectra, accepted file types are
+        ".mzML", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"
+    folder_with_spectra:
+        Path to folder containing spectra on which analog search should be run.
+    results_folder:
+        Path to folder in which the results are stored, folder does not have to exist yet.
+        In this folder the csv files with results are stored. When None results_folder is set to
+        folder_with_spectra/result.
+    ms2library:
+        MS2Library object
+    settings:
+        Settings for running MS2Query, see SettingsRunMS2Query for details.
+    """
+    if results_folder is None:
+        results_folder = os.path.join(folder_with_spectra, "results")
+    # check if there is a results folder otherwise create one
+    if not os.path.exists(results_folder):
+        os.mkdir(results_folder)
+
+    spectra = load_matchms_spectrum_objects_from_file(os.path.join(folder_with_spectra, spectrum_file_name))
+    analogs_results_file_name = return_non_existing_file_name(
+        os.path.join(results_folder,
+                     os.path.splitext(spectrum_file_name)[0] + ".csv"))
+    ms2library.analog_search_store_in_csv(spectra,
+                                          analogs_results_file_name,
+                                          settings)
+    print(f"Results stored in {analogs_results_file_name}")

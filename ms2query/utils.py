@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-from typing import List, Union
+from typing import List, Union, Tuple, Optional
 import numpy as np
 import pandas as pd
 from matchms import importing
@@ -161,8 +161,8 @@ def get_classifier_from_csv_file(classifier_file_name: str,
 
 def column_names_for_output(return_non_classifier_columns: bool,
                             return_classifier_columns: bool,
-                            additional_metadata_columns: List[str] = None,
-                            additional_ms2query_score_columns: List[str] = None) -> List[str]:
+                            additional_metadata_columns: Tuple[str] = None,
+                            additional_ms2query_score_columns: Tuple[str] = None) -> List[str]:
     """Returns the column names for the output of results table
 
     This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
@@ -199,3 +199,53 @@ def column_names_for_output(return_non_classifier_columns: bool,
     if return_non_classifier_columns:
         return standard_columns
     return []
+
+
+def return_non_existing_file_name(file_name):
+    """Checks if a path already exists, otherwise creates a new filename with (1)"""
+    if not os.path.exists(file_name):
+        return file_name
+    print(f"The file name already exists: {file_name}")
+    file_name_base, file_extension = os.path.splitext(file_name)
+    i = 1
+    new_file_name = f"{file_name_base}({i}){file_extension}"
+    while os.path.exists(new_file_name):
+        i += 1
+        new_file_name = f"{file_name_base}({i}){file_extension}"
+    print(f"Instead the file will be stored in {new_file_name}")
+    return new_file_name
+
+
+class SettingsRunMS2Query:
+    """
+    preselection_cut_off:
+            The number of spectra with the highest ms2ds that should be
+            selected. Default = 2000
+        nr_of_top_analogs_to_save:
+            The number of returned analogs that are stored.
+        minimal_ms2query_metascore:
+            The minimal ms2query metascore needed to be stored in the csv file.
+            Spectra for which no analog with this minimal metascore was found,
+            will not be stored in the csv file.
+        additional_metadata_columns:
+            Additional columns with query spectrum metadata that should be added. For instance "retention_time".
+        additional_ms2query_score_columns:
+            Additional columns with scores used for calculating the ms2query metascore
+            Options are: "s2v_score", "ms2ds_score", "average_ms2deepscore_multiple_library_structures",
+            "average_tanimoto_score_library_structures"
+    """
+    def __init__(self,
+                 nr_of_top_analogs_to_save: int = 1,
+                 minimal_ms2query_metascore: int = 0,
+                 additional_metadata_columns: tuple = ("retention_time", "retention_index",),
+                 additional_ms2query_score_columns: tuple = (),
+                 preselection_cut_off: int = 2000,
+                 filter_on_ion_mode: Optional[str] = None,
+                 ):
+        # pylint: disable=too-many-arguments
+        self.nr_of_top_analogs_to_save = nr_of_top_analogs_to_save
+        self.minimal_ms2query_metascore = minimal_ms2query_metascore
+        self.additional_metadata_columns = additional_metadata_columns
+        self.additional_ms2query_score_columns = additional_ms2query_score_columns
+        self.preselection_cut_off = preselection_cut_off
+        self.filter_on_ion_mode = filter_on_ion_mode

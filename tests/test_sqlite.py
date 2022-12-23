@@ -9,7 +9,7 @@ import os
 import sqlite3
 import numpy as np
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import get_metadata_from_sqlite, get_ionization_mode_library
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
 
@@ -119,3 +119,13 @@ def test_get_metadata_from_sqlite():
                 "Expected keys of metadata to be string"
             assert isinstance(metadata[key], (str, float, int, list)), \
                 f"Expected values of metadata to be string {metadata[key]}"
+
+
+def test_get_ionization_mode_library():
+    path_to_test_files_sqlite_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files')
+    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
+                                    "test_spectra_database.sqlite")
+    ionization_mode = get_ionization_mode_library(sqlite_file_name)
+    assert ionization_mode == "positive"

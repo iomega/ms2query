@@ -15,7 +15,8 @@ with open("README.md") as readme_file:
 setup(
     name="ms2query",
     version=version["__version__"],
-    description="Tool to query MS/MS spectra against GNPS library data.",
+    entry_points={"console_scripts": ["ms2query=main:command_line"]},
+    description="Tool to query MS/MS spectra against mass spectral library",
     long_description_content_type="text/markdown",
     long_description=readme,
     author="Netherlands eScience Center",
@@ -32,10 +33,10 @@ setup(
         "numpy",
         "spec2vec>=0.6.0",
         "h5py<3.0.0",
-        "tensorflow-macos<=2.10.1;platform_machine=='arm64'",
-        "tensorflow-metal<=2.10.1;platform_machine=='arm64'",
-        "tensorflow<=2.10.1;platform_machine!='arm64'",
-        "scikit-learn",
+        "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
+        "tensorflow-metal<2.9;platform_machine=='arm64'",
+        "tensorflow<2.9;platform_machine!='arm64'", #tensofrlow <2.9 for change in error bar plotting
+        "scikit-learn==0.24.2",
         "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5",
