@@ -9,14 +9,13 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
 from ms2query.query_from_sqlite_database import (get_inchikey_information,
-                                                 get_precursor_mz)
+                                                 get_precursor_mz, get_ionization_mode_library)
 from ms2query.results_table import ResultsTable
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file)
-from ms2query.utils import SettingsRunMS2Query
+                            load_pickled_file, SettingsRunMS2Query)
 
 
 class MS2Library:
@@ -113,7 +112,8 @@ class MS2Library:
             "Mismatch of library files. " \
             "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
 
-        # Load inchikey information into memory
+        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name,
+                                                           self.settings["spectrum_id_column_name"])
         self.spectra_of_inchikey14s, \
             self.closely_related_inchikey14s = \
             get_inchikey_information(self.sqlite_file_name)
@@ -155,6 +155,14 @@ class MS2Library:
         query_spectrum = normalize_and_filter_peaks(query_spectrum)
         if query_spectrum is None:
             return None
+
+        # Check if the ionization mode matches that of the library
+        query_ionmode = query_spectrum.get("ionmode")
+        if query_ionmode != "n/a" and self.ionization_mode is not None:
+            assert query_ionmode == self.ionization_mode, \
+                f"The spectrum is in {query_ionmode} ionization mode, while the library is for {self.ionization_mode} ionization mode. " \
+                f"Check the readme to download a library in the {query_ionmode} ionization mode"
+
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(

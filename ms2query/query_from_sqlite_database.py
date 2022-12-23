@@ -48,6 +48,28 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     return results_dict
 
 
+def get_ionization_mode_library(sqlite_file_name: str,
+                                spectrum_id_storage_name: str = "spectrumid"):
+    conn = sqlite3.connect(sqlite_file_name)
+    sqlite_command = \
+        f"""SELECT metadata FROM spectrum_data"""
+    cur = conn.cursor()
+    cur.execute(sqlite_command)
+    while True:
+        metadata = cur.fetchone()
+        # If all values have been checked None is returned.
+        if metadata is None:
+            print("The ionization mode of the library could not be determined")
+            return None
+        metadata = ast.literal_eval(metadata[0])
+        if "ionmode" in metadata:
+            ionmode = metadata["ionmode"]
+            if ionmode == "positive":
+                return "positive"
+            if ionmode == "negative":
+                return "negative"
+
+
 def get_precursor_mz(sqlite_file_name: str,
                     spectrum_id_storage_name: str = "spectrumid",
                     table_name: str = "spectrum_data"
