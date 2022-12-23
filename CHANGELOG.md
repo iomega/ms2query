@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0]
+### Added
+- Make command line runnable
+- Add explanation for running from command line to readme
+- Check if the ionization mode of query spectra is the same as the library
+- Added option to automatically split library on ionization mode.
+
+### Changed
+- When output file already exists a new file is created like output_file(1).csv
+- Remove warning tensorflow
+- Set tensorflow to <2.9 to prevent printing of progress bars for ms2deepscore
+- Set scikit learn to version 0.24.2 to prevent risk of backwards compatibility issues.
+
 ## [0.5.7]
 ### Changed
 - Finalize workflow for k-fold cross validation
@@ -149,7 +162,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First test workflow and basic batches.
 - Licence.
 
-[Unreleased]: https://github.com/iomega/ms2query/compare/0.5.6...HEAD
+[Unreleased]: https://github.com/iomega/ms2query/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/iomega/ms2query/compare/0.5.7...0.6.0
+[0.5.7]: https://github.com/iomega/ms2query/compare/0.5.6...0.5.7
 [0.5.6]: https://github.com/iomega/ms2query/compare/0.5.3...0.5.6
 [0.5.3]: https://github.com/iomega/ms2query/compare/0.5.2...0.5.3
 [0.5.2]: https://github.com/iomega/ms2query/compare/0.5.1...0.5.2
