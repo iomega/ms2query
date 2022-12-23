@@ -127,6 +127,5 @@ def test_get_ionization_mode_library():
         'tests/test_files')
     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
                                     "test_spectra_database.sqlite")
-    ionization_mode = get_ionization_mode_library(sqlite_file_name,
-                                                  spectrum_id_storage_name="spectrum_id")
+    ionization_mode = get_ionization_mode_library(sqlite_file_name)
     assert ionization_mode == "positive"
