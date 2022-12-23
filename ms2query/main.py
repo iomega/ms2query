@@ -1,7 +1,5 @@
 import os
 import argparse
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# pylint: disable=wrong-import-position
 from ms2query.run_ms2query import download_zenodo_files, run_complete_folder, run_ms2query_single_file
 from ms2query.ms2library import create_library_object_from_one_dir
 from ms2query.utils import SettingsRunMS2Query
