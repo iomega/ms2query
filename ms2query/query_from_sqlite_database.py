@@ -48,11 +48,9 @@ def get_metadata_from_sqlite(sqlite_file_name: str,
     return results_dict
 
 
-def get_ionization_mode_library(sqlite_file_name: str,
-                                spectrum_id_storage_name: str = "spectrumid"):
+def get_ionization_mode_library(sqlite_file_name: str):
     conn = sqlite3.connect(sqlite_file_name)
-    sqlite_command = \
-        f"""SELECT metadata FROM spectrum_data"""
+    sqlite_command = "SELECT metadata FROM spectrum_data"
     cur = conn.cursor()
     cur.execute(sqlite_command)
     while True:

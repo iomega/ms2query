@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Tuple, Union, Optional
+from typing import Union
 from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
 from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query, return_non_existing_file_name

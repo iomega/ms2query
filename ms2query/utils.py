@@ -242,6 +242,7 @@ class SettingsRunMS2Query:
                  preselection_cut_off: int = 2000,
                  filter_on_ion_mode: Optional[str] = None,
                  ):
+        # pylint: disable=too-many-arguments
         self.nr_of_top_analogs_to_save = nr_of_top_analogs_to_save
         self.minimal_ms2query_metascore = minimal_ms2query_metascore
         self.additional_metadata_columns = additional_metadata_columns
