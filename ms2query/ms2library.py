@@ -149,7 +149,8 @@ class MS2Library:
 
     def calculate_features_single_spectrum(self,
                                            query_spectrum: Spectrum,
-                                           preselection_cut_off: int = 2000) -> Optional[ResultsTable]:
+                                           preselection_cut_off: int = 2000,
+                                           filter_on_ionmode: Optional[str] = None) -> Optional[ResultsTable]:
         """Calculates a results table for a single spectrum"""
         query_spectrum = clean_metadata(query_spectrum)
         query_spectrum = normalize_and_filter_peaks(query_spectrum)
@@ -158,10 +159,16 @@ class MS2Library:
 
         # Check if the ionization mode matches that of the library
         query_ionmode = query_spectrum.get("ionmode")
+        if filter_on_ionmode is not None:
+            if query_ionmode != filter_on_ionmode:
+                print(f"This spectrum is not analyzed since it was not in {filter_on_ionmode} ionization mode. "
+                      f"Instead the spectrum is in {query_ionmode} ionization mode.")
+                return None
         if query_ionmode != "n/a" and self.ionization_mode is not None:
             assert query_ionmode == self.ionization_mode, \
                 f"The spectrum is in {query_ionmode} ionization mode, while the library is for {self.ionization_mode} ionization mode. " \
                 f"Check the readme to download a library in the {query_ionmode} ionization mode"
+
 
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
@@ -247,11 +254,12 @@ class MS2Library:
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
-                     desc="collecting matches info",
+                     desc="Predicting matches for query spectra",
                      disable=not self.settings["progress_bars"],
                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
-            results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off,
+                                                                    settings.filter_on_ion_mode)
             if results_table is None:
                 print(f"Spectrum nr {i} was not stored, since it did not pass all cleaning steps")
             else:

@@ -57,6 +57,8 @@ def run_complete_folder(ms2library: MS2Library,
     settings:
         Settings for running MS2Query, see SettingsRunMS2Query for details.
     """
+    folder_contained_spectrum_file = False
+
     # Go through spectra files in directory
     for file_name in os.listdir(folder_with_spectra):
         file_path = os.path.join(folder_with_spectra, file_name)
@@ -67,9 +69,13 @@ def run_complete_folder(ms2library: MS2Library,
                                          folder_with_spectra=folder_with_spectra,
                                          results_folder=results_folder,
                                          ms2library=ms2library, settings=settings)
+                folder_contained_spectrum_file = True
             else:
-                print(f'The file extension of the file {file_name} is not recognized, '
+                print(f'The file extension of the file {file_name} is not recognized, this file was therefore skipped, '
                       f'accepted file types are ".mzml", ".json", ".mgf", ".msp", ".mzxml", ".usi" or ".pickle"')
+    if folder_contained_spectrum_file is False:
+        print(f"The specified spectra folder does not contain any file with spectra. "
+              f"The folder given is {folder_with_spectra}")
 
 
 def run_ms2query_single_file(spectrum_file_name,

@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional
 import numpy as np
 import pandas as pd
 from matchms import importing
@@ -239,10 +239,12 @@ class SettingsRunMS2Query:
                  minimal_ms2query_metascore: int = 0,
                  additional_metadata_columns: tuple = ("retention_time", "retention_index",),
                  additional_ms2query_score_columns: tuple = (),
-                 preselection_cut_off: int = 2000
+                 preselection_cut_off: int = 2000,
+                 filter_on_ion_mode: Optional[str] = None,
                  ):
         self.nr_of_top_analogs_to_save = nr_of_top_analogs_to_save
         self.minimal_ms2query_metascore = minimal_ms2query_metascore
         self.additional_metadata_columns = additional_metadata_columns
         self.additional_ms2query_score_columns = additional_ms2query_score_columns
         self.preselection_cut_off = preselection_cut_off
+        self.filter_on_ion_mode = filter_on_ion_mode
