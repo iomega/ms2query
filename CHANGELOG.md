@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.7]
+### Changed
+- Finalize workflow for k-fold cross validation
+- Add explanation for reproducing results to readme
+
 ## [0.5.6]
 ### Changed
 - Set tensorflow version to <= 2.10.1
