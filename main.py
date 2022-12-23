@@ -21,7 +21,7 @@ def command_line():
                         help='The MS2 query spectra that should be processed. '
                              'If a directory is specified all spectrum files in the directory will be processed. '
                              'Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object')
-    parser.add_argument('--library', action="store", type=path_exists, required=True, metavar="LIBRARY_FOLDER",
+    parser.add_argument('--library', action="store", required=True, metavar="LIBRARY_FOLDER",
                         help="The directory containing the library spectra, to download add --download")
     parser.add_argument("--ionmode", action="store", choices=["positive", "negative"],
                         help="Specify the ionization mode used")
@@ -71,5 +71,5 @@ def command_line():
         else:
             # Run library search and analog search on your files.
             run_complete_folder(ms2library, ms2_spectra_location, results_folder=results_folder, settings=settings)
-    if ms2_spectra_location is None and args.download is None:
+    if ms2_spectra_location is None and args.download is False:
         print("Nothing was run, please add --spectra or --downloads.")
