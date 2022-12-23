@@ -15,7 +15,7 @@ with open("README.md") as readme_file:
 setup(
     name="ms2query",
     version=version["__version__"],
-    entry_points={"console_scripts": ["ms2query=main:command_line"]},
+    entry_points={"console_scripts": ["ms2query=ms2query.main:command_line"]},
     description="Tool to query MS/MS spectra against mass spectral library",
     long_description_content_type="text/markdown",
     long_description=readme,
