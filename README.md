@@ -152,6 +152,7 @@ run_complete_folder(ms2library, ms2_spectra_directory)
 The code below creates all required library files for your own in house library. 
 No new models for MS2deepscore, Spec2Vec and MS2Query will be trained, to do this see the next section.
 
+First install MS2Query (see above under installation guide)
 To create your own library you also need to install RDKit, by running the following in your command line (while in the ms2query conda environment):
 ```
 conda install -c conda-forge rdkit
