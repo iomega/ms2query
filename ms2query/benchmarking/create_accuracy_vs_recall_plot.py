@@ -186,6 +186,8 @@ def bin_percentages(percentages, accuracies, step_size):
 
         if len(accuracies_in_bin) != 0:
             average = sum(accuracies_in_bin)/len(accuracies_in_bin)
+        else:
+            average = 0  # TODO: check if correct
         binned_accuracies.append(average)
     return binned_accuracies
 
