@@ -40,7 +40,7 @@ setup(
         "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5",
-        "matchmsextras>=0.3.0",
+        "matchmsextras>=0.3.0,<0.4.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
         "matplotlib"],
