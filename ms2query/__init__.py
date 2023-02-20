@@ -63,6 +63,7 @@ def command_line():
 
     settings = SettingsRunMS2Query(filter_on_ion_mode=filter_ionmode)
     if args.download:
+        assert ion_mode is not None, "Ion mode should be specified by adding --ion_mode"
         zenodo_DOIs = {"positive": 6997924,
                        "negative": 7107654}
         download_zenodo_files(zenodo_DOIs[ion_mode],
@@ -72,7 +73,7 @@ def command_line():
         # Create a MS2Library object
         ms2library = create_library_object_from_one_dir(ms2query_library_files_directory)
         assert ms2library.ionization_mode == ion_mode, \
-            f"The library used is in {ms2library.ionization_mode} ionization mode, while {ion_mode} is specified in --mode"
+            f"The library used is in {ms2library.ionization_mode} ionization mode, while {ion_mode} is specified in --ionmode"
 
         if os.path.isfile(ms2_spectra_location):
             folder_with_spectra, spectrum_file_name = os.path.split(ms2_spectra_location)
