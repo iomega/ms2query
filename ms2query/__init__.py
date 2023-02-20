@@ -50,19 +50,26 @@ def command_line():
     parser.add_argument("--filter_ionmode", action="store_true",
                         help="Filter out all spectra that are not in the specified ion-mode. "
                              "The ion mode can be specified by using --ionmode")
-
+    parser.add_argument("--additional_metadata", action="store",
+                        default=("retention_time", "retention_index",),
+                        nargs="+",
+                        type=str,
+                        help="Return additional metadata columns in the results, for example --additional_metadata rtinseconds feature_id")
     args = parser.parse_args()
     ms2query_library_files_directory = args.library
     ms2_spectra_location = args.spectra
     ion_mode = args.ionmode
     results_folder = args.results
+    additional_columns = tuple(args.additional_metadata)
     if args.filter_ionmode:
         filter_ionmode = ion_mode
     else:
         filter_ionmode = None
 
-    settings = SettingsRunMS2Query(filter_on_ion_mode=filter_ionmode)
+    settings = SettingsRunMS2Query(filter_on_ion_mode=filter_ionmode,
+                                   additional_metadata_columns=additional_columns)
     if args.download:
+        assert ion_mode is not None, "Ion mode should be specified by adding --ion_mode"
         zenodo_DOIs = {"positive": 6997924,
                        "negative": 7107654}
         download_zenodo_files(zenodo_DOIs[ion_mode],
@@ -72,7 +79,7 @@ def command_line():
         # Create a MS2Library object
         ms2library = create_library_object_from_one_dir(ms2query_library_files_directory)
         assert ms2library.ionization_mode == ion_mode, \
-            f"The library used is in {ms2library.ionization_mode} ionization mode, while {ion_mode} is specified in --mode"
+            f"The library used is in {ms2library.ionization_mode} ionization mode, while {ion_mode} is specified in --ionmode"
 
         if os.path.isfile(ms2_spectra_location):
             folder_with_spectra, spectrum_file_name = os.path.split(ms2_spectra_location)
