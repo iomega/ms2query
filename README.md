@@ -2,6 +2,8 @@
 ![GitHub](https://img.shields.io/github/license/iomega/ms2query)
 [![PyPI](https://img.shields.io/pypi/v/ms2query)](https://pypi.org/project/ms2query/)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7691816.svg)](https://doi.org/10.5281/zenodo.7691816)
+
 
 # MS2Query - Reliable and fast MS/MS spectral-based analogue search 
 
