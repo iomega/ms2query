@@ -70,8 +70,8 @@ def command_line():
                                    additional_metadata_columns=additional_columns)
     if args.download:
         assert ion_mode is not None, "Ion mode should be specified by adding --ion_mode"
-        zenodo_DOIs = {"positive": 6997924,
-                       "negative": 7107654}
+        zenodo_DOIs = {"positive": 7753249,
+                       "negative": 7753267}
         download_zenodo_files(zenodo_DOIs[ion_mode],
                               ms2query_library_files_directory)
 
