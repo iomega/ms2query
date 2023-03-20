@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 from matchms import importing
 from spec2vec.Spec2Vec import Spectrum
+from skl2onnx import convert_sklearn
+from skl2onnx.common.data_types import FloatTensorType
+from onnxruntime import InferenceSession
 
 
 if sys.version_info < (3, 8):
@@ -14,7 +17,7 @@ else:
     import pickle
 
 
-def load_ms2query_model(ms2query_model_file_name):
+def load_ms2query_model(ms2query_model_file_name) -> InferenceSession:
     """Loads in a MS2Query model
 
     a .pickle file is loaded like a ranadom forest from sklearn
@@ -24,9 +27,11 @@ def load_ms2query_model(ms2query_model_file_name):
     """
     assert os.path.exists(ms2query_model_file_name), "MS2Query model file name does not exist"
     file_extension = os.path.splitext(ms2query_model_file_name)[1].lower()
-
-    if file_extension == ".pickle":
-        return load_pickled_file(ms2query_model_file_name)
+    assert file_extension == ".onnx", \
+        "An file in Onnx format is expected, older versions used a .pickle file for the random forest model. " \
+        "Downgrade MS2Query to an older version or download the new model."
+    if file_extension == ".onnx":
+        return InferenceSession(ms2query_model_file_name)
 
     raise ValueError("The MS2Query model file is expected to end on .pickle")
 
@@ -249,3 +254,26 @@ class SettingsRunMS2Query:
         self.additional_ms2query_score_columns = additional_ms2query_score_columns
         self.preselection_cut_off = preselection_cut_off
         self.filter_on_ion_mode = filter_on_ion_mode
+
+
+def convert_to_onnx_model(random_forest_model, file_name = None):
+    """The randomforest model is stored as an onnx model for backwards compatability"""
+    FloatTensorType([None, 5])
+    onnx = convert_sklearn(random_forest_model, initial_types=[("input",
+                                                        FloatTensorType([None, random_forest_model.n_features_in_]))],
+                   target_opset=12)
+    if file_name is not None:
+        file_name = return_non_existing_file_name(file_name)
+
+        with open(file_name, "wb") as file:
+            file.write(onnx.SerializeToString())
+    return onnx
+
+
+def predict_onnx_model(random_forest_onnx_model: InferenceSession, input_values):
+    """Makes predictions for an onnx model"""
+    # input_name = random_forest_onnx_model.get_inputs()[0].name
+    predictions = random_forest_onnx_model.run(None, {"input": input_values.astype(np.float32)})
+    # Converts np array of shape (n,1) to a 1D numpy array.
+    predictions = predictions[0].ravel()
+    return predictions
