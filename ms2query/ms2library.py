@@ -464,71 +464,43 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
     """
     assert os.path.exists(directory_containing_library_and_models) \
            and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
-    dict_with_file_names = \
-        {"sqlite": None, "classifiers": None, "s2v_model": None, "ms2ds_model": None,
-         "ms2query_model": None, "s2v_embeddings": None, "ms2ds_embeddings": None, "ms2query_model_pickle": None}
+
+    dict_with_file_extensions = \
+        {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
+         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
+         "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+    # Create a dictionary with None as values.
+    dict_with_file_names = {key: None for key in dict_with_file_extensions.keys()}
 
     # Go through spectra files in directory
     for file_name in os.listdir(directory_containing_library_and_models):
         file_path = os.path.join(directory_containing_library_and_models, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            if str.endswith(file_path, ".sqlite"):
-                file_name = "sqlite"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "ms2ds_embeddings.pickle"):
-                file_name = "ms2ds_embeddings"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "s2v_embeddings.pickle"):
-                file_name = "s2v_embeddings"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".hdf5"):
-                file_name = "ms2ds_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".model"):
-                file_name = "s2v_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "CF_NPC_classes.txt"):
-                file_name = "classifiers"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".onnx") and "ms2q" in file_name:
-                file_name = "ms2query_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".pickle") and "ms2q" in file_name:
+            # Loop over the different expected file extensions.
+            for file_type, file_extension in dict_with_file_extensions.items():
+                if str.endswith(file_path, file_extension):
+                    assert dict_with_file_names[file_type] is None, \
+                        f"Multiple files could be the file containing the {file_type} file"
+                    dict_with_file_names[file_type] = file_path
+            # Check if the old ms2querye model is stored (instead of onnx) to give a good warning.
+            if str.endswith(file_path, ".pickle") and "ms2q" in file_name:
                 file_name = "ms2query_model_pickle"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
                 dict_with_file_names[file_name] = file_path
 
     # Check if all the file types are available
     for file_type, stored_file_name in dict_with_file_names.items():
-        if file_type == "ms2query_model":
-            if stored_file_name is None:
-                assert dict_with_file_names["ms2query_model_pickle"] is not None, \
-                    "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
-                    "To download the new format check the readme https://github.com/iomega/ms2query alternatively MS2Query can be downgraded to version <= 0.6.7"
-            assert stored_file_name is not None, \
-                f"The MS2Query model was not found type {file_type} was not found in the directory"
-        elif file_type == "classifiers":
-            if stored_file_name is None:
-                print("The classifiers file has not been specified, therefore no classes will be predicted.")
+        if file_type == "ms2query_model" and stored_file_name is None:
+            assert dict_with_file_names["ms2query_model_pickle"] is None, \
+                "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
+                "To download the new format check the readme https://github.com/iomega/ms2query alternatively MS2Query can be downgraded to version <= 0.6.7"
+            assert False, f"The MS2Query model was not found in the directory"
+        elif file_type == "classifiers" and stored_file_name is None:
+            print("The classifiers file has not been specified, therefore no classes will be predicted.")
         elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
                 f"The file type {file_type} was not found in the directory"
+
     return MS2Library(dict_with_file_names["sqlite"],
                       dict_with_file_names["s2v_model"],
                       dict_with_file_names["ms2ds_model"],
