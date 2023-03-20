@@ -50,7 +50,7 @@ class ResultsTable:
         assert isinstance(other, ResultsTable), "Expected ResultsTable"
         assert other.preselection_cut_off == self.preselection_cut_off
         assert other.precursor_mz == self.precursor_mz
-        assert self.data.round(5).equals(other.data.round(5))
+        pd.testing.assert_frame_equal(self.data, other.data, check_less_precise=True, check_dtype=False)
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)), f"ms2deepscores are not equal {self.ms2deepscores} != {other.ms2deepscores}"
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses

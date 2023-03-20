@@ -3,10 +3,11 @@ import pytest
 import sys
 import pandas as pd
 from ms2query.create_new_library.train_ms2query_model import \
-    DataCollectorForTraining, calculate_tanimoto_scores_with_library
-from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file
+    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest
+from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, convert_to_onnx_model
+from onnxruntime import InferenceSession
+from ms2query.utils import predict_onnx_model
 from ms2query.ms2library import MS2Library
-
 
 if sys.version_info < (3, 8):
     pass
@@ -71,3 +72,14 @@ def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
                                    columns=["Tanimoto_score"])
     assert isinstance(result, pd.DataFrame), "Expected a pd.Dataframe"
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
+
+
+def test_train_ms2query_model():
+    training_scores, training_labels = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_train_ms2query_nn",
+        "expected_train_and_val_data.pickle"))[:2]
+    ms2query_model = train_random_forest(training_scores, training_labels)
+    onnx_model = convert_to_onnx_model(ms2query_model)
+    onnx_model_session = InferenceSession(onnx_model.SerializeToString())
+    predictions = predict_onnx_model(onnx_model_session, training_scores.values)

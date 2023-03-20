@@ -8,6 +8,7 @@ from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
+from onnxruntime import InferenceSession
 from ms2query.query_from_sqlite_database import (get_inchikey_information,
                                                  get_precursor_mz, get_ionization_mode_library)
 from ms2query.results_table import ResultsTable
@@ -15,7 +16,7 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file, SettingsRunMS2Query)
+                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model)
 
 
 class MS2Library:
@@ -438,7 +439,7 @@ class MS2Library:
 
 def get_ms2query_model_prediction_single_spectrum(
         result_table: Union[ResultsTable, None],
-        ms2query_nn_model
+        random_forest_onnx_model: InferenceSession
         ) -> ResultsTable:
     """Adds ms2query predictions to result table
 
@@ -448,8 +449,7 @@ def get_ms2query_model_prediction_single_spectrum(
     """
     # .values removes feature names, since this will cause a warning since the model was trained without feature names.
     current_query_matches_info = result_table.get_training_data().copy().values
-    predictions = ms2query_nn_model.predict(current_query_matches_info)
-
+    predictions = predict_onnx_model(random_forest_onnx_model, current_query_matches_info)
     result_table.add_ms2query_meta_score(predictions)
     return result_table
 
@@ -464,56 +464,43 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
     """
     assert os.path.exists(directory_containing_library_and_models) \
            and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
-    dict_with_file_names = \
-        {"sqlite": None, "classifiers": None, "s2v_model": None, "ms2ds_model": None,
-         "ms2query_model": None, "s2v_embeddings": None, "ms2ds_embeddings": None}
+
+    dict_with_file_extensions = \
+        {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
+         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
+         "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+    # Create a dictionary with None as values.
+    dict_with_file_names = {key: None for key in dict_with_file_extensions}
 
     # Go through spectra files in directory
     for file_name in os.listdir(directory_containing_library_and_models):
         file_path = os.path.join(directory_containing_library_and_models, file_name)
         # skip folders
         if os.path.isfile(file_path):
-            if str.endswith(file_path, ".sqlite"):
-                file_name = "sqlite"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
+            # Loop over the different expected file extensions.
+            for file_type, file_extension in dict_with_file_extensions.items():
+                if str.endswith(file_path, file_extension):
+                    assert dict_with_file_names[file_type] is None, \
+                        f"Multiple files could be the file containing the {file_type} file"
+                    dict_with_file_names[file_type] = file_path
+            # Check if the old ms2querye model is stored (instead of onnx) to give a good warning.
+            if str.endswith(file_path, ".pickle") and "ms2q" in file_name:
+                file_name = "ms2query_model_pickle"
                 dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "ms2ds_embeddings.pickle"):
-                file_name = "ms2ds_embeddings"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "s2v_embeddings.pickle"):
-                file_name = "s2v_embeddings"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".hdf5"):
-                file_name = "ms2ds_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".pickle") and "ms2q" in file_name:
-                file_name = "ms2query_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, ".model"):
-                file_name = "s2v_model"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
-            elif str.endswith(file_path, "CF_NPC_classes.txt"):
-                file_name = "classifiers"
-                assert dict_with_file_names[file_name] is None, \
-                    f"Multiple files could be the file containing the {file_name} file"
-                dict_with_file_names[file_name] = file_path
+
+    # Check if all the file types are available
     for file_type, stored_file_name in dict_with_file_names.items():
-        if file_type != "classifiers":
+        if file_type == "ms2query_model" and stored_file_name is None:
+            assert dict_with_file_names["ms2query_model_pickle"] is None, \
+                "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
+                "To download the new format check the readme https://github.com/iomega/ms2query. " \
+                "Alternatively MS2Query can be downgraded to version <= 0.6.7"
+            assert False, "The MS2Query model was not found in the directory"
+        elif file_type == "classifiers" and stored_file_name is None:
+            print("The classifiers file has not been specified, therefore no classes will be predicted.")
+        elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
                 f"The file type {file_type} was not found in the directory"
-        elif stored_file_name is None:
-            print(f"The file type {file_type} was not found in the directory ")
 
     return MS2Library(dict_with_file_names["sqlite"],
                       dict_with_file_names["s2v_model"],

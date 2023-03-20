@@ -35,15 +35,18 @@ setup(
         "h5py<3.0.0",
         "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
         "tensorflow-metal<2.9;platform_machine=='arm64'",
-        "tensorflow<2.9;platform_machine!='arm64'", #tensofrlow <2.9 for change in error bar plotting
-        "scikit-learn==0.24.2",
+        "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
+        "scikit-learn",
         "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5",
         "matchmsextras>=0.3.0,<0.4.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
-        "matplotlib"],
+        "matplotlib",
+        "skl2onnx",
+        "onnxruntime",
+    ],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
                             "isort>=5.1.0",
