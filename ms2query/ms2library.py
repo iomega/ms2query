@@ -470,7 +470,7 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
          "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
          "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
     # Create a dictionary with None as values.
-    dict_with_file_names = {key: None for key in dict_with_file_extensions.keys()}
+    dict_with_file_names = {key: None for key in dict_with_file_extensions}
 
     # Go through spectra files in directory
     for file_name in os.listdir(directory_containing_library_and_models):
@@ -495,7 +495,7 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
                 "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
                 "To download the new format check the readme https://github.com/iomega/ms2query. " \
                 "Alternatively MS2Query can be downgraded to version <= 0.6.7"
-            assert False, f"The MS2Query model was not found in the directory"
+            assert False, "The MS2Query model was not found in the directory"
         elif file_type == "classifiers" and stored_file_name is None:
             print("The classifiers file has not been specified, therefore no classes will be predicted.")
         elif file_type != "ms2query_model_pickle":
