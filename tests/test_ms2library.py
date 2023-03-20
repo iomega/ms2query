@@ -35,7 +35,7 @@ def ms2library():
         "general_test_files/100_test_spectra_ms2ds_embeddings.pickle")
     spectrum_id_column_name = "spectrumid"
     ms2q_model_file_name = os.path.join(path_to_tests_dir,
-        "general_test_files", "test_ms2q_rf_model.pickle")
+        "general_test_files", "test_ms2q_rf_model.onnx")
     ms2library = MS2Library(sqlite_file_loc,
                             spec2vec_model_file_loc,
                             ms2ds_model_file_name,
@@ -199,7 +199,7 @@ def test_get_ms2query_model_prediction_single_spectrum():
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/test_ms2q_rf_model.pickle')
+        'tests/test_files/general_test_files/test_ms2q_rf_model.onnx')
     ms2query_nn_model = load_ms2query_model(ms2q_model_file_name)
     results = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
 

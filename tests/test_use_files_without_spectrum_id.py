@@ -37,7 +37,7 @@ def ms2library_without_spectrum_id():
         "general_test_files", "test_files_without_spectrum_id", "100_test_spectra_ms2ds_embeddings.pickle")
     spectrum_id_column_name = "spectrumid"
     ms2q_model_file_name = os.path.join(path_to_tests_dir,
-        "general_test_files", "test_ms2q_rf_model.pickle")
+        "general_test_files", "test_ms2q_rf_model.onnx")
     ms2library = MS2Library(sqlite_file_loc,
                             spec2vec_model_file_loc,
                             ms2ds_model_file_name,
