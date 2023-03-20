@@ -493,7 +493,8 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
         if file_type == "ms2query_model" and stored_file_name is None:
             assert dict_with_file_names["ms2query_model_pickle"] is None, \
                 "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
-                "To download the new format check the readme https://github.com/iomega/ms2query alternatively MS2Query can be downgraded to version <= 0.6.7"
+                "To download the new format check the readme https://github.com/iomega/ms2query. " \
+                "Alternatively MS2Query can be downgraded to version <= 0.6.7"
             assert False, f"The MS2Query model was not found in the directory"
         elif file_type == "classifiers" and stored_file_name is None:
             print("The classifiers file has not been specified, therefore no classes will be predicted.")
