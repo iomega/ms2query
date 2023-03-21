@@ -5,7 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0]
+- Store random forest model in Onnx format
 
 ## [0.6.6]
 - Added --addional_metadat to command line usage
@@ -168,7 +169,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First test workflow and basic batches.
 - Licence.
 
-[Unreleased]: https://github.com/iomega/ms2query/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/iomega/ms2query/compare/0.7.1...HEAD
+[0.6.0]: https://github.com/iomega/ms2query/compare/0.6.7...0.7.1
 [0.6.0]: https://github.com/iomega/ms2query/compare/0.5.7...0.6.0
 [0.5.7]: https://github.com/iomega/ms2query/compare/0.5.6...0.5.7
 [0.5.6]: https://github.com/iomega/ms2query/compare/0.5.3...0.5.6
