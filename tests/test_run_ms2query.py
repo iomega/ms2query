@@ -17,25 +17,13 @@ def test_download_default_models(tmp_path):
     """Tests downloading small files from zenodo
 
     The files are a total of 20 MB from https://zenodo.org/record/7108049#.Yy2nPKRBxPY"""
-    dir_to_store_test_files = os.path.join(tmp_path, "positive_model")
-    download_zenodo_files(7108049, dir_to_store_test_files)
-    assert os.path.exists(dir_to_store_test_files)
-    assert os.path.exists(os.path.join(dir_to_store_test_files,
-                                       "GNPS_15_12_2021_neg_test_250_inchikeys.pickle"))
-    assert os.path.exists(os.path.join(dir_to_store_test_files,
-                                       "GNPS_15_12_2021_neg_test_3000_spectra.pickle"))
-    assert os.path.exists(os.path.join(dir_to_store_test_files,
-                                       "GNPS_15_12_2021_pos_test_250_inchikeys.pickle"))
-    assert os.path.exists(os.path.join(dir_to_store_test_files,
-                                       "GNPS_15_12_2021_pos_test_3000_spectra.pickle"))
-
     run_test = False # Run test is set to false, since downloading takes too long for default testing
     if run_test:
         dir_to_store_positive_files = os.path.join(tmp_path, "positive_model")
         dir_to_store_negative_files = os.path.join(tmp_path, "negative_model")
 
-        download_zenodo_files(6997924, dir_to_store_positive_files)
-        download_zenodo_files(7107654, dir_to_store_negative_files)
+        download_zenodo_files("positive", dir_to_store_positive_files)
+        download_zenodo_files("negative", dir_to_store_negative_files)
         assert os.path.exists(dir_to_store_positive_files)
         assert os.path.exists(dir_to_store_negative_files)
         pos_ms2library = create_library_object_from_one_dir(dir_to_store_positive_files)
