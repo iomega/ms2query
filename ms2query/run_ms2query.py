@@ -14,7 +14,7 @@ def zenodo_dois(ionisation_mode):
     return zenodo_DOIs[ionisation_mode]
 
 
-def download_zenodo_files(ionisation_mode: int,
+def download_zenodo_files(ionisation_mode: str,
                           dir_to_store_files: str):
     """Downloads files from Zenodo
 
