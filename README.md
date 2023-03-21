@@ -62,8 +62,8 @@ ms2query --library .\folder_to_store_the_library --download --ionmode positive
 ```
 
 Alternatively all model files can be manually downloaded from 
-https://zenodo.org/record/6997924#.YvuonS5BxPY for positive mode and 
-https://zenodo.org/record/7107654#.Yy3BeKRBxPY for negative mode.
+https://zenodo.org/record/7753249#.ZBmO_sLMJPY for positive mode and 
+https://zenodo.org/record/7753267#.ZBmPYsLMJPY for negative mode.
 
 #### Preprocessing mass spectra
 MS2Query is run on all MS2 spectra in a spectrum file. 
