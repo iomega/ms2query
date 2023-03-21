@@ -6,8 +6,16 @@ from ms2query.ms2library import MS2Library
 from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query, return_non_existing_file_name
 
 
-def download_zenodo_files(zenodo_doi: int,
-                          dir_to_store_files:str):
+def zenodo_dois(ionisation_mode):
+    "Returns the most up to date DOI for Zenodo"
+    zenodo_DOIs = {"positive": 7753249,
+                   "negative": 7753267}
+    assert ionisation_mode in zenodo_DOIs, "Expected 'positive' or 'negative' as input"
+    return zenodo_DOIs[ionisation_mode]
+
+
+def download_zenodo_files(ionisation_mode: int,
+                          dir_to_store_files: str):
     """Downloads files from Zenodo
 
     Args:
@@ -20,6 +28,7 @@ def download_zenodo_files(zenodo_doi: int,
         """
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
+    zenodo_doi = zenodo_dois(ionisation_mode)
     file_names_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
     with urlopen(file_names_metadata_url) as zenodo_metadata_file:
         file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
