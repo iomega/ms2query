@@ -7,15 +7,38 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunM
 
 
 def zenodo_dois(ionisation_mode):
-    "Returns the most up to date DOI for Zenodo"
+    "Returns the most up to date url for Zenodo"
     zenodo_DOIs = {"positive": 7753249,
                    "negative": 7753267}
     assert ionisation_mode in zenodo_DOIs, "Expected 'positive' or 'negative' as input"
-    return zenodo_DOIs[ionisation_mode]
+    zenodo_doi = zenodo_DOIs[ionisation_mode]
+    zenodo_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
+    zenodo_files_url = f"https://zenodo.org/record/{zenodo_doi}/files/"
+    return zenodo_metadata_url, zenodo_files_url
+
+
+def available_zenodo_files(zenodo_metadata_url,
+                           only_models=False):
+    """Returns the files available on zenodo"""
+    with urlopen(zenodo_metadata_url) as zenodo_metadata_file:
+        file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
+    files = file_names_metadata_json["files"]
+
+    file_names_and_sizes = {}
+    for file in files:
+        file_name = file["key"]
+        if only_models:
+            model_extensions = [".model", ".hdf5", ".onnx", ".npy"]
+            if any(file_name.endswith(e) for e in model_extensions):
+                file_names_and_sizes[file_name] = file["size"]
+        else:
+            file_names_and_sizes[file_name] = file["size"]
+    return file_names_and_sizes
 
 
 def download_zenodo_files(ionisation_mode: str,
-                          dir_to_store_files: str):
+                          dir_to_store_files: str,
+                          only_models=False):
     """Downloads files from Zenodo
 
     Args:
@@ -28,19 +51,15 @@ def download_zenodo_files(ionisation_mode: str,
         """
     if not os.path.exists(dir_to_store_files):
         os.mkdir(dir_to_store_files)
-    zenodo_doi = zenodo_dois(ionisation_mode)
-    file_names_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
-    with urlopen(file_names_metadata_url) as zenodo_metadata_file:
-        file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
-    files = file_names_metadata_json["files"]
-    zenodo_files_url = f"https://zenodo.org/record/{zenodo_doi}/files/"
+    zenodo_metadata_url, zenodo_files_url = zenodo_dois(ionisation_mode)
+    file_names_and_sizes = available_zenodo_files(zenodo_metadata_url, only_models)
 
-    for file in files:
-        file_name = file["key"]
+    for file_name, file_size in file_names_and_sizes.items():
         store_file_location = os.path.join(dir_to_store_files, file_name)
         if not os.path.exists(store_file_location):
-            print(f"downloading the file {file_name} from zenodo ({file['size'] / 1000000:.1f} MB)")
-            urlretrieve(zenodo_files_url + file_name,
+            print(f"downloading the file {file_name} from zenodo ({file_size / 1000000:.1f} MB)")
+            download_url = zenodo_files_url + file_name
+            urlretrieve(download_url,
                         store_file_location)
         else:
             print(f"file with the name {store_file_location} already exists, so was not downloaded")

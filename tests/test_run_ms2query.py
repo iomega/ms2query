@@ -1,7 +1,7 @@
 import os
 import sys
-from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.run_ms2query import download_zenodo_files, run_complete_folder
+from ms2query.ms2library import create_library_object_from_one_dir, select_files_for_ms2query
+from ms2query.run_ms2query import download_zenodo_files, run_complete_folder, zenodo_dois, available_zenodo_files
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import (MS2Library,
                                    ms2library, test_spectra)
@@ -11,6 +11,24 @@ if sys.version_info < (3, 8):
     import pickle5 as pickle
 else:
     import pickle
+
+
+def test_download_zenodo():
+    """Tests if the files on zenodo match the load library from one dir settings"""
+    for ionisation_mode in ["positive", "negative"]:
+        zenodo_metadata_url, zenodo_files_url = zenodo_dois(ionisation_mode)
+        file_names_and_sizes = available_zenodo_files(zenodo_metadata_url)
+        file_names = [file_name for file_name in file_names_and_sizes]
+        select_files_for_ms2query(file_names)
+
+
+def test_download_models_only():
+    """Tests if downloading the models only works"""
+    for ionisation_mode in ["positive", "negative"]:
+        zenodo_metadata_url, zenodo_files_url = zenodo_dois(ionisation_mode)
+        file_names_and_sizes = available_zenodo_files(zenodo_metadata_url, only_models=True)
+        file_names = [file_name for file_name in file_names_and_sizes]
+        assert len(file_names) == 5
 
 
 def test_download_default_models(tmp_path):
