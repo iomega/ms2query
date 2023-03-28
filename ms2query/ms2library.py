@@ -478,9 +478,6 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
             file_type = "ms2query_model_pickle"
             dict_with_file_names[file_type] = file_name
 
-    if check_if_downloaded is False:
-        return dict_with_file_names
-
     # Check if all the file types are available
     for file_type, stored_file_name in dict_with_file_names.items():
         if file_type == "ms2query_model" and stored_file_name is None:
