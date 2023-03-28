@@ -16,7 +16,8 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model)
+                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model,
+                            select_files_in_directory)
 
 
 class MS2Library:
@@ -498,16 +499,7 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
     directory:
         Path to the directory in which the files are stored
     """
-    assert os.path.exists(directory_containing_library_and_models) \
-           and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
-    # Select all files in the directory
-    files_in_directory = []
-    for file_name in os.listdir(directory_containing_library_and_models):
-        file_path = os.path.join(directory_containing_library_and_models, file_name)
-        # skip folders
-        if os.path.isfile(file_path):
-            files_in_directory.append(file_name)
-
+    files_in_directory = select_files_in_directory(directory_containing_library_and_models)
     # Match file names with MS2Query files.
     dict_with_file_names = select_files_for_ms2query(files_in_directory)
 
