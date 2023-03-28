@@ -454,39 +454,25 @@ def get_ms2query_model_prediction_single_spectrum(
     return result_table
 
 
-def create_library_object_from_one_dir(directory_containing_library_and_models: str) -> MS2Library:
-    """Selects file names corresponding to file types in a directory and creates an MS2Library object
-
-    Args:
-    ------
-    directory:
-        Path to the directory in which the files are stored
-    """
-    assert os.path.exists(directory_containing_library_and_models) \
-           and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
-
+def select_files_for_ms2query(file_names: List[str]):
+    """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
         {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
          "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
          "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
     # Create a dictionary with None as values.
     dict_with_file_names = {key: None for key in dict_with_file_extensions}
-
-    # Go through spectra files in directory
-    for file_name in os.listdir(directory_containing_library_and_models):
-        file_path = os.path.join(directory_containing_library_and_models, file_name)
-        # skip folders
-        if os.path.isfile(file_path):
-            # Loop over the different expected file extensions.
-            for file_type, file_extension in dict_with_file_extensions.items():
-                if str.endswith(file_path, file_extension):
-                    assert dict_with_file_names[file_type] is None, \
-                        f"Multiple files could be the file containing the {file_type} file"
-                    dict_with_file_names[file_type] = file_path
-            # Check if the old ms2querye model is stored (instead of onnx) to give a good warning.
-            if str.endswith(file_path, ".pickle") and "ms2q" in file_name:
-                file_name = "ms2query_model_pickle"
-                dict_with_file_names[file_name] = file_path
+    for file_name in file_names:
+        # Loop over the different expected file extensions.
+        for file_type, file_extension in dict_with_file_extensions.items():
+            if str.endswith(file_name, file_extension):
+                assert dict_with_file_names[file_type] is None, \
+                    f"Multiple files could be the file containing the {file_type} file"
+                dict_with_file_names[file_type] = file_name
+        # Check if the old ms2query model is stored (instead of onnx) to give a good warning.
+        if str.endswith(file_name, ".pickle") and "ms2q" in file_name:
+            file_type = "ms2query_model_pickle"
+            dict_with_file_names[file_type] = file_name
 
     # Check if all the file types are available
     for file_type, stored_file_name in dict_with_file_names.items():
@@ -500,12 +486,42 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
             print("The classifiers file has not been specified, therefore no classes will be predicted.")
         elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
-                f"The file type {file_type} was not found in the directory"
+                f"The file type {file_type} was not found in the file names: {file_names}"
+    return dict_with_file_names
 
-    return MS2Library(dict_with_file_names["sqlite"],
-                      dict_with_file_names["s2v_model"],
-                      dict_with_file_names["ms2ds_model"],
-                      dict_with_file_names["s2v_embeddings"],
-                      dict_with_file_names["ms2ds_embeddings"],
-                      dict_with_file_names["ms2query_model"],
-                      dict_with_file_names["classifiers"])
+
+def create_library_object_from_one_dir(directory_containing_library_and_models: str) -> MS2Library:
+    """Selects file names corresponding to file types in a directory and creates an MS2Library object
+
+    Args:
+    ------
+    directory:
+        Path to the directory in which the files are stored
+    """
+    assert os.path.exists(directory_containing_library_and_models) \
+           and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
+    # Select all files in the directory
+    files_in_directory = []
+    for file_name in os.listdir(directory_containing_library_and_models):
+        file_path = os.path.join(directory_containing_library_and_models, file_name)
+        # skip folders
+        if os.path.isfile(file_path):
+            files_in_directory.append(file_name)
+
+    # Match file names with MS2Query files.
+    dict_with_file_names = select_files_for_ms2query(files_in_directory)
+
+    # Adds the path in front of the file names
+    dict_with_file_paths = {}
+    for key, file_name in dict_with_file_names.items():
+        if file_name is not None:
+            dict_with_file_paths[key] = os.path.join(directory_containing_library_and_models, file_name)
+        else:
+            dict_with_file_paths[key] = None
+    return MS2Library(dict_with_file_paths["sqlite"],
+                      dict_with_file_paths["s2v_model"],
+                      dict_with_file_paths["ms2ds_model"],
+                      dict_with_file_paths["s2v_embeddings"],
+                      dict_with_file_paths["ms2ds_embeddings"],
+                      dict_with_file_paths["ms2query_model"],
+                      dict_with_file_paths["classifiers"])
