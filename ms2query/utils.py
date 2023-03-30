@@ -277,3 +277,17 @@ def predict_onnx_model(random_forest_onnx_model: InferenceSession, input_values)
     # Converts np array of shape (n,1) to a 1D numpy array.
     predictions = predictions[0].ravel()
     return predictions
+
+
+def select_files_in_directory(directory):
+    """Returns the file names in a directory"""
+    assert os.path.exists(directory) \
+           and not os.path.isfile(directory), "Expected a directory"
+    # Select all files in the directory
+    files_in_directory = []
+    for file_name in os.listdir(directory):
+        file_path = os.path.join(directory, file_name)
+        # skip folders
+        if os.path.isfile(file_path):
+            files_in_directory.append(file_name)
+    return files_in_directory

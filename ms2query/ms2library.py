@@ -16,7 +16,8 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model)
+                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model,
+                            select_files_in_directory)
 
 
 class MS2Library:
@@ -454,12 +455,15 @@ def get_ms2query_model_prediction_single_spectrum(
     return result_table
 
 
-def select_files_for_ms2query(file_names: List[str]):
+def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
         {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
          "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
          "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+    if files_to_select is not None:
+        dict_with_file_extensions = {key: value for key, value in dict_with_file_extensions.items()
+                                     if key in files_to_select}
     # Create a dictionary with None as values.
     dict_with_file_names = {key: None for key in dict_with_file_extensions}
     for file_name in file_names:
@@ -498,16 +502,7 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
     directory:
         Path to the directory in which the files are stored
     """
-    assert os.path.exists(directory_containing_library_and_models) \
-           and not os.path.isfile(directory_containing_library_and_models), "Expected a directory"
-    # Select all files in the directory
-    files_in_directory = []
-    for file_name in os.listdir(directory_containing_library_and_models):
-        file_path = os.path.join(directory_containing_library_and_models, file_name)
-        # skip folders
-        if os.path.isfile(file_path):
-            files_in_directory.append(file_name)
-
+    files_in_directory = select_files_in_directory(directory_containing_library_and_models)
     # Match file names with MS2Query files.
     dict_with_file_names = select_files_for_ms2query(files_in_directory)
 

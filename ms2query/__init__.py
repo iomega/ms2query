@@ -51,7 +51,7 @@ def command_line():
                         help="Filter out all spectra that are not in the specified ion-mode. "
                              "The ion mode can be specified by using --ionmode")
     parser.add_argument("--additional_metadata", action="store",
-                        default=("retention_time", "retention_index",),
+                        default=("rtinseconds", "feature_id",),
                         nargs="+",
                         type=str,
                         help="Return additional metadata columns in the results, for example --additional_metadata rtinseconds feature_id")
