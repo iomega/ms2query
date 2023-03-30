@@ -32,7 +32,7 @@ setup(
         "matchms>=0.11.0,<=0.13.0",
         "numpy",
         "spec2vec>=0.6.0",
-        "h5py<3.0.0",
+        "h5py",
         "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
         "tensorflow-metal<2.9;platform_machine=='arm64'",
         "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
