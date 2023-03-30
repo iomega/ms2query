@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.7.1]
+- Downloading files is more modular. 
+- Loading only the models for training your own model is easier. 
+- The default settings for additional metadata are changed to match mgf files from feature based molecular networking 
+- Readme has been cleaned up
+
+## [0.7.1]
 - Define the newest zenodo DOI in one location. 
 
 ## [0.7.0]
