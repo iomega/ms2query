@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set maximum numpy version
 - Remove matchmsextras from dependencies
 
-## [0.7.1]
+
+## [0.7.3]
+- Fix h5py dependency issue
+
+## [0.7.2]
 - Downloading files is more modular. 
 - Loading only the models for training your own model is easier. 
 - The default settings for additional metadata are changed to match mgf files from feature based molecular networking 

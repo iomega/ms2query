@@ -33,11 +33,14 @@ setup(
         "numpy<=1.23.5", #No reason for this maximum version, just to make sure it does not break in the future.
         "spec2vec>=0.6.0",
         "h5py<3.0.0",
+        "numpy",
+        "spec2vec>=0.6.0, <=0.7.0",
+        "h5py",
         "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
-        "tensorflow-metal<2.9;platform_machine=='arm64'",
+        "tensorflow-metal==0.5.0;platform_machine=='arm64'",
         "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
         "scikit-learn",
-        "ms2deepscore",
+        "ms2deepscore<0.3.1",
         "gensim>=4.0.0",
         "pandas>=1.2.5,<2.0.0",
         "pubchempy",
