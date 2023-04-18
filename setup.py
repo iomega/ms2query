@@ -39,7 +39,7 @@ setup(
         "scikit-learn",
         "ms2deepscore",
         "gensim>=4.0.0",
-        "pandas>=1.2.5",
+        "pandas>=1.2.5,<2.0.0",
         "pubchempy",
         "tqdm",
         "matplotlib",
