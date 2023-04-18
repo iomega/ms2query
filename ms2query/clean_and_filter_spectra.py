@@ -5,8 +5,8 @@ from matchms import Spectrum
 from matchms.utils import is_valid_inchi, is_valid_inchikey, is_valid_smiles
 from matchms.typing import SpectrumType
 from matchms.logging_functions import set_matchms_logger_level
-from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from spec2vec import SpectrumDocument
+from ms2query.pubchem_lookup import pubchem_metadata_lookup
 
 
 def clean_metadata(spectrum: Spectrum) -> Spectrum:
@@ -79,8 +79,8 @@ def harmonize_annotation(spectrum: Spectrum,
             spectrum = msfilters.add_parent_mass(spectrum, estimate_from_adduct=True)
             spectrum = pubchem_metadata_lookup(spectrum,
                                                mass_tolerance=2.0,
-                                               allowed_differences=[(18.03, 0.01),
-                                                                    (18.01, 0.01)],
+                                               allowed_differences=((18.03, 0.01),
+                                                                    (18.01, 0.01)),
                                                name_search_depth=15)
     return spectrum
 
