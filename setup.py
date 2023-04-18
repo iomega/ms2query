@@ -30,7 +30,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         "matchms>=0.11.0,<=0.13.0",
-        "numpy",
+        "numpy<=1.23.5", #No reason for this maximum version, just to make sure it does not break in the future.
         "spec2vec>=0.6.0",
         "h5py<3.0.0",
         "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
