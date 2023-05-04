@@ -1,8 +1,10 @@
 import json
 import urllib
-from typing import List, Union, Dict
-from tqdm import tqdm
+from typing import List, Union, Dict, Optional
 
+import pandas as pd
+from tqdm import tqdm
+from ms2query.utils import return_non_existing_file_name
 
 def select_inchikeys(spectra):
     list_of_inchikeys = []
@@ -34,20 +36,30 @@ def do_url_request(url: str) -> [bytes, None]:
     except (urllib.error.HTTPError, urllib.error.URLError):
         # apparently the request failed
         result = None
+    except ConnectionAbortedError:
+        result = do_url_request(url)
+        print("An connection error occurred, will try again")
     return result
 
+def get_classyfire_results(full_inchikey):
+    json_results = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
+    if json_results is None:
+        return None
+    # else:
+    classes = get_json_cf_results(json_results)
+    return classes
 
-def get_json_cf_results(raw_json: bytes) -> List[str]:
+
+def get_json_cf_results(full_inchikey: str) -> Optional[List[str]]:
     """
-    Extract the wanted CF classes from bytes version (open file) of json str
+    Extract the wanted CF classes.
     Names of the keys extracted in order are:
     'kingdom', 'superclass', 'class', 'subclass', 'direct_parent'
-    List elements are concatonated with '; '.
-    :param raw_json: Json str as a bytes object containing ClassyFire
-        information
-    :return: Extracted CF classes
     """
-    wanted_info = []
+    raw_json = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
+    if raw_json is None:
+        return None
+    classes = []
     cf_json = json.loads(raw_json)
     wanted_keys_list_name = ['kingdom', 'superclass', 'class',
                              'subclass', 'direct_parent']
@@ -56,12 +68,12 @@ def get_json_cf_results(raw_json: bytes) -> List[str]:
         info = ""
         if info_dict:
             info = info_dict.get('name', "")
-        wanted_info.append(info)
+        classes.append(info)
+    assert len(classes) == len(wanted_keys_list_name), "expected a different number of metadata"
+    return classes
 
-    return wanted_info
 
-
-def get_json_npc_results(raw_json: bytes) -> List[str]:
+def get_json_npc_results(smiles: str) -> Optional[List[str]]:
     """Read bytes version of json str, extract the keys in order
     Names of the keys extracted in order are:
     class_results, superclass_results, pathway_results, isglycoside.
@@ -70,6 +82,9 @@ def get_json_npc_results(raw_json: bytes) -> List[str]:
         information
     :return: Extracted NPClassifier classes
     """
+    raw_json = do_url_request(f"https://npclassifier.ucsd.edu/classify?smiles={smiles}")
+    if raw_json is None:
+        return None
     wanted_info = []
     cf_json = json.loads(raw_json)
     wanted_keys_list = ["class_results", "superclass_results",
@@ -85,80 +100,62 @@ def get_json_npc_results(raw_json: bytes) -> List[str]:
         wanted_info.append(info)
 
     last_info_bool = cf_json.get(last_key, "")
-    last_info = "0"
+    last_info = "False"
     if last_info_bool:
-        last_info = "1"
+        last_info = "True"
     wanted_info.append(last_info)
-
+    assert len(wanted_info) == len(wanted_keys_list)+1, "expected a different number of metadata"
     return wanted_info
 
 
-def select_compound_classes(inchikey_dict):
+def select_compound_classes(spectra):
+    inchikey_dict = select_smiles_and_full_inchikeys(spectra)
     inchikey_results_list = []
     for i, inchikey14 in tqdm(enumerate(inchikey_dict), total=len(inchikey_dict)):
         inchikey_results_list.append([inchikey14])
         # select classyfire classes
+        cf_classes = None
         for full_inchikey, smiles in inchikey_dict[inchikey14]:
-            result = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
-            if result is not None:
-                classes = get_json_cf_results(result)
+            cf_classes = get_json_cf_results(full_inchikey)
+            if cf_classes is not None:
                 inchikey_results_list[i].append(smiles)
-                inchikey_results_list[i] += classes
+                inchikey_results_list[i] += cf_classes
                 break
-        if len(inchikey_results_list[i]) != 7:
-            print("classyfire classes of inchikey " + full_inchikey + " at position " + str(i) + " is not complete")
-            print(inchikey_results_list[i])
-            inchikey_results_list[i] = [inchikey14, smiles, "", "", "", "", ""]
+        if cf_classes is None:
+            print(f"no classyfire annotation was found for inchikey {inchikey14}")
+            inchikey_results_list[i].append([inchikey14, smiles, "", "", "", "", ""])
+
     #     select NPC classes
+        npc_results = None
         for full_inchikey, smiles in inchikey_dict[inchikey14]:
-            result = do_url_request(f"https://npclassifier.ucsd.edu/classify?smiles={smiles}")
-            if result is not None:
-                npc_results = get_json_npc_results(result)
+            npc_results = get_json_npc_results(smiles)
+            if npc_results is not None:
                 inchikey_results_list[i] += npc_results
                 break
-        if len(inchikey_results_list[i]) != 11:
-            print("inchikey " + full_inchikey + " at position " + str(i) + " is not complete")
-            print(inchikey_results_list[i])
-            inchikey_results_list[i] = inchikey_results_list[i][:7] + ["", "", "", ""]
+        if npc_results is None:
+            print(f"no npc annotation was found for inchikey {inchikey14}")
+            inchikey_results_list[i] += ["", "", "", ""]
     return inchikey_results_list
 
 
-def write_header(out_file: str) -> str:
-    """Write classes to out_file, returns out_file with possible .txt added
-    :param out_file: location of output file
-    """
-    if not out_file.endswith('.txt'):
-        out_file += '.txt'
-
+def convert_to_dataframe(inchikey_results_lists):
     header_list = [
         'inchikey', 'smiles', 'cf_kingdom',
         'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent',
         'npc_class_results', 'npc_superclass_results', 'npc_pathway_results',
         'npc_isglycoside']
-    with open(out_file, 'w') as outf:
-        outf.write("{}\n".format('\t'.join(header_list)))
-    return out_file
-
-
-def write_class_info(class_info: List[List[str]],
-                     out_file: str):
-    """Write classes to out_file
-    :param inchikey: inchikey
-    :param class_info: list [smiles, cf_classes, npc_classes]
-    :param out_file: location of output file
-    """
-    write_header(out_file)
-    for row in class_info:
-        with open(out_file, 'a') as outf:
-            outf.write("{}\n".format('\t'.join(row)))
-
+    df = pd.DataFrame(inchikey_results_lists, columns=header_list)
+    df.set_index("inchikey", inplace=True)
+    return df
 
 if __name__ == "__main__":
     from ms2query.utils import load_matchms_spectrum_objects_from_file
-    # spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_spectra/test_spectra.mgf")
-    spectra = load_matchms_spectrum_objects_from_file("../../data/Backup_MS2Query_models_paper/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_negative_annotated.pickle")
-    inchikey_dict = select_smiles_and_full_inchikeys(spectra)
-    compound_classes = select_compound_classes(inchikey_dict)
-    print(compound_classes)
-    write_class_info(compound_classes, "../../data/test_dir/compound_classes.txt")
+    spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_spectra/test_spectra.mgf")
+    # spectra = load_matchms_spectrum_objects_from_file("../../data/Backup_MS2Query_models_paper/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_negative_annotated.pickle")
+    compound_classes = select_compound_classes(spectra[:3])
+    df = convert_to_dataframe(compound_classes)
+    df.to_csv("../../data/test_dir/test.txt")
+    index = df.index
+    index_list = list(index)
+    # write_class_info(compound_classes, "../../data/test_dir/compound_classes_negative_mode.txt")
 
