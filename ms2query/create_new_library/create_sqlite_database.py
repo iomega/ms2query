@@ -4,9 +4,10 @@ new models
 """
 
 import sqlite3
-from typing import Dict, List
+from typing import Dict, List, Optional
 from matchms import Spectrum
 from tqdm import tqdm
+import pandas as pd
 
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_highest_tanimoto_score
 
@@ -14,6 +15,7 @@ from ms2query.create_new_library.calculate_tanimoto_scores import calculate_high
 def make_sqlfile_wrapper(sqlite_file_name: str,
                          list_of_spectra: List[Spectrum],
                          columns_dict: Dict[str, str] = None,
+                         compound_classes: pd.DataFrame = None,
                          progress_bars: bool = True):
     """Wrapper to create sqlite file containing spectrum information needed for MS2Query
 
@@ -37,15 +39,22 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
     """
-    initialize_tables(sqlite_file_name, additional_metadata_columns_dict=columns_dict)
+    additional_inchikey_columns = None
+    if compound_classes is not None:
+        additional_inchikey_columns = list(compound_classes.columns)
+
+    initialize_tables(sqlite_file_name, additional_metadata_columns_dict=columns_dict,
+                      additional_inchikey_columns=additional_inchikey_columns)
     fill_spectrum_data_table(sqlite_file_name, list_of_spectra, progress_bar=progress_bars)
 
     fill_inchikeys_table(sqlite_file_name, list_of_spectra,
+                         compound_classes=compound_classes,
                          progress_bars=progress_bars)
 
 
 def initialize_tables(sqlite_file_name: str,
-                      additional_metadata_columns_dict: Dict[str, str] = None):
+                      additional_metadata_columns_dict: Dict[str, str] = None,
+                      additional_inchikey_columns = None):
     """Creates a new sqlite file, with the empty tables spectrum_data and incikeys
 
     On default the columns spectrum_id and metadata are
@@ -66,31 +75,32 @@ def initialize_tables(sqlite_file_name: str,
         add_list_of_spectra_to_sqlite.
         Default = None results in the default columns.
     """
-    # Initialize spectrum_data_table
-    # Combine default columns and additional metadata columns
-    default_columns_dict = {"spectrumid": "INTEGER",
-                            "metadata": "TEXT"}
-    if additional_metadata_columns_dict is None:
-        additional_metadata_columns_dict = {}
-    combined_columns_dict = {**default_columns_dict, **additional_metadata_columns_dict}
+    additional_columns_txt = ""
+    if additional_metadata_columns_dict is not None:
+        # add all columns with the type specified in combined_columns_dict
+        additional_columns_txt = "".join(f"{column_header} {additional_metadata_columns_dict[column_header]},\n" for column_header in additional_metadata_columns_dict)
 
-    initialize_spectrum_data_table = """
-    DROP TABLE IF EXISTS 'spectrum_data';
-    CREATE TABLE 'spectrum_data' (
-    """
-    # add all columns with the type specified in combined_columns_dict
-    for column_header in combined_columns_dict:
-        initialize_spectrum_data_table += column_header + " " \
-                                + combined_columns_dict[column_header] + ",\n"
-    initialize_spectrum_data_table += "PRIMARY KEY (spectrumid));"
+    initialize_spectrum_data_table = f"""
+        DROP TABLE IF EXISTS 'spectrum_data';
+        CREATE TABLE 'spectrum_data' (
+        'spectrumid' INTEGER,
+        'metadata' TEXT,
+        {additional_columns_txt}
+        PRIMARY KEY (spectrumid));"""
+
+    additional_inchikey_columns_txt = ""
+    if additional_metadata_columns_dict is not None:
+        # add all columns with the type specified in combined_columns_dict
+        additional_inchikey_columns_txt = "".join(f"{column_header} TEXT,\n" for column_header in additional_inchikey_columns)
 
     # Initialize inchikeys table
-    initialize_inchikeys_table = """;
+    initialize_inchikeys_table = f""";
     DROP TABLE IF EXISTS 'inchikeys';
     CREATE TABLE 'inchikeys'(
         'inchikey' TEXT,
         spectrum_ids_belonging_to_inchikey14 TEXT,
         closest_related_inchikeys TEXT,
+        {additional_inchikey_columns_txt}
         PRIMARY KEY ('inchikey')
         );
     """
@@ -164,6 +174,7 @@ def fill_spectrum_data_table(sqlite_file_name: str,
 
 def fill_inchikeys_table(sqlite_file_name: str,
                          list_of_spectra: List[Spectrum],
+                         compound_classes: pd.DataFrame,
                          progress_bars: bool = True):
     """Fills the inchikeys table with Inchikeys, spectrum_ids_belonging_to_inchikey and closest related inchikeys
 
@@ -173,6 +184,8 @@ def fill_inchikeys_table(sqlite_file_name: str,
         will be overwritten.
     list_of_spectra:
         List of spectrum objects
+    compound_classes:
+        Dataframe with compound classes of inchikeys
     progress_bars:
         If True progress bars will show the progress of the different steps
         in the process.
@@ -191,11 +204,16 @@ def fill_inchikeys_table(sqlite_file_name: str,
                            desc="Adding inchikey14s to sqlite table",
                            disable=not progress_bars):
         matching_spectrum_ids = str(spectra_belonging_to_inchikey14[inchikey14])
+        # Select the compound classes
+        compound_class = list(compound_classes.loc[inchikey14])
+        compound_class_string = "".join(f',\n"{column_header}"' for column_header in compound_class)
+
         add_row_to_table_command = \
             f"""INSERT INTO 'inchikeys' 
             values ("{inchikey14}", 
             "{matching_spectrum_ids}",
-            "{str(closest_related_inchikey14s[inchikey14])}");"""
+            "{str(closest_related_inchikey14s[inchikey14])}"
+            {compound_class_string});"""
         cur.execute(add_row_to_table_command)
     conn.commit()
     conn.close()
