@@ -20,6 +20,8 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \
         "Expected a file to be created"
+    assert os.path.isfile(reference_sqlite_file), \
+        "The reference file given does not exist"
 
     # Test if the file has the correct information
     get_table_names = \

@@ -39,7 +39,7 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
     """
-    additional_inchikey_columns = None
+    additional_inchikey_columns = []
     if compound_classes is not None:
         additional_inchikey_columns = list(compound_classes.columns)
 
@@ -204,9 +204,12 @@ def fill_inchikeys_table(sqlite_file_name: str,
                            desc="Adding inchikey14s to sqlite table",
                            disable=not progress_bars):
         matching_spectrum_ids = str(spectra_belonging_to_inchikey14[inchikey14])
-        # Select the compound classes
-        compound_class = list(compound_classes.loc[inchikey14])
-        compound_class_string = "".join(f',\n"{column_header}"' for column_header in compound_class)
+        if compound_classes is not None:
+            # Select the compound classes
+            compound_class = list(compound_classes.loc[inchikey14])
+            compound_class_string = "".join(f',\n"{column_header}"' for column_header in compound_class)
+        else:
+            compound_class_string = ""
 
         add_row_to_table_command = \
             f"""INSERT INTO 'inchikeys' 
