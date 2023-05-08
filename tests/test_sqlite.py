@@ -12,6 +12,7 @@ from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrap
 from ms2query.query_from_sqlite_database import get_metadata_from_sqlite, get_ionization_mode_library
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
+from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
@@ -87,6 +88,41 @@ def test_making_sqlite_file(tmp_path):
     make_sqlfile_wrapper(new_sqlite_file_name,
                          list_of_spectra,
                          columns_dict={"precursor_mz": "REAL"})
+    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
+
+
+def test_making_sqlite_file_with_compound_classes(tmp_path):
+    """Makes a temporary sqlite file and tests if it contains the correct info
+    """
+    def generate_compound_classes(spectra):
+        inchikeys = {spectrum.get("inchikey")[:14] for spectrum in spectra}
+        inchikey_results_list = []
+        for inchikey in inchikeys:
+            inchikey_results_list.append([inchikey, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"])
+        compound_class_df = convert_to_dataframe(inchikey_results_list)
+        return compound_class_df
+    # tmp_path is a fixture that makes sure a temporary file is created
+    new_sqlite_file_name = os.path.join(tmp_path,
+                                        "test_spectra_database.sqlite")
+
+    path_to_general_test_files = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/general_test_files')
+
+    reference_sqlite_file = os.path.join(path_to_general_test_files,
+                                         "test_files_without_spectrum_id",
+                                         "100_test_spectra_with_classes.sqlite")
+
+    list_of_spectra = load_pickled_file(os.path.join(
+        path_to_general_test_files, "100_test_spectra.pickle"))
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
+
+    # Create sqlite file, with 3 tables
+    make_sqlfile_wrapper(new_sqlite_file_name,
+                         list_of_spectra,
+                         columns_dict={"precursor_mz": "REAL"},
+                         compound_classes=generate_compound_classes(spectra=list_of_spectra))
+
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
