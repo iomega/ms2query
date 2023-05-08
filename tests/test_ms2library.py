@@ -13,7 +13,7 @@ from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS
 
 
 @pytest.fixture
-def ms2library():
+def ms2library() -> MS2Library:
     """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -127,7 +127,7 @@ def test_calculate_scores_for_metadata(ms2library, test_spectra):
         preselection_cut_off=20,
         ms2deepscores=ms2dscores.iloc[:, 0],
         query_spectrum=test_spectra[0],
-        sqlite_file_name=ms2library.sqlite_file_name)
+        sqlite_library=ms2library.sqlite_library)
 
     results_table = ms2library._calculate_features_for_random_forest_model(results_table)
     expected_result = load_pickled_file(os.path.join(

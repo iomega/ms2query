@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 from matchms import Spectrum
 from ms2query import ResultsTable
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import column_names_for_output, load_pickled_file
 from tests.test_utils import create_test_classifier_csv_file
 
@@ -19,17 +20,19 @@ def dummy_data():
     query_spectrum = Spectrum(mz=np.array([100.0]),
                               intensities=np.array([1.0]),
                               metadata={"precursor_mz": 205.0, "spectrum_nr": 0})
+
     sqlite_test_file = "test_files/general_test_files/100_test_spectra.sqlite"
-    return ms2deepscores, query_spectrum, sqlite_test_file
+
+    return ms2deepscores, query_spectrum, SqliteLibrary(sqlite_test_file)
 
 
 def test_table_init(dummy_data):
-    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
+    ms2deepscores, query_spectrum, sqlite_library = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
                          query_spectrum,
-                         sqlite_test_file)
+                         sqlite_library)
     assert table.data.shape == (0, 8), \
         "Should have an empty data attribute"
     assert table.precursor_mz == 205.0, \
@@ -37,12 +40,12 @@ def test_table_init(dummy_data):
 
 
 def test_table_preselect_ms2deepscore(dummy_data):
-    ms2deepscores, query_spectrum, sqlite_test_file = dummy_data
+    ms2deepscores, query_spectrum, sqlite_library = dummy_data
     preselection_cut_off = 3
     table = ResultsTable(preselection_cut_off,
                          ms2deepscores.iloc[:, 0],
                          query_spectrum,
-                         sqlite_test_file)
+                         sqlite_library)
     table.preselect_on_ms2deepscore()
     assert table.data.shape == (3, 8), "Should have different data table"
     assert np.all(table.data.spectrum_ids.values ==
@@ -58,8 +61,8 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     test_table: ResultsTable = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
-    test_table.sqlite_file_name = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
+    # Add sqlite library as a patch to fix the test
+    test_table.sqlite_library = dummy_data[2]
     test_table.query_spectrum.set("spectrum_nr", 1)
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
@@ -80,13 +83,12 @@ def test_export_to_dataframe(dummy_data, tmp_path):
                    'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
 
 
-def test_export_to_dataframe_with_additional_columns(tmp_path):
+def test_export_to_dataframe_with_additional_columns(tmp_path, dummy_data):
     create_test_classifier_csv_file(tmp_path)
     test_table: ResultsTable = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
-    test_table.sqlite_file_name = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0], "tests/test_files/general_test_files/100_test_spectra.sqlite")
+    test_table.sqlite_library = dummy_data[2]
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     test_table.query_spectrum.set("spectrum_nr", 1)
     returned_dataframe = test_table.export_to_dataframe(5,

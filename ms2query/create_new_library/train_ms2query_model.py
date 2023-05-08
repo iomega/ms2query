@@ -11,7 +11,7 @@ from matchms import Spectrum
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from ms2query import MS2Library
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
@@ -60,7 +60,7 @@ class DataCollectorForTraining():
 
             # Get tanimoto scores
             library_spectrum_ids = list(results_table.data.index)
-            tanimoto_scores = calculate_tanimoto_scores_with_library(self.ms2library.sqlite_file_name, query_spectrum,
+            tanimoto_scores = calculate_tanimoto_scores_with_library(self.ms2library.sqlite_library, query_spectrum,
                                                                      library_spectrum_ids)
             # Add tanimoto scores for training data
             all_tanimoto_scores = \
@@ -78,12 +78,11 @@ class DataCollectorForTraining():
         return info_of_matches_with_tanimoto, all_tanimoto_scores
 
 
-def calculate_tanimoto_scores_with_library(sqlite_file_name,
+def calculate_tanimoto_scores_with_library(sqlite_library: SqliteLibrary,
                                            query_spectrum: Spectrum,
                                            spectra_ids_list: List[str]):
     # Get inchikeys belonging to spectra ids
-    metadata_dict = get_metadata_from_sqlite(
-        sqlite_file_name,
+    metadata_dict = sqlite_library.get_metadata_from_sqlite(
         spectra_ids_list)
     library_smiles_list = [metadata_dict[spectrum_id]["smiles"] for spectrum_id in spectra_ids_list]
     tanimoto_scores = calculate_tanimoto_scores_from_smiles(library_smiles_list, [query_spectrum.get("smiles")])

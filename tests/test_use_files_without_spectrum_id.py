@@ -15,7 +15,7 @@ else:
 
 
 @pytest.fixture
-def ms2library_without_spectrum_id():
+def ms2library_without_spectrum_id() -> MS2Library:
     """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],

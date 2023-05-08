@@ -2,7 +2,7 @@ from typing import Tuple, Union
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import (column_names_for_output,
                             get_classifier_from_csv_file)
 
@@ -20,7 +20,7 @@ class ResultsTable:
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.Series,
                  query_spectrum: Spectrum,
-                 sqlite_file_name: str,
+                 sqlite_library: SqliteLibrary,
                  classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
         # pylint: disable=too-many-arguments
@@ -30,7 +30,7 @@ class ResultsTable:
         self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
         self.precursor_mz = query_spectrum.get("precursor_mz")
-        self.sqlite_file_name = sqlite_file_name
+        self.sqlite_library = sqlite_library
         self.classifier_csv_file_name = classifier_csv_file_name
 
     def __eq__(self, other):
@@ -43,7 +43,7 @@ class ResultsTable:
             self.data.round(5).equals(other.data.round(5)) and \
             self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
             self.query_spectrum.__eq__(other.query_spectrum) and \
-            self.sqlite_file_name == other.sqlite_file_name
+            self.sqlite_library == other.sqlite_library
 
     def assert_results_table_equal(self, other):
         """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
@@ -135,8 +135,7 @@ class ResultsTable:
             return None
 
         # For each analog the compound name is selected from sqlite
-        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
-                                                 list(selected_analogs["spectrum_ids"]))
+        metadata_dict = self.sqlite_library.get_metadata_from_sqlite(list(selected_analogs["spectrum_ids"]))
         compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
                               for analog_spectrum_id
                               in list(selected_analogs["spectrum_ids"])]

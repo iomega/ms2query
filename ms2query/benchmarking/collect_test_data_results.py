@@ -20,7 +20,7 @@ from matchms.calculate_scores import calculate_scores
 from matchms.similarity.ModifiedCosine import ModifiedCosine
 from matchms.similarity.CosineGreedy import CosineGreedy
 
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import save_json_file
 
 
@@ -43,8 +43,7 @@ def generate_test_results_ms2query(ms2library: MS2Library,
             ["spectrum_ids", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
             if query_spectrum_id == query_spectrum_id_in_df:
                 # Get metadata belonging to spectra ids
-                lib_metadata = get_metadata_from_sqlite(
-                    ms2library.sqlite_file_name,
+                lib_metadata = ms2library.sqlite_library.get_metadata_from_sqlite(
                     [spectrum_id])[spectrum_id]
                 tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
                 exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
@@ -83,15 +82,16 @@ def get_all_ms2ds_scores(ms2ds_model: SiameseModel,
 
 def select_highest_ms2ds_in_mass_range(ms2deepscores,
                                        test_spectra,
-                                       sqlite_file_location,
+                                       sqlite_library: SqliteLibrary,
                                        allowed_mass_diff: Union[None, float]) -> List[Tuple[float, float, bool]]:
     results_ms2deepscore = []
     for i, test_spectrum in tqdm(enumerate(test_spectra)):
         precursor_mz_query_spectrum = test_spectrum.get("precursor_mz")
         if allowed_mass_diff is not None:
-            spectrum_ids_and_mass = get_precursor_mz_within_range(sqlite_file_location,
-                                                                  precursor_mz_query_spectrum - allowed_mass_diff,
-                                                                  precursor_mz_query_spectrum + allowed_mass_diff)
+            spectrum_ids_and_mass = get_precursor_mz_within_range(
+                sqlite_library.sqlite_file_name,
+                precursor_mz_query_spectrum - allowed_mass_diff,
+                precursor_mz_query_spectrum + allowed_mass_diff)
             spectrum_ids = [spectrum_and_mass[0] for spectrum_and_mass in spectrum_ids_and_mass]
             if len(spectrum_ids) == 0:
                 spectrum_id_highest_ms2_deepscore_in_mass_range = None
@@ -101,8 +101,7 @@ def select_highest_ms2ds_in_mass_range(ms2deepscores,
             spectrum_id_highest_ms2_deepscore_in_mass_range = ms2deepscores[i].idxmax()
         if spectrum_id_highest_ms2_deepscore_in_mass_range is not None:
             # Get metadata belonging to spectra ids
-            lib_metadata = get_metadata_from_sqlite(
-                sqlite_file_location,
+            lib_metadata = sqlite_library.get_metadata_from_sqlite(
                 [spectrum_id_highest_ms2_deepscore_in_mass_range])[spectrum_id_highest_ms2_deepscore_in_mass_range]
             tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
             exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
@@ -266,7 +265,7 @@ def generate_test_results(ms2library: MS2Library,
         if not os.path.isfile(ms2ds_results_100_file_name):
             ms2ds_test_results_mass_diff_100 = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                                                   test_spectra,
-                                                                                  ms2library.sqlite_file_name,
+                                                                                  ms2library.sqlite_library,
                                                                                   allowed_mass_diff=100)
             save_json_file(ms2ds_test_results_mass_diff_100, ms2ds_results_100_file_name)
         else:
@@ -275,7 +274,7 @@ def generate_test_results(ms2library: MS2Library,
         if not os.path.isfile(ms2ds_results_all_file_name):
             ms2ds_test_results_all = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                                         test_spectra,
-                                                                        ms2library.sqlite_file_name,
+                                                                        ms2library.sqlite_library,
                                                                         allowed_mass_diff=None)
             save_json_file(ms2ds_test_results_all, ms2ds_results_all_file_name)
         else:
@@ -348,7 +347,7 @@ def generate_exact_matches_test_results(ms2library: MS2Library,
         if not os.path.isfile(ms2ds_results_0_25_file_name):
             ms2ds_test_results_mass_diff_100 = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                                                   test_spectra,
-                                                                                  ms2library.sqlite_file_name,
+                                                                                  ms2library.sqlite_library,
                                                                                   allowed_mass_diff=0.25)
             save_json_file(ms2ds_test_results_mass_diff_100, ms2ds_results_0_25_file_name)
         else:
@@ -357,7 +356,7 @@ def generate_exact_matches_test_results(ms2library: MS2Library,
         if not os.path.isfile(ms2ds_results_all_file_name):
             ms2ds_test_results_all = select_highest_ms2ds_in_mass_range(ms2ds_scores,
                                                                         test_spectra,
-                                                                        ms2library.sqlite_file_name,
+                                                                        ms2library.sqlite_library,
                                                                         allowed_mass_diff=None)
             save_json_file(ms2ds_test_results_all, ms2ds_results_all_file_name)
         else:

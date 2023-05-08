@@ -9,8 +9,7 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
 from onnxruntime import InferenceSession
-from ms2query.query_from_sqlite_database import (get_inchikey_information,
-                                                 get_precursor_mz, get_ionization_mode_library)
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.results_table import ResultsTable
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
@@ -86,7 +85,7 @@ class MS2Library:
         # Load models and set file locations
         self.classifier_file_name = classifier_csv_file_name
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
-        self.sqlite_file_name = sqlite_file_name
+        self.sqlite_library = SqliteLibrary(sqlite_file_name)
 
         if ms2query_model_file_name is not None:
             self.ms2query_model = load_ms2query_model(ms2query_model_file_name)
@@ -104,8 +103,7 @@ class MS2Library:
             "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
 
         # load precursor mz's
-        self.precursors_library = get_precursor_mz(
-            self.sqlite_file_name)
+        self.precursors_library = self.sqlite_library.get_precursor_mz()
 
         assert self.ms2ds_embeddings.shape[0] == self.s2v_embeddings.shape[0], \
             "The number ms2deepscore embeddings is not equal to the number of spectra with s2v embeddings"
@@ -114,10 +112,9 @@ class MS2Library:
             "Mismatch of library files. " \
             "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
 
-        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name)
-        self.spectra_of_inchikey14s, \
-            self.closely_related_inchikey14s = \
-            get_inchikey_information(self.sqlite_file_name)
+        self.ionization_mode = self.sqlite_library.get_ionization_mode_library()
+        self.spectra_of_inchikey14s, self.closely_related_inchikey14s = \
+            self.sqlite_library.get_inchikey_information()
         self.inchikey14s_of_spectra = {}
         for inchikey, list_of_spectrum_ids in \
                 self.spectra_of_inchikey14s.items():
@@ -177,7 +174,7 @@ class MS2Library:
             preselection_cut_off=preselection_cut_off,
             ms2deepscores=ms2deepscore_scores,
             query_spectrum=query_spectrum,
-            sqlite_file_name=self.sqlite_file_name,
+            sqlite_library=self.sqlite_library,
             classifier_csv_file_name=self.classifier_file_name)
         results_table = \
             self._calculate_features_for_random_forest_model(results_table)
