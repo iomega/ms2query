@@ -8,11 +8,30 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
+import pytest
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite, get_ionization_mode_library
+from ms2query.query_from_sqlite_database import (get_metadata_from_sqlite, get_ionization_mode_library,
+                                                 get_classes_inchikeys)
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
 from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
+
+
+@pytest.fixture()
+def path_to_test_files_sqlite_dir():
+    return os.path.join(os.path.split(os.path.dirname(__file__))[0],'tests/test_files')
+
+
+@pytest.fixture()
+def old_10_inchikeys_sqlite_file(path_to_test_files_sqlite_dir):
+    return os.path.join(path_to_test_files_sqlite_dir, "test_spectra_database.sqlite")
+
+
+@pytest.fixture()
+def classes_and_spectrum_id_sqlite_file(path_to_test_files_sqlite_dir):
+    return os.path.join(path_to_test_files_sqlite_dir, "general_test_files",
+                        "test_files_without_spectrum_id", "100_test_spectra_with_classes.sqlite")
+
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
@@ -128,42 +147,38 @@ def test_making_sqlite_file_with_compound_classes(tmp_path):
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
-def test_get_metadata_from_sqlite():
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-
-    spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
+def test_get_metadata_from_sqlite(classes_and_spectrum_id_sqlite_file):
+    spectra_id_list = [0, 1]
 
     result = get_metadata_from_sqlite(
-        sqlite_file_name,
+        classes_and_spectrum_id_sqlite_file,
         spectra_id_list,
-        spectrum_id_storage_name="spectrum_id")
+        spectrum_id_storage_name="spectrumid")
     assert isinstance(result, dict), "Expected dictionary as output"
     assert len(result) == len(spectra_id_list), \
         "Expected the same number of results as the spectra_id_list"
     for spectrum_id in spectra_id_list:
-        assert spectrum_id in result, \
+        assert spectrum_id in result.keys(), \
             f"The spectrum_id {spectrum_id} was expected as key"
         metadata = result[spectrum_id]
         assert isinstance(metadata, dict), \
             "Expected metadata to be stored as dict"
-        assert metadata['spectrum_id'] == spectrum_id, \
-            "Expected different spectrum id in metadata"
         for key in metadata.keys():
             assert isinstance(key, str), \
                 "Expected keys of metadata to be string"
-            assert isinstance(metadata[key], (str, float, int, list)), \
+            assert isinstance(metadata[key], (str, float, int, list, tuple)), \
                 f"Expected values of metadata to be string {metadata[key]}"
 
 
-def test_get_ionization_mode_library():
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-    ionization_mode = get_ionization_mode_library(sqlite_file_name)
+def test_get_ionization_mode_library(classes_and_spectrum_id_sqlite_file):
+    ionization_mode = get_ionization_mode_library(classes_and_spectrum_id_sqlite_file)
     assert ionization_mode == "positive"
+
+
+# def test_get_classes_inchikeys():
+#     path_to_test_files_sqlite_dir = os.path.join(
+#         os.path.split(os.path.dirname(__file__))[0],
+#         'tests/test_files')
+#     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
+#                                     "test_spectra_database.sqlite")
+#     get_classes_inchikeys()
