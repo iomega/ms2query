@@ -80,7 +80,7 @@ class DataCollectorForTraining():
 
 def calculate_tanimoto_scores_with_library(sqlite_library: SqliteLibrary,
                                            query_spectrum: Spectrum,
-                                           spectra_ids_list: List[str]):
+                                           spectra_ids_list: List[int]):
     # Get inchikeys belonging to spectra ids
     metadata_dict = sqlite_library.get_metadata_from_sqlite(
         spectra_ids_list)
