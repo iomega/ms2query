@@ -163,10 +163,9 @@ def test_get_ionization_mode_library(sqlite_library):
     assert ionization_mode == "positive"
 
 
-# def test_get_classes_inchikeys():
-#     path_to_test_files_sqlite_dir = os.path.join(
-#         os.path.split(os.path.dirname(__file__))[0],
-#         'tests/test_files')
-#     sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-#                                     "test_spectra_database.sqlite")
-#     get_classes_inchikeys()
+def test_get_classes_inchikeys(sqlite_library):
+    test_inchikeys = ["IYDKWWDUBYWQGF", "KNGPFNUOXXLKCN"]
+    classes = sqlite_library.get_classes_inchikeys(test_inchikeys)
+    assert len(classes) == len(test_inchikeys)
+    for inchikey in test_inchikeys:
+        assert classes[inchikey] == ("b", "c", "d", "e", "f", "g", "h", "i", "j")

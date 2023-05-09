@@ -132,19 +132,22 @@ class SqliteLibrary:
     def get_classes_inchikeys(self,
                               inchikeys):
         conn = sqlite3.connect(self.sqlite_file_name)
-        sqlite_command = f"""SELECT 'smiles', 'cf_kingdom',
-            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent',
-            'npc_class_results', 'npc_superclass_results', 'npc_pathway_results',
-            'npc_isglycoside' FROM inchikeys WHERE inchikey IN ('{"', '".join(map(str, inchikeys))}')"""
+        # sqlite_command = \
+        #     f"""SELECT spectrumid, precursor_mz FROM spectrum_data
+        #     WHERE spectrumid
+        #     IN ('{"', '".join(map(str, [101,1]))}')"""
+        sqlite_command = f"""SELECT inchikey, cf_kingdom,
+            cf_superclass, cf_class, cf_subclass, cf_direct_parent,
+            npc_class_results, npc_superclass_results, npc_pathway_results,
+            npc_isglycoside FROM inchikeys WHERE inchikey IN ('{"', '".join(map(str, inchikeys))}')"""
         cur = conn.cursor()
         cur.execute(sqlite_command)
         results = cur.fetchall()
-        matching_spectrum_ids_dict = {}
-        closely_related_inchikeys_dict = {}
+        compound_classes = {}
         for row in results:
             inchikey = row[0]
-            matching_spectrum_ids = ast.literal_eval(row[1])
-            closely_related_inchikeys = ast.literal_eval(row[2])
-            matching_spectrum_ids_dict[inchikey] = matching_spectrum_ids
-            closely_related_inchikeys_dict[inchikey] = closely_related_inchikeys
-        return matching_spectrum_ids_dict, closely_related_inchikeys_dict
+            compound_classes[inchikey] = row[1:]
+        for inchikey in inchikeys:
+            assert inchikey in compound_classes, \
+                f"The inchikey {inchikey} is not found in the database"
+        return compound_classes
