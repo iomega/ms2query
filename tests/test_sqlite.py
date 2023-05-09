@@ -19,8 +19,7 @@ from tests.test_utils import path_to_test_files
 
 @pytest.fixture(scope="package")
 def sqlite_library(path_to_test_files):
-    path_to_library = os.path.join(path_to_test_files, "general_test_files",
-                        "test_files_without_spectrum_id", "100_test_spectra_with_classes.sqlite")
+    path_to_library = os.path.join(path_to_test_files, "general_test_files", "100_test_spectra.sqlite")
     return SqliteLibrary(path_to_library)
 
 
@@ -76,7 +75,7 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     conn2.close()
 
 
-def test_making_sqlite_file(tmp_path):
+def test_making_sqlite_file_without_classes(tmp_path):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     # tmp_path is a fixture that makes sure a temporary file is created
@@ -88,7 +87,9 @@ def test_making_sqlite_file(tmp_path):
         'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
-                                         "100_test_spectra.sqlite")
+                                         "..",
+                                         "backwards_compatibility",
+                                         "100_test_spectra_without_classes.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
         path_to_general_test_files, "100_test_spectra.pickle"))
@@ -120,8 +121,7 @@ def test_making_sqlite_file_with_compound_classes(tmp_path):
         'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
-                                         "test_files_without_spectrum_id",
-                                         "100_test_spectra_with_classes.sqlite")
+                                         "100_test_spectra.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
         path_to_general_test_files, "100_test_spectra.pickle"))
