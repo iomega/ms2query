@@ -1,11 +1,14 @@
 import os
 import sys
+
+import pandas as pd
+
 from ms2query.ms2library import create_library_object_from_one_dir, select_files_for_ms2query
 from ms2query.run_ms2query import download_zenodo_files, run_complete_folder, zenodo_dois, available_zenodo_files
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import (MS2Library,
                                    ms2library, test_spectra)
-from tests.test_utils import create_test_classifier_csv_file
+from tests.test_utils import create_test_classifier_csv_file, check_correct_results_csv_file
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -67,20 +70,15 @@ def test_run_complete_folder(tmp_path, ms2library, test_spectra):
     run_complete_folder(ms2library=ms2library,
                         folder_with_spectra=folder_with_spectra)
     assert os.path.exists(results_directory), "Expected results directory to be created"
-
     assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
 
-    with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
-        assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
-                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,,\n',
-                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,,\n']
-
-    with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
-        assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,retention_time,retention_index\n',
-                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,,\n',
-                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,,\n']
+    expected_headers = ['query_spectrum_nr', 'ms2query_model_prediction', 'precursor_mz_difference',
+                        'precursor_mz_query_spectrum', 'precursor_mz_analog', 'inchikey',
+                        'analog_compound_name', 'smiles', 'retention_time', 'retention_index']
+    check_correct_results_csv_file(pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv'))),
+                                   expected_headers)
+    check_correct_results_csv_file(pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv'))),
+                                   expected_headers)
 
 
 def test_run_complete_folder_with_classifiers(tmp_path, ms2library, test_spectra):
@@ -100,13 +98,14 @@ def test_run_complete_folder_with_classifiers(tmp_path, ms2library, test_spectra
 
     assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
 
-    with open(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')), "r") as file:
-        assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
-                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,1,0.9996,0.9232,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n',
-                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,0,0.9621,0.4600,nan,nan,nan,nan,nan,nan,nan,nan,nan\n']
-    with open(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')), "r") as file:
-        assert file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name,charge,s2v_score,ms2ds_score,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n',
-                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B,1,0.9996,0.9232,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,Organic compounds,Organic acids and derivatives,Peptidomimetics,Depsipeptides,Cyclic depsipeptides,Cyclic peptides,Oligopeptides,Amino acids and Peptides\n',
-                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A,0,0.9621,0.4600,nan,nan,nan,nan,nan,nan,nan,nan,nan\n']
+    expected_headers = \
+        ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
+         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "charge", "s2v_score",
+         "ms2ds_score", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass", "cf_direct_parent",
+         "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
+    check_correct_results_csv_file(
+        pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv'))),
+        expected_headers)
+    check_correct_results_csv_file(
+        pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv'))),
+        expected_headers)

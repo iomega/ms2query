@@ -12,6 +12,8 @@ from ms2query.results_table import ResultsTable
 from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS2Query
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from tests.test_sqlite import sqlite_library
+from tests.test_utils import check_correct_results_csv_file
+
 
 @pytest.fixture
 def ms2library() -> MS2Library:
@@ -98,8 +100,8 @@ def expected_analog_search_results():
     expected_results = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
-    for expected_result in expected_results:
-        expected_result.sqlite_library = SqliteLibrary(expected_result.sqlite_file_name)
+    # for expected_result in expected_results:
+    #     expected_result.sqlite_library = SqliteLibrary(expected_result.sqlite_file_name)
     return expected_results
 
 
@@ -108,7 +110,7 @@ def expected_result_table_with_scores():
     results_table: ResultsTable = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
-    results_table.sqlite_library = SqliteLibrary(results_table.sqlite_file_name)
+    # results_table.sqlite_library = SqliteLibrary(results_table.sqlite_file_name)
     return results_table
 
 
@@ -129,45 +131,52 @@ def test_ms2library_set_settings(ms2library):
         "Different value for attribute was expected"
 
 
-def test_analog_search(ms2library, test_spectra, expected_analog_search_results):
+def test_analog_search(ms2library, test_spectra,
+                       expected_analog_search_results
+                       ):
     """Test analog search"""
     cutoff = 20
     results = ms2library.analog_search_return_results_tables(test_spectra, cutoff,
                                                              store_ms2deepscore_scores=True)
-    results_without_ms2deepscores = ms2library.analog_search_return_results_tables(
-        test_spectra, cutoff, store_ms2deepscore_scores=False)
-
     for i in range(len(expected_analog_search_results)):
         results[i].assert_results_table_equal(expected_analog_search_results[i])
+
+
+def test_analog_search_no_ms2ds(ms2library, test_spectra):
+    """Check if no ms2deepscores are stored."""
+    cutoff = 20
+    results_without_ms2deepscores = ms2library.analog_search_return_results_tables(
+        test_spectra, cutoff, store_ms2deepscore_scores=False)
+    for i in range(len(results_without_ms2deepscores)):
         assert results_without_ms2deepscores[i].ms2deepscores.empty, \
             "No ms2deepscores should be stored in the result table"
 
 
-def test_calculate_scores_for_metadata(ms2library, test_spectra, expected_result_table_with_scores,
+def test_calculate_scores_for_metadata(ms2library, test_spectra,
+                                       expected_result_table_with_scores,
                                        expected_ms2deespcore_scores):
     """Test collect_matches_data_multiple_spectra method of ms2library"""
 
     results_table = ResultsTable(
         preselection_cut_off=20,
-        ms2deepscores=expected_ms2deespcore_scores.iloc[:, 0],
+        ms2deepscores=expected_ms2deespcore_scores,
         query_spectrum=test_spectra[0],
         sqlite_library=ms2library.sqlite_library)
 
     results_table = ms2library._calculate_features_for_random_forest_model(results_table)
-
     results_table.assert_results_table_equal(expected_result_table_with_scores)
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
     """Test get_all_ms2ds_scores method of ms2library"""
     result = ms2library._get_all_ms2ds_scores(test_spectra[0])
-    assert_series_equal(result, expected_ms2deespcore_scores.iloc[:, 0])
+    assert_series_equal(result, expected_ms2deespcore_scores)
 
 
 def test_get_s2v_scores(ms2library, test_spectra):
     """Test _get_s2v_scores method of MS2Library"""
     result = ms2library._get_s2v_scores(
-        test_spectra[0], ["CCMSLIB00000001572", "CCMSLIB00000001648"])
+        test_spectra[0], [18, 68])
     assert np.allclose(result, np.array([0.97565603, 0.97848464])), \
         "Expected different Spec2Vec scores"
 
@@ -176,8 +185,7 @@ def test_get_average_ms2ds_for_inchikey14(ms2library):
     inchickey14s = {"BKUKTJSDOUXYFL", "BTVYFIMKUHNOBZ"}
     ms2ds_scores = pd.Series(
         [0.1, 0.8, 0.3],
-        index=['CCMSLIB00000001678',
-               'CCMSLIB00000001651', 'CCMSLIB00000001653'])
+        index=[87, 71, 73])
     results = ms2library._get_average_ms2ds_for_inchikey14(
         ms2ds_scores, inchickey14s)
     assert results == \
@@ -223,15 +231,15 @@ def test_get_ms2query_model_prediction_single_spectrum(expected_analog_search_re
 
 def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
     results_csv_file = os.path.join(tmp_path, "test_csv_analog_search")
-    settings = SettingsRunMS2Query(additional_metadata_columns=())
+    settings = SettingsRunMS2Query(additional_metadata_columns=(("spectrumid", )))
     ms2library.analog_search_store_in_csv(test_spectra, results_csv_file, settings)
     assert os.path.exists(results_csv_file)
-    with open(results_csv_file, "r") as test_file:
-        assert test_file.readlines() == \
-               ['query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_ids,analog_compound_name\n',
-                '1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001548,Hoiamide B\n',
-                '2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001570,Halovir A\n'], \
-               "Expected different results to be stored in csv file"
+    expected_headers = \
+        ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
+         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrumid"]
+    check_correct_results_csv_file(
+        pd.read_csv(results_csv_file),
+        expected_headers)
 
 
 def test_create_library_object_from_one_dir():

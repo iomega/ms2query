@@ -6,7 +6,7 @@ from matchms import Spectrum
 from ms2query import ResultsTable
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import column_names_for_output, load_pickled_file
-from tests.test_utils import create_test_classifier_csv_file
+from tests.test_utils import create_test_classifier_csv_file, check_correct_results_csv_file
 
 
 @pytest.fixture
@@ -67,20 +67,9 @@ def test_export_to_dataframe(dummy_data, tmp_path):
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     returned_dataframe = test_table.export_to_dataframe(5)
     assert isinstance(returned_dataframe, pd.DataFrame)
-    assert list(returned_dataframe.columns) == column_names_for_output(True, True)
-    # Check if one of the classifiers is filled in
-    assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
-    assert len(returned_dataframe.index) == 5
-    # Test if first row is correct
-    print(returned_dataframe)
-    np.testing.assert_array_almost_equal(
-        list(returned_dataframe.iloc[0, :5]),
-        [1, 0.56453, 33.25000, 907.0, 940.250],
-        5)
-    assert np.all(list(returned_dataframe.iloc[0, 5:12]) ==
-                  ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B',
-                   'CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O',
-                   'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
+    check_correct_results_csv_file(returned_dataframe.iloc[[0], :],
+                                   column_names_for_output(True, True),
+                                   nr_of_rows_to_check=1)
 
 
 def test_export_to_dataframe_with_additional_columns(tmp_path, dummy_data):
@@ -92,18 +81,10 @@ def test_export_to_dataframe_with_additional_columns(tmp_path, dummy_data):
     test_table.classifier_csv_file_name = os.path.join(tmp_path, "test_csv_file")
     test_table.query_spectrum.set("spectrum_nr", 1)
     returned_dataframe = test_table.export_to_dataframe(5,
-                                                        additional_metadata_columns=["charge"],
-                                                        additional_ms2query_score_columns=["s2v_score", "ms2ds_score"])
+                                                        additional_metadata_columns=("charge",),
+                                                        additional_ms2query_score_columns=("s2v_score", "ms2ds_score",))
     assert isinstance(returned_dataframe, pd.DataFrame)
-    assert list(returned_dataframe.columns) == column_names_for_output(True, True, ["charge"],
-                                                                       ["s2v_score", "ms2ds_score"])
-    # Check if one of the classifiers is filled in
-    assert returned_dataframe["npc_pathway_results"][0] == "Amino acids and Peptides"
-    assert len(returned_dataframe.index) == 5
-    # Test if first row is correct
-    np.testing.assert_array_almost_equal(
-        list(returned_dataframe.iloc[0, [0, 1, 2, 3, 4, 8, 9, 10]]),
-        [1, 0.56453, 33.25000, 907.0, 940.250, 1, 0.99965, 0.92317],
-        5)
-    assert np.all(list(returned_dataframe.iloc[0, [5, 6, 7, 11, 12, 13, 14]]) ==
-                       ['KNGPFNUOXXLKCN', 'CCMSLIB00000001548', 'Hoiamide B', 'CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O', 'Organic compounds', 'Organic acids and derivatives', 'Peptidomimetics'])
+    check_correct_results_csv_file(returned_dataframe.iloc[[0], :],
+                                   column_names_for_output(True, True, ("charge",),
+                                                           ("s2v_score", "ms2ds_score",)),
+                                   nr_of_rows_to_check=1)

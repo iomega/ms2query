@@ -39,14 +39,11 @@ def generate_test_results_ms2query(ms2library: MS2Library,
     for i, test_spectrum in enumerate(test_spectra):
         query_spectrum_id = i + 1
         annotated = False
-        for spectrum_id, ms2query_model_prediction, query_spectrum_id_in_df in df_results_ms2query[
-            ["spectrum_ids", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
+        for inchikey, smiles, ms2query_model_prediction, query_spectrum_id_in_df in df_results_ms2query[
+            ["inchikey", "smiles", "ms2query_model_prediction", "query_spectrum_nr"]].to_numpy():
             if query_spectrum_id == query_spectrum_id_in_df:
-                # Get metadata belonging to spectra ids
-                lib_metadata = ms2library.sqlite_library.get_metadata_from_sqlite(
-                    [spectrum_id])[spectrum_id]
-                tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), lib_metadata["smiles"])
-                exact_match = lib_metadata["inchikey"][:14] == test_spectrum.get("inchikey")[:14]
+                tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"), smiles)
+                exact_match = inchikey == test_spectrum.get("inchikey")[:14]
                 test_results_ms2query.append((ms2query_model_prediction, tanimoto_score, exact_match))
                 annotated = True
         if not annotated:

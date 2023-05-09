@@ -103,8 +103,8 @@ class ResultsTable:
             self,
             nr_of_top_spectra: int,
             minimal_ms2query_score: Union[float, int] = 0.0,
-            additional_metadata_columns: Tuple[str] = None,
-            additional_ms2query_score_columns: Tuple[str] = None
+            additional_metadata_columns: Tuple[str, ...] = None,
+            additional_ms2query_score_columns: Tuple[str, ...] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
 
@@ -140,17 +140,21 @@ class ResultsTable:
         compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
                               for analog_spectrum_id
                               in list(selected_analogs["spectrum_ids"])]
+        smiles_list = [metadata_dict[analog_spectrum_id]["smiles"]
+                       for analog_spectrum_id
+                       in list(selected_analogs["spectrum_ids"])]
 
         # Add inchikey and ms2query model prediction to results df
         # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
         results_df = pd.DataFrame({"query_spectrum_nr": self.query_spectrum.get("spectrum_nr"),
-                                   "spectrum_ids": selected_analogs["spectrum_ids"],
+                                   # "spectrum_ids": selected_analogs["spectrum_ids"],
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
                                    "precursor_mz_analog": selected_analogs["precursor_mz_library_spectrum"],
                                    "precursor_mz_query_spectrum": [self.precursor_mz] * nr_of_analogs,
+                                   "smiles": smiles_list,
                                    "analog_compound_name": compound_name_list,
-                                   "precursor_mz_difference": selected_analogs["precursor_mz_difference"]
+                                   "precursor_mz_difference": selected_analogs["precursor_mz_difference"],
                                    })
         if additional_metadata_columns is not None:
             for metadata_name in additional_metadata_columns:

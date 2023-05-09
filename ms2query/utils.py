@@ -166,8 +166,8 @@ def get_classifier_from_csv_file(classifier_file_name: str,
 
 def column_names_for_output(return_non_classifier_columns: bool,
                             return_classifier_columns: bool,
-                            additional_metadata_columns: Tuple[str] = None,
-                            additional_ms2query_score_columns: Tuple[str] = None) -> List[str]:
+                            additional_metadata_columns: Tuple[str, ...] = None,
+                            additional_ms2query_score_columns: Tuple[str, ...] = None) -> List[str]:
     """Returns the column names for the output of results table
 
     This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
@@ -190,12 +190,12 @@ def column_names_for_output(return_non_classifier_columns: bool,
         These columns are appended to the standard columns and returned when return_non_classifier_columns is true
     """
     standard_columns = ["query_spectrum_nr", "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-                        "precursor_mz_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+                        "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles",]
     if additional_metadata_columns is not None:
         standard_columns += additional_metadata_columns
     if additional_ms2query_score_columns is not None:
         standard_columns += additional_ms2query_score_columns
-    classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
+    classifier_columns = ["cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
                           "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
     if return_classifier_columns and return_non_classifier_columns:
         return standard_columns + classifier_columns
