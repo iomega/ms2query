@@ -14,16 +14,12 @@ from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
 from ms2query.utils import load_pickled_file
 from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
-
-
-@pytest.fixture()
-def path_to_test_files_sqlite_dir():
-    return os.path.join(os.path.split(os.path.dirname(__file__))[0],'tests/test_files')
+from tests.test_utils import path_to_test_files
 
 
 @pytest.fixture(scope="package")
-def sqlite_library(path_to_test_files_sqlite_dir):
-    path_to_library = os.path.join(path_to_test_files_sqlite_dir, "general_test_files",
+def sqlite_library(path_to_test_files):
+    path_to_library = os.path.join(path_to_test_files, "general_test_files",
                         "test_files_without_spectrum_id", "100_test_spectra_with_classes.sqlite")
     return SqliteLibrary(path_to_library)
 
