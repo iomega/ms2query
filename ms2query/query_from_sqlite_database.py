@@ -17,6 +17,8 @@ class SqliteLibrary:
         self.spectrum_id_storage_name = spectrum_id_storage_name
         # todo add tests that no old sqlite files are used
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     def get_metadata_from_sqlite(self,
                                  spectrum_id_list: List[int],
