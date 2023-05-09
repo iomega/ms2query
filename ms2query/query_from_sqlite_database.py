@@ -7,6 +7,9 @@ import os.path
 import sqlite3
 from typing import Dict, List, Tuple
 
+import pandas as pd
+from ms2query.utils import column_names_for_output
+
 
 class SqliteLibrary:
     def __init__(self,
@@ -128,26 +131,17 @@ class SqliteLibrary:
             closely_related_inchikeys_dict[inchikey] = closely_related_inchikeys
         return matching_spectrum_ids_dict, closely_related_inchikeys_dict
 
-
     def get_classes_inchikeys(self,
                               inchikeys):
         conn = sqlite3.connect(self.sqlite_file_name)
-        # sqlite_command = \
-        #     f"""SELECT spectrumid, precursor_mz FROM spectrum_data
-        #     WHERE spectrumid
-        #     IN ('{"', '".join(map(str, [101,1]))}')"""
-        sqlite_command = f"""SELECT inchikey, cf_kingdom,
-            cf_superclass, cf_class, cf_subclass, cf_direct_parent,
-            npc_class_results, npc_superclass_results, npc_pathway_results,
-            npc_isglycoside FROM inchikeys WHERE inchikey IN ('{"', '".join(map(str, inchikeys))}')"""
+        column_names = column_names_for_output(return_non_classifier_columns=False,
+                                               return_classifier_columns=True)
+        sqlite_command = f"""SELECT inchikey, {", ".join(column_names)} 
+        FROM inchikeys WHERE inchikey IN ('{"', '".join(map(str, inchikeys))}')"""
         cur = conn.cursor()
         cur.execute(sqlite_command)
         results = cur.fetchall()
-        compound_classes = {}
-        for row in results:
-            inchikey = row[0]
-            compound_classes[inchikey] = row[1:]
-        for inchikey in inchikeys:
-            assert inchikey in compound_classes, \
-                f"The inchikey {inchikey} is not found in the database"
-        return compound_classes
+        assert len(results) == len(inchikeys), "Not all inchikeys were found in the sqlite library"
+        dataframe_results = pd.DataFrame(results,
+                                         columns=["inchikey"] + column_names)
+        return dataframe_results

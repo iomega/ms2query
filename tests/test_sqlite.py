@@ -8,11 +8,12 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
+import pandas as pd
 import pytest
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_pickled_file, column_names_for_output
 from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
 from tests.test_utils import path_to_test_files
 
@@ -166,6 +167,8 @@ def test_get_ionization_mode_library(sqlite_library):
 def test_get_classes_inchikeys(sqlite_library):
     test_inchikeys = ["IYDKWWDUBYWQGF", "KNGPFNUOXXLKCN"]
     classes = sqlite_library.get_classes_inchikeys(test_inchikeys)
-    assert len(classes) == len(test_inchikeys)
-    for inchikey in test_inchikeys:
-        assert classes[inchikey] == ("b", "c", "d", "e", "f", "g", "h", "i", "j")
+    expected_classes = pd.DataFrame([["IYDKWWDUBYWQGF", "b", "c", "d", "e", "f", "g", "h", "i"],
+                                     ["KNGPFNUOXXLKCN", "b", "c", "d", "e", "f", "g", "h", "i"]],
+                                    columns=["inchikey"] + column_names_for_output(return_non_classifier_columns=False,
+                                                                                   return_classifier_columns=True))
+    pd.testing.assert_frame_equal(expected_classes, classes)
