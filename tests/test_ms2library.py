@@ -10,7 +10,8 @@ from ms2query.ms2library import (MS2Library,
                                  get_ms2query_model_prediction_single_spectrum)
 from ms2query.results_table import ResultsTable
 from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS2Query
-
+from ms2query.query_from_sqlite_database import SqliteLibrary
+from tests.test_sqlite import sqlite_library
 
 @pytest.fixture
 def ms2library() -> MS2Library:
@@ -92,6 +93,33 @@ def test_spectra():
     return [spectrum1, spectrum2]
 
 
+@pytest.fixture
+def expected_analog_search_results():
+    expected_results = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
+    for expected_result in expected_results:
+        expected_result.sqlite_library = SqliteLibrary(expected_result.sqlite_file_name)
+    return expected_results
+
+
+@pytest.fixture
+def expected_result_table_with_scores():
+    results_table: ResultsTable = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
+    results_table.sqlite_library = SqliteLibrary(results_table.sqlite_file_name)
+    return results_table
+
+
+@pytest.fixture
+def expected_ms2deespcore_scores():
+    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
+    return ms2dscores
+
+
 def test_ms2library_set_settings(ms2library):
     """Tests creating a ms2library object"""
 
@@ -101,50 +129,39 @@ def test_ms2library_set_settings(ms2library):
         "Different value for attribute was expected"
 
 
-def test_analog_search(ms2library, test_spectra):
+def test_analog_search(ms2library, test_spectra, expected_analog_search_results):
     """Test analog search"""
     cutoff = 20
-    results = ms2library.analog_search_return_results_tables(test_spectra, cutoff, True)
-    results_without_ms2deepscores = ms2library.analog_search_return_results_tables(test_spectra, cutoff, False)
+    results = ms2library.analog_search_return_results_tables(test_spectra, cutoff,
+                                                             store_ms2deepscore_scores=True)
+    results_without_ms2deepscores = ms2library.analog_search_return_results_tables(
+        test_spectra, cutoff, store_ms2deepscore_scores=False)
 
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
-
-    for i in range(len(expected_result)):
-        results[i].assert_results_table_equal(expected_result[i])
+    for i in range(len(expected_analog_search_results)):
+        results[i].assert_results_table_equal(expected_analog_search_results[i])
         assert results_without_ms2deepscores[i].ms2deepscores.empty, \
             "No ms2deepscores should be stored in the result table"
 
 
-def test_calculate_scores_for_metadata(ms2library, test_spectra):
+def test_calculate_scores_for_metadata(ms2library, test_spectra, expected_result_table_with_scores,
+                                       expected_ms2deespcore_scores):
     """Test collect_matches_data_multiple_spectra method of ms2library"""
 
-    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
     results_table = ResultsTable(
         preselection_cut_off=20,
-        ms2deepscores=ms2dscores.iloc[:, 0],
+        ms2deepscores=expected_ms2deespcore_scores.iloc[:, 0],
         query_spectrum=test_spectra[0],
         sqlite_library=ms2library.sqlite_library)
 
     results_table = ms2library._calculate_features_for_random_forest_model(results_table)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
 
-    results_table.assert_results_table_equal(expected_result)
+    results_table.assert_results_table_equal(expected_result_table_with_scores)
 
 
-def test_get_all_ms2ds_scores(ms2library, test_spectra):
+def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
     """Test get_all_ms2ds_scores method of ms2library"""
     result = ms2library._get_all_ms2ds_scores(test_spectra[0])
-
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle')).iloc[:, 0]
-    assert_series_equal(result, expected_result)
+    assert_series_equal(result, expected_ms2deespcore_scores.iloc[:, 0])
 
 
 def test_get_s2v_scores(ms2library, test_spectra):
@@ -193,20 +210,15 @@ def test_get_chemical_neighbourhood_scores(ms2library):
     assert math.isclose(scores[1], 0.4607757103045708)
 
 
-def test_get_ms2query_model_prediction_single_spectrum():
-    results_table = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
+def test_get_ms2query_model_prediction_single_spectrum(expected_analog_search_results,
+                                                       expected_result_table_with_scores):
     ms2q_model_file_name = os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/general_test_files/test_ms2q_rf_model.onnx')
     ms2query_nn_model = load_ms2query_model(ms2q_model_file_name)
-    results = get_ms2query_model_prediction_single_spectrum(results_table, ms2query_nn_model)
+    results = get_ms2query_model_prediction_single_spectrum(expected_result_table_with_scores, ms2query_nn_model)
 
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))[0]
-    expected_result.assert_results_table_equal(results)
+    results.assert_results_table_equal(expected_analog_search_results[0])
 
 
 def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
