@@ -412,7 +412,7 @@ class MS2Library:
 
     def _get_s2v_scores(self,
                         query_spectrum: Spectrum,
-                        preselection_of_library_ids: List[str]
+                        preselection_of_library_ids: List[int]
                         ) -> np.ndarray:
         """Returns the s2v scores
 
