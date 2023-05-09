@@ -15,6 +15,9 @@ def path_to_general_test_files() -> str:
         os.path.split(os.path.dirname(__file__))[0],
         'tests/test_files/general_test_files')
 
+@pytest.fixture(scope="package")
+def path_to_test_files():
+    return os.path.join(os.path.split(os.path.dirname(__file__))[0],'tests/test_files')
 
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
     """Tests if unknown file raises an Assertion error"""
