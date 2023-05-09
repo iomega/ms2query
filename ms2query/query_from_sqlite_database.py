@@ -15,6 +15,7 @@ class SqliteLibrary:
         assert os.path.isfile(sqlite_file_name), "The given sqlite file does not exist"
         self.sqlite_file_name = sqlite_file_name
         self.spectrum_id_storage_name = spectrum_id_storage_name
+        # todo add tests that no old sqlite files are used
 
 
     def get_metadata_from_sqlite(self,

@@ -21,12 +21,7 @@ def path_to_test_files_sqlite_dir():
     return os.path.join(os.path.split(os.path.dirname(__file__))[0],'tests/test_files')
 
 
-@pytest.fixture()
-def old_10_inchikeys_sqlite_file(path_to_test_files_sqlite_dir):
-    return os.path.join(path_to_test_files_sqlite_dir, "test_spectra_database.sqlite")
-
-
-@pytest.fixture()
+@pytest.fixture(scope="package")
 def sqlite_library(path_to_test_files_sqlite_dir):
     path_to_library = os.path.join(path_to_test_files_sqlite_dir, "general_test_files",
                         "test_files_without_spectrum_id", "100_test_spectra_with_classes.sqlite")
