@@ -65,7 +65,7 @@ def test_get_matches_info_and_tanimoto(tmp_path, ms2library, query_spectra):
 def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
     query_spectrum = query_spectra[0]
     spectra_ids_list = \
-        ['CCMSLIB00000001603', 'CCMSLIB00000001652', 'CCMSLIB00000001640']
+        [38, 3, 60]
     result = calculate_tanimoto_scores_with_library(ms2library.sqlite_library, query_spectrum, spectra_ids_list)
     expected_result = pd.DataFrame([0.199695, 0.177669, 0.192504],
                                    index=spectra_ids_list,

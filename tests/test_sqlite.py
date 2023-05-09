@@ -88,7 +88,6 @@ def test_making_sqlite_file(tmp_path):
         'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
-                                         "test_files_without_spectrum_id",
                                          "100_test_spectra.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
