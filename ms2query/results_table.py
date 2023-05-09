@@ -54,6 +54,7 @@ class ResultsTable:
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)), f"ms2deepscores are not equal {self.ms2deepscores} != {other.ms2deepscores}"
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses
+        assert self.sqlite_library == other.sqlite_library
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
