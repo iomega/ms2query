@@ -126,14 +126,12 @@ def train_ms2query_model(training_spectra,
                                                        ms2ds_model_file_name=ms2ds_model_file_name)
     library_creator_for_training.create_all_library_files()
 
-    ms2library_for_training = MS2Library(
-        sqlite_file_name=library_creator_for_training.sqlite_file_name,
-        s2v_model_file_name=s2v_model_file_name,
-        ms2ds_model_file_name=ms2ds_model_file_name,
-        pickled_s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
-        pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
-        ms2query_model_file_name=None,
-        classifier_csv_file_name=None)
+    ms2library_for_training = MS2Library(sqlite_file_name=library_creator_for_training.sqlite_file_name,
+                                         s2v_model_file_name=s2v_model_file_name,
+                                         ms2ds_model_file_name=ms2ds_model_file_name,
+                                         pickled_s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
+                                         pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
+                                         ms2query_model_file_name=None)
     # Create training data MS2Query model
     collector = DataCollectorForTraining(ms2library_for_training)
     training_scores, training_labels = collector.get_matches_info_and_tanimoto(query_spectra_for_training)

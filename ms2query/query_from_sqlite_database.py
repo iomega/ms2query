@@ -133,6 +133,7 @@ class SqliteLibrary:
 
     def get_classes_inchikeys(self,
                               inchikeys):
+        assert self.contains_class_annotation(), "The sqlite library given does not contain compound class information"
         conn = sqlite3.connect(self.sqlite_file_name)
         column_names = column_names_for_output(return_non_classifier_columns=False,
                                                return_classifier_columns=True)
@@ -145,3 +146,15 @@ class SqliteLibrary:
         dataframe_results = pd.DataFrame(results,
                                          columns=["inchikey"] + column_names)
         return dataframe_results
+
+    def contains_class_annotation(self) -> bool:
+        conn = sqlite3.connect(self.sqlite_file_name)
+        sqlite_command = "PRAGMA table_info(inchikeys)"
+        cur = conn.cursor()
+        cur.execute(sqlite_command)
+        column_information = cur.fetchall()
+        column_names = [column[1] for column in column_information]
+        has_class_annotations = set(column_names_for_output(False, True)).issubset(set(column_names))
+        if has_class_annotations is False:
+            print("SQLite file does not contain compound class information (download a newer version)")
+        return has_class_annotations

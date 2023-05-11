@@ -172,3 +172,7 @@ def test_get_classes_inchikeys(sqlite_library):
                                     columns=["inchikey"] + column_names_for_output(return_non_classifier_columns=False,
                                                                                    return_classifier_columns=True))
     pd.testing.assert_frame_equal(expected_classes, classes)
+
+
+def test_contains_class_annotiation(sqlite_library):
+    assert sqlite_library.contains_class_annotation(), "contains_class_annotation is expected to return True"

@@ -26,14 +26,15 @@ def path_to_test_dir():
 def ms2library(path_to_test_dir):
     path_to_general_tests_dir = os.path.join(path_to_test_dir, 'general_test_files')
 
-    return MS2Library(
-        sqlite_file_name= os.path.join(path_to_general_tests_dir, "100_test_spectra.sqlite"),
-        s2v_model_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_model.model"),
-        ms2ds_model_file_name=os.path.join(path_to_general_tests_dir, "ms2ds_siamese_210301_5000_500_400.hdf5"),
-        pickled_s2v_embeddings_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_embeddings.pickle"),
-        pickled_ms2ds_embeddings_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_ms2ds_embeddings.pickle"),
-        ms2query_model_file_name=None,
-        classifier_csv_file_name=None)
+    return MS2Library(sqlite_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra.sqlite"),
+                      s2v_model_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_model.model"),
+                      ms2ds_model_file_name=os.path.join(path_to_general_tests_dir,
+                                                         "ms2ds_siamese_210301_5000_500_400.hdf5"),
+                      pickled_s2v_embeddings_file_name=os.path.join(path_to_general_tests_dir,
+                                                                    "100_test_spectra_s2v_embeddings.pickle"),
+                      pickled_ms2ds_embeddings_file_name=os.path.join(path_to_general_tests_dir,
+                                                                      "100_test_spectra_ms2ds_embeddings.pickle"),
+                      ms2query_model_file_name=None)
 
 
 @pytest.fixture

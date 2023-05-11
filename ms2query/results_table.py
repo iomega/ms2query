@@ -21,9 +21,7 @@ class ResultsTable:
                  ms2deepscores: pd.Series,
                  query_spectrum: Spectrum,
                  sqlite_library: SqliteLibrary,
-                 classifier_csv_file_name: Union[str, None] = None,
                  **kwargs):
-        # pylint: disable=too-many-arguments
 
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.ms2deepscores = ms2deepscores
@@ -31,7 +29,7 @@ class ResultsTable:
         self.query_spectrum = query_spectrum
         self.precursor_mz = query_spectrum.get("precursor_mz")
         self.sqlite_library = sqlite_library
-        self.classifier_csv_file_name = classifier_csv_file_name
+
 
     def __eq__(self, other):
         if not isinstance(other, ResultsTable):
@@ -167,11 +165,10 @@ class ResultsTable:
         results_df = results_df.reindex(
             columns=column_names_for_output(True, False, additional_metadata_columns,
                                             additional_ms2query_score_columns))
+
         # Add classifiers to dataframe
-        if self.classifier_csv_file_name is not None:
-            classifiers_df = \
-                get_classifier_from_csv_file(self.classifier_csv_file_name,
-                                             results_df["inchikey"].unique())
+        if self.sqlite_library.contains_class_annotation():
+            classifiers_df = self.sqlite_library.get_classes_inchikeys(results_df["inchikey"].unique())
             results_df = pd.merge(results_df,
                                   classifiers_df,
                                   on="inchikey")

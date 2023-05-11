@@ -43,7 +43,6 @@ class MS2Library:
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None],
-                 classifier_csv_file_name: Union[str, None] = None,
                  **settings):
         """
         Parameters
@@ -83,7 +82,6 @@ class MS2Library:
         self.settings = self._set_settings(settings)
 
         # Load models and set file locations
-        self.classifier_file_name = classifier_csv_file_name
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
         self.sqlite_library = SqliteLibrary(sqlite_file_name)
 
@@ -170,12 +168,8 @@ class MS2Library:
 
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
-        results_table = ResultsTable(
-            preselection_cut_off=preselection_cut_off,
-            ms2deepscores=ms2deepscore_scores,
-            query_spectrum=query_spectrum,
-            sqlite_library=self.sqlite_library,
-            classifier_csv_file_name=self.classifier_file_name)
+        results_table = ResultsTable(preselection_cut_off=preselection_cut_off, ms2deepscores=ms2deepscore_scores,
+                                     query_spectrum=query_spectrum, sqlite_library=self.sqlite_library)
         results_table = \
             self._calculate_features_for_random_forest_model(results_table)
         return results_table
@@ -243,12 +237,12 @@ class MS2Library:
             "MS2Query model should be given when creating ms2library object"
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
-            if self.classifier_file_name is None:
-                csv_file.write(",".join(column_names_for_output(True, False, settings.additional_metadata_columns,
-                                                                settings.additional_ms2query_score_columns)) + "\n")
-            else:
-                csv_file.write(",".join(column_names_for_output(True, True, settings.additional_metadata_columns,
-                                                                settings.additional_ms2query_score_columns)) + "\n")
+            # Check if sqlite file has class annotations stored
+            add_class_annotations: bool = self.sqlite_library.contains_class_annotation()
+
+            csv_file.write(",".join(
+                column_names_for_output(True, add_class_annotations, settings.additional_metadata_columns,
+                                        settings.additional_ms2query_score_columns)) + "\n")
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
@@ -510,10 +504,6 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
             dict_with_file_paths[key] = os.path.join(directory_containing_library_and_models, file_name)
         else:
             dict_with_file_paths[key] = None
-    return MS2Library(dict_with_file_paths["sqlite"],
-                      dict_with_file_paths["s2v_model"],
-                      dict_with_file_paths["ms2ds_model"],
-                      dict_with_file_paths["s2v_embeddings"],
-                      dict_with_file_paths["ms2ds_embeddings"],
-                      dict_with_file_paths["ms2query_model"],
-                      dict_with_file_paths["classifiers"])
+    return MS2Library(dict_with_file_paths["sqlite"], dict_with_file_paths["s2v_model"],
+                      dict_with_file_paths["ms2ds_model"], dict_with_file_paths["s2v_embeddings"],
+                      dict_with_file_paths["ms2ds_embeddings"], dict_with_file_paths["ms2query_model"])
