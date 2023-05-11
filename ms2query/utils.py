@@ -125,45 +125,6 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
     return spectrum_list
 
 
-def get_classifier_from_csv_file(classifier_file_name: str,
-                                 list_of_inchikeys: List[str]):
-    """Returns a dataframe with the classifiers for a selection of inchikeys
-
-    Args:
-    ------
-    csv_file_name:
-        File name of text file with tap separated columns, with classifier
-        information.
-    list_of_inchikeys:
-        list with the first 14 letters of inchikeys, that are selected from
-        the classifier file.
-    """
-    assert os.path.isfile(classifier_file_name), \
-        f"The given classifier csv file does not exist: {classifier_file_name}"
-    classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    classifiers_df.rename(columns={"inchi_key": "inchikey"}, inplace=True)
-    columns_to_keep = ["inchikey"] + column_names_for_output(False, True)
-    list_of_classifiers = []
-    for inchikey in list_of_inchikeys:
-        classifiers = classifiers_df.loc[
-            classifiers_df["inchikey"].str.startswith(inchikey)]
-        if classifiers.empty:
-            list_of_classifiers.append(pd.DataFrame(np.array(
-                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
-                columns=columns_to_keep))
-        else:
-            classifiers = classifiers[columns_to_keep].iloc[:1]
-
-            list_of_classifiers.append(classifiers)
-    if len(list_of_classifiers) == 0:
-        results = pd.DataFrame(columns=columns_to_keep)
-    else:
-        results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
-
-    results["inchikey"] = list_of_inchikeys
-    return results
-
-
 def column_names_for_output(return_non_classifier_columns: bool,
                             return_classifier_columns: bool,
                             additional_metadata_columns: Tuple[str, ...] = None,

@@ -8,7 +8,7 @@ from ms2query.run_ms2query import download_zenodo_files, run_complete_folder, ze
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import (MS2Library,
                                    ms2library, test_spectra)
-from tests.test_utils import create_test_classifier_csv_file, check_correct_results_csv_file
+from tests.test_utils import check_correct_results_csv_file
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle
@@ -82,9 +82,6 @@ def test_run_complete_folder(tmp_path, ms2library, test_spectra):
 
 
 def test_run_complete_folder_with_classifiers(tmp_path, ms2library, test_spectra):
-    classifiers_file_location = create_test_classifier_csv_file(tmp_path)
-
-    ms2library.classifier_file_name = classifiers_file_location
     folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
     results_directory = os.path.join(folder_with_spectra, "results")
     settings = SettingsRunMS2Query(minimal_ms2query_metascore=0,

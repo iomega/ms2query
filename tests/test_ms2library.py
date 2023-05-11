@@ -39,12 +39,8 @@ def ms2library() -> MS2Library:
     spectrum_id_column_name = "spectrumid"
     ms2q_model_file_name = os.path.join(path_to_tests_dir,
         "general_test_files", "test_ms2q_rf_model.onnx")
-    ms2library = MS2Library(sqlite_file_loc,
-                            spec2vec_model_file_loc,
-                            ms2ds_model_file_name,
-                            s2v_pickled_embeddings_file,
-                            ms2ds_embeddings_file_name,
-                            ms2q_model_file_name,
+    ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
+                            s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name,
                             spectrum_id_column_name=spectrum_id_column_name)
     return ms2library
 
@@ -157,11 +153,8 @@ def test_calculate_scores_for_metadata(ms2library, test_spectra,
                                        expected_ms2deespcore_scores):
     """Test collect_matches_data_multiple_spectra method of ms2library"""
 
-    results_table = ResultsTable(
-        preselection_cut_off=20,
-        ms2deepscores=expected_ms2deespcore_scores,
-        query_spectrum=test_spectra[0],
-        sqlite_library=ms2library.sqlite_library)
+    results_table = ResultsTable(preselection_cut_off=20, ms2deepscores=expected_ms2deespcore_scores,
+                                 query_spectrum=test_spectra[0], sqlite_library=ms2library.sqlite_library)
 
     results_table = ms2library._calculate_features_for_random_forest_model(results_table)
     results_table.assert_results_table_equal(expected_result_table_with_scores)
