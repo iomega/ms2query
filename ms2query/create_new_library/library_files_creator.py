@@ -17,6 +17,7 @@ from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
+from ms2query.create_new_library.add_classifire_classifications import select_compound_classes, convert_to_dataframe
 
 
 class LibraryFilesCreator:
@@ -111,11 +112,17 @@ class LibraryFilesCreator:
         self.store_s2v_embeddings()
         self.store_ms2ds_embeddings()
 
-    def create_sqlite_file(self):
+    def create_sqlite_file(self, add_compound_classes=True):
+        if add_compound_classes:
+            compound_classes = select_compound_classes(self.list_of_spectra)
+            compound_classes_df = convert_to_dataframe(compound_classes)
+        else:
+            compound_classes_df = None
         make_sqlfile_wrapper(
             self.sqlite_file_name,
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
+            compound_classes=compound_classes_df,
             progress_bars=self.progress_bars,
         )
 
