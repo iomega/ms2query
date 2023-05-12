@@ -48,6 +48,7 @@ class LibraryFilesCreator:
                  output_directory: Union[str, Path],
                  s2v_model_file_name: str = None,
                  ms2ds_model_file_name: str = None,
+                 add_compound_classes: bool = True
                  ):
         """Creates files needed to run queries on a library
 
@@ -93,6 +94,7 @@ class LibraryFilesCreator:
         # Run default filters
         self.list_of_spectra = [msfilters.default_filters(s) for s in tqdm(self.list_of_spectra,
                                                                            desc="Applying default filters to spectra")]
+        self.add_compound_classes = add_compound_classes
 
     def _check_for_existing_files(self):
         assert not os.path.exists(self.sqlite_file_name), \
@@ -112,8 +114,8 @@ class LibraryFilesCreator:
         self.store_s2v_embeddings()
         self.store_ms2ds_embeddings()
 
-    def create_sqlite_file(self, add_compound_classes=True):
-        if add_compound_classes:
+    def create_sqlite_file(self):
+        if self.add_compound_classes:
             compound_classes = select_compound_classes(self.list_of_spectra)
             compound_classes_df = convert_to_dataframe(compound_classes)
         else:
