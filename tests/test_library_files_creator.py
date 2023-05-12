@@ -64,3 +64,12 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
+
+
+def test_create_sqlite_file(tmp_path, path_to_general_test_files):
+    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
+        path_to_general_test_files, '100_test_spectra.pickle'))
+    test_create_files = LibraryFilesCreator(
+        library_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'))
+    test_create_files.create_sqlite_file()
+
