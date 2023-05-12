@@ -123,7 +123,8 @@ def train_ms2query_model(training_spectra,
     # Create library files for training ms2query
     library_creator_for_training = LibraryFilesCreator(library_spectra, output_directory=library_files_folder,
                                                        s2v_model_file_name=s2v_model_file_name,
-                                                       ms2ds_model_file_name=ms2ds_model_file_name)
+                                                       ms2ds_model_file_name=ms2ds_model_file_name,
+                                                       add_compound_classes=False)
     library_creator_for_training.create_all_library_files()
 
     ms2library_for_training = MS2Library(sqlite_file_name=library_creator_for_training.sqlite_file_name,
