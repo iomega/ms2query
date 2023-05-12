@@ -39,7 +39,11 @@ def do_url_request(url: str) -> [bytes, None]:
     except ConnectionAbortedError:
         result = do_url_request(url)
         print("An connection error occurred, will try again")
+    except:
+        result = None
+        print("An unexpected error occured when trying to load classes. Will skip current structure")
     return result
+
 
 def get_classyfire_results(full_inchikey):
     json_results = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
