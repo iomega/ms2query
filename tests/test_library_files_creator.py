@@ -5,7 +5,7 @@ from ms2query.create_new_library.library_files_creator import LibraryFilesCreato
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
-from tests.test_utils import path_to_general_test_files
+from tests.fixtures import path_to_general_test_files
 
 
 def test_give_already_used_file_name(tmp_path, path_to_general_test_files):

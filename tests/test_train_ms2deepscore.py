@@ -4,7 +4,7 @@ from ms2deepscore.models import SiameseModel
 from ms2deepscore.models.load_model import load_model as load_ms2deepscore_model
 from ms2query.create_new_library.train_ms2deepscore import train_ms2ds_model
 from ms2query.utils import load_matchms_spectrum_objects_from_file, load_pickled_file
-from tests.test_utils import path_to_general_test_files
+from tests.fixtures import path_to_general_test_files
 
 
 def test_train_ms2ds_model(path_to_general_test_files, tmp_path):

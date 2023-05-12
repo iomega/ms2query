@@ -11,7 +11,7 @@ from ms2query.ms2library import (MS2Library,
 from ms2query.results_table import ResultsTable
 from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS2Query
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from tests.test_sqlite import sqlite_library
+from tests.fixtures import sqlite_library
 from tests.test_utils import check_correct_results_csv_file
 
 

@@ -12,16 +12,6 @@ from ms2query.utils import (add_unknown_charges_to_spectra,
                             convert_to_onnx_model, load_ms2query_model, predict_onnx_model)
 
 
-@pytest.fixture(scope="package")
-def path_to_general_test_files() -> str:
-    return os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
-
-@pytest.fixture(scope="package")
-def path_to_test_files():
-    return os.path.join(os.path.split(os.path.dirname(__file__))[0],'tests/test_files')
-
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
     """Tests if unknown file raises an Assertion error"""
     with pytest.raises(AssertionError):
