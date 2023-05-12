@@ -111,7 +111,8 @@ def get_json_npc_results(smiles: str) -> Optional[List[str]]:
 def select_compound_classes(spectra):
     inchikey_dict = select_smiles_and_full_inchikeys(spectra)
     inchikey_results_list = []
-    for i, inchikey14 in tqdm(enumerate(inchikey_dict), total=len(inchikey_dict)):
+    for i, inchikey14 in tqdm(enumerate(inchikey_dict), total=len(inchikey_dict),
+                              desc="Adding compound class annotation to inchikeys"):
         inchikey_results_list.append([inchikey14])
         # select classyfire classes
         cf_classes = None
@@ -138,7 +139,7 @@ def select_compound_classes(spectra):
     return inchikey_results_list
 
 
-def convert_to_dataframe(inchikey_results_lists):
+def convert_to_dataframe(inchikey_results_lists)->pd.DataFrame:
     header_list = [
         'inchikey', 'smiles', 'cf_kingdom',
         'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent',
@@ -150,12 +151,7 @@ def convert_to_dataframe(inchikey_results_lists):
 
 if __name__ == "__main__":
     from ms2query.utils import load_matchms_spectrum_objects_from_file
-    spectra = load_matchms_spectrum_objects_from_file("../../data/test_dir/test_spectra/test_spectra.mgf")
-    # spectra = load_matchms_spectrum_objects_from_file("../../data/Backup_MS2Query_models_paper/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_negative_annotated.pickle")
-    compound_classes = select_compound_classes(spectra[:3])
+    spectra = load_matchms_spectrum_objects_from_file("../../data/Backup_MS2Query_models_paper/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_negative_annotated.pickle")
+    compound_classes = select_compound_classes(spectra)
     df = convert_to_dataframe(compound_classes)
-    df.to_csv("../../data/test_dir/test.txt")
-    index = df.index
-    index_list = list(index)
-    # write_class_info(compound_classes, "../../data/test_dir/compound_classes_negative_mode.txt")
-
+    df.to_csv("../../data/test_dir/compound_classes_negative_mode_all.txt")
