@@ -39,7 +39,7 @@ setup(
         "scikit-learn",
         "ms2deepscore<0.3.1",
         "gensim>=4.0.0",
-        "pandas>=1.5.3,<2.0.0", #minimum is due to test pandas file created in this version (a bit lower might be fine)
+        "pandas>=1.2.5,<2.0.0",
         "matchmsextras>=0.3.0,<0.4.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
