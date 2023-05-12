@@ -20,5 +20,5 @@ def spectra():
 
 def test_add_classifier_annotation(spectra):
     result = select_compound_classes(spectra)
-    assert result == [['WRIPSIKIDAUKBP', 'CC1CCCC(=O)N(/C=C/CCC(C(=O)OC(C1)C(C)(C)C)C)C', 'Organic compounds', 'Phenylpropanoids and polyketides', 'Macrolactams', '', 'Macrolactams', '', '', 'Alkaloids', 'False'],
-                      ['WXDBUBIFYCCNLE', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes', '', 'Oxepanes', 'Lipopeptides', 'Oligopeptides', 'Amino acids and Peptides', 'False']]
+    assert sorted(result) == [['WRIPSIKIDAUKBP', 'CC1CCCC(=O)N(/C=C/CCC(C(=O)OC(C1)C(C)(C)C)C)C', 'Organic compounds', 'Phenylpropanoids and polyketides', 'Macrolactams', '', 'Macrolactams', '', '', 'Alkaloids', 'False'],
+                              ['WXDBUBIFYCCNLE', 'CCCCCCC[C@@H](C/C=C/CCC(=O)NC/C(=C/Cl)/[C@@]12[C@@H](O1)[C@H](CCC2=O)O)OC', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes', '', 'Oxepanes', 'Lipopeptides', 'Oligopeptides', 'Amino acids and Peptides', 'False']]
