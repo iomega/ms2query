@@ -12,9 +12,7 @@ from ms2query.benchmarking.collect_test_data_results import (generate_test_resul
                                                              create_random_results,
                                                              generate_test_results)
 
-from tests.test_ms2library import ms2library
 from ms2query.utils import load_matchms_spectrum_objects_from_file, load_json_file
-from tests.fixtures import path_to_general_test_files
 
 
 @pytest.fixture

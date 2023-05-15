@@ -6,7 +6,6 @@ from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multipl
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_unique_inchikey, \
     calculate_highest_tanimoto_score
 from ms2query.utils import load_matchms_spectrum_objects_from_file, load_pickled_file
-from tests.fixtures import path_to_general_test_files
 
 
 def test_calculate_tanimoto_scores_unique_inchikey(path_to_general_test_files):

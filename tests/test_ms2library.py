@@ -3,15 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-from matchms import Spectrum
 from pandas.testing import assert_series_equal
 from ms2query.ms2library import (MS2Library,
-                                 create_library_object_from_one_dir,
-                                 get_ms2query_model_prediction_single_spectrum)
-from ms2query.results_table import ResultsTable
-from ms2query.utils import load_ms2query_model, load_pickled_file, SettingsRunMS2Query
-from ms2query.query_from_sqlite_database import SqliteLibrary
-from tests.fixtures import sqlite_library, ms2library, test_spectra
+                                 create_library_object_from_one_dir)
+from ms2query.utils import load_pickled_file, SettingsRunMS2Query
 from tests.test_utils import check_correct_results_csv_file
 
 

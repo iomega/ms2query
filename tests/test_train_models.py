@@ -2,7 +2,6 @@ import os
 import pytest
 from ms2query.create_new_library.train_models import clean_and_train_models
 from ms2query.ms2library import create_library_object_from_one_dir, MS2Library
-from tests.fixtures import path_to_general_test_files
 
 # @pytest.mark.integration
 # def test_train_all_models(path_to_general_test_files, tmp_path):

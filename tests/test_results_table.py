@@ -5,7 +5,6 @@ from matchms import Spectrum
 from ms2query import ResultsTable
 from ms2query.utils import column_names_for_output
 from tests.test_utils import check_correct_results_csv_file
-from tests.fixtures import path_to_test_files, sqlite_library, ms2library, test_spectra
 
 
 @pytest.fixture
