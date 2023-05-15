@@ -24,7 +24,7 @@ def sqlite_library(path_to_test_files):
     return SqliteLibrary(path_to_library)
 
 
-@pytest.fixture
+@pytest.fixture(scope="package")
 def ms2library() -> MS2Library:
     """Returns file names of the files needed to create MS2Library object"""
     path_to_tests_dir = os.path.join(
@@ -54,7 +54,7 @@ def ms2library() -> MS2Library:
     return ms2library
 
 
-@pytest.fixture
+@pytest.fixture(scope="package")
 def test_spectra():
     """Returns a list with two spectra
 
