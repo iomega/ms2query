@@ -4,7 +4,7 @@ new models
 """
 
 import sqlite3
-from typing import Dict, List, Optional
+from typing import Dict, List
 from matchms import Spectrum
 from tqdm import tqdm
 import pandas as pd
@@ -78,7 +78,8 @@ def initialize_tables(sqlite_file_name: str,
     additional_columns_txt = ""
     if additional_metadata_columns_dict is not None:
         # add all columns with the type specified in combined_columns_dict
-        additional_columns_txt = "".join(f"{column_header} {additional_metadata_columns_dict[column_header]},\n" for column_header in additional_metadata_columns_dict)
+        additional_columns_txt = "".join(f"{column_header} {additional_metadata_columns_dict[column_header]},\n"
+                                         for column_header in additional_metadata_columns_dict)
 
     initialize_spectrum_data_table = f"""
         DROP TABLE IF EXISTS 'spectrum_data';

@@ -3,7 +3,6 @@ import sys
 import json
 from typing import List, Union, Tuple, Optional
 import numpy as np
-import pandas as pd
 from matchms import importing
 from spec2vec.Spec2Vec import Spectrum
 from skl2onnx import convert_sklearn

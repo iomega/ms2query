@@ -1,10 +1,10 @@
 import json
 import urllib
-from typing import List, Union, Dict, Optional
+from typing import List, Optional
 
 import pandas as pd
 from tqdm import tqdm
-from ms2query.utils import return_non_existing_file_name
+
 
 def select_inchikeys(spectra):
     list_of_inchikeys = []
@@ -39,9 +39,6 @@ def do_url_request(url: str) -> [bytes, None]:
     except ConnectionAbortedError:
         result = do_url_request(url)
         print("An connection error occurred, will try again")
-    except:
-        result = None
-        print("An unexpected error occured when trying to load classes. Will skip current structure")
     return result
 
 
@@ -132,7 +129,7 @@ def select_compound_classes(spectra):
 
     #     select NPC classes
         npc_results = None
-        for full_inchikey, smiles in inchikey_dict[inchikey14]:
+        for _, smiles in inchikey_dict[inchikey14]:
             npc_results = get_json_npc_results(smiles)
             if npc_results is not None:
                 inchikey_results_list[i] += npc_results
@@ -152,10 +149,3 @@ def convert_to_dataframe(inchikey_results_lists)->pd.DataFrame:
     df = pd.DataFrame(inchikey_results_lists, columns=header_list)
     df.set_index("inchikey", inplace=True)
     return df
-
-if __name__ == "__main__":
-    from ms2query.utils import load_matchms_spectrum_objects_from_file
-    spectra = load_matchms_spectrum_objects_from_file("../../data/Backup_MS2Query_models_paper/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_negative_annotated.pickle")
-    compound_classes = select_compound_classes(spectra)
-    df = convert_to_dataframe(compound_classes)
-    df.to_csv("../../data/test_dir/compound_classes_negative_mode_all.txt")

@@ -34,12 +34,12 @@ class ResultsTable:
             return False
 
         # Round is used to prevent returning float for float rounding errors
+        # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
         return other.preselection_cut_off == self.preselection_cut_off and \
             other.precursor_mz == self.precursor_mz and \
             self.data.round(5).equals(other.data.round(5)) and \
             self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
             self.query_spectrum.__eq__(other.query_spectrum)
-            # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
 
     def assert_results_table_equal(self, other):
         """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
