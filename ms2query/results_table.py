@@ -50,8 +50,7 @@ class ResultsTable:
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)), f"ms2deepscores are not equal {self.ms2deepscores} != {other.ms2deepscores}"
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses
-        assert self.sqlite_library.sqlite_file_name == other.sqlite_library.sqlite_file_name, \
-            f"The file {self.sqlite_library.sqlite_file_name} is not equal to { other.sqlite_library.sqlite_file_name}"
+        # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
