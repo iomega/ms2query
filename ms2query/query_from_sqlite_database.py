@@ -21,7 +21,8 @@ class SqliteLibrary:
         # todo add tests that no old sqlite files are used
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return self.sqlite_file_name == other.sqlite_file_name and \
+               self.spectrum_id_storage_name == other.spectrum_id_storage_name
 
     def get_metadata_from_sqlite(self,
                                  spectrum_id_list: List[int],
