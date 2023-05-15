@@ -120,12 +120,11 @@ def select_compound_classes(spectra):
         for full_inchikey, smiles in inchikey_dict[inchikey14]:
             cf_classes = get_json_cf_results(full_inchikey)
             if cf_classes is not None:
-                inchikey_results_list[i].append(smiles)
                 inchikey_results_list[i] += cf_classes
                 break
         if cf_classes is None:
             print(f"no classyfire annotation was found for inchikey {inchikey14}")
-            inchikey_results_list[i].append([inchikey14, smiles, "", "", "", "", ""])
+            inchikey_results_list[i].append([inchikey14, "", "", "", "", ""])
 
     #     select NPC classes
         npc_results = None
@@ -142,7 +141,7 @@ def select_compound_classes(spectra):
 
 def convert_to_dataframe(inchikey_results_lists)->pd.DataFrame:
     header_list = [
-        'inchikey', 'smiles', 'cf_kingdom',
+        'inchikey', 'cf_kingdom',
         'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent',
         'npc_class_results', 'npc_superclass_results', 'npc_pathway_results',
         'npc_isglycoside']

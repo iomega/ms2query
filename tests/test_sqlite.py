@@ -94,23 +94,19 @@ def test_making_sqlite_file_without_classes(tmp_path):
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
-def test_making_sqlite_file_with_compound_classes(tmp_path):
+def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test_files):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     def generate_compound_classes(spectra):
         inchikeys = {spectrum.get("inchikey")[:14] for spectrum in spectra}
         inchikey_results_list = []
         for inchikey in inchikeys:
-            inchikey_results_list.append([inchikey, "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"])
+            inchikey_results_list.append([inchikey, "b", "c", "d", "e", "f", "g", "h", "i", "j"])
         compound_class_df = convert_to_dataframe(inchikey_results_list)
         return compound_class_df
     # tmp_path is a fixture that makes sure a temporary file is created
     new_sqlite_file_name = os.path.join(tmp_path,
                                         "test_spectra_database.sqlite")
-
-    path_to_general_test_files = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
                                          "100_test_spectra.sqlite")
