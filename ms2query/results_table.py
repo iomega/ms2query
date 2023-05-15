@@ -27,7 +27,7 @@ class ResultsTable:
         self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
         self.precursor_mz = query_spectrum.get("precursor_mz")
-        # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
+        self.sqlite_library = sqlite_library
 
     def __eq__(self, other):
         if not isinstance(other, ResultsTable):
