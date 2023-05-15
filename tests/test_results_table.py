@@ -8,7 +8,7 @@ from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import column_names_for_output, load_pickled_file
 from tests.test_utils import check_correct_results_csv_file
 from tests.fixtures import path_to_test_files, sqlite_library
-
+from tests.test_ms2library import ms2library, test_spectra
 
 @pytest.fixture
 def dummy_data():
@@ -23,6 +23,17 @@ def dummy_data():
                               metadata={"precursor_mz": 205.0, "spectrum_nr": 0})
 
     return ms2deepscores, query_spectrum
+
+
+@pytest.fixture
+def create_results_tables(ms2library, test_spectra):
+    result_tables = ms2library.analog_search_return_results_tables(test_spectra,
+                                                                   preselection_cut_off=20,
+                                                                   store_ms2deepscore_scores=True)
+    assert isinstance(result_tables, list)
+    for result_table in result_tables:
+        assert isinstance(result_table, ResultsTable)
+    return result_tables
 
 
 def test_table_init(dummy_data, sqlite_library):
@@ -49,10 +60,8 @@ def test_table_preselect_ms2deepscore(dummy_data, sqlite_library):
         "Expected different scores or order"
 
 
-def test_export_to_dataframe(dummy_data, sqlite_library):
-    test_table: ResultsTable = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+def test_export_to_dataframe(dummy_data, sqlite_library, create_results_tables):
+    test_table: ResultsTable = create_results_tables[0]
     # Add sqlite library as a patch to fix the test
     test_table.sqlite_library = sqlite_library
     test_table.query_spectrum.set("spectrum_nr", 1)
@@ -63,10 +72,8 @@ def test_export_to_dataframe(dummy_data, sqlite_library):
                                    nr_of_rows_to_check=1)
 
 
-def test_export_to_dataframe_with_additional_columns(dummy_data, sqlite_library):
-    test_table: ResultsTable = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_analog_search_results.pickle'))[0]
+def test_export_to_dataframe_with_additional_columns(dummy_data, sqlite_library, create_results_tables):
+    test_table = create_results_tables[0]
     test_table.sqlite_library = sqlite_library
     test_table.query_spectrum.set("spectrum_nr", 1)
     returned_dataframe = test_table.export_to_dataframe(5,

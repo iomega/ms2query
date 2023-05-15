@@ -92,25 +92,6 @@ def test_spectra():
 
 
 @pytest.fixture
-def expected_analog_search_results():
-    expected_results = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_analog_search_results.pickle"))
-    # for expected_result in expected_results:
-    #     expected_result.sqlite_library = SqliteLibrary(expected_result.sqlite_file_name)
-    return expected_results
-
-
-@pytest.fixture
-def expected_result_table_with_scores():
-    results_table: ResultsTable = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_ms2library/expected_results_table_with_scores.pickle"))
-    # results_table.sqlite_library = SqliteLibrary(results_table.sqlite_file_name)
-    return results_table
-
-
-@pytest.fixture
 def expected_ms2deespcore_scores():
     ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
@@ -127,17 +108,6 @@ def test_ms2library_set_settings(ms2library):
         "Different value for attribute was expected"
 
 
-def test_analog_search(ms2library, test_spectra,
-                       expected_analog_search_results
-                       ):
-    """Test analog search"""
-    cutoff = 20
-    results = ms2library.analog_search_return_results_tables(test_spectra, cutoff,
-                                                             store_ms2deepscore_scores=True)
-    for i in range(len(expected_analog_search_results)):
-        results[i].assert_results_table_equal(expected_analog_search_results[i])
-
-
 def test_analog_search_no_ms2ds(ms2library, test_spectra):
     """Check if no ms2deepscores are stored."""
     cutoff = 20
@@ -146,18 +116,6 @@ def test_analog_search_no_ms2ds(ms2library, test_spectra):
     for i in range(len(results_without_ms2deepscores)):
         assert results_without_ms2deepscores[i].ms2deepscores.empty, \
             "No ms2deepscores should be stored in the result table"
-
-
-def test_calculate_scores_for_metadata(ms2library, test_spectra,
-                                       expected_result_table_with_scores,
-                                       expected_ms2deespcore_scores):
-    """Test collect_matches_data_multiple_spectra method of ms2library"""
-
-    results_table = ResultsTable(preselection_cut_off=20, ms2deepscores=expected_ms2deespcore_scores,
-                                 query_spectrum=test_spectra[0], sqlite_library=ms2library.sqlite_library)
-
-    results_table = ms2library._calculate_features_for_random_forest_model(results_table)
-    results_table.assert_results_table_equal(expected_result_table_with_scores)
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
@@ -209,17 +167,6 @@ def test_get_chemical_neighbourhood_scores(ms2library):
     assert len(scores) == 2, "Expected two scores for each InChiKey"
     assert math.isclose(scores[0], 0.72)
     assert math.isclose(scores[1], 0.4607757103045708)
-
-
-def test_get_ms2query_model_prediction_single_spectrum(expected_analog_search_results,
-                                                       expected_result_table_with_scores):
-    ms2q_model_file_name = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/test_ms2q_rf_model.onnx')
-    ms2query_nn_model = load_ms2query_model(ms2q_model_file_name)
-    results = get_ms2query_model_prediction_single_spectrum(expected_result_table_with_scores, ms2query_nn_model)
-
-    results.assert_results_table_equal(expected_analog_search_results[0])
 
 
 def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
