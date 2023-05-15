@@ -7,8 +7,8 @@ from ms2query import ResultsTable
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import column_names_for_output, load_pickled_file
 from tests.test_utils import check_correct_results_csv_file
-from tests.fixtures import path_to_test_files, sqlite_library
-from tests.test_ms2library import ms2library, test_spectra
+from tests.fixtures import path_to_test_files, sqlite_library, ms2library
+from tests.test_ms2library import test_spectra
 
 @pytest.fixture
 def dummy_data():
