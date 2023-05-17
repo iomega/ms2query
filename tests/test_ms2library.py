@@ -18,15 +18,6 @@ def expected_ms2deespcore_scores():
     return ms2dscores
 
 
-def test_ms2library_set_settings(ms2library):
-    """Tests creating a ms2library object"""
-
-    assert ms2library.settings["spectrum_id_column_name"] == "spectrumid", \
-        "Different value for attribute was expected"
-    assert ms2library.settings["progress_bars"] == True, \
-        "Different value for attribute was expected"
-
-
 def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
     """Test get_all_ms2ds_scores method of ms2library"""
     result = ms2library._get_all_ms2ds_scores(test_spectra[0])

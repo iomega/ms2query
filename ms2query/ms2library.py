@@ -42,8 +42,7 @@ class MS2Library:
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 ms2query_model_file_name: Union[str, None],
-                 **settings):
+                 ms2query_model_file_name: Union[str, None]):
         """
         Parameters
         ----------
@@ -65,19 +64,8 @@ class MS2Library:
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
-
-        **settings:
-            As additional parameters predefined settings can be changed.
-        spectrum_id_column_name:
-            The name of the column or key in dictionaries under which the
-            spectrum id is stored. Default = "spectrumid"
-        progress_bars:
-            If True progress bars will be shown of all methods. Default = True
         """
         # pylint: disable=too-many-arguments
-
-        # Change default settings to values given in **settings
-        self.settings = self._set_settings(settings)
 
         # Load models and set file locations
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
@@ -117,30 +105,6 @@ class MS2Library:
             for spectrum_id in list_of_spectrum_ids:
                 self.inchikey14s_of_spectra[spectrum_id] = inchikey
 
-    @staticmethod
-    def _set_settings(new_settings: Dict[str, Union[str, bool]],
-                      ) -> Dict[str, Union[str, float]]:
-        """Changes default settings to new_settings
-
-        Args:
-        ------
-        new_settings:
-            Dictionary with settings that should be changed. Only the
-            keys given in default_settings can be used and the type has to be
-            the same as the type of the values in default settings.
-        """
-        # Set default settings
-        default_settings = {"spectrum_id_column_name": "spectrumid",
-                            "progress_bars": True}
-        for attribute in new_settings:
-            assert attribute in default_settings, \
-                f"Invalid argument in constructor:{attribute}"
-            assert isinstance(new_settings[attribute],
-                              type(default_settings[attribute])), \
-                f"Different type is expected for argument: {attribute}"
-            default_settings[attribute] = new_settings[attribute]
-        return default_settings
-
     def calculate_features_single_spectrum(self,
                                            query_spectrum: Spectrum,
                                            preselection_cut_off: int = 2000,
@@ -173,7 +137,8 @@ class MS2Library:
 
     def analog_search_yield_df(self,
                                query_spectra: List[Spectrum],
-                               settings: Optional[SettingsRunMS2Query] = None
+                               settings: Optional[SettingsRunMS2Query] = None,
+                               progress_bar: bool = True
                                ) -> Iterator[pd.DataFrame]:
         """Runs ms2query on the query_spectra
 
@@ -185,6 +150,8 @@ class MS2Library:
             List of query spectra for which the best matches should be found
         settings:
             Settings for running MS2Query, see SettingsRunMS2Query for details.
+        progress_bar:
+            If true a progress bar is shown.
         """
         if settings is None:
             settings = SettingsRunMS2Query()
@@ -195,7 +162,7 @@ class MS2Library:
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
                      desc="Predicting matches for query spectra",
-                     disable=not self.settings["progress_bars"],
+                     disable=not progress_bar,
                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off,
