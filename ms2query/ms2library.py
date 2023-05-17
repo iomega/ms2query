@@ -65,8 +65,6 @@ class MS2Library:
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
-        classifier_csv_file_name:
-            Csv file location containing classifier annotations per inchikey
 
         **settings:
             As additional parameters predefined settings can be changed.
@@ -449,7 +447,7 @@ def get_ms2query_model_prediction_single_spectrum(
 def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
-        {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
+        {"sqlite": ".sqlite", "s2v_model": ".model", "ms2ds_model": ".hdf5",
          "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
          "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
     if files_to_select is not None:
@@ -477,8 +475,6 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
                 "To download the new format check the readme https://github.com/iomega/ms2query. " \
                 "Alternatively MS2Query can be downgraded to version <= 0.6.7"
             assert False, "The MS2Query model was not found in the directory"
-        elif file_type == "classifiers" and stored_file_name is None:
-            print("The classifiers file has not been specified, therefore no classes will be predicted.")
         elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
                 f"The file type {file_type} was not found in the file names: {file_names}"
