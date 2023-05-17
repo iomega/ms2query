@@ -10,6 +10,7 @@ from tqdm import tqdm
 import pandas as pd
 
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_highest_tanimoto_score
+from ms2query.utils import return_non_existing_file_name
 
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
@@ -39,9 +40,11 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
         If progress_bars is True progress bars will be shown for the different
         parts of the progress.
     """
+    sqlite_file_name = return_non_existing_file_name(sqlite_file_name)
     additional_inchikey_columns = []
     if compound_classes is not None:
         additional_inchikey_columns = list(compound_classes.columns)
+        assert compound_classes.index.name == "inchikey", "Expected a pandas dataframe with inchikey as index name"
 
     initialize_tables(sqlite_file_name, additional_metadata_columns_dict=columns_dict,
                       additional_inchikey_columns=additional_inchikey_columns)
@@ -90,7 +93,7 @@ def initialize_tables(sqlite_file_name: str,
         PRIMARY KEY (spectrumid));"""
 
     additional_inchikey_columns_txt = ""
-    if additional_metadata_columns_dict is not None:
+    if additional_inchikey_columns is not None:
         # add all columns with the type specified in combined_columns_dict
         additional_inchikey_columns_txt = "".join(f"{column_header} TEXT,\n" for column_header in additional_inchikey_columns)
 
@@ -208,7 +211,7 @@ def fill_inchikeys_table(sqlite_file_name: str,
         if compound_classes is not None:
             # Select the compound classes
             compound_class = list(compound_classes.loc[inchikey14])
-            compound_class_string = "".join(f',\n"{column_header}"' for column_header in compound_class)
+            compound_class_string = "".join(f',\n"{value}"' for value in compound_class)
         else:
             compound_class_string = ""
 
