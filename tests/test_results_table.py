@@ -22,17 +22,6 @@ def dummy_data():
     return ms2deepscores, query_spectrum
 
 
-@pytest.fixture
-def create_results_tables(ms2library, test_spectra):
-    result_tables = ms2library.analog_search_return_results_tables(test_spectra,
-                                                                   preselection_cut_off=20,
-                                                                   store_ms2deepscore_scores=True)
-    assert isinstance(result_tables, list)
-    for result_table in result_tables:
-        assert isinstance(result_table, ResultsTable)
-    return result_tables
-
-
 def test_table_init(dummy_data, sqlite_library):
     ms2deepscores, query_spectrum = dummy_data
     preselection_cut_off = 3
@@ -55,29 +44,3 @@ def test_table_preselect_ms2deepscore(dummy_data, sqlite_library):
     assert np.all(table.data.ms2ds_score.values ==
                   [0.99, 0.7, 0.4]), \
         "Expected different scores or order"
-
-
-def test_export_to_dataframe(dummy_data, sqlite_library, create_results_tables):
-    test_table: ResultsTable = create_results_tables[0]
-    # Add sqlite library as a patch to fix the test
-    test_table.sqlite_library = sqlite_library
-    test_table.query_spectrum.set("spectrum_nr", 1)
-    returned_dataframe = test_table.export_to_dataframe(5)
-    assert isinstance(returned_dataframe, pd.DataFrame)
-    check_correct_results_csv_file(returned_dataframe.iloc[[0], :],
-                                   column_names_for_output(True, True),
-                                   nr_of_rows_to_check=1)
-
-
-def test_export_to_dataframe_with_additional_columns(dummy_data, sqlite_library, create_results_tables):
-    test_table = create_results_tables[0]
-    test_table.sqlite_library = sqlite_library
-    test_table.query_spectrum.set("spectrum_nr", 1)
-    returned_dataframe = test_table.export_to_dataframe(5,
-                                                        additional_metadata_columns=("charge",),
-                                                        additional_ms2query_score_columns=("s2v_score", "ms2ds_score",))
-    assert isinstance(returned_dataframe, pd.DataFrame)
-    check_correct_results_csv_file(returned_dataframe.iloc[[0], :],
-                                   column_names_for_output(True, True, ("charge",),
-                                                           ("s2v_score", "ms2ds_score",)),
-                                   nr_of_rows_to_check=1)

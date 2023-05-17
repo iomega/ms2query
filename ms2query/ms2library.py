@@ -1,5 +1,5 @@
 import os.path
-from typing import Dict, List, Set, Tuple, Union, Optional, Generator
+from typing import Dict, List, Set, Tuple, Union, Optional, Iterator
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
@@ -171,45 +171,10 @@ class MS2Library:
             self._calculate_features_for_random_forest_model(results_table)
         return results_table
 
-    def analog_search_return_results_tables(self,
-                                            query_spectra: List[Spectrum],
-                                            preselection_cut_off: int = 2000,
-                                            store_ms2deepscore_scores: bool = False
-                                            ) -> List[ResultsTable]:
-        """Returns a list with a ResultTable for each query spectrum
-
-        Args
-        ----
-        query_spectra:
-            List of query spectra for which the best matches should be found
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected. Default = 2000
-        """
-        assert self.ms2query_model is not None, \
-            "MS2Query model should be given when creating ms2library object"
-
-        result_tables = []
-        for i, query_spectrum in tqdm(enumerate(query_spectra),
-                                      desc="collecting matches info",
-                                      disable=not self.settings["progress_bars"],
-                                      total=len(query_spectra)):
-            query_spectrum.set("spectrum_nr", i+1)
-            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
-            if results_table is not None:
-                results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-                # To reduce the memory footprint the ms2deepscore scores are removed.
-                if not store_ms2deepscore_scores:
-                    results_table.ms2deepscores = pd.DataFrame()
-                result_tables.append(results_table)
-            else:
-                result_tables.append(None)
-        return result_tables
-
     def analog_search_yield_df(self,
                                query_spectra: List[Spectrum],
                                settings: Optional[SettingsRunMS2Query] = None
-                               ) -> Generator[pd.DataFrame]:
+                               ) -> Iterator[pd.DataFrame]:
         """Runs ms2query on the query_spectra
 
         Returns a generator returning dfs containing the results
@@ -277,10 +242,7 @@ class MS2Library:
 
         results_df_generator = self.analog_search_yield_df(query_spectra, settings)
 
-        for results_df in tqdm(results_df_generator,
-                               desc="Predicting matches for query spectra",
-                               disable=not self.settings["progress_bars"],
-                               total=len(query_spectra)):
+        for results_df in results_df_generator:
             results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,

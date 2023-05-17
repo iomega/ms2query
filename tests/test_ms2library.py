@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_series_equal
 from ms2query.ms2library import (MS2Library,
                                  create_library_object_from_one_dir)
-from ms2query.utils import load_pickled_file, SettingsRunMS2Query
+from ms2query.utils import load_pickled_file, SettingsRunMS2Query, column_names_for_output
 from tests.test_utils import check_correct_results_csv_file
 
 
@@ -25,16 +25,6 @@ def test_ms2library_set_settings(ms2library):
         "Different value for attribute was expected"
     assert ms2library.settings["progress_bars"] == True, \
         "Different value for attribute was expected"
-
-
-def test_analog_search_no_ms2ds(ms2library, test_spectra):
-    """Check if no ms2deepscores are stored."""
-    cutoff = 20
-    results_without_ms2deepscores = ms2library.analog_search_return_results_tables(
-        test_spectra, cutoff, store_ms2deepscore_scores=False)
-    for i in range(len(results_without_ms2deepscores)):
-        assert results_without_ms2deepscores[i].ms2deepscores.empty, \
-            "No ms2deepscores should be stored in the result table"
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
@@ -117,3 +107,15 @@ def test_analog_yield_df(ms2library, test_spectra, tmp_path):
         ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
          "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrumid"]
     check_correct_results_csv_file(list(result)[0], expected_headers, nr_of_rows_to_check=1)
+
+
+def test_analog_yield_df_additional_columns(ms2library, test_spectra, tmp_path):
+    settings = SettingsRunMS2Query(additional_metadata_columns=("charge", ),
+                                   additional_ms2query_score_columns=("s2v_score", "ms2ds_score",),)
+    result = ms2library.analog_search_yield_df(test_spectra, settings)
+    result_first_spectrum = list(result)[0]
+    check_correct_results_csv_file(result_first_spectrum,
+                                   column_names_for_output(True, True, ("charge",),
+                                                           ("s2v_score", "ms2ds_score",)),
+                                   nr_of_rows_to_check=1)
+
