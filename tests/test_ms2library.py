@@ -110,5 +110,10 @@ def test_create_library_object_from_one_dir():
     assert isinstance(library, MS2Library)
 
 
-if __name__ == "__main__":
-    pass
+def test_analog_yield_df(ms2library, test_spectra, tmp_path):
+    settings = SettingsRunMS2Query(additional_metadata_columns=("spectrumid", ),)
+    result = ms2library.analog_search_yield_df(test_spectra, settings)
+    expected_headers = \
+        ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
+         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrumid"]
+    check_correct_results_csv_file(list(result)[0], expected_headers, nr_of_rows_to_check=1)

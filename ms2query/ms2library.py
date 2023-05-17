@@ -207,6 +207,35 @@ class MS2Library:
                 result_tables.append(None)
         return result_tables
 
+    def analog_search_yield_df(self,
+                               query_spectra: List[Spectrum],
+                               settings: Optional[SettingsRunMS2Query] = None
+                               ) -> List[pd.DataFrame]:
+        if settings is None:
+            settings = SettingsRunMS2Query()
+        # Create csv file if it does not exist already
+        assert self.ms2query_model is not None, \
+            "MS2Query model should be given when creating ms2library object"
+
+        for i, query_spectrum in \
+                tqdm(enumerate(query_spectra),
+                     desc="Predicting matches for query spectra",
+                     disable=not self.settings["progress_bars"],
+                     total=len(query_spectra)):
+            query_spectrum.set("spectrum_nr", i+1)
+            results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off,
+                                                                    settings.filter_on_ion_mode)
+            if results_table is None:
+                print(f"Spectrum nr {i} was not stored, since it did not pass all cleaning steps")
+            else:
+                results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
+                results_df = results_table.export_to_dataframe(
+                    settings.nr_of_top_analogs_to_save,
+                    settings.minimal_ms2query_metascore,
+                    additional_metadata_columns=settings.additional_metadata_columns,
+                    additional_ms2query_score_columns=settings.additional_ms2query_score_columns)
+                yield results_df
+
     def analog_search_store_in_csv(self,
                                    query_spectra: List[Spectrum],
                                    results_csv_file_location: str,
