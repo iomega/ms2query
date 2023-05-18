@@ -1,5 +1,6 @@
 import json
 import urllib
+from http.client import InvalidURL
 from typing import List, Optional
 
 import pandas as pd
@@ -33,7 +34,7 @@ def do_url_request(url: str) -> [bytes, None]:
     try:
         with urllib.request.urlopen(url) as inf:
             result = inf.read()
-    except (urllib.error.HTTPError, urllib.error.URLError):
+    except (urllib.error.HTTPError, urllib.error.URLError, InvalidURL):
         # apparently the request failed
         result = None
     except ConnectionAbortedError:
