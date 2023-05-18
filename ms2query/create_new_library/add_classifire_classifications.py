@@ -42,15 +42,6 @@ def do_url_request(url: str) -> [bytes, None]:
     return result
 
 
-def get_classyfire_results(full_inchikey):
-    json_results = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
-    if json_results is None:
-        return None
-    # else:
-    classes = get_json_cf_results(json_results)
-    return classes
-
-
 def get_json_cf_results(full_inchikey: str) -> Optional[List[str]]:
     """
     Extract the wanted CF classes.
