@@ -3,7 +3,6 @@ import sys
 import json
 from typing import List, Union, Tuple, Optional
 import numpy as np
-import pandas as pd
 from matchms import importing
 from spec2vec.Spec2Vec import Spectrum
 from skl2onnx import convert_sklearn
@@ -125,49 +124,10 @@ def add_unknown_charges_to_spectra(spectrum_list: List[Spectrum],
     return spectrum_list
 
 
-def get_classifier_from_csv_file(classifier_file_name: str,
-                                 list_of_inchikeys: List[str]):
-    """Returns a dataframe with the classifiers for a selection of inchikeys
-
-    Args:
-    ------
-    csv_file_name:
-        File name of text file with tap separated columns, with classifier
-        information.
-    list_of_inchikeys:
-        list with the first 14 letters of inchikeys, that are selected from
-        the classifier file.
-    """
-    assert os.path.isfile(classifier_file_name), \
-        f"The given classifier csv file does not exist: {classifier_file_name}"
-    classifiers_df = pd.read_csv(classifier_file_name, sep="\t")
-    classifiers_df.rename(columns={"inchi_key": "inchikey"}, inplace=True)
-    columns_to_keep = ["inchikey"] + column_names_for_output(False, True)
-    list_of_classifiers = []
-    for inchikey in list_of_inchikeys:
-        classifiers = classifiers_df.loc[
-            classifiers_df["inchikey"].str.startswith(inchikey)]
-        if classifiers.empty:
-            list_of_classifiers.append(pd.DataFrame(np.array(
-                [[inchikey] + [np.nan] * (len(columns_to_keep) - 1)]),
-                columns=columns_to_keep))
-        else:
-            classifiers = classifiers[columns_to_keep].iloc[:1]
-
-            list_of_classifiers.append(classifiers)
-    if len(list_of_classifiers) == 0:
-        results = pd.DataFrame(columns=columns_to_keep)
-    else:
-        results = pd.concat(list_of_classifiers, axis=0, ignore_index=True)
-
-    results["inchikey"] = list_of_inchikeys
-    return results
-
-
 def column_names_for_output(return_non_classifier_columns: bool,
                             return_classifier_columns: bool,
-                            additional_metadata_columns: Tuple[str] = None,
-                            additional_ms2query_score_columns: Tuple[str] = None) -> List[str]:
+                            additional_metadata_columns: Tuple[str, ...] = None,
+                            additional_ms2query_score_columns: Tuple[str, ...] = None) -> List[str]:
     """Returns the column names for the output of results table
 
     This is used by the functions MS2Library.analog_search_store_in_csv, ResultsTable.export_to_dataframe
@@ -190,12 +150,12 @@ def column_names_for_output(return_non_classifier_columns: bool,
         These columns are appended to the standard columns and returned when return_non_classifier_columns is true
     """
     standard_columns = ["query_spectrum_nr", "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-                        "precursor_mz_analog", "inchikey", "spectrum_ids", "analog_compound_name"]
+                        "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles",]
     if additional_metadata_columns is not None:
         standard_columns += additional_metadata_columns
     if additional_ms2query_score_columns is not None:
         standard_columns += additional_ms2query_score_columns
-    classifier_columns = ["smiles", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
+    classifier_columns = ["cf_kingdom", "cf_superclass", "cf_class", "cf_subclass",
                           "cf_direct_parent", "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
     if return_classifier_columns and return_non_classifier_columns:
         return standard_columns + classifier_columns

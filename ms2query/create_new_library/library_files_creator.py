@@ -17,6 +17,7 @@ from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
+from ms2query.create_new_library.add_classifire_classifications import select_compound_classes, convert_to_dataframe
 
 
 class LibraryFilesCreator:
@@ -47,6 +48,7 @@ class LibraryFilesCreator:
                  output_directory: Union[str, Path],
                  s2v_model_file_name: str = None,
                  ms2ds_model_file_name: str = None,
+                 add_compound_classes: bool = True
                  ):
         """Creates files needed to run queries on a library
 
@@ -65,6 +67,7 @@ class LibraryFilesCreator:
         ms2ds_model_file_name:
             File name of a ms2ds model
         """
+        # pylint: disable=too-many-arguments
         self.progress_bars = True
         self.output_directory = output_directory
         if not os.path.exists(self.output_directory):
@@ -92,6 +95,7 @@ class LibraryFilesCreator:
         # Run default filters
         self.list_of_spectra = [msfilters.default_filters(s) for s in tqdm(self.list_of_spectra,
                                                                            desc="Applying default filters to spectra")]
+        self.add_compound_classes = add_compound_classes
 
     def _check_for_existing_files(self):
         assert not os.path.exists(self.sqlite_file_name), \
@@ -112,10 +116,16 @@ class LibraryFilesCreator:
         self.store_ms2ds_embeddings()
 
     def create_sqlite_file(self):
+        if self.add_compound_classes:
+            compound_classes = select_compound_classes(self.list_of_spectra)
+            compound_classes_df = convert_to_dataframe(compound_classes)
+        else:
+            compound_classes_df = None
         make_sqlfile_wrapper(
             self.sqlite_file_name,
             self.list_of_spectra,
             columns_dict={"precursor_mz": "REAL"},
+            compound_classes=compound_classes_df,
             progress_bars=self.progress_bars,
         )
 

@@ -8,10 +8,11 @@ information from the sqlite database.
 import os
 import sqlite3
 import numpy as np
+import pandas as pd
 from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite, get_ionization_mode_library
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_pickled_file, column_names_for_output
+from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
@@ -19,6 +20,8 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \
         "Expected a file to be created"
+    assert os.path.isfile(reference_sqlite_file), \
+        "The reference file given does not exist"
 
     # Test if the file has the correct information
     get_table_names = \
@@ -64,7 +67,7 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     conn2.close()
 
 
-def test_making_sqlite_file(tmp_path):
+def test_making_sqlite_file_without_classes(tmp_path):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     # tmp_path is a fixture that makes sure a temporary file is created
@@ -76,8 +79,9 @@ def test_making_sqlite_file(tmp_path):
         'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
-                                         "test_files_without_spectrum_id",
-                                         "100_test_spectra.sqlite")
+                                         "..",
+                                         "backwards_compatibility",
+                                         "100_test_spectra_without_classes.sqlite")
 
     list_of_spectra = load_pickled_file(os.path.join(
         path_to_general_test_files, "100_test_spectra.pickle"))
@@ -90,42 +94,72 @@ def test_making_sqlite_file(tmp_path):
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
-def test_get_metadata_from_sqlite():
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
+def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test_files):
+    """Makes a temporary sqlite file and tests if it contains the correct info
+    """
+    def generate_compound_classes(spectra):
+        inchikeys = {spectrum.get("inchikey")[:14] for spectrum in spectra}
+        inchikey_results_list = []
+        for inchikey in inchikeys:
+            inchikey_results_list.append([inchikey, "b", "c", "d", "e", "f", "g", "h", "i", "j"])
+        compound_class_df = convert_to_dataframe(inchikey_results_list)
+        return compound_class_df
+    # tmp_path is a fixture that makes sure a temporary file is created
+    new_sqlite_file_name = os.path.join(tmp_path,
+                                        "test_spectra_database.sqlite")
 
-    spectra_id_list = ['CCMSLIB00000001547', 'CCMSLIB00000001549']
+    reference_sqlite_file = os.path.join(path_to_general_test_files,
+                                         "100_test_spectra.sqlite")
 
-    result = get_metadata_from_sqlite(
-        sqlite_file_name,
+    list_of_spectra = load_pickled_file(os.path.join(
+        path_to_general_test_files, "100_test_spectra.pickle"))
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
+
+    # Create sqlite file, with 3 tables
+    make_sqlfile_wrapper(new_sqlite_file_name,
+                         list_of_spectra,
+                         columns_dict={"precursor_mz": "REAL"},
+                         compound_classes=generate_compound_classes(spectra=list_of_spectra))
+
+    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
+
+
+def test_get_metadata_from_sqlite(sqlite_library):
+    spectra_id_list = [0, 1]
+
+    result = sqlite_library.get_metadata_from_sqlite(
         spectra_id_list,
-        spectrum_id_storage_name="spectrum_id")
+        spectrum_id_storage_name="spectrumid")
     assert isinstance(result, dict), "Expected dictionary as output"
     assert len(result) == len(spectra_id_list), \
         "Expected the same number of results as the spectra_id_list"
     for spectrum_id in spectra_id_list:
-        assert spectrum_id in result, \
+        assert spectrum_id in result.keys(), \
             f"The spectrum_id {spectrum_id} was expected as key"
         metadata = result[spectrum_id]
         assert isinstance(metadata, dict), \
             "Expected metadata to be stored as dict"
-        assert metadata['spectrum_id'] == spectrum_id, \
-            "Expected different spectrum id in metadata"
         for key in metadata.keys():
             assert isinstance(key, str), \
                 "Expected keys of metadata to be string"
-            assert isinstance(metadata[key], (str, float, int, list)), \
+            assert isinstance(metadata[key], (str, float, int, list, tuple)), \
                 f"Expected values of metadata to be string {metadata[key]}"
 
 
-def test_get_ionization_mode_library():
-    path_to_test_files_sqlite_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files')
-    sqlite_file_name = os.path.join(path_to_test_files_sqlite_dir,
-                                    "test_spectra_database.sqlite")
-    ionization_mode = get_ionization_mode_library(sqlite_file_name)
+def test_get_ionization_mode_library(sqlite_library):
+    ionization_mode = sqlite_library.get_ionization_mode_library()
     assert ionization_mode == "positive"
+
+
+def test_get_classes_inchikeys(sqlite_library):
+    test_inchikeys = ["IYDKWWDUBYWQGF", "KNGPFNUOXXLKCN"]
+    classes = sqlite_library.get_classes_inchikeys(test_inchikeys)
+    expected_classes = pd.DataFrame([["IYDKWWDUBYWQGF", "b", "c", "d", "e", "f", "g", "h", "i"],
+                                     ["KNGPFNUOXXLKCN", "b", "c", "d", "e", "f", "g", "h", "i"]],
+                                    columns=["inchikey"] + column_names_for_output(return_non_classifier_columns=False,
+                                                                                   return_classifier_columns=True))
+    pd.testing.assert_frame_equal(expected_classes, classes)
+
+
+def test_contains_class_annotiation(sqlite_library):
+    assert sqlite_library.contains_class_annotation(), "contains_class_annotation is expected to return True"

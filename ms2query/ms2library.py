@@ -9,8 +9,7 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
 from onnxruntime import InferenceSession
-from ms2query.query_from_sqlite_database import (get_inchikey_information,
-                                                 get_precursor_mz, get_ionization_mode_library)
+from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.results_table import ResultsTable
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
@@ -44,7 +43,6 @@ class MS2Library:
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None],
-                 classifier_csv_file_name: Union[str, None] = None,
                  **settings):
         """
         Parameters
@@ -67,8 +65,6 @@ class MS2Library:
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
-        classifier_csv_file_name:
-            Csv file location containing classifier annotations per inchikey
 
         **settings:
             As additional parameters predefined settings can be changed.
@@ -84,9 +80,8 @@ class MS2Library:
         self.settings = self._set_settings(settings)
 
         # Load models and set file locations
-        self.classifier_file_name = classifier_csv_file_name
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
-        self.sqlite_file_name = sqlite_file_name
+        self.sqlite_library = SqliteLibrary(sqlite_file_name)
 
         if ms2query_model_file_name is not None:
             self.ms2query_model = load_ms2query_model(ms2query_model_file_name)
@@ -104,8 +99,7 @@ class MS2Library:
             "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
 
         # load precursor mz's
-        self.precursors_library = get_precursor_mz(
-            self.sqlite_file_name)
+        self.precursors_library = self.sqlite_library.get_precursor_mz()
 
         assert self.ms2ds_embeddings.shape[0] == self.s2v_embeddings.shape[0], \
             "The number ms2deepscore embeddings is not equal to the number of spectra with s2v embeddings"
@@ -114,10 +108,9 @@ class MS2Library:
             "Mismatch of library files. " \
             "The number of spectra in the sqlite library is not equal to the number of spectra in the embeddings"
 
-        self.ionization_mode = get_ionization_mode_library(self.sqlite_file_name)
-        self.spectra_of_inchikey14s, \
-            self.closely_related_inchikey14s = \
-            get_inchikey_information(self.sqlite_file_name)
+        self.ionization_mode = self.sqlite_library.get_ionization_mode_library()
+        self.spectra_of_inchikey14s, self.closely_related_inchikey14s = \
+            self.sqlite_library.get_inchikey_information()
         self.inchikey14s_of_spectra = {}
         for inchikey, list_of_spectrum_ids in \
                 self.spectra_of_inchikey14s.items():
@@ -173,12 +166,8 @@ class MS2Library:
 
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
-        results_table = ResultsTable(
-            preselection_cut_off=preselection_cut_off,
-            ms2deepscores=ms2deepscore_scores,
-            query_spectrum=query_spectrum,
-            sqlite_file_name=self.sqlite_file_name,
-            classifier_csv_file_name=self.classifier_file_name)
+        results_table = ResultsTable(preselection_cut_off=preselection_cut_off, ms2deepscores=ms2deepscore_scores,
+                                     query_spectrum=query_spectrum, sqlite_library=self.sqlite_library)
         results_table = \
             self._calculate_features_for_random_forest_model(results_table)
         return results_table
@@ -246,12 +235,12 @@ class MS2Library:
             "MS2Query model should be given when creating ms2library object"
 
         with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
-            if self.classifier_file_name is None:
-                csv_file.write(",".join(column_names_for_output(True, False, settings.additional_metadata_columns,
-                                                                settings.additional_ms2query_score_columns)) + "\n")
-            else:
-                csv_file.write(",".join(column_names_for_output(True, True, settings.additional_metadata_columns,
-                                                                settings.additional_ms2query_score_columns)) + "\n")
+            # Check if sqlite file has class annotations stored
+            add_class_annotations: bool = self.sqlite_library.contains_class_annotation()
+
+            csv_file.write(",".join(
+                column_names_for_output(True, add_class_annotations, settings.additional_metadata_columns,
+                                        settings.additional_ms2query_score_columns)) + "\n")
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
@@ -415,7 +404,7 @@ class MS2Library:
 
     def _get_s2v_scores(self,
                         query_spectrum: Spectrum,
-                        preselection_of_library_ids: List[str]
+                        preselection_of_library_ids: List[int]
                         ) -> np.ndarray:
         """Returns the s2v scores
 
@@ -458,7 +447,7 @@ def get_ms2query_model_prediction_single_spectrum(
 def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
-        {"sqlite": ".sqlite", "classifiers": "CF_NPC_classes.txt", "s2v_model": ".model", "ms2ds_model": ".hdf5",
+        {"sqlite": ".sqlite", "s2v_model": ".model", "ms2ds_model": ".hdf5",
          "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
          "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
     if files_to_select is not None:
@@ -486,8 +475,6 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
                 "To download the new format check the readme https://github.com/iomega/ms2query. " \
                 "Alternatively MS2Query can be downgraded to version <= 0.6.7"
             assert False, "The MS2Query model was not found in the directory"
-        elif file_type == "classifiers" and stored_file_name is None:
-            print("The classifiers file has not been specified, therefore no classes will be predicted.")
         elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
                 f"The file type {file_type} was not found in the file names: {file_names}"
@@ -513,10 +500,6 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
             dict_with_file_paths[key] = os.path.join(directory_containing_library_and_models, file_name)
         else:
             dict_with_file_paths[key] = None
-    return MS2Library(dict_with_file_paths["sqlite"],
-                      dict_with_file_paths["s2v_model"],
-                      dict_with_file_paths["ms2ds_model"],
-                      dict_with_file_paths["s2v_embeddings"],
-                      dict_with_file_paths["ms2ds_embeddings"],
-                      dict_with_file_paths["ms2query_model"],
-                      dict_with_file_paths["classifiers"])
+    return MS2Library(dict_with_file_paths["sqlite"], dict_with_file_paths["s2v_model"],
+                      dict_with_file_paths["ms2ds_model"], dict_with_file_paths["s2v_embeddings"],
+                      dict_with_file_paths["ms2ds_embeddings"], dict_with_file_paths["ms2query_model"])

@@ -2,9 +2,8 @@ from typing import Tuple, Union
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
-from ms2query.query_from_sqlite_database import get_metadata_from_sqlite
-from ms2query.utils import (column_names_for_output,
-                            get_classifier_from_csv_file)
+from ms2query.query_from_sqlite_database import SqliteLibrary
+from ms2query.utils import (column_names_for_output)
 
 
 class ResultsTable:
@@ -20,30 +19,27 @@ class ResultsTable:
     def __init__(self, preselection_cut_off: int,
                  ms2deepscores: pd.Series,
                  query_spectrum: Spectrum,
-                 sqlite_file_name: str,
-                 classifier_csv_file_name: Union[str, None] = None,
+                 sqlite_library: SqliteLibrary,
                  **kwargs):
-        # pylint: disable=too-many-arguments
 
         self.data = pd.DataFrame(columns=self.default_columns, **kwargs)
         self.ms2deepscores = ms2deepscores
         self.preselection_cut_off = preselection_cut_off
         self.query_spectrum = query_spectrum
         self.precursor_mz = query_spectrum.get("precursor_mz")
-        self.sqlite_file_name = sqlite_file_name
-        self.classifier_csv_file_name = classifier_csv_file_name
+        self.sqlite_library = sqlite_library
 
     def __eq__(self, other):
         if not isinstance(other, ResultsTable):
             return False
 
         # Round is used to prevent returning float for float rounding errors
+        # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
         return other.preselection_cut_off == self.preselection_cut_off and \
             other.precursor_mz == self.precursor_mz and \
             self.data.round(5).equals(other.data.round(5)) and \
             self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)) and \
-            self.query_spectrum.__eq__(other.query_spectrum) and \
-            self.sqlite_file_name == other.sqlite_file_name
+            self.query_spectrum.__eq__(other.query_spectrum)
 
     def assert_results_table_equal(self, other):
         """Assert if results tables are equal except for the spectrum metadata and sqlite file name"""
@@ -54,6 +50,7 @@ class ResultsTable:
         assert self.ms2deepscores.round(5).equals(other.ms2deepscores.round(5)), f"ms2deepscores are not equal {self.ms2deepscores} != {other.ms2deepscores}"
         assert self.query_spectrum.peaks == other.query_spectrum.peaks
         assert self.query_spectrum.losses == other.query_spectrum.losses
+        # We cannot check the sqlite file location, since this will have a different path on a virtual machine.
 
     def set_index(self, column_name):
         self.data = self.data.set_index(column_name)
@@ -102,8 +99,8 @@ class ResultsTable:
             self,
             nr_of_top_spectra: int,
             minimal_ms2query_score: Union[float, int] = 0.0,
-            additional_metadata_columns: Tuple[str] = None,
-            additional_ms2query_score_columns: Tuple[str] = None
+            additional_metadata_columns: Tuple[str, ...] = None,
+            additional_ms2query_score_columns: Tuple[str, ...] = None
             ) -> Union[None, pd.DataFrame]:
         """Returns a dataframe with analogs results from results table
 
@@ -135,22 +132,25 @@ class ResultsTable:
             return None
 
         # For each analog the compound name is selected from sqlite
-        metadata_dict = get_metadata_from_sqlite(self.sqlite_file_name,
-                                                 list(selected_analogs["spectrum_ids"]))
+        metadata_dict = self.sqlite_library.get_metadata_from_sqlite(list(selected_analogs["spectrum_ids"]))
         compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
                               for analog_spectrum_id
                               in list(selected_analogs["spectrum_ids"])]
+        smiles_list = [metadata_dict[analog_spectrum_id]["smiles"]
+                       for analog_spectrum_id
+                       in list(selected_analogs["spectrum_ids"])]
 
         # Add inchikey and ms2query model prediction to results df
         # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
         results_df = pd.DataFrame({"query_spectrum_nr": self.query_spectrum.get("spectrum_nr"),
-                                   "spectrum_ids": selected_analogs["spectrum_ids"],
+                                   # "spectrum_ids": selected_analogs["spectrum_ids"],
                                    "ms2query_model_prediction": selected_analogs["ms2query_model_prediction"],
                                    "inchikey": selected_analogs["inchikey"],
                                    "precursor_mz_analog": selected_analogs["precursor_mz_library_spectrum"],
                                    "precursor_mz_query_spectrum": [self.precursor_mz] * nr_of_analogs,
+                                   "smiles": smiles_list,
                                    "analog_compound_name": compound_name_list,
-                                   "precursor_mz_difference": selected_analogs["precursor_mz_difference"]
+                                   "precursor_mz_difference": selected_analogs["precursor_mz_difference"],
                                    })
         if additional_metadata_columns is not None:
             for metadata_name in additional_metadata_columns:
@@ -163,11 +163,10 @@ class ResultsTable:
         results_df = results_df.reindex(
             columns=column_names_for_output(True, False, additional_metadata_columns,
                                             additional_ms2query_score_columns))
+
         # Add classifiers to dataframe
-        if self.classifier_csv_file_name is not None:
-            classifiers_df = \
-                get_classifier_from_csv_file(self.classifier_csv_file_name,
-                                             results_df["inchikey"].unique())
+        if self.sqlite_library.contains_class_annotation():
+            classifiers_df = self.sqlite_library.get_classes_inchikeys(results_df["inchikey"].unique())
             results_df = pd.merge(results_df,
                                   classifiers_df,
                                   on="inchikey")

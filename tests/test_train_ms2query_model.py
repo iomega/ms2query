@@ -26,14 +26,15 @@ def path_to_test_dir():
 def ms2library(path_to_test_dir):
     path_to_general_tests_dir = os.path.join(path_to_test_dir, 'general_test_files')
 
-    return MS2Library(
-        sqlite_file_name= os.path.join(path_to_general_tests_dir, "100_test_spectra.sqlite"),
-        s2v_model_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_model.model"),
-        ms2ds_model_file_name=os.path.join(path_to_general_tests_dir, "ms2ds_siamese_210301_5000_500_400.hdf5"),
-        pickled_s2v_embeddings_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_embeddings.pickle"),
-        pickled_ms2ds_embeddings_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_ms2ds_embeddings.pickle"),
-        ms2query_model_file_name=None,
-        classifier_csv_file_name=None)
+    return MS2Library(sqlite_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra.sqlite"),
+                      s2v_model_file_name=os.path.join(path_to_general_tests_dir, "100_test_spectra_s2v_model.model"),
+                      ms2ds_model_file_name=os.path.join(path_to_general_tests_dir,
+                                                         "ms2ds_siamese_210301_5000_500_400.hdf5"),
+                      pickled_s2v_embeddings_file_name=os.path.join(path_to_general_tests_dir,
+                                                                    "100_test_spectra_s2v_embeddings.pickle"),
+                      pickled_ms2ds_embeddings_file_name=os.path.join(path_to_general_tests_dir,
+                                                                      "100_test_spectra_ms2ds_embeddings.pickle"),
+                      ms2query_model_file_name=None)
 
 
 @pytest.fixture
@@ -65,8 +66,8 @@ def test_get_matches_info_and_tanimoto(tmp_path, ms2library, query_spectra):
 def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
     query_spectrum = query_spectra[0]
     spectra_ids_list = \
-        ['CCMSLIB00000001603', 'CCMSLIB00000001652', 'CCMSLIB00000001640']
-    result = calculate_tanimoto_scores_with_library(ms2library.sqlite_file_name, query_spectrum, spectra_ids_list)
+        [38, 3, 60]
+    result = calculate_tanimoto_scores_with_library(ms2library.sqlite_library, query_spectrum, spectra_ids_list)
     expected_result = pd.DataFrame([0.199695, 0.177669, 0.192504],
                                    index=spectra_ids_list,
                                    columns=["Tanimoto_score"])

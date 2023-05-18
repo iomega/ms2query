@@ -5,7 +5,6 @@ from ms2query.create_new_library.library_files_creator import LibraryFilesCreato
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
-from tests.test_utils import path_to_general_test_files
 
 
 def test_give_already_used_file_name(tmp_path, path_to_general_test_files):
@@ -37,7 +36,6 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files):
     embeddings = load_pickled_file(new_embeddings_file_name)
     expected_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
-        "test_files_without_spectrum_id",
         "100_test_spectra_ms2ds_embeddings.pickle"))
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
@@ -61,8 +59,16 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files):
     embeddings = load_pickled_file(new_embeddings_file_name)
     expected_embeddings = load_pickled_file(os.path.join(
         path_to_general_test_files,
-        "test_files_without_spectrum_id",
         "100_test_spectra_s2v_embeddings.pickle"))
     pd.testing.assert_frame_equal(embeddings, expected_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
+
+
+def test_create_sqlite_file(tmp_path, path_to_general_test_files):
+    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
+        path_to_general_test_files, '100_test_spectra.pickle'))
+    test_create_files = LibraryFilesCreator(
+        library_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'))
+    test_create_files.create_sqlite_file()
+
