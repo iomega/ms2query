@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Made compatible with matchms => 0.14 
 
+### Added
+- Added separate workflow for integration tests
+- Changed automatic publish python branch used
+
 ## [1.1.0]
 ### Removed
 - Option to return results table.
