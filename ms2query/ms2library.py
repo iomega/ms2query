@@ -1,5 +1,5 @@
 import os.path
-from typing import Dict, List, Set, Tuple, Union, Optional
+from typing import Dict, List, Set, Tuple, Union, Optional, Iterator
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
@@ -16,7 +16,7 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                normalize_and_filter_peaks)
 from ms2query.utils import (column_names_for_output, load_ms2query_model,
                             load_pickled_file, SettingsRunMS2Query, predict_onnx_model,
-                            select_files_in_directory)
+                            select_files_in_directory, return_non_existing_file_name)
 
 
 class MS2Library:
@@ -42,8 +42,7 @@ class MS2Library:
                  ms2ds_model_file_name: str,
                  pickled_s2v_embeddings_file_name: str,
                  pickled_ms2ds_embeddings_file_name: str,
-                 ms2query_model_file_name: Union[str, None],
-                 **settings):
+                 ms2query_model_file_name: Union[str, None]):
         """
         Parameters
         ----------
@@ -65,19 +64,8 @@ class MS2Library:
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
-
-        **settings:
-            As additional parameters predefined settings can be changed.
-        spectrum_id_column_name:
-            The name of the column or key in dictionaries under which the
-            spectrum id is stored. Default = "spectrumid"
-        progress_bars:
-            If True progress bars will be shown of all methods. Default = True
         """
         # pylint: disable=too-many-arguments
-
-        # Change default settings to values given in **settings
-        self.settings = self._set_settings(settings)
 
         # Load models and set file locations
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
@@ -117,30 +105,6 @@ class MS2Library:
             for spectrum_id in list_of_spectrum_ids:
                 self.inchikey14s_of_spectra[spectrum_id] = inchikey
 
-    @staticmethod
-    def _set_settings(new_settings: Dict[str, Union[str, bool]],
-                      ) -> Dict[str, Union[str, float]]:
-        """Changes default settings to new_settings
-
-        Args:
-        ------
-        new_settings:
-            Dictionary with settings that should be changed. Only the
-            keys given in default_settings can be used and the type has to be
-            the same as the type of the values in default settings.
-        """
-        # Set default settings
-        default_settings = {"spectrum_id_column_name": "spectrumid",
-                            "progress_bars": True}
-        for attribute in new_settings:
-            assert attribute in default_settings, \
-                f"Invalid argument in constructor:{attribute}"
-            assert isinstance(new_settings[attribute],
-                              type(default_settings[attribute])), \
-                f"Different type is expected for argument: {attribute}"
-            default_settings[attribute] = new_settings[attribute]
-        return default_settings
-
     def calculate_features_single_spectrum(self,
                                            query_spectrum: Spectrum,
                                            preselection_cut_off: int = 2000,
@@ -163,7 +127,6 @@ class MS2Library:
                 f"The spectrum is in {query_ionmode} ionization mode, while the library is for {self.ionization_mode} ionization mode. " \
                 f"Check the readme to download a library in the {query_ionmode} ionization mode"
 
-
         ms2deepscore_scores = self._get_all_ms2ds_scores(query_spectrum)
         # Initialize result table
         results_table = ResultsTable(preselection_cut_off=preselection_cut_off, ms2deepscores=ms2deepscore_scores,
@@ -172,80 +135,34 @@ class MS2Library:
             self._calculate_features_for_random_forest_model(results_table)
         return results_table
 
-    def analog_search_return_results_tables(self,
-                                            query_spectra: List[Spectrum],
-                                            preselection_cut_off: int = 2000,
-                                            store_ms2deepscore_scores: bool = False
-                                            ) -> List[ResultsTable]:
-        """Returns a list with a ResultTable for each query spectrum
+    def analog_search_yield_df(self,
+                               query_spectra: List[Spectrum],
+                               settings: Optional[SettingsRunMS2Query] = None,
+                               progress_bar: bool = True
+                               ) -> Iterator[pd.DataFrame]:
+        """Runs ms2query on the query_spectra
+
+        Returns a generator returning dfs containing the results
 
         Args
         ----
         query_spectra:
             List of query spectra for which the best matches should be found
-        preselection_cut_off:
-            The number of spectra with the highest ms2ds that should be
-            selected. Default = 2000
-        """
-        assert self.ms2query_model is not None, \
-            "MS2Query model should be given when creating ms2library object"
-
-        result_tables = []
-        for i, query_spectrum in tqdm(enumerate(query_spectra),
-                                      desc="collecting matches info",
-                                      disable=not self.settings["progress_bars"],
-                                      total=len(query_spectra)):
-            query_spectrum.set("spectrum_nr", i+1)
-            results_table = self.calculate_features_single_spectrum(query_spectrum, preselection_cut_off)
-            if results_table is not None:
-                results_table = get_ms2query_model_prediction_single_spectrum(results_table, self.ms2query_model)
-                # To reduce the memory footprint the ms2deepscore scores are removed.
-                if not store_ms2deepscore_scores:
-                    results_table.ms2deepscores = pd.DataFrame()
-                result_tables.append(results_table)
-            else:
-                result_tables.append(None)
-        return result_tables
-
-    def analog_search_store_in_csv(self,
-                                   query_spectra: List[Spectrum],
-                                   results_csv_file_location: str,
-                                   settings: Optional[SettingsRunMS2Query] = None
-                                   ) -> None:
-        """Stores the results of an analog in csv files.
-
-        This method is less memory intensive than analog_search_return_results_table,
-        since the results tables do not have to be kept in memory, since they are directly
-        stored in a csv file.
-
-        Args
-        ----
-        query_spectra:
-            List of query spectra for which the best matches should be found
-        results_csv_file_location:
-            file location were a csv file is created that stores the results
         settings:
             Settings for running MS2Query, see SettingsRunMS2Query for details.
+        progress_bar:
+            If true a progress bar is shown.
         """
         if settings is None:
             settings = SettingsRunMS2Query()
         # Create csv file if it does not exist already
-        assert not os.path.exists(results_csv_file_location), "Csv file location for results already exists"
         assert self.ms2query_model is not None, \
             "MS2Query model should be given when creating ms2library object"
-
-        with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
-            # Check if sqlite file has class annotations stored
-            add_class_annotations: bool = self.sqlite_library.contains_class_annotation()
-
-            csv_file.write(",".join(
-                column_names_for_output(True, add_class_annotations, settings.additional_metadata_columns,
-                                        settings.additional_ms2query_score_columns)) + "\n")
 
         for i, query_spectrum in \
                 tqdm(enumerate(query_spectra),
                      desc="Predicting matches for query spectra",
-                     disable=not self.settings["progress_bars"],
+                     disable=not progress_bar,
                      total=len(query_spectra)):
             query_spectrum.set("spectrum_nr", i+1)
             results_table = self.calculate_features_single_spectrum(query_spectrum, settings.preselection_cut_off,
@@ -259,7 +176,41 @@ class MS2Library:
                     settings.minimal_ms2query_metascore,
                     additional_metadata_columns=settings.additional_metadata_columns,
                     additional_ms2query_score_columns=settings.additional_ms2query_score_columns)
-                results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
+                yield results_df
+
+    def analog_search_store_in_csv(self,
+                                   query_spectra: List[Spectrum],
+                                   results_csv_file_location: str,
+                                   settings: Optional[SettingsRunMS2Query] = None
+                                   ) -> None:
+        """Stores the results of an analog in csv files.
+
+        The results will be stored directly when created.
+
+        Args
+        ----
+        query_spectra:
+            List of query spectra for which the best matches should be found
+        results_csv_file_location:
+            file location were a csv file is created that stores the results
+        settings:
+            Settings for running MS2Query, see SettingsRunMS2Query for details.
+        """
+        if settings is None:
+            settings = SettingsRunMS2Query()
+        results_csv_file_location = return_non_existing_file_name(results_csv_file_location)
+
+        with open(results_csv_file_location, "w", encoding="utf-8") as csv_file:
+            # Check if sqlite file has class annotations stored
+            add_class_annotations: bool = self.sqlite_library.contains_class_annotation()
+            csv_file.write(",".join(
+                column_names_for_output(True, add_class_annotations, settings.additional_metadata_columns,
+                                        settings.additional_ms2query_score_columns)) + "\n")
+
+        results_df_generator = self.analog_search_yield_df(query_spectra, settings)
+
+        for results_df in results_df_generator:
+            results_df.to_csv(results_csv_file_location, mode="a", header=False, float_format="%.4f", index=False)
 
     def _calculate_features_for_random_forest_model(self,
                                                     results_table: ResultsTable

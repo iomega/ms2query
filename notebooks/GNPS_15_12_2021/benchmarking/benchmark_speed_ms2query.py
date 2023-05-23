@@ -24,8 +24,9 @@ ms2library = MS2Library(
     pickled_s2v_embeddings_file_name=os.path.join(path_library, "library_GNPS_15_12_2021_s2v_embeddings.pickle"),
     pickled_ms2ds_embeddings_file_name=os.path.join(path_library, "library_GNPS_15_12_2021_ms2ds_embeddings.pickle"),
     ms2query_model_file_name=os.path.join(path_library, "ms2query_random_forest_model.pickle"),
-    classifier_csv_file_name=os.path.join(
-        path_root, "../data/libraries_and_models/gnps_09_04_2021/ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt"))
+    # classifier_csv_file_name=os.path.join(
+    #     path_root, "../data/libraries_and_models/gnps_09_04_2021/ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt")
+)
 
 # Run library search and analog search on your files.
 run_complete_folder(ms2library, ms2_spectra_directory)

@@ -53,8 +53,7 @@ class DataCollectorForTraining():
         all_tanimoto_scores = pd.DataFrame()
         info_of_matches_with_tanimoto = pd.DataFrame()
         for query_spectrum in tqdm(query_spectra,
-                                   desc="Get scores and tanimoto scores",
-                                   disable=not self.ms2library.settings["progress_bars"]):
+                                   desc="Get scores and tanimoto scores"):
             results_table = self.ms2library.calculate_features_single_spectrum(query_spectrum,
                                                                                self.preselection_cut_off)
 
