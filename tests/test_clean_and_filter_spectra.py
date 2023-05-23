@@ -96,7 +96,7 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path):
     spectrum2 = Spectrum(
         mz=np.array([538.003174, 539.217773], dtype="float"),
         intensities=np.array([0.28046377, 0.28900242], dtype="float"),
-        metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
+        metadata={'pepmass': (342.30, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
     cleaned_spectrum_1 = harmonize_annotation(spectrum1, True)
