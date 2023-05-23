@@ -22,17 +22,15 @@ def test_convert_files_to_matchms_spectrum_object_known_file():
     """Test if pickled file is loaded in correctly"""
     spectra = load_matchms_spectrum_objects_from_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/100_test_spectra.pickle'))
+        'tests/test_files/general_test_files/100_test_spectra.mgf'))
     assert isinstance(spectra, list), "expected list of spectra"
     assert len(spectra) == 100, "expected 100 spectra"
     for spectrum in spectra:
         assert isinstance(spectrum, Spectrum)
 
 
-def test_add_unknown_charges_to_spectra():
-    spectra = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/100_test_spectra.pickle'))
+def test_add_unknown_charges_to_spectra(hundred_test_spectra):
+    spectra = hundred_test_spectra
     # Set charges to predefined values
     for spectrum in spectra[:10]:
         spectrum.set("charge", None)

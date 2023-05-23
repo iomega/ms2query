@@ -73,12 +73,8 @@ def test_normalize_and_filter_peaks(tmp_path):
     assert isinstance(cleaned_spectra[0], Spectrum) and isinstance(cleaned_spectra[1], Spectrum), "Expected a list with two spectrum objects"
 
 
-def test_create_spectrum_documents():
-    path_to_pickled_file = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/first_10_spectra.pickle')
-    with open(path_to_pickled_file, "rb") as pickled_file:
-        spectrum_list = pickle.load(pickled_file)
+def test_create_spectrum_documents(hundred_test_spectra):
+    spectrum_list = hundred_test_spectra[:10]
     spectrum_list = normalize_and_filter_peaks_multiple_spectra(spectrum_list)
 
     spectrum_documents = create_spectrum_documents(spectrum_list)

@@ -95,31 +95,25 @@ def test_select_highest_ms2ds_in_mass_range(ms2library, local_test_spectra):
     assert result[1] is None
 
 
-def test_get_modified_cosine_score_results(local_test_spectra):
-    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/100_test_spectra.pickle'))
-    results = get_modified_cosine_score_results(library_spectra, local_test_spectra, 100)
+def test_get_modified_cosine_score_results(local_test_spectra, hundred_test_spectra):
+    results = get_modified_cosine_score_results(hundred_test_spectra, local_test_spectra, 100)
     np.testing.assert_almost_equal(results,
                                    [(0.434789196140529, 0.003861003861003861, False),
                                     (0.4955472245596076, 0.007866273352999017, False)])
     # Test if no error happens when only 1 or 0 library spectra within mass range
-    results = get_modified_cosine_score_results(library_spectra, local_test_spectra, 5.56)
+    results = get_modified_cosine_score_results(hundred_test_spectra, local_test_spectra, 5.56)
     np.testing.assert_almost_equal(results[0],
                                    (0.0, 0.0044609665427509295, False))
     assert results[1] is None
 
 
-def test_get_cosines_score_results(local_test_spectra):
-    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files/100_test_spectra.pickle'))
-    result = get_cosines_score_results(library_spectra, local_test_spectra, 100, 0.05, 3)
+def test_get_cosines_score_results(local_test_spectra, hundred_test_spectra):
+    result = get_cosines_score_results(hundred_test_spectra, local_test_spectra, 100, 0.05, 3)
     np.testing.assert_almost_equal(result,
                                    [(0.434789196140529, 0.0058997050147492625, False),
                                     (0.4955472245596076, 0.007866273352999017, False)])
     # Test if no error happens when only 1 or 0 library spectra within mass range
-    result = get_cosines_score_results(library_spectra, local_test_spectra, 5.56, 0.05, 0)
+    result = get_cosines_score_results(hundred_test_spectra, local_test_spectra, 5.56, 0.05, 0)
     np.testing.assert_almost_equal(result[0],
                                    (0.0, 0.004461, False))
     assert result[1] is None
@@ -138,13 +132,9 @@ def test_random_results(local_test_spectra):
 
 def test_generate_test_results(local_test_spectra,
                                ms2library,
-                               path_to_general_test_files,
-                               tmp_path):
-    library_spectra = load_matchms_spectrum_objects_from_file(os.path.join(
-        path_to_general_test_files,
-        '100_test_spectra.pickle'))
+                               tmp_path, hundred_test_spectra):
     generate_test_results(ms2library,
-                          library_spectra,
+                          hundred_test_spectra,
                           local_test_spectra,
                           tmp_path)
     files_made = os.listdir(tmp_path)

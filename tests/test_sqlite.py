@@ -67,7 +67,7 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
     conn2.close()
 
 
-def test_making_sqlite_file_without_classes(tmp_path):
+def test_making_sqlite_file_without_classes(tmp_path, hundred_test_spectra):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     # tmp_path is a fixture that makes sure a temporary file is created
@@ -83,9 +83,7 @@ def test_making_sqlite_file_without_classes(tmp_path):
                                          "backwards_compatibility",
                                          "100_test_spectra_without_classes.sqlite")
 
-    list_of_spectra = load_pickled_file(os.path.join(
-        path_to_general_test_files, "100_test_spectra.pickle"))
-    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(hundred_test_spectra)
 
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,
@@ -94,7 +92,7 @@ def test_making_sqlite_file_without_classes(tmp_path):
     check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
 
 
-def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test_files):
+def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test_files, hundred_test_spectra):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     def generate_compound_classes(spectra):
@@ -111,9 +109,7 @@ def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test
     reference_sqlite_file = os.path.join(path_to_general_test_files,
                                          "100_test_spectra.sqlite")
 
-    list_of_spectra = load_pickled_file(os.path.join(
-        path_to_general_test_files, "100_test_spectra.pickle"))
-    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(list_of_spectra)
+    list_of_spectra = normalize_and_filter_peaks_multiple_spectra(hundred_test_spectra)
 
     # Create sqlite file, with 3 tables
     make_sqlfile_wrapper(new_sqlite_file_name,

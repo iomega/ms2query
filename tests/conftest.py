@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pytest
 from matchms import Spectrum
+from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import (MS2Library)
 from ms2query.query_from_sqlite_database import SqliteLibrary
 
@@ -97,3 +98,9 @@ def test_spectra():
                                    })
     spectra = [spectrum1, spectrum2]
     return spectra
+
+
+@pytest.fixture(scope="package")
+def hundred_test_spectra(path_to_general_test_files):
+    return list(load_from_mgf(os.path.join(path_to_general_test_files, "100_test_spectra.mgf"),
+                metadata_harmonization=True))
