@@ -71,12 +71,12 @@ def test_get_chemical_neighbourhood_scores(ms2library):
 
 def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
     results_csv_file = os.path.join(tmp_path, "test_csv_analog_search")
-    settings = SettingsRunMS2Query(additional_metadata_columns=(("spectrumid", )))
+    settings = SettingsRunMS2Query(additional_metadata_columns=(("spectrum_id", )))
     ms2library.analog_search_store_in_csv(test_spectra, results_csv_file, settings)
     assert os.path.exists(results_csv_file)
     expected_headers = \
         ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrumid"]
+         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrum_id"]
     check_correct_results_csv_file(
         pd.read_csv(results_csv_file),
         expected_headers)
@@ -92,11 +92,11 @@ def test_create_library_object_from_one_dir():
 
 
 def test_analog_yield_df(ms2library, test_spectra, tmp_path):
-    settings = SettingsRunMS2Query(additional_metadata_columns=("spectrumid", ),)
+    settings = SettingsRunMS2Query(additional_metadata_columns=("spectrum_id", ),)
     result = ms2library.analog_search_yield_df(test_spectra, settings)
     expected_headers = \
         ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrumid"]
+         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrum_id"]
     check_correct_results_csv_file(list(result)[0], expected_headers, nr_of_rows_to_check=1)
 
 
