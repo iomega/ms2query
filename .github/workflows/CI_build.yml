@@ -73,7 +73,7 @@ jobs:
           pytest -m "not integration"
 
   integration_checks:
-    name: Basic code checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
+    name: Integration code checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
