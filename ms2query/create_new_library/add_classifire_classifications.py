@@ -1,5 +1,6 @@
 import json
 import urllib
+from http.client import InvalidURL
 from typing import List, Optional
 
 import pandas as pd
@@ -33,22 +34,13 @@ def do_url_request(url: str) -> [bytes, None]:
     try:
         with urllib.request.urlopen(url) as inf:
             result = inf.read()
-    except (urllib.error.HTTPError, urllib.error.URLError):
+    except (urllib.error.HTTPError, urllib.error.URLError, InvalidURL):
         # apparently the request failed
         result = None
     except ConnectionAbortedError:
         result = do_url_request(url)
         print("An connection error occurred, will try again")
     return result
-
-
-def get_classyfire_results(full_inchikey):
-    json_results = do_url_request(f"http://classyfire.wishartlab.com/entities/{full_inchikey}.json")
-    if json_results is None:
-        return None
-    # else:
-    classes = get_json_cf_results(json_results)
-    return classes
 
 
 def get_json_cf_results(full_inchikey: str) -> Optional[List[str]]:

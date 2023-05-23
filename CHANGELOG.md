@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.1]
+Small bug fixes
+- Allow URLLiberror when loading in compound classes
+- Update readme with zenodo files
+
+
+## [1.0.0]
+### Added
+- Added compound classes to sqlite file
+- Compound classes are now automatically added in the library file creation pipeline. 
+- Smiles are added from the specific spectrum instead of from the inchikey.
+
+### Removed
+- Compound classes cannot be added from csv file anymore. Download the newest version of the sqlite file to have compoudn classes again. 
+
+### Changed
+- Zenodo link is set to latest version instead of specific version. 
+
+### Code structure
+- Unit tests had mayor reformatting
+  - Better use of global fixtures
+  - Remove pickled results table files 
+
 ## [0.7.4]
 - Set MS2Deepscore <2.0.0
 
