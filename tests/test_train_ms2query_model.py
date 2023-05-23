@@ -41,7 +41,7 @@ def ms2library(path_to_test_dir):
 def query_spectra(path_to_test_dir):
     training_spectra_file_name = os.path.join(
         path_to_test_dir,
-        "test_files_train_ms2query_nn/20_training_spectra.pickle")
+        "test_files_train_ms2query_nn/20_training_spectra.mgf")
     return load_matchms_spectrum_objects_from_file(training_spectra_file_name)
 
 
