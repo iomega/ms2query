@@ -144,7 +144,3 @@ def test_generate_test_results(local_test_spectra,
     for file in files_made:
         result = load_json_file(os.path.join(tmp_path, file))
         assert isinstance(result, list)
-
-
-if __name__ == "__main__":
-    pass
