@@ -73,12 +73,8 @@ def test_normalize_and_filter_peaks(tmp_path):
     assert isinstance(cleaned_spectra[0], Spectrum) and isinstance(cleaned_spectra[1], Spectrum), "Expected a list with two spectrum objects"
 
 
-def test_create_spectrum_documents():
-    path_to_pickled_file = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/first_10_spectra.pickle')
-    with open(path_to_pickled_file, "rb") as pickled_file:
-        spectrum_list = pickle.load(pickled_file)
+def test_create_spectrum_documents(hundred_test_spectra):
+    spectrum_list = hundred_test_spectra[:10]
     spectrum_list = normalize_and_filter_peaks_multiple_spectra(spectrum_list)
 
     spectrum_documents = create_spectrum_documents(spectrum_list)
@@ -100,7 +96,7 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path):
     spectrum2 = Spectrum(
         mz=np.array([538.003174, 539.217773], dtype="float"),
         intensities=np.array([0.28046377, 0.28900242], dtype="float"),
-        metadata={'pepmass': (928.0, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
+        metadata={'pepmass': (342.30, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     library_spectra = [spectrum1, spectrum2]
     cleaned_spectrum_1 = harmonize_annotation(spectrum1, True)

@@ -102,20 +102,3 @@ def clean_and_train_models(spectrum_file: str,
                      unnnotated_spectra,
                      output_folder,
                      model_train_settings)
-
-
-if __name__ == "__main__":
-    data_folder = os.path.join(os.getcwd(), "../../data/")
-    spectra = load_matchms_spectrum_objects_from_file(
-        os.path.join(data_folder,
-                     "libraries_and_models/gnps_15_12_2021/in_between_files/ALL_GNPS_15_12_2021_raw_spectra.pickle"))
-    spectra = spectra[:2000]
-
-    train_all_models(spectra,
-                     "positive",
-                     "../../data/test_dir/test_train_all_models",
-                     {"ms2ds_fraction_validation_spectra": 5,
-                      "ms2ds_epochs": 10,
-                      "spec2vec_iterations": 5,
-                      "ms2query_fraction_for_making_pairs": 40}
-                     )

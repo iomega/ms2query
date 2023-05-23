@@ -29,18 +29,18 @@ setup(
     test_suite="tests",
     python_requires='>=3.7',
     install_requires=[
-        "matchms>=0.11.0,<=0.13.0",
+        "matchms>=0.14.0,<=0.17.0", # Matchms 0.19 breaks some cosine score calculations. Not sure why.
         "numpy",
-        "spec2vec>=0.6.0, <=0.7.0",
+        "spec2vec>=0.6.0",
         "h5py",
         "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
         "tensorflow-metal==0.5.0;platform_machine=='arm64'",
         "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
         "scikit-learn",
-        "ms2deepscore<0.3.1",
+        "ms2deepscore",
         "gensim>=4.0.0",
         "pandas>=1.2.5,<2.0.0",
-        "matchmsextras>=0.3.0,<0.4.0",
+        "matchmsextras>=0.4.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
         "matplotlib",

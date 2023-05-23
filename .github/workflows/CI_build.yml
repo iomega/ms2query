@@ -28,7 +28,7 @@ jobs:
         run: |
           pip list
       - name: Run test with coverage
-        run: pytest --cov --cov-report term --cov-report xml
+        run: pytest --cov --cov-report term --cov-report xml -m "not integration"
       - name: Check style against standards using prospector
         run: prospector -o grouped -o pylint:pylint-report.txt
 #      - name: Check whether import statements are used consistently
@@ -70,4 +70,33 @@ jobs:
           pip list
       - name: Run tests
         run: |
-          pytest
+          pytest -m "not integration"
+
+  integration_checks:
+    name: Integration code checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Python info
+        run: |
+          which python
+          python --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+      - name: Show pip list
+        run: |
+          pip list
+      - name: Run tests
+        run: |
+          pytest -m "integration"
