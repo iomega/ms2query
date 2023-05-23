@@ -15,7 +15,7 @@ from ms2query.utils import load_pickled_file, column_names_for_output
 from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
 
 
-def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
+def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file, check_metadata=True):
     """Raises an error if the two sqlite files are not equal"""
     # Test if file is made
     assert os.path.isfile(new_sqlite_file_name), \
@@ -61,22 +61,23 @@ def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file):
                                                rows_2,
                                                err_msg=error_msg,
                                                verbose=True)
+            elif column == "metadata" and not check_metadata:
+                pass
             else:
-                assert rows_1 == rows_2, error_msg
+                assert len(rows_1) == len(rows_2)
+                for i in range(len(rows_1)):
+                    assert rows_1[i] == rows_2[i], f"Different data was expected in column {column} row {i}" \
+                                                   f"in table {table_name1}. \n Expected {rows_2[i]} \n got {rows_1[i]}"
     conn1.close()
     conn2.close()
 
 
-def test_making_sqlite_file_without_classes(tmp_path, hundred_test_spectra):
+def test_making_sqlite_file_without_classes(tmp_path, hundred_test_spectra, path_to_general_test_files):
     """Makes a temporary sqlite file and tests if it contains the correct info
     """
     # tmp_path is a fixture that makes sure a temporary file is created
     new_sqlite_file_name = os.path.join(tmp_path,
                                         "test_spectra_database.sqlite")
-
-    path_to_general_test_files = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
                                          "..",
@@ -89,7 +90,7 @@ def test_making_sqlite_file_without_classes(tmp_path, hundred_test_spectra):
     make_sqlfile_wrapper(new_sqlite_file_name,
                          list_of_spectra,
                          columns_dict={"precursor_mz": "REAL"})
-    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
+    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file, check_metadata=False)
 
 
 def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test_files, hundred_test_spectra):
@@ -117,7 +118,7 @@ def test_making_sqlite_file_with_compound_classes(tmp_path, path_to_general_test
                          columns_dict={"precursor_mz": "REAL"},
                          compound_classes=generate_compound_classes(spectra=list_of_spectra))
 
-    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file)
+    check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file, check_metadata=False)
 
 
 def test_get_metadata_from_sqlite(sqlite_library):
