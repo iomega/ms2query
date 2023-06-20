@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.1
+### fixed
+- Fix bug in downloading models from command line
+
 ## 1.2.0
 ### Changed
 - Made compatible with matchms => 0.14 
+
+### Added
+- Added separate workflow for integration tests
+- Changed automatic publish python branch used
 
 ## [1.1.0]
 ### Removed
