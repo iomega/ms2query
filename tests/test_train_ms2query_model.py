@@ -80,7 +80,7 @@ def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
 
 
-def test_train_random_forest():
+def test_train_and_save_random_forest():
     training_scores, training_labels = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_train_ms2query_nn",
@@ -88,7 +88,11 @@ def test_train_random_forest():
     ms2query_model = train_random_forest(training_scores, training_labels)
     onnx_model = convert_to_onnx_model(ms2query_model)
     onnx_model_session = InferenceSession(onnx_model.SerializeToString())
-    predictions = predict_onnx_model(onnx_model_session, training_scores.values)
+    predictions_onnx_model = predict_onnx_model(onnx_model_session, training_scores.values)
+
+    # check if saving onnx model works
+    predictions_sklearn_model = ms2query_model.predict(training_scores.values.astype(np.float32))
+    assert np.allclose(predictions_onnx_model, predictions_sklearn_model)
 
 
 @pytest.mark.integration
@@ -103,21 +107,3 @@ def test_train_ms2query_model(path_to_general_test_files, tmp_path, hundred_test
                                          "100_test_spectra_s2v_model.model"),
         fraction_for_training=10
     )
-
-
-def test_save_as_onnx_model(tmp_path):
-    path_to_test_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/')
-    rf_model_file = os.path.join(path_to_test_dir, 'general_test_files', "test_ms2q_rf_model.pickle")
-    rf_model = load_pickled_file(rf_model_file)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_train_ms2query_nn",
-        "expected_train_and_val_data.pickle"))[0]
-    new_model = os.path.join(tmp_path, "rf_model.onnx")
-    convert_to_onnx_model(rf_model, new_model)
-    ms2query_model = load_ms2query_model(new_model)
-    result = predict_onnx_model(ms2query_model, expected_result.values)
-    original_result = rf_model.predict(expected_result.values.astype(np.float32))
-    assert np.allclose(result, original_result)
