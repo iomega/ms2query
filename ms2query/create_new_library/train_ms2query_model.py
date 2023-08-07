@@ -6,6 +6,8 @@ new models
 import os
 from typing import List
 import pandas as pd
+from onnxconverter_common import FloatTensorType
+from skl2onnx import convert_sklearn
 from tqdm import tqdm
 from matchms import Spectrum
 from sklearn.ensemble import RandomForestRegressor
@@ -15,7 +17,7 @@ from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
 from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
-from ms2query.utils import save_pickled_file
+from ms2query.utils import save_pickled_file, return_non_existing_file_name
 
 
 class DataCollectorForTraining():
@@ -142,3 +144,17 @@ def train_ms2query_model(training_spectra,
     # Train MS2Query model
     ms2query_model = train_random_forest(training_scores, training_labels)
     return ms2query_model
+
+
+def convert_to_onnx_model(random_forest_model, file_name = None):
+    """The randomforest model is stored as an onnx model for backwards compatability"""
+    FloatTensorType([None, 5])
+    onnx = convert_sklearn(random_forest_model, initial_types=[("input",
+                                                        FloatTensorType([None, random_forest_model.n_features_in_]))],
+                   target_opset=12)
+    if file_name is not None:
+        file_name = return_non_existing_file_name(file_name)
+
+        with open(file_name, "wb") as file:
+            file.write(onnx.SerializeToString())
+    return onnx

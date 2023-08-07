@@ -2,14 +2,11 @@ import os
 from io import StringIO
 from typing import List
 
-import numpy as np
 import pandas as pd
 import pytest
 from matchms import Spectrum
 from ms2query.utils import (add_unknown_charges_to_spectra,
-                            load_matchms_spectrum_objects_from_file,
-                            load_pickled_file,
-                            convert_to_onnx_model, load_ms2query_model, predict_onnx_model)
+                            load_matchms_spectrum_objects_from_file)
 
 
 def test_convert_files_to_matchms_spectrum_objects_unknown_file(tmp_path):
@@ -49,24 +46,6 @@ def test_add_unknown_charges_to_spectra(hundred_test_spectra):
         assert spectrum.get("charge") == -1, "The charge is expected to be -1"
     for spectrum in spectra_with_charge[30:]:
         assert spectrum.get("charge") == 2, "The charge is expected to be 2"
-
-
-def test_save_as_onnx_model(tmp_path):
-    path_to_test_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/')
-    rf_model_file = os.path.join(path_to_test_dir, 'general_test_files', "test_ms2q_rf_model.pickle")
-    rf_model = load_pickled_file(rf_model_file)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_train_ms2query_nn",
-        "expected_train_and_val_data.pickle"))[0]
-    new_model = os.path.join(tmp_path, "rf_model.onnx")
-    convert_to_onnx_model(rf_model, new_model)
-    ms2query_model = load_ms2query_model(new_model)
-    result = predict_onnx_model(ms2query_model, expected_result.values)
-    original_result = rf_model.predict(expected_result.values.astype(np.float32))
-    assert np.allclose(result, original_result)
 
 
 def check_correct_results_csv_file(dataframe_found: pd.DataFrame,

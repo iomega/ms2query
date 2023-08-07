@@ -1,10 +1,14 @@
 import os
+
+import numpy as np
 import pytest
 import sys
 import pandas as pd
 from ms2query.create_new_library.train_ms2query_model import \
-    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest, train_ms2query_model
-from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, convert_to_onnx_model
+    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest, train_ms2query_model, \
+    convert_to_onnx_model
+from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, load_ms2query_model, \
+    predict_onnx_model
 from onnxruntime import InferenceSession
 from ms2query.utils import predict_onnx_model
 from ms2query.ms2library import MS2Library
@@ -99,3 +103,21 @@ def test_train_ms2query_model(path_to_general_test_files, tmp_path, hundred_test
                                          "100_test_spectra_s2v_model.model"),
         fraction_for_training=10
     )
+
+
+def test_save_as_onnx_model(tmp_path):
+    path_to_test_dir = os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        'tests/test_files/')
+    rf_model_file = os.path.join(path_to_test_dir, 'general_test_files', "test_ms2q_rf_model.pickle")
+    rf_model = load_pickled_file(rf_model_file)
+    expected_result = load_pickled_file(os.path.join(
+        os.path.split(os.path.dirname(__file__))[0],
+        "tests/test_files/test_files_train_ms2query_nn",
+        "expected_train_and_val_data.pickle"))[0]
+    new_model = os.path.join(tmp_path, "rf_model.onnx")
+    convert_to_onnx_model(rf_model, new_model)
+    ms2query_model = load_ms2query_model(new_model)
+    result = predict_onnx_model(ms2query_model, expected_result.values)
+    original_result = rf_model.predict(expected_result.values.astype(np.float32))
+    assert np.allclose(result, original_result)
