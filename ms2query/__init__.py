@@ -51,10 +51,10 @@ def command_line():
                         help="Filter out all spectra that are not in the specified ion-mode. "
                              "The ion mode can be specified by using --ionmode")
     parser.add_argument("--additional_metadata", action="store",
-                        default=("rtinseconds", "feature_id",),
+                        default=("retention_time", "feature_id",),
                         nargs="+",
                         type=str,
-                        help="Return additional metadata columns in the results, for example --additional_metadata rtinseconds feature_id")
+                        help="Return additional metadata columns in the results, for example --additional_metadata retention_time feature_id")
     args = parser.parse_args()
     ms2query_library_files_directory = args.library
     ms2_spectra_location = args.spectra
