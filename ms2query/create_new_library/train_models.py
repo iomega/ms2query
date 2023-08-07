@@ -6,9 +6,9 @@ new models
 import os
 from spec2vec.model_building import train_new_word2vec_model
 from ms2query.create_new_library.train_ms2deepscore import train_ms2deepscore_wrapper
-from ms2query.create_new_library.train_ms2query_model import train_ms2query_model
+from ms2query.create_new_library.train_ms2query_model import train_ms2query_model, convert_to_onnx_model
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
-from ms2query.utils import load_matchms_spectrum_objects_from_file, convert_to_onnx_model
+from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2query.clean_and_filter_spectra import create_spectrum_documents, clean_normalize_and_split_annotated_spectra
 
 

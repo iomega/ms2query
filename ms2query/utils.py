@@ -5,8 +5,6 @@ from typing import List, Union, Tuple, Optional
 import numpy as np
 from matchms import importing
 from spec2vec.Spec2Vec import Spectrum
-from skl2onnx import convert_sklearn
-from skl2onnx.common.data_types import FloatTensorType
 from onnxruntime import InferenceSession
 
 
@@ -214,20 +212,6 @@ class SettingsRunMS2Query:
         self.additional_ms2query_score_columns = additional_ms2query_score_columns
         self.preselection_cut_off = preselection_cut_off
         self.filter_on_ion_mode = filter_on_ion_mode
-
-
-def convert_to_onnx_model(random_forest_model, file_name = None):
-    """The randomforest model is stored as an onnx model for backwards compatability"""
-    FloatTensorType([None, 5])
-    onnx = convert_sklearn(random_forest_model, initial_types=[("input",
-                                                        FloatTensorType([None, random_forest_model.n_features_in_]))],
-                   target_opset=12)
-    if file_name is not None:
-        file_name = return_non_existing_file_name(file_name)
-
-        with open(file_name, "wb") as file:
-            file.write(onnx.SerializeToString())
-    return onnx
 
 
 def predict_onnx_model(random_forest_onnx_model: InferenceSession, input_values):

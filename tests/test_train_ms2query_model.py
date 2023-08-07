@@ -1,10 +1,14 @@
 import os
+
+import numpy as np
 import pytest
 import sys
 import pandas as pd
 from ms2query.create_new_library.train_ms2query_model import \
-    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest, train_ms2query_model
-from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, convert_to_onnx_model
+    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest, train_ms2query_model, \
+    convert_to_onnx_model
+from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, load_ms2query_model, \
+    predict_onnx_model
 from onnxruntime import InferenceSession
 from ms2query.utils import predict_onnx_model
 from ms2query.ms2library import MS2Library
@@ -76,7 +80,7 @@ def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
 
 
-def test_train_random_forest():
+def test_train_and_save_random_forest():
     training_scores, training_labels = load_pickled_file(os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
         "tests/test_files/test_files_train_ms2query_nn",
@@ -84,7 +88,11 @@ def test_train_random_forest():
     ms2query_model = train_random_forest(training_scores, training_labels)
     onnx_model = convert_to_onnx_model(ms2query_model)
     onnx_model_session = InferenceSession(onnx_model.SerializeToString())
-    predictions = predict_onnx_model(onnx_model_session, training_scores.values)
+    predictions_onnx_model = predict_onnx_model(onnx_model_session, training_scores.values)
+
+    # check if saving onnx model works
+    predictions_sklearn_model = ms2query_model.predict(training_scores.values.astype(np.float32))
+    assert np.allclose(predictions_onnx_model, predictions_sklearn_model)
 
 
 @pytest.mark.integration

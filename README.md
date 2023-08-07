@@ -114,7 +114,7 @@ optional arguments:
   --download            This will download the most up to date model and library.The model will be stored in the folder given as the second argumentThe model will be downloaded in the in the ionization mode specified under --mode
   --results RESULTS     The folder in which the results should be stored. The default is a new results folder in the folder with the spectra
   --filter_ionmode      Filter out all spectra that are not in the specified ion-mode. The ion mode can be specified by using --ionmode
-  --addional_metadata   Return additional metadata columns in the results, for example --additional_metadata rtinseconds feature_id
+  --addional_metadata   Return additional metadata columns in the results, for example --additional_metadata retention_time feature_id
 ```
 
 ## Build MS2Query into other tools
