@@ -15,7 +15,11 @@ from tqdm import tqdm
 
 
 def get_fingerprint(smiles: str):
-    fingerprint = np.array(Chem.RDKFingerprint(Chem.MolFromSmiles(smiles), fpSize=2048))
+    try:
+        fingerprint = np.array(Chem.RDKFingerprint(Chem.MolFromSmiles(smiles), fpSize=2048))
+    except:
+        # TODO: this is to avoid workflows breaking because of an incorrect smiles. Should be handled better.
+        fingerprint = np.zeros(2048)
     assert isinstance(fingerprint, np.ndarray), \
         f"Fingerprint for 1 spectrum could not be set smiles is {smiles}"
     return fingerprint
