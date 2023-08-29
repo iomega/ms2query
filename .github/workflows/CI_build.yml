@@ -121,7 +121,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install environment.yml
+          conda env create -f environment.yml -n ms2query
+          conda activate ms2query
       - name: Show pip list
         run: |
           pip list
