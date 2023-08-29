@@ -100,3 +100,31 @@ jobs:
       - name: Run tests
         run: |
           pytest -m "integration"
+  yml_checks:
+    name: envionment.yml checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Python info
+        run: |
+          which python
+          python --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install environment.yml
+      - name: Show pip list
+        run: |
+          pip list
+      - name: Run tests
+        run: |
+          pytest -m "not integration"
