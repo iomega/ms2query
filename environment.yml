@@ -1,4 +1,4 @@
-name: test_ms2query_conda_install
+name: ms2query
 channels:
   - conda-forge
   - bioconda
