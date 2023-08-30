@@ -110,9 +110,10 @@ jobs:
         with:
           activate-environment: anaconda-client-env
           environment-file: ./environment.yml
-          channels: conda-forge,bioconda
           python-version: 3.8
-          auto-activate-base: false
+          auto-activate-base: False
+      - name: Activate Conda environment
+        run: conda activate anaconda-client-env
       - name: Show conda list
         run: |
           conda info
