@@ -111,6 +111,9 @@ jobs:
           activate-environment: ms2query
           environment-file: ./environment.yml
           python-version: 3.8
+      - name: activate conda environment
+        run: |
+          conda activate ms2query
       - name: Show conda list
         run: |
           conda info
