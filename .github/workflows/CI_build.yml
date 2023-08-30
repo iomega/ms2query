@@ -113,6 +113,7 @@ jobs:
           python-version: 3.8
       - name: activate conda environment
         run: |
+          shell: bash -l {0}
           conda activate ms2query
       - name: Show conda list
         run: |
