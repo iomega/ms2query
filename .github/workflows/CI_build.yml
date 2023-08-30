@@ -116,7 +116,8 @@ jobs:
           python-version: 3.8
       - name: activate conda environment
         run: |
-          conda init bash
+          echo "source $CONDA_PREFIX/etc/profile.d/conda.sh" >> ~/.bashrc
+          source ~/.bashrc
           conda activate ms2query
       - name: Show conda list
         run: |
