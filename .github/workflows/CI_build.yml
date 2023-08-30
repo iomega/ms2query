@@ -103,9 +103,6 @@ jobs:
   yml_checks:
     name: envionment.yml checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: 'ubuntu-latest'
-    defaults:
-      run:
-        shell: bash
     steps:
       - uses: actions/checkout@v2
       - name: Set up Miniconda
@@ -115,11 +112,11 @@ jobs:
           environment-file: ./environment.yml
           python-version: 3.8
       - name: activate conda environment
+        shell: bash -l {0}
         run: |
-          echo "source $CONDA_PREFIX/etc/profile.d/conda.sh" >> ~/.bashrc
-          source ~/.bashrc
           conda activate ms2query
       - name: Show conda list
+        shell: bash -l {0}
         run: |
           conda info
           conda list
