@@ -105,6 +105,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v2
+      - defaults
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -121,5 +122,7 @@ jobs:
           conda info
           conda list
       - name: Run tests
+        shell: bash -l {0}
         run: |
+          conda activate ms2query
           pytest -m "not integration"
