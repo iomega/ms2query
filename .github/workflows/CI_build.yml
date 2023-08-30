@@ -102,6 +102,9 @@ jobs:
           pytest -m "integration"
   yml_checks:
     name: envionment.yml checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v2
@@ -112,16 +115,12 @@ jobs:
           environment-file: ./environment.yml
           python-version: 3.8
       - name: activate conda environment
-        shell: bash -l {0}
         run: |
           conda activate ms2query
       - name: Show conda list
-        shell: bash -l {0}
         run: |
           conda info
           conda list
       - name: Run tests
-        shell: bash -l {0}
         run: |
-          conda activate ms2query
           pytest -m "not integration"
