@@ -105,7 +105,6 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v2
-      - defaults
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
