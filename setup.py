@@ -37,7 +37,7 @@ setup(
         "tensorflow-metal==0.5.0;platform_machine=='arm64'",
         "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
         "scikit-learn",
-        "ms2deepscore",
+        "ms2deepscore<=0.4.0",
         "gensim>=4.0.0",
         "pandas>=1.2.5,<2.0.0",
         "matchmsextras==0.4.0",

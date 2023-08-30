@@ -100,3 +100,27 @@ jobs:
       - name: Run tests
         run: |
           pytest -m "integration"
+  yml_checks:
+    name: envionment.yml checks / python-${{ matrix.python-version }} / ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: ms2query
+          environment-file: ./environment.yml
+          python-version: 3.8
+      - name: activate conda environment
+        run: |
+          conda activate ms2query
+      - name: Show conda list
+        run: |
+          conda info
+          conda list
+      - name: Run tests
+        run: |
+          pytest -m "not integration"
