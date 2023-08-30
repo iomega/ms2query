@@ -1,4 +1,4 @@
-name: ms2query_conda
+name: ms2query
 channels:
   - conda-forge
   - bioconda

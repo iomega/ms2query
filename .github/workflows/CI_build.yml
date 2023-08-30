@@ -108,12 +108,9 @@ jobs:
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: anaconda-client-env
+          activate-environment: ms2query
           environment-file: ./environment.yml
           python-version: 3.8
-          auto-activate-base: False
-      - name: Activate Conda environment
-        run: conda activate anaconda-client-env
       - name: Show conda list
         run: |
           conda info
