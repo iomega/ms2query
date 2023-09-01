@@ -225,6 +225,7 @@ dependencies:
   - xorg-xproto=7.0.31=h7f98852_1007
   - xz=5.2.6=h166bdaf_0
   - yarl=1.9.2=py38h01eb140_0
+  - zip
   - zipp=3.16.2=pyhd8ed1ab_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
