@@ -36,7 +36,7 @@ def command_line():
                              'If a directory is specified all spectrum files in the directory will be processed. '
                              'Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a pickled matchms object')
     parser.add_argument('--library', action="store", required=True, metavar="LIBRARY_FOLDER",
-                        help="The directory containing the library spectra, to download add --download")
+                        help="The directory containing the library spectra (in sqlite), models and precalculated embeddings, to download add --download")
     parser.add_argument("--ionmode", action="store", choices=["positive", "negative"],
                         help="Specify the ionization mode used")
     parser.add_argument("--download",
