@@ -108,7 +108,7 @@ optional arguments:
   --spectra SPECTRA     The MS2 query spectra that should be processed. If a directory is specified all spectrum files in the directory will be processed. Accepted formats are: "mzML", "json", "mgf", "msp", "mzxml", "usi" or a
                         pickled matchms object
   --library LIBRARY_FOLDER
-                        The directory containing the library spectra, to download add --download
+                        The directory containing the library spectra (in sqlite), models and precalculated embeddings, to download add --download
   --ionmode {positive,negative}
                         Specify the ionization mode used
   --download            This will download the most up to date model and library.The model will be stored in the folder given as the second argumentThe model will be downloaded in the in the ionization mode specified under --mode
