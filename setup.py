@@ -45,7 +45,7 @@ setup(
         "tqdm",
         "matplotlib",
         "skl2onnx",
-        "onnxruntime",
+        "onnxruntime<1.16", # 1.16 breaks the code due to the issue https://github.com/iomega/ms2query/issues/208
     ],
     extras_require={':python_version < "3.8"': ["pickle5",],
                     "dev": ["bump2version",
