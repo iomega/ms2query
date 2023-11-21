@@ -170,34 +170,37 @@ Fill in the blank spots with the file locations.
 The models for spec2vec, ms2deepscore and ms2query can be downloaded from the zenodo links (see above).
 
 ```python
+import os
 from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
 from ms2query.clean_and_filter_spectra import clean_normalize_and_split_annotated_spectra
 from ms2query.utils import load_matchms_spectrum_objects_from_file, select_files_in_directory
 from ms2query.run_ms2query import download_zenodo_files
 from ms2query.ms2library import select_files_for_ms2query
 
-
-spectrum_file_location =  # The file location of your library spectra
-ionisation_mode = #The ionisation mode, choose between "positive" or "negative"
-directory_for_library_and_models = # Fill in the direcory in which the models will be downloaded and the library will be stored.
+# The file location of your library spectra
+spectrum_file_location = "../tests/test_files/general_test_files/100_test_spectra.mgf"
+#The ionisation mode, choose between "positive" or "negative"
+ionisation_mode = "positive"
+# Specify the direcory in which the models will be downloaded and the library will be stored.
+directory_for_library_and_models = "./ms2query_library"
 
 # Downloads the models:
 download_zenodo_files(ionisation_mode, directory_for_library_and_models, only_models=True)
 library_spectra = load_matchms_spectrum_objects_from_file(spectrum_file_location)
 
 files_in_directory = select_files_in_directory(directory_for_library_and_models)
-dict_with_file_names = select_files_for_ms2query(files_in_directory, ["s2v_model", "ms2ds_model", "ms2query_model"])
-ms2ds_model_file_name = dict_with_file_names["ms2ds_model"]
-s2v_model_file_name = dict_with_file_names["s2v_model"]
-ms2query_model = dict_with_file_names["ms2query_model"]
+dict_with_file_names = select_files_for_ms2query(files_in_directory, ["s2v_model", "ms2ds_model"])
+ms2ds_model_file_name = os.path.join(directory_for_library_and_models, dict_with_file_names["ms2ds_model"])
+s2v_model_file_name = os.path.join(directory_for_library_and_models, dict_with_file_names["s2v_model"])
 
 # Fill in the missing values:
-cleaned_library_spectra = clean_normalize_and_split_annotated_spectra(library_spectra, ion_mode_to_keep="")[0]
+cleaned_library_spectra = clean_normalize_and_split_annotated_spectra(library_spectra,
+                                                                      ion_mode_to_keep=ionisation_mode)[0]
 
 library_creator = LibraryFilesCreator(cleaned_library_spectra,
-                                      output_directory=directory_for_library_and_models, 
-                                      ms2ds_model_file_name=ms2ds_model_file_name, 
-                                      s2v_model_file_name=s2v_model_file_name, ) 
+                                      output_directory=directory_for_library_and_models,
+                                      ms2ds_model_file_name=ms2ds_model_file_name,
+                                      s2v_model_file_name=s2v_model_file_name, )
 library_creator.create_all_library_files()
 ```
 
