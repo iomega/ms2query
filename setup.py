@@ -29,7 +29,7 @@ setup(
     test_suite="tests",
     python_requires='>=3.7',
     install_requires=[
-        "matchms>=0.23.1,<=0.24.0", # Matchms 0.19 breaks some cosine score calculations. Not sure why.
+        "matchms>=0.24.0,<0.25.0", # Matchms 0.19 breaks some cosine score calculations. Not sure why.
         "numpy",
         "spec2vec>=0.6.0",
         "h5py",
@@ -40,7 +40,6 @@ setup(
         "ms2deepscore<=0.4.0",
         "gensim>=4.0.0",
         "pandas>=2.0.3,<3.00",
-        "matchmsextras==0.4.0",
         "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
         "matplotlib",
