@@ -87,7 +87,7 @@ def harmonize_annotation(spectrum: Spectrum,
 
 def remove_wrong_ion_modes(spectra, ion_mode_to_keep):
     if ion_mode_to_keep not in {"positive", "negative"}:
-        raise ValueError("Ion_mode should be 'positive' or 'negative' %s was given", ion_mode_to_keep)
+        raise ValueError(f"Ion_mode should be 'positive' or 'negative' {ion_mode_to_keep} was given")
     spectra_to_keep = []
     for spectrum in tqdm(spectra,
                          desc=f"Selecting {ion_mode_to_keep} mode spectra"):
