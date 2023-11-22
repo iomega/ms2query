@@ -59,6 +59,7 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test
 
 def test_create_sqlite_file(tmp_path, path_to_general_test_files, hundred_test_spectra):
     test_create_files = LibraryFilesCreator(
-        hundred_test_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'))
+        hundred_test_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'),
+        add_compound_classes=False)
     test_create_files.create_sqlite_file()
 
