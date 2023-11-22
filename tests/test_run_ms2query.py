@@ -1,13 +1,15 @@
 import os
 import sys
-
 import pandas as pd
-
-from ms2query.ms2library import create_library_object_from_one_dir, select_files_for_ms2query
-from ms2query.run_ms2query import download_zenodo_files, run_complete_folder, zenodo_dois, available_zenodo_files
+from ms2query.ms2library import (create_library_object_from_one_dir,
+                                 select_files_for_ms2query)
+from ms2query.run_ms2query import (available_zenodo_files,
+                                   download_zenodo_files, run_complete_folder,
+                                   zenodo_dois)
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import MS2Library
 from tests.test_utils import check_correct_results_csv_file
+
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle

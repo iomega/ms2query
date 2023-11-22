@@ -1,11 +1,11 @@
+import json
 import os
 import sys
-import json
-from typing import List, Union, Tuple, Optional
+from typing import List, Optional, Tuple, Union
 import numpy as np
 from matchms import importing
-from spec2vec.Spec2Vec import Spectrum
 from onnxruntime import InferenceSession
+from spec2vec.Spec2Vec import Spectrum
 
 
 if sys.version_info < (3, 8):

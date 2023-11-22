@@ -9,10 +9,13 @@ import os
 import sqlite3
 import numpy as np
 import pandas as pd
-from ms2query.create_new_library.create_sqlite_database import make_sqlfile_wrapper
-from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra
-from ms2query.utils import load_pickled_file, column_names_for_output
-from ms2query.create_new_library.add_classifire_classifications import convert_to_dataframe
+from ms2query.clean_and_filter_spectra import \
+    normalize_and_filter_peaks_multiple_spectra
+from ms2query.create_new_library.add_classifire_classifications import \
+    convert_to_dataframe
+from ms2query.create_new_library.create_sqlite_database import \
+    make_sqlfile_wrapper
+from ms2query.utils import column_names_for_output, load_pickled_file
 
 
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file, check_metadata=True):

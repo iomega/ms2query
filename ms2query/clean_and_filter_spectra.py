@@ -1,12 +1,13 @@
 from typing import List, Tuple
 import matchms.filtering as msfilters
-from tqdm import tqdm
 from matchms import Spectrum
-from matchms.metadata_utils import is_valid_inchi, is_valid_inchikey, is_valid_smiles
-from matchms.typing import SpectrumType
 from matchms.logging_functions import set_matchms_logger_level
+from matchms.metadata_utils import (is_valid_inchi, is_valid_inchikey,
+                                    is_valid_smiles)
+from matchms.typing import SpectrumType
 from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from spec2vec import SpectrumDocument
+from tqdm import tqdm
 
 
 def clean_metadata(spectrum: Spectrum) -> Spectrum:

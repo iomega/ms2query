@@ -4,11 +4,10 @@ test results for benchmarking MS2Query against other tools.
 """
 import os
 import random
-from typing import List, Tuple, Dict
-from tqdm import tqdm
+from typing import Dict, List, Tuple
 import numpy as np
 from matplotlib import pyplot as plt
-
+from tqdm import tqdm
 from ms2query.utils import load_json_file, load_pickled_file, save_pickled_file
 
 

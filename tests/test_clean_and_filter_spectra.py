@@ -3,13 +3,12 @@ import sys
 import numpy as np
 from matchms import Spectrum
 from spec2vec import SpectrumDocument
-from ms2query.clean_and_filter_spectra import (create_spectrum_documents,
-                                               normalize_and_filter_peaks_multiple_spectra,
-                                               normalize_and_filter_peaks,
-                                               remove_wrong_ion_modes,
-                                               harmonize_annotation,
-                                               split_annotated_spectra,
-                                               clean_normalize_and_split_annotated_spectra)
+from ms2query.clean_and_filter_spectra import (
+    clean_normalize_and_split_annotated_spectra, create_spectrum_documents,
+    harmonize_annotation, normalize_and_filter_peaks,
+    normalize_and_filter_peaks_multiple_spectra, remove_wrong_ion_modes,
+    split_annotated_spectra)
+
 
 if sys.version_info < (3, 8):
     import pickle5 as pickle

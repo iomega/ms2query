@@ -3,9 +3,9 @@ This script is not needed for normally running MS2Query, it is only needed to ge
 new models
 """
 
-from typing import List, Dict
-from matchms import Spectrum
 import random
+from typing import Dict, List
+from matchms import Spectrum
 
 
 def select_unique_inchikeys(spectra: List[Spectrum]) -> List[str]:

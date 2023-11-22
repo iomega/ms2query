@@ -6,18 +6,21 @@ new models
 import os
 from typing import List
 import pandas as pd
+from matchms import Spectrum
 from onnxconverter_common import FloatTensorType
 from skl2onnx import convert_sklearn
-from tqdm import tqdm
-from matchms import Spectrum
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
+from tqdm import tqdm
 from ms2query import MS2Library
+from ms2query.create_new_library.calculate_tanimoto_scores import \
+    calculate_tanimoto_scores_from_smiles
+from ms2query.create_new_library.library_files_creator import \
+    LibraryFilesCreator
+from ms2query.create_new_library.split_data_for_training import (
+    split_spectra_on_inchikeys, split_training_and_validation_spectra)
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
-from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, split_training_and_validation_spectra
-from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_from_smiles
-from ms2query.utils import save_pickled_file, return_non_existing_file_name
+from ms2query.utils import return_non_existing_file_name, save_pickled_file
 
 
 class DataCollectorForTraining():

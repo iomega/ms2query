@@ -1,18 +1,15 @@
 import os
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
 from matchms import Spectrum
-from ms2query.benchmarking.collect_test_data_results import (generate_test_results_ms2query,
-                                                             get_all_ms2ds_scores,
-                                                             select_highest_ms2ds_in_mass_range,
-                                                             get_modified_cosine_score_results,
-                                                             get_cosines_score_results,
-                                                             create_optimal_results,
-                                                             create_random_results,
-                                                             generate_test_results)
-
-from ms2query.utils import load_matchms_spectrum_objects_from_file, load_json_file
+from ms2query.benchmarking.collect_test_data_results import (
+    create_optimal_results, create_random_results, generate_test_results,
+    generate_test_results_ms2query, get_all_ms2ds_scores,
+    get_cosines_score_results, get_modified_cosine_score_results,
+    select_highest_ms2ds_in_mass_range)
+from ms2query.utils import (load_json_file,
+                            load_matchms_spectrum_objects_from_file)
 
 
 @pytest.fixture

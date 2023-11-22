@@ -1,10 +1,11 @@
 import os
 from typing import Dict, List, Tuple
+from create_accuracy_vs_recall_plot import (
+    calculate_means_and_standard_deviation, load_results_from_folder)
 from matchms import Spectrum
-from create_accuracy_vs_recall_plot import load_results_from_folder, \
-    calculate_means_and_standard_deviation
-from ms2query.utils import load_matchms_spectrum_objects_from_file, load_pickled_file
 from matplotlib import pyplot as plt
+from ms2query.utils import (load_matchms_spectrum_objects_from_file,
+                            load_pickled_file)
 
 
 def split_results_mass(list_of_test_spectra: List[List[Spectrum]],
