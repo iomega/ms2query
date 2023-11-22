@@ -1,11 +1,11 @@
+import json
 import os
 import sys
-import json
-from typing import List, Union, Tuple, Optional
+from typing import List, Optional, Tuple, Union
 import numpy as np
 from matchms import importing
-from spec2vec.Spec2Vec import Spectrum
 from onnxruntime import InferenceSession
+from spec2vec.Spec2Vec import Spectrum
 
 
 if sys.version_info < (3, 8):
@@ -208,7 +208,8 @@ class SettingsRunMS2Query:
         # pylint: disable=too-many-arguments
         self.nr_of_top_analogs_to_save = nr_of_top_analogs_to_save
         self.minimal_ms2query_metascore = minimal_ms2query_metascore
-        self.additional_metadata_columns = additional_metadata_columns
+        self.additional_metadata_columns = tuple(additional_column.lower()
+                                                 for additional_column in additional_metadata_columns)
         self.additional_ms2query_score_columns = additional_ms2query_score_columns
         self.preselection_cut_off = preselection_cut_off
         self.filter_on_ion_mode = filter_on_ion_mode

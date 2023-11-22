@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import (column_names_for_output)
+from ms2query.utils import column_names_for_output
 
 
 class ResultsTable:

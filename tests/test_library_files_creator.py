@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 import pytest
-from ms2query.create_new_library.library_files_creator import LibraryFilesCreator
+from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
+from ms2query.create_new_library.library_files_creator import \
+    LibraryFilesCreator
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
-from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
 
 
 def test_give_already_used_file_name(tmp_path, path_to_general_test_files, hundred_test_spectra):

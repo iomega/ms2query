@@ -1,7 +1,8 @@
 import os
+from ms2query.create_new_library.split_data_for_training import (
+    select_unique_inchikeys, split_spectra_in_random_inchikey_sets,
+    split_spectra_on_inchikeys)
 from ms2query.utils import load_matchms_spectrum_objects_from_file
-from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys, \
-    split_spectra_in_random_inchikey_sets, select_unique_inchikeys
 
 
 def test_split_spectra_on_inchikeys(path_to_general_test_files, hundred_test_spectra):

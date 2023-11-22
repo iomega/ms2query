@@ -3,7 +3,9 @@ import os
 from typing import Union
 from urllib.request import urlopen, urlretrieve
 from ms2query.ms2library import MS2Library
-from ms2query.utils import load_matchms_spectrum_objects_from_file, SettingsRunMS2Query, return_non_existing_file_name
+from ms2query.utils import (SettingsRunMS2Query,
+                            load_matchms_spectrum_objects_from_file,
+                            return_non_existing_file_name)
 
 
 def zenodo_dois(ionisation_mode):

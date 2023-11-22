@@ -4,22 +4,22 @@ test results for benchmarking MS2Query against other tools.
 """
 
 import os
-from typing import List, Tuple, Union
-from tqdm import tqdm
 import random
-import tempfile
-from matchms import Spectrum
-from ms2query.create_new_library.calculate_tanimoto_scores import calculate_single_tanimoto_score, calculate_highest_tanimoto_score
-from ms2query.ms2library import MS2Library
 import sqlite3
+import tempfile
+from typing import List, Tuple, Union
 import pandas as pd
+from matchms import Spectrum
+from matchms.calculate_scores import calculate_scores
+from matchms.similarity.CosineGreedy import CosineGreedy
+from matchms.similarity.ModifiedCosine import ModifiedCosine
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import SiameseModel
 from spec2vec.vector_operations import cosine_similarity_matrix
-from matchms.calculate_scores import calculate_scores
-from matchms.similarity.ModifiedCosine import ModifiedCosine
-from matchms.similarity.CosineGreedy import CosineGreedy
-
+from tqdm import tqdm
+from ms2query.create_new_library.calculate_tanimoto_scores import (
+    calculate_highest_tanimoto_score, calculate_single_tanimoto_score)
+from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import save_json_file
 
