@@ -8,11 +8,12 @@ from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import load_pickled_file
 
+
 @pytest.fixture(scope="package")
 def path_to_general_test_files() -> str:
     return os.path.join(
         os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
+        'tests/test_files')
 
 
 @pytest.fixture(scope="package")
