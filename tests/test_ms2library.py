@@ -73,12 +73,9 @@ def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
         expected_headers)
 
 
-def test_create_library_object_from_one_dir():
+def test_create_library_object_from_one_dir(path_to_general_test_files):
     """Test creating a MS2Library object with create_library_object_from_one_dir"""
-    path_to_tests_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
-    library = create_library_object_from_one_dir(path_to_tests_dir)
+    library = create_library_object_from_one_dir(path_to_general_test_files)
     assert isinstance(library, MS2Library)
 
 
