@@ -115,8 +115,10 @@ def expected_tanimoto_scores_df(path_to_general_test_files):
 
 @pytest.fixture(scope="package")
 def expected_ms2ds_embeddings(path_to_general_test_files):
-    return pd.read_csv(os.path.join(path_to_general_test_files,
-                                    "ms2ds_embeddings_100_test_spectra.csv"), index_col=0)
+    expected_embeddings = load_pickled_file(os.path.join(
+        path_to_general_test_files,
+        "100_test_spectra_ms2ds_embeddings.pickle"))
+    return expected_embeddings
 
 
 @pytest.fixture(scope="package")
