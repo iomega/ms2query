@@ -1,22 +1,23 @@
 import os.path
-from typing import Dict, List, Set, Tuple, Union, Optional, Iterator
+from typing import Dict, Iterator, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
+from onnxruntime import InferenceSession
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
-from onnxruntime import InferenceSession
-from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.results_table import ResultsTable
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
-from ms2query.utils import (column_names_for_output, load_ms2query_model,
-                            load_pickled_file, SettingsRunMS2Query, predict_onnx_model,
-                            select_files_in_directory, return_non_existing_file_name)
+from ms2query.query_from_sqlite_database import SqliteLibrary
+from ms2query.results_table import ResultsTable
+from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
+                            load_ms2query_model, load_pickled_file,
+                            predict_onnx_model, return_non_existing_file_name,
+                            select_files_in_directory)
 
 
 class MS2Library:

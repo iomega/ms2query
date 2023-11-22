@@ -1,7 +1,7 @@
 import os
 import pytest
 from ms2query.create_new_library.train_models import clean_and_train_models
-from ms2query.ms2library import create_library_object_from_one_dir, MS2Library
+from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
 
 
 @pytest.mark.integration

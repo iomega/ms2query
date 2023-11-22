@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
-from ms2query.ms2library import (MS2Library,
-                                 create_library_object_from_one_dir)
-from ms2query.utils import load_pickled_file, SettingsRunMS2Query, column_names_for_output
+from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
+from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
+                            load_pickled_file)
 from tests.test_utils import check_correct_results_csv_file
 
 

@@ -1,17 +1,16 @@
 import os
-
-import numpy as np
-import pytest
 import sys
+import numpy as np
 import pandas as pd
-from ms2query.create_new_library.train_ms2query_model import \
-    DataCollectorForTraining, calculate_tanimoto_scores_with_library, train_random_forest, train_ms2query_model, \
-    convert_to_onnx_model
-from ms2query.utils import load_pickled_file, load_matchms_spectrum_objects_from_file, load_ms2query_model, \
-    predict_onnx_model
+import pytest
 from onnxruntime import InferenceSession
-from ms2query.utils import predict_onnx_model
+from ms2query.create_new_library.train_ms2query_model import (
+    DataCollectorForTraining, calculate_tanimoto_scores_with_library,
+    convert_to_onnx_model, train_ms2query_model, train_random_forest)
 from ms2query.ms2library import MS2Library
+from ms2query.utils import (load_matchms_spectrum_objects_from_file,
+                            load_ms2query_model, load_pickled_file,
+                            predict_onnx_model)
 
 
 if sys.version_info < (3, 8):

@@ -4,19 +4,21 @@ new models
 """
 
 import os
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt
 from matchms import Spectrum
+from matplotlib import pyplot as plt
 from ms2deepscore import SpectrumBinner
 from ms2deepscore.data_generators import DataGeneratorAllInchikeys
 from ms2deepscore.models import SiameseModel
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error
     EarlyStopping, ModelCheckpoint)
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
-from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys
-from ms2query.create_new_library.calculate_tanimoto_scores import calculate_tanimoto_scores_unique_inchikey
+from ms2query.create_new_library.calculate_tanimoto_scores import \
+    calculate_tanimoto_scores_unique_inchikey
+from ms2query.create_new_library.split_data_for_training import \
+    split_spectra_on_inchikeys
 
 
 def train_ms2ds_model(training_spectra,
