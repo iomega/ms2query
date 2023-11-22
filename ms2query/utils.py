@@ -208,7 +208,8 @@ class SettingsRunMS2Query:
         # pylint: disable=too-many-arguments
         self.nr_of_top_analogs_to_save = nr_of_top_analogs_to_save
         self.minimal_ms2query_metascore = minimal_ms2query_metascore
-        self.additional_metadata_columns = additional_metadata_columns
+        self.additional_metadata_columns = tuple(additional_column.lower()
+                                                 for additional_column in additional_metadata_columns)
         self.additional_ms2query_score_columns = additional_ms2query_score_columns
         self.preselection_cut_off = preselection_cut_off
         self.filter_on_ion_mode = filter_on_ion_mode
