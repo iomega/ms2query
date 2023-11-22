@@ -127,11 +127,3 @@ def expected_s2v_embeddings(path_to_general_test_files):
         path_to_general_test_files,
         "100_test_spectra_s2v_embeddings.pickle"))
     return expected_embeddings
-
-
-@pytest.fixture(scope="package")
-def expected_train_and_val_data(path_to_test_files):
-    expected_train_and_val_data = load_pickled_file(os.path.join(
-        path_to_test_files, 'test_files_train_ms2query_nn',
-        "expected_train_and_val_data.pickle"))
-    return expected_train_and_val_data
