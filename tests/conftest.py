@@ -1,11 +1,11 @@
 import os
 import numpy as np
 import pytest
+import pandas as pd
 from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import load_pickled_file
 
 
 @pytest.fixture(scope="package")
@@ -109,5 +109,5 @@ def hundred_test_spectra(path_to_general_test_files):
 
 @pytest.fixture(scope="package")
 def expected_tanimoto_scores_df(path_to_general_test_files):
-    return load_pickled_file(os.path.join(path_to_general_test_files,
-                                          "100_test_spectra_tanimoto_scores.pickle"))
+    return pd.read_csv(os.path.join(path_to_general_test_files,
+                                    "tanimoto_scores_100_test_spectra.csv"), index_col=0)
