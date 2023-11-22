@@ -6,7 +6,7 @@ from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
-
+from ms2query.utils import load_pickled_file
 
 @pytest.fixture(scope="package")
 def path_to_general_test_files() -> str:
@@ -111,3 +111,27 @@ def hundred_test_spectra(path_to_general_test_files):
 def expected_tanimoto_scores_df(path_to_general_test_files):
     return pd.read_csv(os.path.join(path_to_general_test_files,
                                     "tanimoto_scores_100_test_spectra.csv"), index_col=0)
+
+
+@pytest.fixture(scope="package")
+def expected_ms2ds_embeddings(path_to_general_test_files):
+    expected_embeddings = load_pickled_file(os.path.join(
+        path_to_general_test_files,
+        "100_test_spectra_ms2ds_embeddings.pickle"))
+    return expected_embeddings
+
+
+@pytest.fixture(scope="package")
+def expected_s2v_embeddings(path_to_general_test_files):
+    expected_embeddings = load_pickled_file(os.path.join(
+        path_to_general_test_files,
+        "100_test_spectra_s2v_embeddings.pickle"))
+    return expected_embeddings
+
+
+@pytest.fixture(scope="package")
+def expected_train_and_val_data(path_to_test_files):
+    expected_train_and_val_data = load_pickled_file(os.path.join(
+        path_to_test_files, 'test_files_train_ms2query_nn',
+        "expected_train_and_val_data.pickle"))
+    return expected_train_and_val_data

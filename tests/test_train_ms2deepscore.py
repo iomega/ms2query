@@ -7,11 +7,11 @@ from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
 
 
-def test_train_ms2ds_model(path_to_general_test_files, tmp_path, hundred_test_spectra):
-    tanimoto_df = load_pickled_file(os.path.join(path_to_general_test_files, "100_test_spectra_tanimoto_scores.pickle"))
+def test_train_ms2ds_model(path_to_general_test_files, tmp_path, hundred_test_spectra, expected_tanimoto_scores_df):
     model_file_name = os.path.join(tmp_path, "ms2ds_model.hdf5")
     epochs = 10
-    history = train_ms2ds_model(hundred_test_spectra, hundred_test_spectra, tanimoto_df, model_file_name, epochs)
+    history = train_ms2ds_model(hundred_test_spectra, hundred_test_spectra, expected_tanimoto_scores_df,
+                                model_file_name, epochs)
     assert os.path.isfile(model_file_name), "Expecte ms2ds model to be created and saved"
     ms2ds_model = load_ms2deepscore_model(model_file_name)
     assert isinstance(ms2ds_model, SiameseModel), "Expected a siamese model"

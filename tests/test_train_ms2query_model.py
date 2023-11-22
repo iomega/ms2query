@@ -54,13 +54,11 @@ def test_data_collector_for_training_init(ms2library):
     DataCollectorForTraining(ms2library)
 
 
-def test_get_matches_info_and_tanimoto(tmp_path, ms2library, query_spectra):
+def test_get_matches_info_and_tanimoto(tmp_path, ms2library, query_spectra,
+                                       expected_train_and_val_data):
     select_data_for_training = DataCollectorForTraining(ms2library)
     result = select_data_for_training.get_matches_info_and_tanimoto(query_spectra)
-    expected_result = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_train_ms2query_nn",
-        "expected_train_and_val_data.pickle"))[:2]
+    expected_result = expected_train_and_val_data[:2]
     assert isinstance(result, tuple), "Expected tuple to be returned"
     assert len(result) == 2, "Expected tuple to be returned"
     pd.testing.assert_frame_equal(result[0], expected_result[0], check_dtype=False, check_exact=False, rtol=1e-1)
@@ -79,11 +77,8 @@ def test_calculate_all_tanimoto_scores(tmp_path, ms2library, query_spectra):
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
 
 
-def test_train_and_save_random_forest():
-    training_scores, training_labels = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        "tests/test_files/test_files_train_ms2query_nn",
-        "expected_train_and_val_data.pickle"))[:2]
+def test_train_and_save_random_forest(expected_train_and_val_data):
+    training_scores, training_labels = expected_train_and_val_data[:2]
     ms2query_model = train_random_forest(training_scores, training_labels)
     onnx_model = convert_to_onnx_model(ms2query_model)
     onnx_model_session = InferenceSession(onnx_model.SerializeToString())

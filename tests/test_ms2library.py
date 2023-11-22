@@ -11,11 +11,11 @@ from tests.test_utils import check_correct_results_csv_file
 
 
 @pytest.fixture
-def expected_ms2deespcore_scores():
-    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
-    return ms2dscores
+def expected_ms2deespcore_scores(path_to_test_files):
+    ms2deepscore_scores:pd.DataFrame = load_pickled_file(os.path.join(
+        path_to_test_files,
+        "test_files_ms2library/expected_ms2ds_scores.pickle"))
+    return ms2deepscore_scores
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
