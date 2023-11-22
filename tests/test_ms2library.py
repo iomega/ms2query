@@ -101,12 +101,11 @@ def test_analog_yield_df(ms2library, test_spectra, tmp_path):
 
 
 def test_analog_yield_df_additional_columns(ms2library, test_spectra, tmp_path):
-    settings = SettingsRunMS2Query(additional_metadata_columns=("charge", ),
+    settings = SettingsRunMS2Query(additional_metadata_columns=("CHARGE", "retention_time"),
                                    additional_ms2query_score_columns=("s2v_score", "ms2ds_score",),)
     result = ms2library.analog_search_yield_df(test_spectra, settings)
     result_first_spectrum = list(result)[0]
     check_correct_results_csv_file(result_first_spectrum,
-                                   column_names_for_output(True, True, ("charge",),
+                                   column_names_for_output(True, True, ("charge", "retention_time"),
                                                            ("s2v_score", "ms2ds_score",)),
                                    nr_of_rows_to_check=1)
-
