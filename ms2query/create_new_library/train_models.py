@@ -18,11 +18,12 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 class SettingsTrainingModels:
     def __init__(self,
-                 settings):
+                 settings: dict = None):
         default_settings = {"ms2ds_fraction_validation_spectra": 30,
                             "ms2ds_epochs": 150,
                             "spec2vec_iterations": 30,
-                            "ms2query_fraction_for_making_pairs": 40}
+                            "ms2query_fraction_for_making_pairs": 40,
+                            "add_compound_classes": True}
         if settings:
             for setting in settings:
                 assert setting in default_settings, \
@@ -32,15 +33,15 @@ class SettingsTrainingModels:
         self.ms2ds_epochs: int = default_settings["ms2ds_epochs"]
         self.ms2query_fraction_for_making_pairs: int = default_settings["ms2query_fraction_for_making_pairs"]
         self.spec2vec_iterations = default_settings["spec2vec_iterations"]
+        self.add_compound_classes = default_settings["add_compound_classes"]
 
 
 def train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
                      output_folder,
-                     other_settings: dict = None):
+                     settings: SettingsTrainingModels):
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
-    settings = SettingsTrainingModels(other_settings)
     # set file names of new generated files
     ms2deepscore_model_file_name = os.path.join(output_folder, "ms2deepscore_model.hdf5")
     spec2vec_model_file_name = os.path.join(output_folder, "spec2vec_model.model")
@@ -76,7 +77,8 @@ def train_all_models(annotated_training_spectra,
     library_files_creator = LibraryFilesCreator(annotated_training_spectra,
                                                 output_folder,
                                                 spec2vec_model_file_name,
-                                                ms2deepscore_model_file_name)
+                                                ms2deepscore_model_file_name,
+                                                add_compound_classes=settings.add_compound_classes)
     library_files_creator.create_all_library_files()
 
 
@@ -92,11 +94,18 @@ def clean_and_train_models(spectrum_file: str,
         The ion mode of the spectra you want to use for training the models, choose from "positive" or "negative"
     :param output_folder:
         The folder in which the models and library files are stored.
+    :param model_train_settings:
+        The settings used for training the models, options can be found in SettingsTrainingModels. If None is given
+        all the default settings are used. The options and default settings are:
+        {"ms2ds_fraction_validation_spectra": 30, "ms2ds_epochs": 150, "spec2vec_iterations": 30,
+        "ms2query_fraction_for_making_pairs": 40, "add_compound_classes": False}
     """
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
     assert os.path.isdir(output_folder), "The specified folder is not a folder"
     assert ion_mode in {"positive", "negative"}, "ion_mode should be set to 'positive' or 'negative'"
+
+    settings = SettingsTrainingModels(model_train_settings)
 
     spectra = load_matchms_spectrum_objects_from_file(spectrum_file)
     annotated_spectra, unnnotated_spectra = clean_normalize_and_split_annotated_spectra(spectra,
@@ -105,4 +114,4 @@ def clean_and_train_models(spectrum_file: str,
     train_all_models(annotated_spectra,
                      unnnotated_spectra,
                      output_folder,
-                     model_train_settings)
+                     settings)

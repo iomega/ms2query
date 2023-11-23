@@ -1,7 +1,7 @@
 import os
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import MS2Library
