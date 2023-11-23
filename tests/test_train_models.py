@@ -14,7 +14,8 @@ def test_train_all_models(path_to_general_test_files, tmp_path):
                            {"ms2ds_fraction_validation_spectra": 2,
                             "ms2ds_epochs": 2,
                             "spec2vec_iterations": 2,
-                            "ms2query_fraction_for_making_pairs": 400}
+                            "ms2query_fraction_for_making_pairs": 400,
+                            "add_compound_classes": False}
                            )
     ms2library = create_library_object_from_one_dir(models_folder)
     assert isinstance(ms2library, MS2Library)
