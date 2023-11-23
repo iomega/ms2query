@@ -12,7 +12,7 @@ from ms2query.clean_and_filter_spectra import \
     clean_normalize_and_split_annotated_spectra
 from ms2query.create_new_library.split_data_for_training import (
     select_spectra_per_unique_inchikey, split_spectra_in_random_inchikey_sets)
-from ms2query.create_new_library.train_models import train_all_models
+from ms2query.create_new_library.train_models import train_all_models, SettingsTrainingModels
 from ms2query.ms2library import create_library_object_from_one_dir
 from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             save_pickled_file)
@@ -102,7 +102,8 @@ def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder:str,
     # Train all models
     train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
-                     models_folder)
+                     models_folder,
+                     SettingsTrainingModels({"add_compound_classes": False}))
 
     # Generate test results
     ms2library = create_library_object_from_one_dir(models_folder)
