@@ -19,7 +19,7 @@ from ms2query.clean_and_filter_spectra import create_spectrum_documents
 from ms2query.create_new_library.add_classifire_classifications import (
     convert_to_dataframe, select_compound_classes)
 from ms2query.create_new_library.create_sqlite_database import \
-    make_sqlfile_wrapper
+    make_sqlfile_wrapper, add_dataframe_to_sqlite
 
 
 class LibraryFilesCreator:
@@ -75,8 +75,6 @@ class LibraryFilesCreator:
         if not os.path.exists(self.output_directory):
             os.mkdir(self.output_directory)
         self.sqlite_file_name = os.path.join(output_directory, "ms2query_library.sqlite")
-        self.ms2ds_embeddings_file_name = os.path.join(output_directory, "ms2ds_embeddings.pickle")
-        self.s2v_embeddings_file_name = os.path.join(output_directory, "s2v_embeddings.pickle")
         # These checks are performed at the start, since the filtering of spectra can take long
         self._check_for_existing_files()
         # Load in spec2vec model
@@ -103,19 +101,6 @@ class LibraryFilesCreator:
         assert not os.path.exists(self.sqlite_file_name), \
             f"The file {self.sqlite_file_name} already exists," \
             f" choose a different output_base_filename"
-        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
-            f"The file {self.ms2ds_embeddings_file_name} " \
-            f"already exists, choose a different output_base_filename"
-        assert not os.path.exists(self.s2v_embeddings_file_name), \
-            f"The file {self.s2v_embeddings_file_name} " \
-            f"already exists, choose a different output_base_filename"
-
-    def create_all_library_files(self):
-        """Creates files with embeddings and a sqlite file with spectra data
-        """
-        self.create_sqlite_file()
-        self.store_s2v_embeddings()
-        self.store_ms2ds_embeddings()
 
     def create_sqlite_file(self):
         if self.add_compound_classes:
@@ -126,37 +111,34 @@ class LibraryFilesCreator:
         make_sqlfile_wrapper(
             self.sqlite_file_name,
             self.list_of_spectra,
+            self.create_ms2ds_embeddings(),
+            self.create_s2v_embeddings(),
             columns_dict={"precursor_mz": "REAL"},
             compound_classes=compound_classes_df,
             progress_bars=self.progress_bars,
         )
 
-    def store_ms2ds_embeddings(self):
-        """Creates a pickled file with embeddings scores for spectra
+    def create_ms2ds_embeddings(self):
+        """Creates the ms2deepscore embeddings for all spectra
 
         A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
         """
-        assert not os.path.exists(self.ms2ds_embeddings_file_name), \
-            "Given ms2ds_embeddings_file_name already exists"
         assert self.ms2ds_model is not None, "No MS2deepscore model was provided"
         ms2ds = MS2DeepScore(self.ms2ds_model,
                              progress_bar=self.progress_bars)
-
         # Compute spectral embeddings
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
         spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
-        all_embeddings_df.to_pickle(self.ms2ds_embeddings_file_name)
+        return all_embeddings_df
 
-    def store_s2v_embeddings(self):
+    def create_s2v_embeddings(self):
         """Creates and stored a dataframe with embeddings as pickled file
 
         A dataframe with as index randomly generated spectrum indexes and as columns the indexes
         of the vector is converted to pickle.
         """
-        assert not os.path.exists(self.s2v_embeddings_file_name), \
-            "Given s2v_embeddings_file_name already exists"
         assert self.s2v_model is not None, "No spec2vec model was specified"
         # Convert Spectrum objects to SpectrumDocument
         spectrum_documents = create_spectrum_documents(
@@ -174,4 +156,4 @@ class LibraryFilesCreator:
         # Convert to pandas Dataframe
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
-        embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
+        return embeddings_dataframe

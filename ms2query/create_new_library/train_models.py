@@ -79,7 +79,7 @@ def train_all_models(annotated_training_spectra,
                                                 spec2vec_model_file_name,
                                                 ms2deepscore_model_file_name,
                                                 add_compound_classes=settings.add_compound_classes)
-    library_files_creator.create_all_library_files()
+    library_files_creator.create_sqlite_file()
 
 
 def clean_and_train_models(spectrum_file: str,
