@@ -37,7 +37,9 @@ class SettingsTrainingModels:
 def train_all_models(annotated_training_spectra,
                      unannotated_training_spectra,
                      output_folder,
-                     other_settings: dict = None):
+                     other_settings: dict = None,
+                     add_compound_classes: bool = True
+                     ):
     if not os.path.isdir(output_folder):
         os.mkdir(output_folder)
     settings = SettingsTrainingModels(other_settings)
@@ -76,7 +78,8 @@ def train_all_models(annotated_training_spectra,
     library_files_creator = LibraryFilesCreator(annotated_training_spectra,
                                                 output_folder,
                                                 spec2vec_model_file_name,
-                                                ms2deepscore_model_file_name)
+                                                ms2deepscore_model_file_name,
+                                                add_compound_classes = add_compound_classes)
     library_files_creator.create_all_library_files()
 
 
