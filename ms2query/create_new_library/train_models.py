@@ -22,7 +22,8 @@ class SettingsTrainingModels:
         default_settings = {"ms2ds_fraction_validation_spectra": 30,
                             "ms2ds_epochs": 150,
                             "spec2vec_iterations": 30,
-                            "ms2query_fraction_for_making_pairs": 40}
+                            "ms2query_fraction_for_making_pairs": 40,
+                            "add_compound_classes": True}
         if settings:
             for setting in settings:
                 assert setting in default_settings, \
@@ -32,6 +33,7 @@ class SettingsTrainingModels:
         self.ms2ds_epochs: int = default_settings["ms2ds_epochs"]
         self.ms2query_fraction_for_making_pairs: int = default_settings["ms2query_fraction_for_making_pairs"]
         self.spec2vec_iterations = default_settings["spec2vec_iterations"]
+        self.add_compound_classes = default_settings["add_compound_classes"]
 
 
 def train_all_models(annotated_training_spectra,
@@ -76,7 +78,8 @@ def train_all_models(annotated_training_spectra,
     library_files_creator = LibraryFilesCreator(annotated_training_spectra,
                                                 output_folder,
                                                 spec2vec_model_file_name,
-                                                ms2deepscore_model_file_name)
+                                                ms2deepscore_model_file_name,
+                                                add_compound_classes=settings.add_compound_classes)
     library_files_creator.create_all_library_files()
 
 
