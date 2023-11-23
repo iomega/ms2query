@@ -19,11 +19,19 @@ from ms2query.utils import load_matchms_spectrum_objects_from_file
 class SettingsTrainingModels:
     def __init__(self,
                  settings: dict = None):
+        """
+
+        :param settings:
+            preselection_cut_off:
+                This determines the number of highest scoring matches of MS2Deepscore that are used during training of MS2Query.
+                For these top library matches all scores are calculated
+        """
         default_settings = {"ms2ds_fraction_validation_spectra": 30,
                             "ms2ds_epochs": 150,
                             "spec2vec_iterations": 30,
                             "ms2query_fraction_for_making_pairs": 40,
-                            "add_compound_classes": True}
+                            "add_compound_classes": True,
+                            "preselection_cut_off": 2000}
         if settings:
             for setting in settings:
                 assert setting in default_settings, \
@@ -34,6 +42,7 @@ class SettingsTrainingModels:
         self.ms2query_fraction_for_making_pairs: int = default_settings["ms2query_fraction_for_making_pairs"]
         self.spec2vec_iterations = default_settings["spec2vec_iterations"]
         self.add_compound_classes = default_settings["add_compound_classes"]
+        self.preselection_cut_off = default_settings["preselection_cut_off"]
 
 
 def train_all_models(annotated_training_spectra,
@@ -70,7 +79,7 @@ def train_all_models(annotated_training_spectra,
                                           os.path.join(output_folder, "library_for_training_ms2query"),
                                           ms2deepscore_model_file_name,
                                           spec2vec_model_file_name,
-                                          fraction_for_training=settings.ms2query_fraction_for_making_pairs)
+                                          settings)
     convert_to_onnx_model(ms2query_model, ms2query_model_file_name)
 
     # Create library with all training spectra

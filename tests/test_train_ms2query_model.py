@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 from onnxruntime import InferenceSession
+from ms2query.create_new_library.train_models import SettingsTrainingModels
 from ms2query.create_new_library.train_ms2query_model import (
     DataCollectorForTraining, calculate_tanimoto_scores_with_library,
     convert_to_onnx_model, train_ms2query_model, train_random_forest)
-from ms2query.ms2library import MS2Library
 from ms2query.utils import predict_onnx_model
 from matchms import Spectrum
+
 
 if sys.version_info < (3, 8):
     pass
@@ -78,5 +79,7 @@ def test_train_ms2query_model(path_to_general_test_files, tmp_path, hundred_test
                                            "ms2ds_siamese_210301_5000_500_400.hdf5"),
         s2v_model_file_name=os.path.join(path_to_general_test_files,
                                          "100_test_spectra_s2v_model.model"),
-        fraction_for_training=10
+        settings=SettingsTrainingModels({"ms2query_fraction_for_making_pairs": 10,
+                                         "add_compound_classes": False,
+                                         "preselection_cut_off": 10})
     )

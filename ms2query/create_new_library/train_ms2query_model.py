@@ -21,7 +21,7 @@ from ms2query.create_new_library.split_data_for_training import (
     split_spectra_on_inchikeys, split_training_and_validation_spectra)
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import return_non_existing_file_name, save_pickled_file
-
+from ms2query.create_new_library.train_models import SettingsTrainingModels
 
 class DataCollectorForTraining():
     """Class to collect data needed to train a ms2query random forest"""
@@ -115,13 +115,15 @@ def train_ms2query_model(training_spectra,
                          library_files_folder,
                          ms2ds_model_file_name,
                          s2v_model_file_name,
-                         fraction_for_training):
+                         settings: SettingsTrainingModels):
     # Select spectra belonging to a single InChIKey
-    library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(training_spectra,
-                                                                                fraction_for_training)
+    library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(
+        training_spectra,
+        settings.ms2query_fraction_for_making_pairs)
     # Select random spectra from the library
-    library_spectra, single_spectra_query_spectra = split_training_and_validation_spectra(library_spectra,
-                                                                                          fraction_for_training)
+    library_spectra, single_spectra_query_spectra = split_training_and_validation_spectra(
+        library_spectra,
+        settings.ms2query_fraction_for_making_pairs)
     query_spectra_for_training = unique_inchikey_query_spectra + single_spectra_query_spectra
 
     # Create library files for training ms2query
@@ -138,7 +140,7 @@ def train_ms2query_model(training_spectra,
                                          pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
                                          ms2query_model_file_name=None)
     # Create training data MS2Query model
-    collector = DataCollectorForTraining(ms2library_for_training)
+    collector = DataCollectorForTraining(ms2library_for_training, preselection_cut_off=settings.preselection_cut_off)
     training_scores, training_labels = collector.get_matches_info_and_tanimoto(query_spectra_for_training)
 
     save_pickled_file(training_scores, os.path.join(library_files_folder, "training_scores_ms2query"))
