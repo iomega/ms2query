@@ -33,7 +33,7 @@ class SettingsTrainingModels:
         self.ms2ds_epochs: int = default_settings["ms2ds_epochs"]
         self.ms2query_fraction_for_making_pairs: int = default_settings["ms2query_fraction_for_making_pairs"]
         self.spec2vec_iterations = default_settings["spec2vec_iterations"]
-        self.add_compound_classes = default_settings["add_compound_classes"]
+        self.add_compound_classes: bool = default_settings["add_compound_classes"]
 
 
 def train_all_models(annotated_training_spectra,
