@@ -15,9 +15,12 @@ from ms2query.utils import return_non_existing_file_name
 
 def make_sqlfile_wrapper(sqlite_file_name: str,
                          list_of_spectra: List[Spectrum],
+                         ms2ds_embeddings: pd.DataFrame,
+                         s2v_embeddings: pd.DataFrame,
                          columns_dict: Dict[str, str] = None,
                          compound_classes: pd.DataFrame = None,
-                         progress_bars: bool = True):
+                         progress_bars: bool = True,
+                         ):
     """Wrapper to create sqlite file containing spectrum information needed for MS2Query
 
     Args:
@@ -53,6 +56,18 @@ def make_sqlfile_wrapper(sqlite_file_name: str,
     fill_inchikeys_table(sqlite_file_name, list_of_spectra,
                          compound_classes=compound_classes,
                          progress_bars=progress_bars)
+
+    add_dataframe_to_sqlite(sqlite_file_name, 'MS2Deepscore_embeddings', ms2ds_embeddings)
+    add_dataframe_to_sqlite(sqlite_file_name, 'Spec2Vec_embeddings', s2v_embeddings)
+
+
+def add_dataframe_to_sqlite(sqlite_file_name,
+                            table_name,
+                            dataframe: pd.DataFrame):
+    conn = sqlite3.connect(sqlite_file_name)
+    dataframe.to_sql(table_name, conn, if_exists='fail', index=True, index_label="spectrumid")
+    conn.commit()
+    conn.close()
 
 
 def initialize_tables(sqlite_file_name: str,
