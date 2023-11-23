@@ -83,7 +83,6 @@ def test_making_sqlite_file_without_classes(tmp_path, hundred_test_spectra, path
                                         "test_spectra_database.sqlite")
 
     reference_sqlite_file = os.path.join(path_to_general_test_files,
-                                         "..",
                                          "backwards_compatibility",
                                          "100_test_spectra_without_classes.sqlite")
 

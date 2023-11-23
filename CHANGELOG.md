@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - environment.yml and CI_build test fur building a conda env from this file
 ### fixed
 - Allow for using uper_case additional_metadata columns
+- Removed pickled files from tests to pave way to pandas 2.0 and new matchms
 ## 1.2.2
 ### fixed
 - Set version of matchmsextras to 0.4.0, to fix dependency issue

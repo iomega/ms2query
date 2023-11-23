@@ -18,7 +18,8 @@ def test_give_already_used_file_name(tmp_path, path_to_general_test_files, hundr
 
 
 def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files,
-                                hundred_test_spectra):
+                                hundred_test_spectra,
+                                expected_ms2ds_embeddings):
     """Tests store_ms2ds_embeddings"""
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra if s is not None]
@@ -32,15 +33,13 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files,
         "Expected file to be created"
     # Test if correct embeddings are stored
     embeddings = load_pickled_file(new_embeddings_file_name)
-    expected_embeddings = load_pickled_file(os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle"))
-    pd.testing.assert_frame_equal(embeddings, expected_embeddings,
+    pd.testing.assert_frame_equal(embeddings, expected_ms2ds_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
 
 
-def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test_spectra):
+def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test_spectra,
+                              expected_s2v_embeddings):
     """Tests store_ms2ds_embeddings"""
     base_file_name = os.path.join(tmp_path, '100_test_spectra')
     library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra if s is not None]
@@ -53,16 +52,14 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test
     assert os.path.isfile(new_embeddings_file_name), \
         "Expected file to be created"
     embeddings = load_pickled_file(new_embeddings_file_name)
-    expected_embeddings = load_pickled_file(os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle"))
-    pd.testing.assert_frame_equal(embeddings, expected_embeddings,
+    pd.testing.assert_frame_equal(embeddings, expected_s2v_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
 
 
 def test_create_sqlite_file(tmp_path, path_to_general_test_files, hundred_test_spectra):
     test_create_files = LibraryFilesCreator(
-        hundred_test_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'))
+        hundred_test_spectra[:20], output_directory=os.path.join(tmp_path, '100_test_spectra'),
+        add_compound_classes=False)
     test_create_files.create_sqlite_file()
 

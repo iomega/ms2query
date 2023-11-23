@@ -2,26 +2,17 @@ import math
 import os
 import numpy as np
 import pandas as pd
-import pytest
-from pandas.testing import assert_series_equal
 from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
-from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
-                            load_pickled_file)
+from ms2query.utils import (SettingsRunMS2Query, column_names_for_output)
 from tests.test_utils import check_correct_results_csv_file
 
 
-@pytest.fixture
-def expected_ms2deespcore_scores():
-    ms2dscores:pd.DataFrame = load_pickled_file(os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/test_files_ms2library/expected_ms2ds_scores.pickle'))
-    return ms2dscores
-
-
-def test_get_all_ms2ds_scores(ms2library, test_spectra, expected_ms2deespcore_scores):
+def test_get_all_ms2ds_scores(ms2library, test_spectra):
     """Test get_all_ms2ds_scores method of ms2library"""
     result = ms2library._get_all_ms2ds_scores(test_spectra[0])
-    assert_series_equal(result, expected_ms2deespcore_scores)
+    assert len(result) == 100
+    assert round(result[0], ndigits=5) == 0.75326
+    assert round(result[1], ndigits=5) == 0.92317
 
 
 def test_get_s2v_scores(ms2library, test_spectra):
@@ -82,12 +73,9 @@ def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
         expected_headers)
 
 
-def test_create_library_object_from_one_dir():
+def test_create_library_object_from_one_dir(path_to_general_test_files):
     """Test creating a MS2Library object with create_library_object_from_one_dir"""
-    path_to_tests_dir = os.path.join(
-        os.path.split(os.path.dirname(__file__))[0],
-        'tests/test_files/general_test_files')
-    library = create_library_object_from_one_dir(path_to_tests_dir)
+    library = create_library_object_from_one_dir(path_to_general_test_files)
     assert isinstance(library, MS2Library)
 
 

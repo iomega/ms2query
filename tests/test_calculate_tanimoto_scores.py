@@ -9,24 +9,23 @@ from ms2query.utils import (load_matchms_spectrum_objects_from_file,
                             load_pickled_file)
 
 
-def test_calculate_tanimoto_scores_unique_inchikey(path_to_general_test_files, hundred_test_spectra):
+def test_calculate_tanimoto_scores_unique_inchikey(path_to_general_test_files, hundred_test_spectra,
+                                                   expected_tanimoto_scores_df):
     tanimoto_df = calculate_tanimoto_scores_unique_inchikey(hundred_test_spectra, hundred_test_spectra)
-    expected_tanimoto_df = load_pickled_file(os.path.join(path_to_general_test_files,
-                                                          "100_test_spectra_tanimoto_scores.pickle"))
     assert isinstance(tanimoto_df, pd.DataFrame), "Expected a pandas dataframe"
-    pd.testing.assert_frame_equal(tanimoto_df, expected_tanimoto_df, check_exact=False, atol=1e-5)
+    pd.testing.assert_frame_equal(tanimoto_df, expected_tanimoto_scores_df, check_exact=False, atol=1e-5)
 
 
-def test_calculate_tanimoto_scores_unique_inchikey_not_symmetric(path_to_general_test_files, hundred_test_spectra):
+def test_calculate_tanimoto_scores_unique_inchikey_not_symmetric(path_to_general_test_files,
+                                                                 hundred_test_spectra,
+                                                                 expected_tanimoto_scores_df):
     spectra_2 = hundred_test_spectra[:10]
     tanimoto_df = calculate_tanimoto_scores_unique_inchikey(hundred_test_spectra, spectra_2)
 
     unique_inchikey_2 = set([spectrum.get("inchikey")[:14] for spectrum in spectra_2])
-    expected_tanimoto_df = load_pickled_file(os.path.join(path_to_general_test_files,
-                                                          "100_test_spectra_tanimoto_scores.pickle")
-                                             ).loc[:, sorted(unique_inchikey_2)]
+    expected_tanimoto_df_inchikey_2 = expected_tanimoto_scores_df.loc[:, sorted(unique_inchikey_2)]
     assert isinstance(tanimoto_df, pd.DataFrame), "Expected a pandas dataframe"
-    pd.testing.assert_frame_equal(tanimoto_df, expected_tanimoto_df,
+    pd.testing.assert_frame_equal(tanimoto_df, expected_tanimoto_df_inchikey_2,
                                   check_exact=False, atol=1e-5)
 
 
