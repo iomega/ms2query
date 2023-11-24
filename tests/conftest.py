@@ -31,19 +31,12 @@ def ms2library(path_to_general_test_files) -> MS2Library:
     spec2vec_model_file_loc = os.path.join(
         path_to_general_test_files,
         "100_test_spectra_s2v_model.model")
-    s2v_pickled_embeddings_file = os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle")
     ms2ds_model_file_name = os.path.join(
         path_to_general_test_files,
         "ms2ds_siamese_210301_5000_500_400.hdf5")
-    ms2ds_embeddings_file_name = os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle")
     ms2q_model_file_name = os.path.join(path_to_general_test_files,
         "test_ms2q_rf_model.onnx")
-    ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
-                            s2v_pickled_embeddings_file, ms2ds_embeddings_file_name, ms2q_model_file_name)
+    ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name, ms2q_model_file_name)
     return ms2library
 
 
