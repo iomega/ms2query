@@ -8,7 +8,7 @@ from ms2query.run_ms2query import (available_zenodo_files,
                                    zenodo_dois)
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import MS2Library
-from tests.test_utils import check_correct_results_csv_file
+from tests.test_utils import check_correct_results_csv_file, check_expected_headers
 
 
 if sys.version_info < (3, 8):
@@ -67,24 +67,6 @@ def create_test_folder_with_spectra_files(path, spectra):
 def test_run_complete_folder(tmp_path, ms2library, test_spectra):
     folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
     results_directory = os.path.join(folder_with_spectra, "results")
-
-    run_complete_folder(ms2library=ms2library,
-                        folder_with_spectra=folder_with_spectra)
-    assert os.path.exists(results_directory), "Expected results directory to be created"
-    assert os.listdir(os.path.join(results_directory)).sort() == ['spectra_file_1.csv', 'spectra_file_2.csv'].sort()
-
-    expected_headers = ['query_spectrum_nr', 'ms2query_model_prediction', 'precursor_mz_difference',
-                        'precursor_mz_query_spectrum', 'precursor_mz_analog', 'inchikey',
-                        'analog_compound_name', 'smiles', 'retention_time', 'retention_index']
-    check_correct_results_csv_file(pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv'))),
-                                   expected_headers)
-    check_correct_results_csv_file(pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv'))),
-                                   expected_headers)
-
-
-def test_run_complete_folder_with_classifiers(tmp_path, ms2library, test_spectra):
-    folder_with_spectra = create_test_folder_with_spectra_files(tmp_path, test_spectra)
-    results_directory = os.path.join(folder_with_spectra, "results")
     settings = SettingsRunMS2Query(minimal_ms2query_metascore=0,
                                    additional_metadata_columns=("charge",),
                                    additional_ms2query_score_columns=("s2v_score", "ms2ds_score"))
@@ -101,9 +83,11 @@ def test_run_complete_folder_with_classifiers(tmp_path, ms2library, test_spectra
          "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "charge", "s2v_score",
          "ms2ds_score", "cf_kingdom", "cf_superclass", "cf_class", "cf_subclass", "cf_direct_parent",
          "npc_class_results", "npc_superclass_results", "npc_pathway_results"]
-    check_correct_results_csv_file(
-        pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv'))),
-        expected_headers)
-    check_correct_results_csv_file(
-        pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv'))),
-        expected_headers)
+
+    result_1 = pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_1.csv')))
+    result_2 = pd.read_csv(os.path.join(os.path.join(results_directory, 'spectra_file_2.csv')))
+    check_expected_headers(result_1, expected_headers)
+    check_expected_headers(result_2, expected_headers)
+
+    check_correct_results_csv_file(result_1)
+    check_correct_results_csv_file(result_2)
