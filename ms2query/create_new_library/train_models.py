@@ -98,7 +98,7 @@ def clean_and_train_models(spectrum_file: str,
         The settings used for training the models, options can be found in SettingsTrainingModels. If None is given
         all the default settings are used. The options and default settings are:
         {"ms2ds_fraction_validation_spectra": 30, "ms2ds_epochs": 150, "spec2vec_iterations": 30,
-        "ms2query_fraction_for_making_pairs": 40, "add_compound_classes": False}
+        "ms2query_fraction_for_making_pairs": 40, "add_compound_classes": True}
     """
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
