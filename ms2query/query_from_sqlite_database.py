@@ -169,3 +169,14 @@ class SqliteLibrary:
         # Close the connection
         conn.close()
         return ms2deepscore_embeddings
+
+    def get_spec2vec_embeddings(self):
+        # Connect to the SQLite database
+        conn = sqlite3.connect(self.sqlite_file_name)
+        # Write an SQL query to select data from the table
+        query = "SELECT * FROM Spec2Vec_embeddings"
+        # Use the read_sql_query function to execute the query and read the results into a DataFrame
+        spec2vec_embeddings = pd.read_sql_query(query, conn, index_col="spectrumid")
+        # Close the connection
+        conn.close()
+        return spec2vec_embeddings

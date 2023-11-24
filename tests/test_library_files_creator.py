@@ -44,7 +44,9 @@ def test_create_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_tes
                                   atol=1e-5)
 
 
-def test_create_sqlite_file_with_embeddings(tmp_path, hundred_test_spectra, path_to_general_test_files, expected_ms2ds_embeddings):
+def test_create_sqlite_file_with_embeddings(tmp_path, hundred_test_spectra, path_to_general_test_files,
+                                            expected_ms2ds_embeddings,
+                                            expected_s2v_embeddings):
     library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra[:20] if s is not None]
     test_create_files = LibraryFilesCreator(
         library_spectra,
@@ -58,12 +60,20 @@ def test_create_sqlite_file_with_embeddings(tmp_path, hundred_test_spectra, path
     test_create_files.create_sqlite_file()
     sqlite_library = SqliteLibrary(os.path.join(tmp_path, "ms2query_library.sqlite"))
     ms2deepscore_embeddings = sqlite_library.get_ms2deepscore_embeddings()
+    # set the columnn names to a range index instead of string, to match the stored test file.
     ms2deepscore_embeddings.columns = pd.RangeIndex(start=0,
                                                     stop=len(ms2deepscore_embeddings.columns),
                                                     step=1)
-
     pd.testing.assert_frame_equal(ms2deepscore_embeddings,
                                   expected_ms2ds_embeddings.loc[:19],
+                                  check_exact=False,
+                                  atol=1e-5,
+                                  check_names=False)
+
+    spec2vec_embeddings = sqlite_library.get_spec2vec_embeddings()
+    spec2vec_embeddings.columns = pd.RangeIndex(start=0, stop=len(spec2vec_embeddings.columns), step=1)
+    pd.testing.assert_frame_equal(spec2vec_embeddings,
+                                  expected_s2v_embeddings.loc[:19],
                                   check_exact=False,
                                   atol=1e-5,
                                   check_names=False)
