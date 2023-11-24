@@ -59,6 +59,6 @@ def check_correct_results_csv_file(dataframe_found: pd.DataFrame,
 def check_expected_headers(dataframe_found: pd.DataFrame,
                            expected_headers: List[str]):
     found_headers = list(dataframe_found.columns)
-    assert len(found_headers) == len(found_headers)
+    assert len(found_headers) == len(expected_headers)
     for i, header in enumerate(expected_headers):
         assert header == found_headers[i]
