@@ -85,7 +85,8 @@ def train_all_models(annotated_training_spectra,
 def clean_and_train_models(spectrum_file: str,
                            ion_mode: str,
                            output_folder,
-                           model_train_settings = None):
+                           model_train_settings = None,
+                           do_pubchem_lookup = True):
     """Trains a new MS2Deepscore, Spec2Vec and MS2Query model and creates all needed library files
 
     :param spectrum_file:
@@ -99,6 +100,8 @@ def clean_and_train_models(spectrum_file: str,
         all the default settings are used. The options and default settings are:
         {"ms2ds_fraction_validation_spectra": 30, "ms2ds_epochs": 150, "spec2vec_iterations": 30,
         "ms2query_fraction_for_making_pairs": 40, "add_compound_classes": True}
+    :param do_pubchem_lookup:
+        If True, the spectra are annotated with PubChem metadata before training the models.
     """
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -110,7 +113,7 @@ def clean_and_train_models(spectrum_file: str,
     spectra = load_matchms_spectrum_objects_from_file(spectrum_file)
     annotated_spectra, unnnotated_spectra = clean_normalize_and_split_annotated_spectra(spectra,
                                                                                         ion_mode,
-                                                                                        do_pubchem_lookup=True)
+                                                                                        do_pubchem_lookup = do_pubchem_lookup)
     train_all_models(annotated_spectra,
                      unnnotated_spectra,
                      output_folder,
