@@ -127,10 +127,12 @@ def select_compound_classes(spectra):
         if npc_results is None:
             print(f"no npc annotation was found for inchikey {inchikey14}")
             inchikey_results_list[i] += ["", "", "", ""]
-    return inchikey_results_list
+    compound_classes_df = _convert_to_dataframe(inchikey_results_list)
+    assert compound_classes_df.index.name == "inchikey", "Expected a pandas dataframe with inchikey as index name"
+    return compound_classes_df
 
 
-def convert_to_dataframe(inchikey_results_lists)->pd.DataFrame:
+def _convert_to_dataframe(inchikey_results_lists)->pd.DataFrame:
     header_list = [
         'inchikey', 'cf_kingdom',
         'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent',
