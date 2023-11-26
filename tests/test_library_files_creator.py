@@ -22,30 +22,6 @@ def test_give_already_used_file_name(tmp_path, path_to_general_test_files, hundr
         LibraryFilesCreator(hundred_test_spectra, tmp_path)
 
 
-def test_create_ms2ds_embeddings(tmp_path, path_to_general_test_files,
-                                 hundred_test_spectra,
-                                 expected_ms2ds_embeddings,
-                                 ms2deepscore_model_file_name):
-    """Tests store_ms2ds_embeddings"""
-    library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra if s is not None]
-    embeddings = create_ms2ds_embeddings(ms2ds_model=load_ms2ds_model(ms2deepscore_model_file_name),
-                                         list_of_spectra=library_spectra)
-    pd.testing.assert_frame_equal(embeddings, expected_ms2ds_embeddings,
-                                  check_exact=False,
-                                  atol=1e-5)
-
-
-def test_create_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test_spectra,
-                              expected_s2v_embeddings,
-                               spec2vec_model_file_name):
-    """Tests store_ms2ds_embeddings"""
-    library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra if s is not None]
-
-    embeddings = create_s2v_embeddings(Word2Vec.load(spec2vec_model_file_name), library_spectra)
-    pd.testing.assert_frame_equal(embeddings, expected_s2v_embeddings,
-                                  check_exact=False,
-                                  atol=1e-5)
-
 def check_sqlite_files_are_equal(new_sqlite_file_name, reference_sqlite_file, check_metadata=True):
     """Raises an error if the two sqlite files are not equal"""
     # Test if file is made

@@ -386,8 +386,7 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
         {"sqlite": ".sqlite", "s2v_model": ".model", "ms2ds_model": ".hdf5",
-         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
-         "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+         "ms2query_model": ".onnx"}
     if files_to_select is not None:
         dict_with_file_extensions = {key: value for key, value in dict_with_file_extensions.items()
                                      if key in files_to_select}
