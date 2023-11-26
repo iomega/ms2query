@@ -8,7 +8,8 @@ from ms2query.run_ms2query import (available_zenodo_files,
                                    zenodo_dois)
 from ms2query.utils import SettingsRunMS2Query
 from tests.test_ms2library import MS2Library
-from tests.test_utils import check_correct_results_csv_file, check_expected_headers
+from tests.test_utils import (check_correct_results_csv_file,
+                              check_expected_headers)
 
 
 if sys.version_info < (3, 8):

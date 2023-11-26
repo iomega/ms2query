@@ -5,7 +5,7 @@ new models
 
 import os
 from pathlib import Path
-from typing import List, Union, Dict
+from typing import Dict, List, Union
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
@@ -17,9 +17,11 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
-from ms2query.create_new_library.add_classifire_classifications import select_compound_classes
-from ms2query.create_new_library.create_sqlite_database import initialize_tables, fill_spectrum_data_table, \
-    fill_inchikeys_table, add_dataframe_to_sqlite
+from ms2query.create_new_library.add_classifire_classifications import \
+    select_compound_classes
+from ms2query.create_new_library.create_sqlite_database import (
+    add_dataframe_to_sqlite, fill_inchikeys_table, fill_spectrum_data_table,
+    initialize_tables)
 from ms2query.utils import return_non_existing_file_name
 
 

@@ -1,16 +1,16 @@
 import os
 import sqlite3
-
 import numpy as np
 import pandas as pd
 import pytest
 from gensim.models import Word2Vec
 from ms2deepscore.models import load_model as load_ms2ds_model
-
-from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks_multiple_spectra, normalize_and_filter_peaks
-from ms2query.create_new_library.add_classifire_classifications import _convert_to_dataframe
-from ms2query.create_new_library.library_files_creator import LibraryFilesCreator, create_ms2ds_embeddings, \
-    create_s2v_embeddings
+from ms2query.clean_and_filter_spectra import (
+    normalize_and_filter_peaks, normalize_and_filter_peaks_multiple_spectra)
+from ms2query.create_new_library.add_classifire_classifications import \
+    _convert_to_dataframe
+from ms2query.create_new_library.library_files_creator import (
+    LibraryFilesCreator, create_ms2ds_embeddings, create_s2v_embeddings)
 
 
 def test_give_already_used_file_name(tmp_path, path_to_general_test_files, hundred_test_spectra):
