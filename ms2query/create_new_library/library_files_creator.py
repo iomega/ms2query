@@ -107,13 +107,13 @@ class LibraryFilesCreator:
         """
         if compound_classes is True:
             compound_classes = select_compound_classes(self.list_of_spectra)
-        elif compound_classes is not None:
-            if not isinstance(compound_classes, pd.DataFrame):
-                raise ValueError("Expected a dataframe or True or None for compound classes")
+        elif compound_classes is not None and isinstance(compound_classes, pd.DataFrame):
             if not compound_classes.index.name == "inchikey":
                 raise ValueError("Expected a pandas dataframe with inchikey as index name")
         elif compound_classes is False or compound_classes is None:
             compound_classes = None
+        else:
+            raise ValueError("Expected a dataframe or True or None for compound classes")
         return compound_classes
 
     def create_sqlite_file(self):
