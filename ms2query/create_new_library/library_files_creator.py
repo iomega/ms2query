@@ -5,12 +5,11 @@ new models
 
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import List, Union
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
-from matchms import Spectrum
 from matchms.Spectrum import Spectrum
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
@@ -22,7 +21,6 @@ from ms2query.create_new_library.add_classifire_classifications import \
 from ms2query.create_new_library.create_sqlite_database import (
     add_dataframe_to_sqlite, fill_inchikeys_table, fill_spectrum_data_table,
     initialize_tables)
-from ms2query.utils import return_non_existing_file_name
 
 
 class LibraryFilesCreator:
@@ -75,8 +73,7 @@ class LibraryFilesCreator:
         # pylint: disable=too-many-arguments
         if os.path.exists(sqlite_file_name):
             raise FileExistsError("The sqlite file already exists")
-        else:
-            self.sqlite_file_name = sqlite_file_name
+        self.sqlite_file_name = sqlite_file_name
 
         # Load in spec2vec model
         if os.path.exists(s2v_model_file_name):
