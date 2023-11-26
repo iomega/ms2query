@@ -23,20 +23,35 @@ def sqlite_library(path_to_general_test_files):
 
 
 @pytest.fixture(scope="package")
-def ms2library(path_to_general_test_files) -> MS2Library:
+def ms2deepscore_model_file_name(path_to_general_test_files):
+    ms2ds_model_file_name = os.path.join(
+        path_to_general_test_files,
+        "ms2ds_siamese_210301_5000_500_400.hdf5")
+    return ms2ds_model_file_name
+
+
+@pytest.fixture(scope="package")
+def spec2vec_model_file_name(path_to_general_test_files):
+    spec2vec_model_file_loc = os.path.join(
+        path_to_general_test_files,
+        "100_test_spectra_s2v_model.model")
+    return spec2vec_model_file_loc
+
+
+@pytest.fixture(scope="package")
+def ms2library(path_to_general_test_files,
+               ms2deepscore_model_file_name,
+               spec2vec_model_file_name) -> MS2Library:
     """Returns file names of the files needed to create MS2Library object"""
     sqlite_file_loc = os.path.join(
         path_to_general_test_files,
         "100_test_spectra.sqlite")
-    spec2vec_model_file_loc = os.path.join(
-        path_to_general_test_files,
-        "100_test_spectra_s2v_model.model")
-    ms2ds_model_file_name = os.path.join(
-        path_to_general_test_files,
-        "ms2ds_siamese_210301_5000_500_400.hdf5")
     ms2q_model_file_name = os.path.join(path_to_general_test_files,
         "test_ms2q_rf_model.onnx")
-    ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name, ms2q_model_file_name)
+    ms2library = MS2Library(sqlite_file_loc,
+                            spec2vec_model_file_name,
+                            ms2deepscore_model_file_name,
+                            ms2q_model_file_name)
     return ms2library
 
 
