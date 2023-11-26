@@ -5,21 +5,22 @@ new models
 
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Dict
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
+from matchms import Spectrum
 from matchms.Spectrum import Spectrum
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
-from ms2query.create_new_library.add_classifire_classifications import (
-    convert_to_dataframe, select_compound_classes)
-from ms2query.create_new_library.create_sqlite_database import \
-    make_sqlfile_wrapper, add_dataframe_to_sqlite
+from ms2query.create_new_library.add_classifire_classifications import select_compound_classes
+from ms2query.create_new_library.create_sqlite_database import initialize_tables, fill_spectrum_data_table, \
+    fill_inchikeys_table, add_dataframe_to_sqlite
+from ms2query.utils import return_non_existing_file_name
 
 
 class LibraryFilesCreator:
@@ -47,10 +48,10 @@ class LibraryFilesCreator:
     """
     def __init__(self,
                  library_spectra: List[Spectrum],
-                 output_directory: Union[str, Path],
+                 sqlite_file_name: Union[str, Path],
                  s2v_model_file_name: str = None,
                  ms2ds_model_file_name: str = None,
-                 add_compound_classes: bool = True
+                 compound_classes: Union[bool, pd.DataFrame, None] = True
                  ):
         """Creates files needed to run queries on a library
 
@@ -70,90 +71,134 @@ class LibraryFilesCreator:
             File name of a ms2ds model
         """
         # pylint: disable=too-many-arguments
-        self.progress_bars = True
-        self.output_directory = output_directory
-        if not os.path.exists(self.output_directory):
-            os.mkdir(self.output_directory)
-        self.sqlite_file_name = os.path.join(output_directory, "ms2query_library.sqlite")
-        # These checks are performed at the start, since the filtering of spectra can take long
-        self._check_for_existing_files()
+        if os.path.exists(sqlite_file_name):
+            raise FileExistsError("The sqlite file already exists")
+        else:
+            self.sqlite_file_name = sqlite_file_name
+
         # Load in spec2vec model
-        if s2v_model_file_name is None:
-            self.s2v_model = None
-        else:
-            assert os.path.exists(s2v_model_file_name), "Spec2Vec model file does not exists"
+        if os.path.exists(s2v_model_file_name):
             self.s2v_model = Word2Vec.load(s2v_model_file_name)
-        # load in ms2ds model
-        if ms2ds_model_file_name is None:
-            self.ms2ds_model = None
         else:
-            assert os.path.exists(ms2ds_model_file_name), "MS2Deepscore model file does not exists"
+            raise FileNotFoundError("Spec2Vec model file does not exists")
+        # load in ms2ds model
+        if os.path.exists(ms2ds_model_file_name):
             self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
+        else:
+            raise FileNotFoundError("MS2Deepscore model file does not exists")
         # Initialise spectra
         self.list_of_spectra = library_spectra
 
         # Run default filters
         self.list_of_spectra = [msfilters.default_filters(s) for s in tqdm(self.list_of_spectra,
                                                                            desc="Applying default filters to spectra")]
-        self.add_compound_classes = add_compound_classes
+        self.compound_classes = self.add_compound_classes(compound_classes)
+        if self.compound_classes is not None:
+            self.additional_inchikey_columns = list(compound_classes.columns)
+        else:
+            self.additional_inchikey_columns = []
 
-    def _check_for_existing_files(self):
-        assert not os.path.exists(self.sqlite_file_name), \
-            f"The file {self.sqlite_file_name} already exists," \
-            f" choose a different output_base_filename"
+        self.progress_bars = True
+        self.additional_metadata_columns = {"precursor_mz": "REAL"}
+
+    def add_compound_classes(self,
+                             compound_classes: Union[pd.DataFrame, bool, None]):
+        """Calculates compound classes if True, otherwise uses given compound_classes
+        """
+        if compound_classes is True:
+            compound_classes = select_compound_classes(self.list_of_spectra)
+        elif compound_classes is not None:
+            if not isinstance(compound_classes, pd.DataFrame):
+                raise ValueError("Expected a dataframe or True or None for compound classes")
+            if not compound_classes.index.name == "inchikey":
+                raise ValueError("Expected a pandas dataframe with inchikey as index name")
+        elif compound_classes is False or compound_classes is None:
+            compound_classes = None
+        return compound_classes
 
     def create_sqlite_file(self):
-        if self.add_compound_classes:
-            compound_classes = select_compound_classes(self.list_of_spectra)
-            compound_classes_df = convert_to_dataframe(compound_classes)
-        else:
-            compound_classes_df = None
-        make_sqlfile_wrapper(
-            self.sqlite_file_name,
-            self.list_of_spectra,
-            self.create_ms2ds_embeddings(),
-            self.create_s2v_embeddings(),
-            columns_dict={"precursor_mz": "REAL"},
-            compound_classes=compound_classes_df,
-            progress_bars=self.progress_bars,
-        )
+        """Wrapper to create sqlite file containing spectrum information needed for MS2Query
 
-    def create_ms2ds_embeddings(self):
-        """Creates the ms2deepscore embeddings for all spectra
-
-        A dataframe with as index randomly generated spectrum indexes and as columns the indexes
-        of the vector is converted to pickle.
+        Args:
+        -------
+        sqlite_file_name:
+            Name of sqlite_file that should be created, if it already exists the
+            tables are added. If the tables in this sqlite file already exist, they
+            will be overwritten.
+        list_of_spectra:
+            A list with spectrum objects
+        columns_dict:
+            Dictionary with as keys columns that need to be added in addition to
+            the default columns and as values the datatype. The defaults columns
+            are spectrum_id, peaks, intensities and metadata. The additional
+            columns should be the same names that are in the metadata dictionary,
+            since these values will be automatically added in the function
+            add_list_of_spectra_to_sqlite.
+            Default = None results in the default columns.
+        progress_bars:
+            If progress_bars is True progress bars will be shown for the different
+            parts of the progress.
         """
-        assert self.ms2ds_model is not None, "No MS2deepscore model was provided"
-        ms2ds = MS2DeepScore(self.ms2ds_model,
-                             progress_bar=self.progress_bars)
-        # Compute spectral embeddings
-        embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
-        spectrum_ids = np.arange(0, len(self.list_of_spectra))
-        all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
-        return all_embeddings_df
+        if os.path.exists(self.sqlite_file_name):
+            raise FileExistsError("The sqlite file already exists")
+        initialize_tables(self.sqlite_file_name,
+                          additional_metadata_columns_dict=self.additional_metadata_columns,
+                          additional_inchikey_columns=self.additional_inchikey_columns)
+        fill_spectrum_data_table(self.sqlite_file_name, self.list_of_spectra, progress_bar=self.progress_bars)
 
-    def create_s2v_embeddings(self):
-        """Creates and stored a dataframe with embeddings as pickled file
+        fill_inchikeys_table(self.sqlite_file_name, self.list_of_spectra,
+                             compound_classes=self.compound_classes,
+                             progress_bars=self.progress_bars)
 
-        A dataframe with as index randomly generated spectrum indexes and as columns the indexes
-        of the vector is converted to pickle.
-        """
-        assert self.s2v_model is not None, "No spec2vec model was specified"
-        # Convert Spectrum objects to SpectrumDocument
-        spectrum_documents = create_spectrum_documents(
-            self.list_of_spectra,
-            progress_bar=self.progress_bars)
-        embeddings_dict = {}
-        for spectrum_id, spectrum_document in tqdm(enumerate(spectrum_documents),
-                                                   desc="Calculating embeddings",
-                                                   disable=not self.progress_bars):
-            embedding = calc_vector(self.s2v_model,
-                                    spectrum_document,
-                                    allowed_missing_percentage=100)
-            embeddings_dict[spectrum_id] = embedding
+        add_dataframe_to_sqlite(self.sqlite_file_name,
+                                'MS2Deepscore_embeddings',
+                                create_ms2ds_embeddings(self.ms2ds_model, self.list_of_spectra, self.progress_bars), )
+        add_dataframe_to_sqlite(self.sqlite_file_name,
+                                'Spec2Vec_embeddings',
+                                create_s2v_embeddings(self.s2v_model, self.list_of_spectra, self.progress_bars))
 
-        # Convert to pandas Dataframe
-        embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
-                                                      orient="index")
-        return embeddings_dataframe
+
+def create_ms2ds_embeddings(ms2ds_model,
+                            list_of_spectra,
+                            progress_bar=True):
+    """Creates the ms2deepscore embeddings for all spectra
+
+    A dataframe with as index randomly generated spectrum indexes and as columns the indexes
+    of the vector is converted to pickle.
+    """
+    assert ms2ds_model is not None, "No MS2deepscore model was provided"
+    ms2ds = MS2DeepScore(ms2ds_model,
+                         progress_bar=progress_bar)
+    # Compute spectral embeddings
+    embeddings = ms2ds.calculate_vectors(list_of_spectra)
+    spectrum_ids = np.arange(0, len(list_of_spectra))
+    all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
+    return all_embeddings_df
+
+
+def create_s2v_embeddings(s2v_model,
+                          list_of_spectra,
+                          progress_bar=True):
+    """Creates and stored a dataframe with embeddings as pickled file
+
+    A dataframe with as index randomly generated spectrum indexes and as columns the indexes
+    of the vector is converted to pickle.
+    """
+    assert s2v_model is not None, "No spec2vec model was specified"
+    # Convert Spectrum objects to SpectrumDocument
+    spectrum_documents = create_spectrum_documents(
+        list_of_spectra,
+        progress_bar=progress_bar)
+    embeddings_dict = {}
+    for spectrum_id, spectrum_document in tqdm(enumerate(spectrum_documents),
+                                               desc="Calculating embeddings",
+                                               disable=not progress_bar):
+        embedding = calc_vector(s2v_model,
+                                spectrum_document,
+                                allowed_missing_percentage=100)
+        embeddings_dict[spectrum_id] = embedding
+
+    # Convert to pandas Dataframe
+    embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
+                                                  orient="index")
+    return embeddings_dataframe

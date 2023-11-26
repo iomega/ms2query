@@ -10,55 +10,6 @@ from matchms import Spectrum
 from tqdm import tqdm
 from ms2query.create_new_library.calculate_tanimoto_scores import \
     calculate_highest_tanimoto_score
-from ms2query.utils import return_non_existing_file_name
-
-
-def make_sqlfile_wrapper(sqlite_file_name: str,
-                         list_of_spectra: List[Spectrum],
-                         ms2ds_embeddings: pd.DataFrame,
-                         s2v_embeddings: pd.DataFrame,
-                         columns_dict: Dict[str, str] = None,
-                         compound_classes: pd.DataFrame = None,
-                         progress_bars: bool = True,
-                         ):
-    """Wrapper to create sqlite file containing spectrum information needed for MS2Query
-
-    Args:
-    -------
-    sqlite_file_name:
-        Name of sqlite_file that should be created, if it already exists the
-        tables are added. If the tables in this sqlite file already exist, they
-        will be overwritten.
-    list_of_spectra:
-        A list with spectrum objects
-    columns_dict:
-        Dictionary with as keys columns that need to be added in addition to
-        the default columns and as values the datatype. The defaults columns
-        are spectrum_id, peaks, intensities and metadata. The additional
-        columns should be the same names that are in the metadata dictionary,
-        since these values will be automatically added in the function
-        add_list_of_spectra_to_sqlite.
-        Default = None results in the default columns.
-    progress_bars:
-        If progress_bars is True progress bars will be shown for the different
-        parts of the progress.
-    """
-    sqlite_file_name = return_non_existing_file_name(sqlite_file_name)
-    additional_inchikey_columns = []
-    if compound_classes is not None:
-        additional_inchikey_columns = list(compound_classes.columns)
-        assert compound_classes.index.name == "inchikey", "Expected a pandas dataframe with inchikey as index name"
-
-    initialize_tables(sqlite_file_name, additional_metadata_columns_dict=columns_dict,
-                      additional_inchikey_columns=additional_inchikey_columns)
-    fill_spectrum_data_table(sqlite_file_name, list_of_spectra, progress_bar=progress_bars)
-
-    fill_inchikeys_table(sqlite_file_name, list_of_spectra,
-                         compound_classes=compound_classes,
-                         progress_bars=progress_bars)
-
-    add_dataframe_to_sqlite(sqlite_file_name, 'MS2Deepscore_embeddings', ms2ds_embeddings)
-    add_dataframe_to_sqlite(sqlite_file_name, 'Spec2Vec_embeddings', s2v_embeddings)
 
 
 def add_dataframe_to_sqlite(sqlite_file_name,
