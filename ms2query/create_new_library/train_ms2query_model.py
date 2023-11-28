@@ -55,8 +55,8 @@ class DataCollectorForTraining():
         validation_query_spectra:
             List of Spectrum objects
         """
-        all_tanimoto_scores = pd.DataFrame()
-        info_of_matches_with_tanimoto = pd.DataFrame()
+        all_tanimoto_scores_list = []
+        info_of_matches_with_tanimoto_list = []
         for query_spectrum in tqdm(query_spectra,
                                    desc="Get scores and tanimoto scores"):
             results_table = self.ms2library.calculate_features_single_spectrum(query_spectrum,
@@ -67,18 +67,17 @@ class DataCollectorForTraining():
             tanimoto_scores = calculate_tanimoto_scores_with_library(self.ms2library.sqlite_library, query_spectrum,
                                                                      library_spectrum_ids)
             # Add tanimoto scores for training data
-            all_tanimoto_scores = \
-                all_tanimoto_scores.append(tanimoto_scores,
-                                           ignore_index=True)
+            all_tanimoto_scores_list.append(tanimoto_scores)
             # Select the features (remove inchikey, since this should not be
             # used for training
             features_dataframe = results_table.get_training_data()
             # Add matches for which a tanimoto score could be calculated
             matches_with_tanimoto = features_dataframe.loc[
                 tanimoto_scores.index]
-            info_of_matches_with_tanimoto = \
-                info_of_matches_with_tanimoto.append(matches_with_tanimoto,
-                                                     ignore_index=True)
+            info_of_matches_with_tanimoto_list.append(matches_with_tanimoto)
+
+        all_tanimoto_scores = pd.concat(all_tanimoto_scores_list, ignore_index = True)
+        info_of_matches_with_tanimoto = pd.concat(info_of_matches_with_tanimoto_list, ignore_index = True)
         return info_of_matches_with_tanimoto, all_tanimoto_scores
 
 
