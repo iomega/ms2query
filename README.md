@@ -117,6 +117,12 @@ optional arguments:
   --addional_metadata   Return additional metadata columns in the results, for example --additional_metadata retention_time feature_id
 ```
 
+## Interpretation of results
+As output a csv file is returned, an example of results can be found in [expected_results_dummy_data.csv](https://github.com/iomega/ms2query/blob/main/dummy_data/expected_results_dummy_data.csv). For each of your input spectra MS2Query predicts a library match. It is important to check the ms2query_model_prediction column. This column contains a score, which indicates the likelihood that the found match is a good match. This score ranges between 0 and 1, the closer this score is to 1 the more likely that it is a good match/analogue. It is important to use this score to select only the reliable hits, since a prediction is given for each spectrum, regardless of the ms2query score. There is no strict minimum for this score, but the higher the MS2Query model prediction the more likely it is a good match/analogue. It will depend on your research goal, what a good threshold is. If a high recall is important you might want a low threshold and if a high reliability is more important you might want a high threshold. To give a general indication, a score > 0,7 has many good analogues and exact matches. In the range of 0.6-0.7, the results can still be useful, but should be analysed with more caution and results below 0.6 can often best be discarded. 
+
+MS2Query does not need two different workflows for searching for analogues and searching for exact matches, it automatically selects the most likely library spectra. If it is important to separate potential exact matches from potential analogues for your research question, the column with the precursor mz difference can be used to separate these results, since exact matches should have no precursor mz difference.
+The columns completely to the right are estimated molecular classes based on the molecular structure of the predicted library molecule, these columns can be used to get a quick overview of the kind of compounds that were found.
+
 ## Build MS2Query into other tools
 If you want to incorporate MS2Query into another tool it might be easier to run MS2Query from a python script, 
 instead of running from the command line. The guide below can be used as a starting point. 
