@@ -157,17 +157,22 @@ def get_modified_cosine_score_results(lib_spectra,
         else:
             selected_lib_spectra = lib_spectra
         if len(selected_lib_spectra) != 0:
-            scores_list = calculate_scores(selected_lib_spectra,
-                                           [test_spectrum], ModifiedCosine()).scores_by_query(test_spectrum)
-            # Scores list is a List[spectrum, (mod_cos, matching_peaks)
-            cosine_scores = [scores_tuple[1]["score"] for scores_tuple in scores_list]
-            highest_cosine_score = float(max(cosine_scores))
-            highest_scoring_spectrum = scores_list[cosine_scores.index(highest_cosine_score)][0]
+            scores = calculate_scores(references=selected_lib_spectra,
+                                      queries=[test_spectrum],
+                                      similarity_function=CosineGreedy())
+            # Matchms allows to get the best matches for any query using scores_by_query
+            sorted_scores = scores.scores_by_query(test_spectrum, 'CosineGreedy_score', sort=True)
+            # Scores are not stored if the cosine score is 0 (no overlapping peaks).
+            if len(sorted_scores) == 0:
+                highest_scoring_spectrum = random.choice(selected_lib_spectra)
+                highest_cosine_score = (0, 0)
+            else:
+                highest_scoring_spectrum, highest_cosine_score = sorted_scores[0]
 
             tanimoto_score = calculate_single_tanimoto_score(test_spectrum.get("smiles"),
                                                              highest_scoring_spectrum.get("smiles"))
             exact_match = highest_scoring_spectrum.get("inchikey")[:14] == test_spectrum.get("inchikey")[:14]
-            best_matches_for_test_spectra.append((highest_cosine_score, tanimoto_score, exact_match))
+            best_matches_for_test_spectra.append((highest_cosine_score[0], tanimoto_score, exact_match))
         else:
             best_matches_for_test_spectra.append(None)
     return best_matches_for_test_spectra
@@ -189,6 +194,7 @@ def get_cosines_score_results(lib_spectra,
             scores_list = calculate_scores(selected_lib_spectra,
                                            [test_spectrum],
                                            CosineGreedy(tolerance=fragment_mass_tolerance)).scores_by_query(test_spectrum)
+            # todo This was build with old matchms in mind, this version will not find cosine scores = 0
             cosine_scores = [scores_tuple[1].item()[0] for scores_tuple in scores_list if scores_tuple[1].item()[1] >= minimum_matched_peaks]
             if len(cosine_scores) != 0:
                 highest_cosine_score = max(cosine_scores)

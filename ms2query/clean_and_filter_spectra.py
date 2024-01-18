@@ -1,16 +1,15 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import matchms.filtering as msfilters
-from matchms import Spectrum
+from matchms.Spectrum import Spectrum
 from matchms.logging_functions import set_matchms_logger_level
-from matchms.metadata_utils import (is_valid_inchi, is_valid_inchikey,
-                                    is_valid_smiles)
+from matchms.filtering.filter_utils.smile_inchi_inchikey_conversions import (
+    is_valid_inchi, is_valid_inchikey, is_valid_smiles)
 from matchms.typing import SpectrumType
-from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
 from spec2vec import SpectrumDocument
 from tqdm import tqdm
 
 
-def clean_metadata(spectrum: Spectrum) -> Spectrum:
+def clean_metadata(spectrum: Spectrum) -> Optional[Spectrum]:
     spectrum = msfilters.default_filters(spectrum)
     spectrum = msfilters.add_retention_index(spectrum)
     spectrum = msfilters.add_retention_time(spectrum)
@@ -78,11 +77,7 @@ def harmonize_annotation(spectrum: Spectrum,
     if do_pubchem_lookup:
         if not check_fully_annotated(spectrum):
             spectrum = msfilters.add_parent_mass(spectrum, estimate_from_adduct=True)
-            spectrum = pubchem_metadata_lookup(spectrum,
-                                               mass_tolerance=2.0,
-                                               allowed_differences=[(18.03, 0.01),
-                                                                    (18.01, 0.01)],
-                                               name_search_depth=15)
+            spectrum = msfilters.derive_annotation_from_compound_name(spectrum, mass_tolerance=0.1)
     return spectrum
 
 
