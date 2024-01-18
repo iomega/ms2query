@@ -1,9 +1,9 @@
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 import matchms.filtering as msfilters
-from matchms.Spectrum import Spectrum
-from matchms.logging_functions import set_matchms_logger_level
 from matchms.filtering.filter_utils.smile_inchi_inchikey_conversions import (
     is_valid_inchi, is_valid_inchikey, is_valid_smiles)
+from matchms.logging_functions import set_matchms_logger_level
+from matchms.Spectrum import Spectrum
 from matchms.typing import SpectrumType
 from spec2vec import SpectrumDocument
 from tqdm import tqdm
