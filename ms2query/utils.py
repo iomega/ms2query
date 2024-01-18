@@ -1,17 +1,11 @@
 import json
 import os
-import sys
+import pandas as pd
 from typing import List, Optional, Tuple, Union
 import numpy as np
 from matchms import importing
 from onnxruntime import InferenceSession
 from spec2vec.Spec2Vec import Spectrum
-
-
-if sys.version_info < (3, 8):
-    import pickle5 as pickle
-else:
-    import pickle
 
 
 def load_ms2query_model(ms2query_model_file_name) -> InferenceSession:
@@ -33,10 +27,10 @@ def load_ms2query_model(ms2query_model_file_name) -> InferenceSession:
     raise ValueError("The MS2Query model file is expected to end on .pickle")
 
 
-def save_pickled_file(obj, filename: str):
+def save_df_as_parquet_file(df, filename: str):
     assert not os.path.exists(filename), "File already exists"
-    with open(filename, "wb") as f:
-        pickle.dump(obj, f)
+    df.columns = df.columns.astype(str)
+    df.to_parquet(filename)
 
 
 def save_json_file(data, filename):
@@ -51,10 +45,8 @@ def load_json_file(filename):
     return data
 
 
-def load_pickled_file(filename: str):
-    with open(filename, 'rb') as file:
-        loaded_object = pickle.load(file)
-    return loaded_object
+def load_df_from_parquet_file(filename: str):
+    return pd.read_parquet(filename)
 
 
 def load_matchms_spectrum_objects_from_file(file_name
@@ -87,7 +79,7 @@ def load_matchms_spectrum_objects_from_file(file_name
     if file_extension == ".usi":
         return list(importing.load_from_usi(file_name))
     if file_extension == ".pickle":
-        spectra = load_pickled_file(file_name)
+        spectra = load_df_from_parquet_file(file_name)
         assert isinstance(spectra, list), "Expected list of spectra"
         assert isinstance(spectra[0], Spectrum), "Expected list of spectra"
         return spectra

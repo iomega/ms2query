@@ -4,8 +4,7 @@ import pytest
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
 from ms2query.create_new_library.library_files_creator import \
     LibraryFilesCreator
-from ms2query.utils import (load_matchms_spectrum_objects_from_file,
-                            load_pickled_file)
+from ms2query.utils import load_df_from_parquet_file
 
 
 def test_give_already_used_file_name(tmp_path, path_to_general_test_files, hundred_test_spectra):
@@ -28,11 +27,11 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files,
                                                                                'ms2ds_siamese_210301_5000_500_400.hdf5'))
     test_create_files.store_ms2ds_embeddings()
 
-    new_embeddings_file_name = os.path.join(base_file_name, "ms2ds_embeddings.pickle")
+    new_embeddings_file_name = os.path.join(base_file_name, "ms2ds_embeddings.parquet")
     assert os.path.isfile(new_embeddings_file_name), \
         "Expected file to be created"
     # Test if correct embeddings are stored
-    embeddings = load_pickled_file(new_embeddings_file_name)
+    embeddings = load_df_from_parquet_file(new_embeddings_file_name)
     pd.testing.assert_frame_equal(embeddings, expected_ms2ds_embeddings,
                                   check_exact=False,
                                   atol=1e-5)
@@ -48,10 +47,10 @@ def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test
                                                                              "100_test_spectra_s2v_model.model"))
     test_create_files.store_s2v_embeddings()
 
-    new_embeddings_file_name = os.path.join(base_file_name, "s2v_embeddings.pickle")
+    new_embeddings_file_name = os.path.join(base_file_name, "s2v_embeddings.parquet")
     assert os.path.isfile(new_embeddings_file_name), \
         "Expected file to be created"
-    embeddings = load_pickled_file(new_embeddings_file_name)
+    embeddings = load_df_from_parquet_file(new_embeddings_file_name)
     pd.testing.assert_frame_equal(embeddings, expected_s2v_embeddings,
                                   check_exact=False,
                                   atol=1e-5)

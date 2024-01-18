@@ -6,7 +6,7 @@ from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_df_from_parquet_file
 
 
 @pytest.fixture(scope="package")
@@ -108,7 +108,7 @@ def expected_tanimoto_scores_df(path_to_general_test_files):
 
 @pytest.fixture(scope="package")
 def expected_ms2ds_embeddings(path_to_general_test_files):
-    expected_embeddings = load_pickled_file(os.path.join(
+    expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
         "100_test_spectra_ms2ds_embeddings.pickle"))
     return expected_embeddings
@@ -116,7 +116,7 @@ def expected_ms2ds_embeddings(path_to_general_test_files):
 
 @pytest.fixture(scope="package")
 def expected_s2v_embeddings(path_to_general_test_files):
-    expected_embeddings = load_pickled_file(os.path.join(
+    expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
         "100_test_spectra_s2v_embeddings.pickle"))
     return expected_embeddings

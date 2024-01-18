@@ -15,7 +15,7 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.results_table import ResultsTable
 from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
-                            load_ms2query_model, load_pickled_file,
+                            load_ms2query_model, load_df_from_parquet_file,
                             predict_onnx_model, return_non_existing_file_name,
                             select_files_in_directory)
 
@@ -79,10 +79,8 @@ class MS2Library:
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
         # loads the library embeddings into memory
-        self.s2v_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_s2v_embeddings_file_name)
-        self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_ms2ds_embeddings_file_name)
+        self.s2v_embeddings: pd.DataFrame = load_df_from_parquet_file(pickled_s2v_embeddings_file_name)
+        self.ms2ds_embeddings: pd.DataFrame = load_df_from_parquet_file(pickled_ms2ds_embeddings_file_name)
         
         assert self.ms2ds_model.base.output_shape[1] == self.ms2ds_embeddings.shape[1], \
             "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
