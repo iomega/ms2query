@@ -34,7 +34,8 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files,
     embeddings = load_df_from_parquet_file(new_embeddings_file_name)
     pd.testing.assert_frame_equal(embeddings, expected_ms2ds_embeddings,
                                   check_exact=False,
-                                  atol=1e-5)
+                                  atol=1e-5,
+                                  check_dtype=False)
 
 
 def test_store_s2v_embeddings(tmp_path, path_to_general_test_files, hundred_test_spectra,

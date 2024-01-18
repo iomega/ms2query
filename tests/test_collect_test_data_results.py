@@ -113,7 +113,7 @@ def test_get_cosines_score_results(local_test_spectra, hundred_test_spectra):
     # Test if no error happens when only 1 or 0 library spectra within mass range
     # todo This was build with old matchms in mind, this version will not find cosine scores = 0
     result = get_cosines_score_results(hundred_test_spectra, local_test_spectra, 5.56, 0.05, 0)
-    assert result == (None, None)
+    assert result == [None, None]
 
 
 def test_create_optimal_results(local_test_spectra):

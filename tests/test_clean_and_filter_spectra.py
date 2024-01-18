@@ -96,6 +96,7 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path):
         mz=np.array([538.003174, 539.217773], dtype="float"),
         intensities=np.array([0.28046377, 0.28900242], dtype="float"),
         metadata={'pepmass': (342.30, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
+                  "parent_mass": 342.12,
                   'compound_name': 'sucrose', "ionmode": "positive"})
     cleaned_spectrum_1 = harmonize_annotation(spectrum1, True)
     cleaned_spectrum_2 = harmonize_annotation(spectrum2, True)
@@ -111,7 +112,7 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path):
 
     assert cleaned_spectrum_2.get("smiles") == "C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O[C@]2([C@H]([C@@H]([C@H](O2)CO)O)O)CO)O)O)O)O"
     assert cleaned_spectrum_2.get("inchikey") == "CZMRCDWAGMRECN-UGDNZRGBSA-N"
-    assert cleaned_spectrum_2.get("inchi") == '"InChI=1S/C12H22O11/c13-1-4-6(16)8(18)9(19)11(21-4)23-12(3-15)10(20)7(17)5(2-14)22-12/h4-11,13-20H,1-3H2/t4-,5-,6-,7-,8+,9-,10+,11-,12+/m1/s1"'
+    assert cleaned_spectrum_2.get("inchi") == 'InChI=1S/C12H22O11/c13-1-4-6(16)8(18)9(19)11(21-4)23-12(3-15)10(20)7(17)5(2-14)22-12/h4-11,13-20H,1-3H2/t4-,5-,6-,7-,8+,9-,10+,11-,12+/m1/s1'
 
 
 def test_remove_not_fully_annotated_spectra(tmp_path):
