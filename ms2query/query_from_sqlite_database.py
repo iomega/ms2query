@@ -158,3 +158,25 @@ class SqliteLibrary:
         if has_class_annotations is False:
             print("SQLite file does not contain compound class information (download a newer version)")
         return has_class_annotations
+
+    def get_ms2deepscore_embeddings(self):
+        # Connect to the SQLite database
+        conn = sqlite3.connect(self.sqlite_file_name)
+        # Write an SQL query to select data from the table
+        query = "SELECT * FROM MS2Deepscore_embeddings"
+        # Use the read_sql_query function to execute the query and read the results into a DataFrame
+        ms2deepscore_embeddings = pd.read_sql_query(query, conn, index_col="spectrumid")
+        # Close the connection
+        conn.close()
+        return ms2deepscore_embeddings
+
+    def get_spec2vec_embeddings(self):
+        # Connect to the SQLite database
+        conn = sqlite3.connect(self.sqlite_file_name)
+        # Write an SQL query to select data from the table
+        query = "SELECT * FROM Spec2Vec_embeddings"
+        # Use the read_sql_query function to execute the query and read the results into a DataFrame
+        spec2vec_embeddings = pd.read_sql_query(query, conn, index_col="spectrumid")
+        # Close the connection
+        conn.close()
+        return spec2vec_embeddings

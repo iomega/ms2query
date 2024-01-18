@@ -15,8 +15,8 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.results_table import ResultsTable
 from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
-                            load_ms2query_model, load_pickled_file,
-                            predict_onnx_model, return_non_existing_file_name,
+                            load_ms2query_model, predict_onnx_model,
+                            return_non_existing_file_name,
                             select_files_in_directory)
 
 
@@ -41,8 +41,6 @@ class MS2Library:
                  sqlite_file_name: str,
                  s2v_model_file_name: str,
                  ms2ds_model_file_name: str,
-                 pickled_s2v_embeddings_file_name: str,
-                 pickled_ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None]):
         """
         Parameters
@@ -57,32 +55,20 @@ class MS2Library:
             .trainables.syn1neg.npy and .wv.vectors.npy.
         ms2ds_model_file_name:
             File location of a trained ms2ds model.
-        pickled_s2v_embeddings_file_name:
-            File location of a pickled file with Spec2Vec embeddings in a
-            pd.Dataframe with as index the spectrum id.
-        pickled_ms2ds_embeddings_file_name:
-            File location of a pickled file with ms2ds embeddings in a
-            pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
         """
-        # pylint: disable=too-many-arguments
-
         # Load models and set file locations
         assert os.path.isfile(sqlite_file_name), f"The given sqlite file does not exist: {sqlite_file_name}"
         self.sqlite_library = SqliteLibrary(sqlite_file_name)
+        self.s2v_embeddings = self.sqlite_library.get_spec2vec_embeddings()
+        self.ms2ds_embeddings = self.sqlite_library.get_ms2deepscore_embeddings()
 
         if ms2query_model_file_name is not None:
             self.ms2query_model = load_ms2query_model(ms2query_model_file_name)
 
         self.s2v_model = Word2Vec.load(s2v_model_file_name)
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-
-        # loads the library embeddings into memory
-        self.s2v_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_s2v_embeddings_file_name)
-        self.ms2ds_embeddings: pd.DataFrame = load_pickled_file(
-            pickled_ms2ds_embeddings_file_name)
         
         assert self.ms2ds_model.base.output_shape[1] == self.ms2ds_embeddings.shape[1], \
             "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
@@ -400,8 +386,7 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
         {"sqlite": ".sqlite", "s2v_model": ".model", "ms2ds_model": ".hdf5",
-         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
-         "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+         "ms2query_model": ".onnx"}
     if files_to_select is not None:
         dict_with_file_extensions = {key: value for key, value in dict_with_file_extensions.items()
                                      if key in files_to_select}
@@ -453,5 +438,4 @@ def create_library_object_from_one_dir(directory_containing_library_and_models: 
         else:
             dict_with_file_paths[key] = None
     return MS2Library(dict_with_file_paths["sqlite"], dict_with_file_paths["s2v_model"],
-                      dict_with_file_paths["ms2ds_model"], dict_with_file_paths["s2v_embeddings"],
-                      dict_with_file_paths["ms2ds_embeddings"], dict_with_file_paths["ms2query_model"])
+                      dict_with_file_paths["ms2ds_model"], dict_with_file_paths["ms2query_model"])

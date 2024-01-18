@@ -47,6 +47,7 @@ def train_all_models(annotated_training_spectra,
     spec2vec_model_file_name = os.path.join(output_folder, "spec2vec_model.model")
     ms2query_model_file_name = os.path.join(output_folder, "ms2query_model.onnx")
     ms2ds_history_figure_file_name = os.path.join(output_folder, "ms2deepscore_training_history.svg")
+    sqlite_model_file = os.path.join(output_folder, "ms2query_model.sqlite")
 
     # Train MS2Deepscore model
     train_ms2deepscore_wrapper(annotated_training_spectra,
@@ -75,11 +76,11 @@ def train_all_models(annotated_training_spectra,
 
     # Create library with all training spectra
     library_files_creator = LibraryFilesCreator(annotated_training_spectra,
-                                                output_folder,
+                                                sqlite_model_file,
                                                 spec2vec_model_file_name,
                                                 ms2deepscore_model_file_name,
-                                                add_compound_classes=settings.add_compound_classes)
-    library_files_creator.create_all_library_files()
+                                                compound_classes=settings.add_compound_classes)
+    library_files_creator.create_sqlite_file()
 
 
 def clean_and_train_models(spectrum_file: str,

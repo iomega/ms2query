@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
 from ms2query.utils import SettingsRunMS2Query, column_names_for_output
-from tests.test_utils import check_correct_results_csv_file
+from tests.test_utils import (check_correct_results_csv_file,
+                              check_expected_headers)
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra):
@@ -65,12 +66,15 @@ def test_analog_search_store_in_csv(ms2library, test_spectra, tmp_path):
     settings = SettingsRunMS2Query(additional_metadata_columns=(("spectrum_id", )))
     ms2library.analog_search_store_in_csv(test_spectra, results_csv_file, settings)
     assert os.path.exists(results_csv_file)
-    expected_headers = \
-        ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrum_id"]
-    check_correct_results_csv_file(
-        pd.read_csv(results_csv_file),
-        expected_headers)
+
+    results = pd.read_csv(results_csv_file)
+    check_expected_headers(results,
+                           expected_headers=
+                           ['query_spectrum_nr', 'ms2query_model_prediction', 'precursor_mz_difference',
+                            'precursor_mz_query_spectrum', 'precursor_mz_analog', 'inchikey', 'analog_compound_name',
+                            'smiles', 'spectrum_id', 'cf_kingdom', 'cf_superclass', 'cf_class', 'cf_subclass',
+                            'cf_direct_parent', 'npc_class_results', 'npc_superclass_results', 'npc_pathway_results'])
+    check_correct_results_csv_file(results)
 
 
 def test_create_library_object_from_one_dir(path_to_general_test_files):
@@ -82,10 +86,15 @@ def test_create_library_object_from_one_dir(path_to_general_test_files):
 def test_analog_yield_df(ms2library, test_spectra, tmp_path):
     settings = SettingsRunMS2Query(additional_metadata_columns=("spectrum_id", ),)
     result = ms2library.analog_search_yield_df(test_spectra, settings)
-    expected_headers = \
-        ['query_spectrum_nr', "ms2query_model_prediction", "precursor_mz_difference", "precursor_mz_query_spectrum",
-         "precursor_mz_analog", "inchikey", "analog_compound_name", "smiles", "spectrum_id"]
-    check_correct_results_csv_file(list(result)[0], expected_headers, nr_of_rows_to_check=1)
+    result = list(result)[0]
+    check_expected_headers(result,
+                           expected_headers=
+                           ['query_spectrum_nr', 'ms2query_model_prediction', 'precursor_mz_difference',
+                            'precursor_mz_query_spectrum', 'precursor_mz_analog', 'inchikey', 'analog_compound_name',
+                            'smiles', 'spectrum_id', 'cf_kingdom', 'cf_superclass', 'cf_class', 'cf_subclass',
+                            'cf_direct_parent', 'npc_class_results', 'npc_superclass_results', 'npc_pathway_results'])
+
+    check_correct_results_csv_file(result, nr_of_rows_to_check=1)
 
 
 def test_analog_yield_df_additional_columns(ms2library, test_spectra, tmp_path):
@@ -93,7 +102,8 @@ def test_analog_yield_df_additional_columns(ms2library, test_spectra, tmp_path):
                                    additional_ms2query_score_columns=("s2v_score", "ms2ds_score",),)
     result = ms2library.analog_search_yield_df(test_spectra, settings)
     result_first_spectrum = list(result)[0]
+    check_expected_headers(result_first_spectrum,
+                           expected_headers=column_names_for_output(True, True, ("charge", "retention_time"),
+                                                           ("s2v_score", "ms2ds_score",)),)
     check_correct_results_csv_file(result_first_spectrum,
-                                   column_names_for_output(True, True, ("charge", "retention_time"),
-                                                           ("s2v_score", "ms2ds_score",)),
                                    nr_of_rows_to_check=1)

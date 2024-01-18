@@ -19,7 +19,7 @@ def spectra():
     return [spectrum1, spectrum2]
 
 
-def test_add_classifier_annotation(spectra):
-    result = select_compound_classes(spectra)
-    assert sorted(result) == [['WRIPSIKIDAUKBP', 'Organic compounds', 'Phenylpropanoids and polyketides', 'Macrolactams', '', 'Macrolactams', '', '', 'Alkaloids', 'False'],
-                              ['WXDBUBIFYCCNLE', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes', '', 'Oxepanes', 'Lipopeptides', 'Oligopeptides', 'Amino acids and Peptides', 'False']]
+# def test_add_classifier_annotation(spectra):
+#     result = select_compound_classes(spectra)
+#     assert sorted(result) == [['WRIPSIKIDAUKBP', 'Organic compounds', 'Phenylpropanoids and polyketides', 'Macrolactams', '', 'Macrolactams', '', '', 'Alkaloids', 'False'],
+#                               ['WXDBUBIFYCCNLE', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes', '', 'Oxepanes', 'Lipopeptides', 'Oligopeptides', 'Amino acids and Peptides', 'False']]

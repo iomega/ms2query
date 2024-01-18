@@ -115,6 +115,8 @@ def train_ms2query_model(training_spectra,
                          ms2ds_model_file_name,
                          s2v_model_file_name,
                          fraction_for_training):
+    os.makedirs(library_files_folder, exist_ok=True)
+
     # Select spectra belonging to a single InChIKey
     library_spectra, unique_inchikey_query_spectra = split_spectra_on_inchikeys(training_spectra,
                                                                                 fraction_for_training)
@@ -124,17 +126,17 @@ def train_ms2query_model(training_spectra,
     query_spectra_for_training = unique_inchikey_query_spectra + single_spectra_query_spectra
 
     # Create library files for training ms2query
-    library_creator_for_training = LibraryFilesCreator(library_spectra, output_directory=library_files_folder,
-                                                       s2v_model_file_name=s2v_model_file_name,
-                                                       ms2ds_model_file_name=ms2ds_model_file_name,
-                                                       add_compound_classes=False)
-    library_creator_for_training.create_all_library_files()
+    library_creator_for_training = LibraryFilesCreator(
+        library_spectra,
+        sqlite_file_name=os.path.join(library_files_folder, "ms2query_library.sqlite"),
+        s2v_model_file_name=s2v_model_file_name,
+        ms2ds_model_file_name=ms2ds_model_file_name,
+        compound_classes=None)
+    library_creator_for_training.create_sqlite_file()
 
     ms2library_for_training = MS2Library(sqlite_file_name=library_creator_for_training.sqlite_file_name,
                                          s2v_model_file_name=s2v_model_file_name,
                                          ms2ds_model_file_name=ms2ds_model_file_name,
-                                         pickled_s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
-                                         pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
                                          ms2query_model_file_name=None)
     # Create training data MS2Query model
     collector = DataCollectorForTraining(ms2library_for_training)

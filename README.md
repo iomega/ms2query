@@ -207,7 +207,7 @@ library_creator = LibraryFilesCreator(cleaned_library_spectra,
                                       output_directory=directory_for_library_and_models,
                                       ms2ds_model_file_name=ms2ds_model_file_name,
                                       s2v_model_file_name=s2v_model_file_name, )
-library_creator.create_all_library_files()
+library_creator.create_sqlite_file()
 ```
 
 To run MS2Query on your own created library. Check out the instructions under Run MS2Query. Both command line and the code version should work.
