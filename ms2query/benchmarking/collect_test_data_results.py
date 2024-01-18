@@ -159,9 +159,9 @@ def get_modified_cosine_score_results(lib_spectra,
         if len(selected_lib_spectra) != 0:
             scores = calculate_scores(references=selected_lib_spectra,
                                       queries=[test_spectrum],
-                                      similarity_function=CosineGreedy())
+                                      similarity_function=ModifiedCosine())
             # Matchms allows to get the best matches for any query using scores_by_query
-            sorted_scores = scores.scores_by_query(test_spectrum, 'CosineGreedy_score', sort=True)
+            sorted_scores = scores.scores_by_query(test_spectrum, 'ModifiedCosine_score', sort=True)
             # Scores are not stored if the cosine score is 0 (no overlapping peaks).
             if len(sorted_scores) == 0:
                 highest_scoring_spectrum = random.choice(selected_lib_spectra)
