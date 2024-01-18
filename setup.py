@@ -29,7 +29,7 @@ setup(
     test_suite="tests",
     python_requires='>=3.7',
     install_requires=[
-        "matchms>=0.24.0", # Matchms 0.19 breaks some cosine score calculations. Not sure why.
+        "matchms>=0.24.0",
         "numpy",
         "spec2vec>=0.6.0",
         "h5py",
