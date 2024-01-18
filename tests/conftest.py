@@ -70,7 +70,8 @@ def test_spectra():
                                    'precursor_mz': 907.0,
                                    # 'precursor_mz': 905.9927235480093,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
-                                   'charge': 1})
+                                   'charge': 1,
+                                   "ionmode": "positive"})
     spectrum2 = Spectrum(mz=np.array([538.003174, 539.217773, 556.030396,
                                       599.352783, 851.380859, 852.370605,
                                       909.424438, 953.396606, 963.686768,
@@ -88,6 +89,7 @@ def test_spectra():
                                    'precursor_mz': 928.0,
                                    # 'precursor_mz': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
+                                   "ionmode": "positive",
                                    # 'charge': 1
                                    })
     spectra = [spectrum1, spectrum2]

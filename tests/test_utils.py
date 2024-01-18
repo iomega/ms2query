@@ -42,7 +42,7 @@ def check_correct_results_csv_file(dataframe_found: pd.DataFrame,
     # Define expected results
     csv_format_expected_results ="""query_spectrum_nr,ms2query_model_prediction,precursor_mz_difference,precursor_mz_query_spectrum,precursor_mz_analog,inchikey,spectrum_id,analog_compound_name,charge,s2v_score,ms2ds_score,retention_time,retention_index,smiles,cf_kingdom,cf_superclass,cf_class,cf_subclass,cf_direct_parent,npc_class_results,npc_superclass_results,npc_pathway_results\n
         1,0.5645,33.2500,907.0000,940.2500,KNGPFNUOXXLKCN,CCMSLIB00000001760,Hoiamide B,1,0.9996,0.9232,,,CCC[C@@H](C)[C@@H]([C@H](C)[C@@H]1[C@H]([C@H](Cc2nc(cs2)C3=N[C@](CS3)(C4=N[C@](CS4)(C(=O)N[C@H]([C@H]([C@H](C(=O)O[C@H](C(=O)N[C@H](C(=O)O1)[C@@H](C)O)[C@@H](C)CC)C)O)[C@@H](C)CC)C)C)OC)C)O,b,c,d,e,f,g,h,i\n
-        2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001761,Halovir A,0,0.9621,0.4600,,,CCCCCCCCCCCCCC(=O)NC(C)(C)C(=O)N1C[C@H](O)C[C@H]1C(=O)NC(CC(C)C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H](CCC(N)=O)C(=O)N[C@H](CO)CC(C)C,b,c,d,e,f,g,h,i\n"""
+        2,0.4090,61.3670,928.0000,866.6330,GRJSOZDXIUZXEW,CCMSLIB00000001761,Halovir A,1,0.9621,0.4600,,,CCCCCCCCCCCCCC(=O)NC(C)(C)C(=O)N1C[C@H](O)C[C@H]1C(=O)NC(CC(C)C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H](CCC(N)=O)C(=O)N[C@H](CO)CC(C)C,b,c,d,e,f,g,h,i\n"""
     dataframe_expected_results = pd.read_csv(StringIO(csv_format_expected_results), sep=",", header=0)
 
     # convert csv rows to dataframe
