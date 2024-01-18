@@ -27,7 +27,7 @@ setup(
     license="Apache Software License 2.0",
     zip_safe=False,
     test_suite="tests",
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     install_requires=[
         "matchms>=0.24.0",
         "numpy",
@@ -41,8 +41,6 @@ setup(
         "ms2deepscore<=0.4.0",
         "gensim>=4.0.0",
         "pandas",
-        "matchmsextras==0.4.0",
-        "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
         "tqdm",
         "matplotlib",
         "skl2onnx",
