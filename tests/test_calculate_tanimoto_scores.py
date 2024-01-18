@@ -6,7 +6,6 @@ from ms2query.create_new_library.calculate_tanimoto_scores import (
     calculate_tanimoto_scores_unique_inchikey)
 
 
-
 def test_calculate_tanimoto_scores_unique_inchikey(path_to_general_test_files, hundred_test_spectra,
                                                    expected_tanimoto_scores_df):
     tanimoto_df = calculate_tanimoto_scores_unique_inchikey(hundred_test_spectra, hundred_test_spectra)

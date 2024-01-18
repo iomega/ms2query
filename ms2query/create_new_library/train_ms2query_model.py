@@ -20,7 +20,8 @@ from ms2query.create_new_library.library_files_creator import \
 from ms2query.create_new_library.split_data_for_training import (
     split_spectra_on_inchikeys, split_training_and_validation_spectra)
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import return_non_existing_file_name, save_df_as_parquet_file
+from ms2query.utils import (return_non_existing_file_name,
+                            save_df_as_parquet_file)
 
 
 class DataCollectorForTraining():

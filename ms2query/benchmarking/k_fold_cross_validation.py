@@ -6,6 +6,7 @@ import os
 import random
 from typing import List
 from matchms import Spectrum
+from matchms.exporting.save_as_mgf import save_as_mgf
 from ms2query.benchmarking.collect_test_data_results import (
     generate_exact_matches_test_results, generate_test_results)
 from ms2query.clean_and_filter_spectra import \
@@ -15,8 +16,8 @@ from ms2query.create_new_library.split_data_for_training import (
 from ms2query.create_new_library.train_models import (SettingsTrainingModels,
                                                       train_all_models)
 from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.utils import (load_matchms_spectrum_objects_from_file)
-from matchms.exporting.save_as_mgf import save_as_mgf
+from ms2query.utils import load_matchms_spectrum_objects_from_file
+
 
 def split_and_store_annotated_unannotated(spectrum_file_name,
                                           ion_mode,

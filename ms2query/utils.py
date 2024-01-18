@@ -1,8 +1,8 @@
 import json
 import os
-import pandas as pd
 from typing import List, Optional, Tuple, Union
 import numpy as np
+import pandas as pd
 from matchms import importing
 from onnxruntime import InferenceSession
 from spec2vec.Spec2Vec import Spectrum

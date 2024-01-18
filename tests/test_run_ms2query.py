@@ -1,14 +1,15 @@
 import os
 import pandas as pd
+from matchms.exporting.save_as_json import save_as_json
 from ms2query.ms2library import (create_library_object_from_one_dir,
                                  select_files_for_ms2query)
 from ms2query.run_ms2query import (available_zenodo_files,
                                    download_zenodo_files, run_complete_folder,
                                    zenodo_dois)
-from ms2query.utils import SettingsRunMS2Query, load_matchms_spectrum_objects_from_file
+from ms2query.utils import (SettingsRunMS2Query,
+                            load_matchms_spectrum_objects_from_file)
 from tests.test_ms2library import MS2Library
 from tests.test_utils import check_correct_results_csv_file
-from matchms.exporting.save_as_json import save_as_json
 
 
 def test_download_zenodo():
@@ -30,9 +31,7 @@ def test_download_models_only():
 
 
 def test_download_default_models(tmp_path):
-    """Tests downloading small files from zenodo
-
-    The files are a total of 20 MB from https://zenodo.org/record/7108049#.Yy2nPKRBxPY"""
+    """Tests downloading zenodo files and creating a model"""
     run_test = False # Run test is set to false, since downloading takes too long for default testing
     if run_test:
         dir_to_store_positive_files = os.path.join(tmp_path, "positive_model")

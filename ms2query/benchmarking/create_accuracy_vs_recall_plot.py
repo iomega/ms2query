@@ -8,7 +8,8 @@ from typing import Dict, List, Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-from ms2query.utils import load_json_file, load_df_from_parquet_file, save_df_as_parquet_file
+from ms2query.utils import (load_df_from_parquet_file, load_json_file,
+                            save_df_as_parquet_file)
 
 
 def plot_all_with_standard_deviation(means_and_standars_deviation,

@@ -15,7 +15,7 @@ from ms2query.clean_and_filter_spectra import (clean_metadata,
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.results_table import ResultsTable
 from ms2query.utils import (SettingsRunMS2Query, column_names_for_output,
-                            load_ms2query_model, load_df_from_parquet_file,
+                            load_df_from_parquet_file, load_ms2query_model,
                             predict_onnx_model, return_non_existing_file_name,
                             select_files_in_directory)
 
