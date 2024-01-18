@@ -1,5 +1,4 @@
 import os
-import sys
 import pandas as pd
 from ms2query.ms2library import (create_library_object_from_one_dir,
                                  select_files_for_ms2query)
@@ -17,7 +16,7 @@ def test_download_zenodo():
     for ionisation_mode in ["positive", "negative"]:
         zenodo_metadata_url, zenodo_files_url = zenodo_dois(ionisation_mode)
         file_names_and_sizes = available_zenodo_files(zenodo_metadata_url)
-        file_names = [file_name for file_name in file_names_and_sizes]
+        file_names = list(file_names_and_sizes.keys())
         select_files_for_ms2query(file_names)
 
 
