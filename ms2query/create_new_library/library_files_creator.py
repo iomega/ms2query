@@ -20,6 +20,7 @@ from ms2query.create_new_library.add_classifire_classifications import (
     convert_to_dataframe, select_compound_classes)
 from ms2query.create_new_library.create_sqlite_database import \
     make_sqlfile_wrapper
+from ms2query.utils import save_df_as_parquet_file
 
 
 class LibraryFilesCreator:
@@ -75,8 +76,8 @@ class LibraryFilesCreator:
         if not os.path.exists(self.output_directory):
             os.mkdir(self.output_directory)
         self.sqlite_file_name = os.path.join(output_directory, "ms2query_library.sqlite")
-        self.ms2ds_embeddings_file_name = os.path.join(output_directory, "ms2ds_embeddings.pickle")
-        self.s2v_embeddings_file_name = os.path.join(output_directory, "s2v_embeddings.pickle")
+        self.ms2ds_embeddings_file_name = os.path.join(output_directory, "ms2ds_embeddings.parquet")
+        self.s2v_embeddings_file_name = os.path.join(output_directory, "s2v_embeddings.parquet")
         # These checks are performed at the start, since the filtering of spectra can take long
         self._check_for_existing_files()
         # Load in spec2vec model
@@ -147,7 +148,7 @@ class LibraryFilesCreator:
         embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
         spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
-        all_embeddings_df.to_pickle(self.ms2ds_embeddings_file_name)
+        save_df_as_parquet_file(all_embeddings_df, self.ms2ds_embeddings_file_name)
 
     def store_s2v_embeddings(self):
         """Creates and stored a dataframe with embeddings as pickled file
@@ -174,4 +175,4 @@ class LibraryFilesCreator:
         # Convert to pandas Dataframe
         embeddings_dataframe = pd.DataFrame.from_dict(embeddings_dict,
                                                       orient="index")
-        embeddings_dataframe.to_pickle(self.s2v_embeddings_file_name)
+        save_df_as_parquet_file(embeddings_dataframe, self.s2v_embeddings_file_name)

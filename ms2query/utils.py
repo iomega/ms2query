@@ -78,11 +78,6 @@ def load_matchms_spectrum_objects_from_file(file_name
         return list(importing.load_from_mzxml(file_name))
     if file_extension == ".usi":
         return list(importing.load_from_usi(file_name))
-    if file_extension == ".pickle":
-        spectra = load_df_from_parquet_file(file_name)
-        assert isinstance(spectra, list), "Expected list of spectra"
-        assert isinstance(spectra[0], Spectrum), "Expected list of spectra"
-        return spectra
     assert False, f"File extension of file: {file_name} is not recognized"
 
 

@@ -97,14 +97,13 @@ def test_clean_up_smiles_inchi_and_inchikeys(tmp_path):
         intensities=np.array([0.28046377, 0.28900242], dtype="float"),
         metadata={'pepmass': (342.30, None), 'spectrumid': 'CCMSLIB00000001761', 'precursor_mz': 342.30,
                   'compound_name': 'sucrose', "ionmode": "positive"})
-    library_spectra = [spectrum1, spectrum2]
     cleaned_spectrum_1 = harmonize_annotation(spectrum1, True)
     cleaned_spectrum_2 = harmonize_annotation(spectrum2, True)
 
-    assert isinstance(cleaned_spectrum_1, Spectrum), "Expected a list with spectra objects"
-    assert isinstance(cleaned_spectrum_2, Spectrum), "Expected a list with spectra objects"
-    assert cleaned_spectrum_1.peaks == library_spectra[0].peaks, 'Expected that the peaks are not altered'
-    assert cleaned_spectrum_2.peaks == library_spectra[1].peaks, 'Expected that the peaks are not altered'
+    assert isinstance(cleaned_spectrum_1, Spectrum), "Expected a spectrum"
+    assert isinstance(cleaned_spectrum_2, Spectrum), "Expected a spectrum"
+    assert cleaned_spectrum_1.peaks == spectrum1.peaks, 'Expected that the peaks are not altered'
+    assert cleaned_spectrum_2.peaks == spectrum2.peaks, 'Expected that the peaks are not altered'
 
     assert cleaned_spectrum_1.get("smiles") == "CCCC"
     assert cleaned_spectrum_1.get("inchikey") == "IJDNQMDRQITEOD-UHFFFAOYSA-N"

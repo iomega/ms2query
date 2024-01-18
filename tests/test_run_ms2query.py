@@ -6,15 +6,10 @@ from ms2query.ms2library import (create_library_object_from_one_dir,
 from ms2query.run_ms2query import (available_zenodo_files,
                                    download_zenodo_files, run_complete_folder,
                                    zenodo_dois)
-from ms2query.utils import SettingsRunMS2Query
+from ms2query.utils import SettingsRunMS2Query, load_matchms_spectrum_objects_from_file
 from tests.test_ms2library import MS2Library
 from tests.test_utils import check_correct_results_csv_file
-
-
-if sys.version_info < (3, 8):
-    import pickle5 as pickle
-else:
-    import pickle
+from matchms.exporting.save_as_json import save_as_json
 
 
 def test_download_zenodo():
@@ -58,9 +53,8 @@ def create_test_folder_with_spectra_files(path, spectra):
     """Creates a folder with two files containing two test spectra"""
     spectra_files_folder = os.path.join(path, "spectra_files_folder")
     os.mkdir(spectra_files_folder)
-
-    pickle.dump(spectra, open(os.path.join(spectra_files_folder, "spectra_file_1.pickle"), "wb"))
-    pickle.dump(spectra, open(os.path.join(spectra_files_folder, "spectra_file_2.pickle"), "wb"))
+    save_as_json(spectra, os.path.join(spectra_files_folder, "spectra_file_1.json"))
+    save_as_json(spectra,  os.path.join(spectra_files_folder, "spectra_file_2.json"))
     return spectra_files_folder
 
 

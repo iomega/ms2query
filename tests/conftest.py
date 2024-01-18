@@ -33,13 +33,13 @@ def ms2library(path_to_general_test_files) -> MS2Library:
         "100_test_spectra_s2v_model.model")
     s2v_pickled_embeddings_file = os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle")
+        "100_test_spectra_s2v_embeddings.parquet")
     ms2ds_model_file_name = os.path.join(
         path_to_general_test_files,
         "ms2ds_siamese_210301_5000_500_400.hdf5")
     ms2ds_embeddings_file_name = os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle")
+        "100_test_spectra_ms2ds_embeddings.parquet")
     ms2q_model_file_name = os.path.join(path_to_general_test_files,
         "test_ms2q_rf_model.onnx")
     ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
@@ -110,7 +110,7 @@ def expected_tanimoto_scores_df(path_to_general_test_files):
 def expected_ms2ds_embeddings(path_to_general_test_files):
     expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle"))
+        "100_test_spectra_ms2ds_embeddings.parquet"))
     return expected_embeddings
 
 
@@ -118,5 +118,5 @@ def expected_ms2ds_embeddings(path_to_general_test_files):
 def expected_s2v_embeddings(path_to_general_test_files):
     expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle"))
+        "100_test_spectra_s2v_embeddings.parquet"))
     return expected_embeddings

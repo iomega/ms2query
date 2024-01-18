@@ -41,8 +41,8 @@ class MS2Library:
                  sqlite_file_name: str,
                  s2v_model_file_name: str,
                  ms2ds_model_file_name: str,
-                 pickled_s2v_embeddings_file_name: str,
-                 pickled_ms2ds_embeddings_file_name: str,
+                 s2v_embeddings_file_name: str,
+                 ms2ds_embeddings_file_name: str,
                  ms2query_model_file_name: Union[str, None]):
         """
         Parameters
@@ -57,11 +57,11 @@ class MS2Library:
             .trainables.syn1neg.npy and .wv.vectors.npy.
         ms2ds_model_file_name:
             File location of a trained ms2ds model.
-        pickled_s2v_embeddings_file_name:
-            File location of a pickled file with Spec2Vec embeddings in a
+        s2v_embeddings_file_name:
+            File location of a parquet file with Spec2Vec embeddings in a
             pd.Dataframe with as index the spectrum id.
-        pickled_ms2ds_embeddings_file_name:
-            File location of a pickled file with ms2ds embeddings in a
+        ms2ds_embeddings_file_name:
+            File location of a parquet file with ms2ds embeddings in a
             pd.Dataframe with as index the spectrum id.
         ms2query_model_file_name:
             File location of ms2query model with .hdf5 extension.
@@ -79,8 +79,8 @@ class MS2Library:
         self.ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
 
         # loads the library embeddings into memory
-        self.s2v_embeddings: pd.DataFrame = load_df_from_parquet_file(pickled_s2v_embeddings_file_name)
-        self.ms2ds_embeddings: pd.DataFrame = load_df_from_parquet_file(pickled_ms2ds_embeddings_file_name)
+        self.s2v_embeddings: pd.DataFrame = load_df_from_parquet_file(s2v_embeddings_file_name)
+        self.ms2ds_embeddings: pd.DataFrame = load_df_from_parquet_file(ms2ds_embeddings_file_name)
         
         assert self.ms2ds_model.base.output_shape[1] == self.ms2ds_embeddings.shape[1], \
             "Dimension of pre-computed MS2DeepScore embeddings does not fit given model."
@@ -398,8 +398,8 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
     """Selects the files needed for MS2Library based on their file extensions. """
     dict_with_file_extensions = \
         {"sqlite": ".sqlite", "s2v_model": ".model", "ms2ds_model": ".hdf5",
-         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.pickle",
-         "ms2ds_embeddings": "ms2ds_embeddings.pickle"}
+         "ms2query_model": ".onnx", "s2v_embeddings": "s2v_embeddings.parquet",
+         "ms2ds_embeddings": "ms2ds_embeddings.parquet"}
     if files_to_select is not None:
         dict_with_file_extensions = {key: value for key, value in dict_with_file_extensions.items()
                                      if key in files_to_select}
@@ -413,21 +413,16 @@ def select_files_for_ms2query(file_names: List[str], files_to_select=None):
                     f"Multiple files could be the file containing the {file_type} file"
                 dict_with_file_names[file_type] = file_name
         # Check if the old ms2query model is stored (instead of onnx) to give a good warning.
-        if str.endswith(file_name, ".pickle") and "ms2q" in file_name:
-            file_type = "ms2query_model_pickle"
-            dict_with_file_names[file_type] = file_name
+        if str.endswith(file_name, ".pickle"):
+            raise ValueError("Pickled models and embeddings are deprecated. "
+                             "Download the models again or use an older version <= 1.2.4 of ms2query.")
 
     # Check if all the file types are available
     for file_type, stored_file_name in dict_with_file_names.items():
         if file_type == "ms2query_model" and stored_file_name is None:
-            assert dict_with_file_names["ms2query_model_pickle"] is None, \
-                "Only a MS2Query model in pickled format was found. The current version of MS2Query needs a .onnx format. " \
-                "To download the new format check the readme https://github.com/iomega/ms2query. " \
-                "Alternatively MS2Query can be downgraded to version <= 0.6.7"
-            assert False, "The MS2Query model was not found in the directory"
-        elif file_type != "ms2query_model_pickle":
             assert stored_file_name is not None, \
-                f"The file type {file_type} was not found in the file names: {file_names}"
+                f"The file type {file_type} was not found in the file names: {file_names} " \
+                f"Please (re)download the model and library again."
     return dict_with_file_names
 
 
