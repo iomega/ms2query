@@ -6,7 +6,7 @@ channels:
 dependencies:
   - python=3.8.18
   - matchms=0.24.1
-  - numpy=
+  - numpy
   - spec2vec=0.8.0
   - h5py=3.9.0
   - pyarrow=14.0.1
