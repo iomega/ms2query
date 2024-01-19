@@ -89,7 +89,6 @@ def test_spectra():
                                    'precursor_mz': 928.0,
                                    # 'precursor_mz': 905.010782,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
-                                   "ionmode": "positive",
                                    # 'charge': 1
                                    })
     spectra = [spectrum1, spectrum2]

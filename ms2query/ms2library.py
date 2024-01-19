@@ -121,7 +121,7 @@ class MS2Library:
                 print(f"This spectrum is not analyzed since it was not in {filter_on_ionmode} ionization mode. "
                       f"Instead the spectrum is in {query_ionmode} ionization mode.")
                 return None
-        if query_ionmode != "n/a" and self.ionization_mode is not None:
+        if query_ionmode is not None and self.ionization_mode is not None:
             assert query_ionmode == self.ionization_mode, \
                 f"The spectrum is in {query_ionmode} ionization mode, while the library is for {self.ionization_mode} ionization mode. " \
                 f"Check the readme to download a library in the {query_ionmode} ionization mode"
