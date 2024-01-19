@@ -20,7 +20,8 @@ from ms2query.create_new_library.library_files_creator import \
 from ms2query.create_new_library.split_data_for_training import (
     split_spectra_on_inchikeys, split_training_and_validation_spectra)
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import return_non_existing_file_name, save_pickled_file
+from ms2query.utils import (return_non_existing_file_name,
+                            save_df_as_parquet_file)
 
 
 class DataCollectorForTraining():
@@ -133,15 +134,15 @@ def train_ms2query_model(training_spectra,
     ms2library_for_training = MS2Library(sqlite_file_name=library_creator_for_training.sqlite_file_name,
                                          s2v_model_file_name=s2v_model_file_name,
                                          ms2ds_model_file_name=ms2ds_model_file_name,
-                                         pickled_s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
-                                         pickled_ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
+                                         s2v_embeddings_file_name=library_creator_for_training.s2v_embeddings_file_name,
+                                         ms2ds_embeddings_file_name=library_creator_for_training.ms2ds_embeddings_file_name,
                                          ms2query_model_file_name=None)
     # Create training data MS2Query model
     collector = DataCollectorForTraining(ms2library_for_training)
     training_scores, training_labels = collector.get_matches_info_and_tanimoto(query_spectra_for_training)
 
-    save_pickled_file(training_scores, os.path.join(library_files_folder, "training_scores_ms2query"))
-    save_pickled_file(training_labels, os.path.join(library_files_folder, "training_labels_ms2query"))
+    save_df_as_parquet_file(training_scores, os.path.join(library_files_folder, "training_scores_ms2query.parquet"))
+    save_df_as_parquet_file(training_labels, os.path.join(library_files_folder, "training_labels_ms2query.parquet"))
 
     # Train MS2Query model
     ms2query_model = train_random_forest(training_scores, training_labels)

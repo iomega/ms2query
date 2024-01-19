@@ -6,7 +6,7 @@ from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
-from ms2query.utils import load_pickled_file
+from ms2query.utils import load_df_from_parquet_file
 
 
 @pytest.fixture(scope="package")
@@ -33,13 +33,13 @@ def ms2library(path_to_general_test_files) -> MS2Library:
         "100_test_spectra_s2v_model.model")
     s2v_pickled_embeddings_file = os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle")
+        "100_test_spectra_s2v_embeddings.parquet")
     ms2ds_model_file_name = os.path.join(
         path_to_general_test_files,
         "ms2ds_siamese_210301_5000_500_400.hdf5")
     ms2ds_embeddings_file_name = os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle")
+        "100_test_spectra_ms2ds_embeddings.parquet")
     ms2q_model_file_name = os.path.join(path_to_general_test_files,
         "test_ms2q_rf_model.onnx")
     ms2library = MS2Library(sqlite_file_loc, spec2vec_model_file_loc, ms2ds_model_file_name,
@@ -70,7 +70,8 @@ def test_spectra():
                                    'precursor_mz': 907.0,
                                    # 'precursor_mz': 905.9927235480093,
                                    'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
-                                   'charge': 1})
+                                   'charge': 1,
+                                   "ionmode": "positive"})
     spectrum2 = Spectrum(mz=np.array([538.003174, 539.217773, 556.030396,
                                       599.352783, 851.380859, 852.370605,
                                       909.424438, 953.396606, 963.686768,
@@ -108,15 +109,15 @@ def expected_tanimoto_scores_df(path_to_general_test_files):
 
 @pytest.fixture(scope="package")
 def expected_ms2ds_embeddings(path_to_general_test_files):
-    expected_embeddings = load_pickled_file(os.path.join(
+    expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_ms2ds_embeddings.pickle"))
+        "100_test_spectra_ms2ds_embeddings.parquet"))
     return expected_embeddings
 
 
 @pytest.fixture(scope="package")
 def expected_s2v_embeddings(path_to_general_test_files):
-    expected_embeddings = load_pickled_file(os.path.join(
+    expected_embeddings = load_df_from_parquet_file(os.path.join(
         path_to_general_test_files,
-        "100_test_spectra_s2v_embeddings.pickle"))
+        "100_test_spectra_s2v_embeddings.parquet"))
     return expected_embeddings

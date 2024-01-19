@@ -10,8 +10,8 @@ from ms2query.utils import (SettingsRunMS2Query,
 
 def zenodo_dois(ionisation_mode):
     "Returns the most up to date url for Zenodo"
-    zenodo_DOIs = {"positive": 7947603,
-                   "negative": 7944658}
+    zenodo_DOIs = {"positive": 10527997,
+                   "negative": 10528030}
     assert ionisation_mode in zenodo_DOIs, "Expected 'positive' or 'negative' as input"
     zenodo_doi = zenodo_DOIs[ionisation_mode]
     zenodo_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)

@@ -6,6 +6,7 @@ import os
 import random
 from typing import List
 from matchms import Spectrum
+from matchms.exporting.save_as_mgf import save_as_mgf
 from ms2query.benchmarking.collect_test_data_results import (
     generate_exact_matches_test_results, generate_test_results)
 from ms2query.clean_and_filter_spectra import \
@@ -15,24 +16,21 @@ from ms2query.create_new_library.split_data_for_training import (
 from ms2query.create_new_library.train_models import (SettingsTrainingModels,
                                                       train_all_models)
 from ms2query.ms2library import create_library_object_from_one_dir
-from ms2query.utils import (load_matchms_spectrum_objects_from_file,
-                            save_pickled_file)
+from ms2query.utils import load_matchms_spectrum_objects_from_file
 
 
 def split_and_store_annotated_unannotated(spectrum_file_name,
                                           ion_mode,
                                           output_folder):
     assert os.path.isdir(output_folder)
-    assert not os.path.exists(os.path.join(output_folder, "unannotated_training_spectra.pickle"))
-    assert not os.path.exists(os.path.join(output_folder, "annotated_training_spectra.pickle"))
+    assert not os.path.exists(os.path.join(output_folder, "unannotated_training_spectra.mgf"))
+    assert not os.path.exists(os.path.join(output_folder, "annotated_training_spectra.mgf"))
     spectra = load_matchms_spectrum_objects_from_file(spectrum_file_name)
     annotated_spectra, unannotated_spectra = clean_normalize_and_split_annotated_spectra(spectra,
                                                                                         ion_mode,
                                                                                         True)
-    save_pickled_file(unannotated_spectra,
-                      os.path.join(output_folder, "unannotated_training_spectra.pickle"))
-    save_pickled_file(annotated_spectra,
-                      os.path.join(output_folder, "annotated_training_spectra.pickle"))
+    save_as_mgf(unannotated_spectra, os.path.join(output_folder, "unannotated_training_spectra.mgf"))
+    save_as_mgf(annotated_spectra, os.path.join(output_folder, "annotated_training_spectra.mgf"))
     return annotated_spectra, unannotated_spectra
 
 
@@ -53,10 +51,9 @@ def split_k_fold_cross_validation_analogue_test_set(annotated_spectra: List[Spec
                 test_spectra = spectrum_set
         folder_name = f"test_split_{i}"
         os.mkdir(os.path.join(output_folder, folder_name))
-        save_pickled_file(training_spectra,
-                          os.path.join(output_folder, folder_name, "annotated_training_spectra.pickle"))
-        save_pickled_file(test_spectra,
-                          os.path.join(output_folder, folder_name, "test_spectra.pickle"))
+        save_as_mgf(training_spectra,
+                                os.path.join(output_folder, folder_name, "annotated_training_spectra.mgf"))
+        save_as_mgf(test_spectra, os.path.join(output_folder, folder_name, "test_spectra.mgf"))
 
 
 def split_k_fold_cross_validation_exact_match_test_set(annotated_spectra: List[Spectrum],
@@ -78,10 +75,9 @@ def split_k_fold_cross_validation_exact_match_test_set(annotated_spectra: List[S
 
         folder_name = f"test_split_{i}"
         os.mkdir(os.path.join(output_folder, folder_name))
-        save_pickled_file(training_spectra,
-                          os.path.join(output_folder, folder_name, "annotated_training_spectra.pickle"))
-        save_pickled_file(test_spectra,
-                          os.path.join(output_folder, folder_name, "test_spectra.pickle"))
+        save_as_mgf(training_spectra,
+                                os.path.join(output_folder, folder_name, "annotated_training_spectra.mgf"))
+        save_as_mgf(test_spectra, os.path.join(output_folder, folder_name, "test_spectra.mgf"))
 
 
 def train_models_and_test_result_from_k_fold_folder(k_fold_split_folder:str,

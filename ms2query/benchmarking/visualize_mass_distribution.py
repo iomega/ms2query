@@ -4,8 +4,8 @@ from create_accuracy_vs_recall_plot import (
     calculate_means_and_standard_deviation, load_results_from_folder)
 from matchms import Spectrum
 from matplotlib import pyplot as plt
-from ms2query.utils import (load_matchms_spectrum_objects_from_file,
-                            load_pickled_file)
+from ms2query.utils import (load_df_from_parquet_file,
+                            load_matchms_spectrum_objects_from_file)
 
 
 def split_results_mass(list_of_test_spectra: List[List[Spectrum]],
@@ -109,7 +109,8 @@ if __name__ == "__main__":
     test_results_folder = "../../data/libraries_and_models/gnps_01_11_2022/20_fold_splits/"
     # dict_with_results, all_test_spectra = load_all_test_results_and_test_spectra(20, test_results_folder)
     # means_and_standard_deviation = split_results_mass_all_results(dict_with_results, all_test_spectra)
-    means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, "means_and_standard_deviations_mass_bins.pickle"))
+    means_and_standard_deviation = load_df_from_parquet_file(
+        os.path.join(test_results_folder, "means_and_standard_deviations_mass_bins.pickle"))
 
     for test_type in {"MS2Query": [],
                     "MS2Deepscore": [],

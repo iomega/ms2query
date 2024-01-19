@@ -27,30 +27,25 @@ setup(
     license="Apache Software License 2.0",
     zip_safe=False,
     test_suite="tests",
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     install_requires=[
-        "matchms>=0.14.0,<=0.17.0", # Matchms 0.19 breaks some cosine score calculations. Not sure why.
+        "matchms>=0.24.0",
         "numpy",
         "spec2vec>=0.6.0",
         "h5py",
-        "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
-        "tensorflow-metal==0.5.0;platform_machine=='arm64'",
-        "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
+        "pyarrow",
         "scikit-learn",
         "ms2deepscore<=0.4.0",
         "gensim>=4.0.0",
-        "pandas>=1.2.5,<2.0.0",
-        "matchmsextras==0.4.0",
-        "pubchempy", #This is a dependency for matchmsextras, which is missing in setup
+        "pandas",
         "tqdm",
         "matplotlib",
         "skl2onnx",
         "onnxruntime<1.16", # 1.16 breaks the code due to the issue https://github.com/iomega/ms2query/issues/208
     ],
-    extras_require={':python_version < "3.8"': ["pickle5",],
-                    "dev": ["bump2version",
+    extras_require={"dev": ["bump2version",
                             "isort>=5.1.0",
-                            "prospector[with_pyroma]",
+                            "prospector",
                             "pytest",
                             "pytest-cov",
                             "sphinx>=3.0.0,!=3.2.0,<4.0.0",

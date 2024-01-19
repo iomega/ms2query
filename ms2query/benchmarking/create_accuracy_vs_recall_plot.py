@@ -8,7 +8,8 @@ from typing import Dict, List, Tuple
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-from ms2query.utils import load_json_file, load_pickled_file, save_pickled_file
+from ms2query.utils import (load_df_from_parquet_file, load_json_file,
+                            save_df_as_parquet_file)
 
 
 def plot_all_with_standard_deviation(means_and_standars_deviation,
@@ -231,10 +232,11 @@ def create_plot(exact_matches,
     if recalculate_means:
         dict_with_results = load_all_test_results(20, test_results_folder, exact_match=exact_matches)
         means_and_standard_deviation = calculate_all_means_and_standard_deviation(dict_with_results, exact_matches=exact_matches)
-        save_pickled_file(means_and_standard_deviation,
-                          os.path.join(test_results_folder, f"means_and_standard_deviations_20_fold{extra_file_name}.pickle"))
+        save_df_as_parquet_file(means_and_standard_deviation, os.path.join(test_results_folder,
+                                                                           f"means_and_standard_deviations_20_fold{extra_file_name}.pickle"))
     else:
-        means_and_standard_deviation = load_pickled_file(os.path.join(test_results_folder, f"means_and_standard_deviations_20_fold{extra_file_name}.pickle"))
+        means_and_standard_deviation = load_df_from_parquet_file(
+            os.path.join(test_results_folder, f"means_and_standard_deviations_20_fold{extra_file_name}.pickle"))
 
     if exact_matches:
         optimal_results = means_and_standard_deviation["Optimal"]

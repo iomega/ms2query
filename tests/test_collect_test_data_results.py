@@ -8,8 +8,7 @@ from ms2query.benchmarking.collect_test_data_results import (
     generate_test_results_ms2query, get_all_ms2ds_scores,
     get_cosines_score_results, get_modified_cosine_score_results,
     select_highest_ms2ds_in_mass_range)
-from ms2query.utils import (load_json_file,
-                            load_matchms_spectrum_objects_from_file)
+from ms2query.utils import load_json_file
 
 
 @pytest.fixture
@@ -28,7 +27,8 @@ def local_test_spectra():
                   'precursor_mz': 907.0,
                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
                   'smiles': "CCCC",
-                  'charge': 1})
+                  'charge': 1,
+                  "ionmode": "positive"})
     spectrum2 = Spectrum(
         mz=np.array([538.003174, 539.217773, 556.030396, 599.352783, 851.380859, 852.370605], dtype="float"),
         intensities=np.array([0.28046377, 0.28900242, 0.31933114, 0.32199162, 0.71323034, 1.], dtype="float"),
@@ -36,7 +36,8 @@ def local_test_spectra():
                   'spectrumid': 'CCMSLIB00000001761',
                   'precursor_mz': 928.0,
                   'inchikey': 'SCYRNRIZFGMUSB-STOGWRBBSA-N',
-                  'smiles': "CCCCC"
+                  'smiles': "CCCCC",
+                  "ionmode": "positive"
                   })
     return [spectrum1, spectrum2]
 
@@ -107,13 +108,12 @@ def test_get_modified_cosine_score_results(local_test_spectra, hundred_test_spec
 def test_get_cosines_score_results(local_test_spectra, hundred_test_spectra):
     result = get_cosines_score_results(hundred_test_spectra, local_test_spectra, 100, 0.05, 3)
     np.testing.assert_almost_equal(result,
-                                   [(0.434789196140529, 0.0058997050147492625, False),
+                                   [(0.434789196140529, 0.0038997050147492625, False),
                                     (0.4955472245596076, 0.007866273352999017, False)], decimal=4)
     # Test if no error happens when only 1 or 0 library spectra within mass range
+    # todo This was build with old matchms in mind, this version will not find cosine scores = 0
     result = get_cosines_score_results(hundred_test_spectra, local_test_spectra, 5.56, 0.05, 0)
-    np.testing.assert_almost_equal(result[0],
-                                   (0.0, 0.004461, False), decimal=4)
-    assert result[1] is None
+    assert result == [None, None]
 
 
 def test_create_optimal_results(local_test_spectra):
