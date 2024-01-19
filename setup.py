@@ -34,9 +34,6 @@ setup(
         "spec2vec>=0.6.0",
         "h5py",
         "pyarrow",
-        "tensorflow-macos<2.9;platform_machine=='arm64'", #Add for Macos M1 chip compatability
-        "tensorflow-metal==0.5.0;platform_machine=='arm64'",
-        "tensorflow<2.9;platform_machine!='arm64'", #tensorflow <2.9 for change in error bar plotting
         "scikit-learn",
         "ms2deepscore<=0.4.0",
         "gensim>=4.0.0",
