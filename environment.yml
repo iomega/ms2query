@@ -9,9 +9,9 @@ dependencies:
   - numpy
   - spec2vec=0.8.0
   - h5py=3.9.0
-  - pyarrow=14.0.1
+  - pyarrow=12.0.1
   - tensorflow
-  - scikit-learn=1.3.0
+  - scikit-learn
   - ms2deepscore=0.4.0
   - pandas=2.0.3
   - matplotlib
