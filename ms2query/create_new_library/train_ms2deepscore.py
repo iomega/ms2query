@@ -5,12 +5,10 @@ new models
 
 import os
 from typing import List
-
 from matchms import Spectrum
 from ms2deepscore import SpectrumBinner
-from ms2deepscore.train_new_model.train_ms2deepscore import train_ms2ds_model
-from ms2deepscore.train_new_model.train_ms2deepscore import plot_history
-
+from ms2deepscore.train_new_model.train_ms2deepscore import (plot_history,
+                                                             train_ms2ds_model)
 from ms2query.create_new_library.calculate_tanimoto_scores import \
     calculate_tanimoto_scores_unique_inchikey
 from ms2query.create_new_library.split_data_for_training import \
