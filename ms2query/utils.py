@@ -54,14 +54,14 @@ def load_matchms_spectrum_objects_from_file(file_name
     """Loads spectra from your spectrum file into memory as matchms Spectrum object
 
     The following file extensions can be loaded in with this function:
-    "mzML", "json", "mgf", "msp", "mzxml", "usi" and "pickle".
+    "mzML", "json", "mgf", "msp", "mzxml" and "usi".
     A pickled file is expected to directly contain a list of matchms spectrum objects.
 
     Args:
     -----
     file_name:
         Path to file containing spectra, with file extension "mzML", "json", "mgf", "msp",
-        "mzxml", "usi" or "pickle"
+        "mzxml" or "usi".
     """
     assert os.path.exists(file_name), f"The specified file: {file_name} does not exists"
 
