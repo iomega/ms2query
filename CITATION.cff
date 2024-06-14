@@ -1,33 +1,33 @@
-# YAML 1.2
----
-abstract: "Machine learning assisted library querying of MS/MS spectra."
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: MS2Query
+message: >-
+  If you use this software, please cite it using these
+  metadata.
+type: software
 authors:
-  -
-    affiliation: "Wageningen University and Research"
+  - affiliation: Wageningen University and Research
     family-names: Jonge
     name-particle: de
     given-names: Niek F.
-    orcid: "https://orcid.org/0000-0002-3054-6210"
-  -
-    affiliation: "Wageningen University and Research"
+    orcid: 'https://orcid.org/0000-0002-3054-6210'
+  - affiliation: Wageningen University and Research
     family-names: Louwen
     given-names: Joris J. R.
-    orcid: "add here"  
-  -
-    affiliation: "Netherlands eScience Center"
+    orcid: 'https://orcid.org/0000-0003-4887-9109'
+  - affiliation: Netherlands eScience Center
     family-names: Huber
     given-names: Florian
-    orcid: "https://orcid.org/0000-0002-3535-9406"
-  -
-    affiliation: "Wageningen University and Research"
+    orcid: 'https://orcid.org/0000-0002-3535-9406'
+  - affiliation: Wageningen University and Research
     family-names: Hooft
     name-particle: van der
     given-names: Justin J. J.
-    orcid: "https://orcid.org/0000-0002-9340-5511"
-
-cff-version: "1.1.0"
-license: "Apache-2.0"
-message: "If you use this software, please cite it using these metadata."
-repository-code: "https://github.com/iomega/ms2query"
-title: MS2Query
-...
+    orcid: 'https://orcid.org/0000-0002-9340-5511'
+repository-code: 'https://github.com/iomega/ms2query'
+abstract: >-
+  Machine learning assisted library querying of MS/MS
+  spectra.
+license: Apache-2.0
