@@ -1,10 +1,8 @@
 import os
-
 import numpy as np
 import pandas as pd
 import pytest
 from matchms import Spectrum
-
 from ms2query.benchmarking.collect_test_data_results import (
     create_optimal_results, create_random_results, generate_test_results,
     generate_test_results_ms2query, get_all_ms2ds_scores,

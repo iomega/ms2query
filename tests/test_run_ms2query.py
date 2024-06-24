@@ -1,10 +1,6 @@
 import os
-
 import pandas as pd
 from matchms.exporting.save_as_json import save_as_json
-from tests.test_ms2library import MS2Library
-from tests.test_utils import check_expected_headers
-
 from ms2query.ms2library import (create_library_object_from_one_dir,
                                  select_files_for_ms2query)
 from ms2query.run_ms2query import (available_zenodo_files,
@@ -12,6 +8,8 @@ from ms2query.run_ms2query import (available_zenodo_files,
                                    zenodo_dois)
 from ms2query.utils import (SettingsRunMS2Query,
                             load_matchms_spectrum_objects_from_file)
+from tests.test_ms2library import MS2Library
+from tests.test_utils import check_expected_headers
 
 
 def test_download_zenodo():

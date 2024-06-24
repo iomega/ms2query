@@ -1,11 +1,9 @@
 import os
-
 import numpy as np
 import pandas as pd
 import pytest
 from matchms import Spectrum
 from matchms.importing.load_from_mgf import load_from_mgf
-
 from ms2query.ms2library import MS2Library
 from ms2query.query_from_sqlite_database import SqliteLibrary
 from ms2query.utils import load_df_from_parquet_file

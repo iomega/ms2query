@@ -1,8 +1,6 @@
 import os
-
 import pandas as pd
 import pytest
-
 from ms2query.clean_and_filter_spectra import normalize_and_filter_peaks
 from ms2query.create_new_library.library_files_creator import \
     LibraryFilesCreator
