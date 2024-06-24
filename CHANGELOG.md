@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2.0.0
 ### Changed
-- MS2Query is now tested on python 3.9-3.11 instead of 3.8 and 3.9
+- MS2Query is now tested on python 3.9 and 3.10 instead of 3.8 and 3.9
 
 ## 1.4.0
 ### Changed

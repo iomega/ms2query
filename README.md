@@ -54,7 +54,7 @@ pip install ms2query
 ```
 All dependencies are automatically installed, the dependencies can be found in setup.py. 
 The installation is expected to take about 2 minutes. 
-MS2Query is tested by continous integration on MacOS, Windows and Ubuntu for python version 3.9 and 3.10 and 3.11
+MS2Query is tested by continous integration on MacOS, Windows and Ubuntu for python version 3.9 and 3.1
 
 ## Run MS2Query from command line
 
