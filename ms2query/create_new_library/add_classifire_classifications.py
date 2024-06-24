@@ -2,6 +2,7 @@ import json
 import urllib
 from http.client import InvalidURL
 from typing import List, Optional
+
 import pandas as pd
 from tqdm import tqdm
 

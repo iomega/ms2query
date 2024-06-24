@@ -3,10 +3,12 @@ import io
 import os
 import sqlite3
 from typing import Dict, List
+
 import numpy as np
 import pandas as pd
 from matchms.Spectrum import Spectrum
 from tqdm import tqdm
+
 from ms2query.utils import load_pickled_file
 
 

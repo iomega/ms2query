@@ -6,6 +6,7 @@ new models
 import os
 from pathlib import Path
 from typing import List, Union
+
 import matchms.filtering as msfilters
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from ms2deepscore.models import load_model as load_ms2ds_model
 from ms2deepscore.models.SiameseSpectralModel import compute_embedding_array
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
+
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
 from ms2query.create_new_library.add_classifire_classifications import (
     convert_to_dataframe, select_compound_classes)

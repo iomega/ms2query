@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from matchms import Spectrum
+
 from ms2query.create_new_library.add_classifire_classifications import \
     select_compound_classes
 

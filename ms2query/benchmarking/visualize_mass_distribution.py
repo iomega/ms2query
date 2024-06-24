@@ -1,9 +1,11 @@
 import os
 from typing import Dict, List, Tuple
+
 from create_accuracy_vs_recall_plot import (
     calculate_means_and_standard_deviation, load_results_from_folder)
 from matchms import Spectrum
 from matplotlib import pyplot as plt
+
 from ms2query.utils import (load_df_from_parquet_file,
                             load_matchms_spectrum_objects_from_file)
 

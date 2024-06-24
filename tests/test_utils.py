@@ -1,9 +1,11 @@
 import os
 from io import StringIO
 from typing import List
+
 import pandas as pd
 import pytest
 from matchms import Spectrum
+
 from ms2query.utils import (add_unknown_charges_to_spectra,
                             load_matchms_spectrum_objects_from_file)
 

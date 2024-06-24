@@ -1,10 +1,13 @@
 import os
+import string
+
 import numpy as np
 import pytest
-from ms2deepscore import SettingsMS2Deepscore
-import string
 from matchms.Spectrum import Spectrum
-from ms2query.create_new_library.train_models import train_all_models, SettingsTrainingModels
+from ms2deepscore import SettingsMS2Deepscore
+
+from ms2query.create_new_library.train_models import (SettingsTrainingModels,
+                                                      train_all_models)
 from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
 
 

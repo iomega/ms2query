@@ -1,10 +1,12 @@
 import math
 import os
+
 import numpy as np
 import pandas as pd
+from tests.test_utils import check_expected_headers
+
 from ms2query.ms2library import MS2Library, create_library_object_from_one_dir
 from ms2query.utils import SettingsRunMS2Query, column_names_for_output
-from tests.test_utils import check_expected_headers
 
 
 def test_get_all_ms2ds_scores(ms2library, test_spectra):

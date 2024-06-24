@@ -5,9 +5,11 @@ new models
 
 import sqlite3
 from typing import Dict, List
+
 import pandas as pd
 from matchms import Spectrum
 from tqdm import tqdm
+
 from ms2query.create_new_library.calculate_tanimoto_scores import \
     calculate_highest_tanimoto_score
 from ms2query.utils import return_non_existing_file_name

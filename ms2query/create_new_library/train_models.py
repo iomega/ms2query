@@ -6,16 +6,18 @@ new models
 import os
 
 from ms2deepscore import SettingsMS2Deepscore
+from ms2deepscore.train_new_model.train_ms2deepscore import train_ms2ds_model
 from spec2vec.model_building import train_new_word2vec_model
+
 from ms2query.clean_and_filter_spectra import (
     clean_normalize_and_split_annotated_spectra, create_spectrum_documents)
 from ms2query.create_new_library.library_files_creator import \
     LibraryFilesCreator
-from ms2query.create_new_library.split_data_for_training import split_spectra_on_inchikeys
+from ms2query.create_new_library.split_data_for_training import \
+    split_spectra_on_inchikeys
 from ms2query.create_new_library.train_ms2query_model import (
     convert_to_onnx_model, train_ms2query_model)
 from ms2query.utils import load_matchms_spectrum_objects_from_file
-from ms2deepscore.train_new_model.train_ms2deepscore import train_ms2ds_model
 
 
 class SettingsTrainingModels:

@@ -1,6 +1,7 @@
 import numpy as np
 from matchms import Spectrum
 from spec2vec import SpectrumDocument
+
 from ms2query.clean_and_filter_spectra import (
     clean_normalize_and_split_annotated_spectra, create_spectrum_documents,
     harmonize_annotation, normalize_and_filter_peaks,

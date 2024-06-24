@@ -7,8 +7,10 @@ information from the sqlite database.
 
 import os
 import sqlite3
+
 import numpy as np
 import pandas as pd
+
 from ms2query.clean_and_filter_spectra import \
     normalize_and_filter_peaks_multiple_spectra
 from ms2query.create_new_library.add_classifire_classifications import \

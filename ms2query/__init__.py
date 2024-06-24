@@ -1,17 +1,16 @@
 import os
 
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # pylint: disable=wrong-import-position
 import argparse
 import logging
+
 from .__version__ import __version__
 from .ms2library import MS2Library, create_library_object_from_one_dir
 from .results_table import ResultsTable
 from .run_ms2query import (download_zenodo_files, run_complete_folder,
                            run_ms2query_single_file)
 from .utils import SettingsRunMS2Query
-
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
