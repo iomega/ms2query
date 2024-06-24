@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 2.0.0
+### Changed
+- MS2Query is now tested on python 3.9-3.11 instead of 3.8 and 3.9
+
 ## 1.4.0
 ### Changed
 - Made compatible with MS2Deepscore 0.5.0
