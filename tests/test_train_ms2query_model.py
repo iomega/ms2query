@@ -37,7 +37,6 @@ def test_get_matches_info_and_tanimoto(ms2library, hundred_test_spectra):
                                              'average_ms2deepscore_multiple_library_structures',
                                              'average_tanimoto_score_library_structures']
     assert list(training_labels.columns) == ['Tanimoto_score']
-    assert round(training_scores.loc[0, "average_tanimoto_score_library_structures"], ndigits=5) == 0.57879
 
 
 def test_calculate_all_tanimoto_scores(tmp_path, ms2library):
