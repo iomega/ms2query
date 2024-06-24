@@ -23,6 +23,7 @@ def get_fingerprint(smiles: str):
 def calculate_tanimoto_scores_from_smiles(list_of_smiles_1: List[str],
                                           list_of_smiles_2: List[str]) -> np.ndarray:
     """Returns a 2d ndarray containing the tanimoto scores between the smiles"""
+    assert len(list_of_smiles_1) > 0 and len(list_of_smiles_2) > 0
     fingerprints_1 = np.array([get_fingerprint(spectrum) for spectrum in tqdm(list_of_smiles_1,
                                                                               desc="Calculating fingerprints")])
     fingerprints_2 = np.array([get_fingerprint(spectrum) for spectrum in tqdm(list_of_smiles_2,
