@@ -1,14 +1,16 @@
 import os.path
 from typing import Dict, Iterator, List, Optional, Set, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
-from ms2deepscore import MS2DeepScore
-from ms2deepscore.models import load_model as load_ms2ds_model, compute_embedding_array
+from ms2deepscore.models import compute_embedding_array
+from ms2deepscore.models import load_model as load_ms2ds_model
 from onnxruntime import InferenceSession
 from spec2vec.vector_operations import calc_vector, cosine_similarity_matrix
 from tqdm import tqdm
+
 from ms2query.clean_and_filter_spectra import (clean_metadata,
                                                create_spectrum_documents,
                                                normalize_and_filter_peaks)
