@@ -76,7 +76,7 @@ def test_train_ms2query_model(path_to_general_test_files, tmp_path, hundred_test
         training_spectra=hundred_test_spectra,
         library_files_folder=models_folder,
         ms2ds_model_file_name=os.path.join(path_to_general_test_files,
-                                           "ms2ds_siamese_210301_5000_500_400.hdf5"),
+                                           "ms2deepscore_model.pt"),
         s2v_model_file_name=os.path.join(path_to_general_test_files,
                                          "100_test_spectra_s2v_model.model"),
         fraction_for_training=10

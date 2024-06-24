@@ -24,7 +24,7 @@ def test_store_ms2ds_embeddings(tmp_path, path_to_general_test_files,
     library_spectra = [normalize_and_filter_peaks(s) for s in hundred_test_spectra if s is not None]
     test_create_files = LibraryFilesCreator(library_spectra, base_file_name,
                                             ms2ds_model_file_name=os.path.join(path_to_general_test_files,
-                                                                               'ms2ds_siamese_210301_5000_500_400.hdf5'))
+                                                                               'ms2deepscore_model.pt'))
     test_create_files.store_ms2ds_embeddings()
 
     new_embeddings_file_name = os.path.join(base_file_name, "ms2ds_embeddings.parquet")
