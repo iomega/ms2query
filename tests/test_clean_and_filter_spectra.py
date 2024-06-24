@@ -1,5 +1,3 @@
-import os
-import sys
 import numpy as np
 from matchms import Spectrum
 from spec2vec import SpectrumDocument
@@ -8,12 +6,6 @@ from ms2query.clean_and_filter_spectra import (
     harmonize_annotation, normalize_and_filter_peaks,
     normalize_and_filter_peaks_multiple_spectra, remove_wrong_ion_modes,
     split_annotated_spectra)
-
-
-if sys.version_info < (3, 8):
-    import pickle5 as pickle
-else:
-    import pickle
 
 
 def test_minimal_processing_multiple_spectra():
