@@ -14,7 +14,7 @@ from matchms.calculate_scores import calculate_scores
 from matchms.similarity.CosineGreedy import CosineGreedy
 from matchms.similarity.ModifiedCosine import ModifiedCosine
 from ms2deepscore import MS2DeepScore
-from ms2deepscore.models import SiameseModel
+from ms2deepscore.models import SiameseSpectralModel
 from spec2vec.vector_operations import cosine_similarity_matrix
 from tqdm import tqdm
 from ms2query.create_new_library.calculate_tanimoto_scores import (
@@ -51,7 +51,7 @@ def generate_test_results_ms2query(ms2library: MS2Library,
     return test_results_ms2query
 
 
-def get_all_ms2ds_scores(ms2ds_model: SiameseModel,
+def get_all_ms2ds_scores(ms2ds_model: SiameseSpectralModel,
                          ms2ds_embeddings,
                          test_spectra
                          ) -> pd.DataFrame:
