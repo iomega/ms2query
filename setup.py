@@ -35,7 +35,7 @@ setup(
         "h5py",
         "pyarrow",
         "scikit-learn",
-        "ms2deepscore==2.0.0",
+        "ms2deepscore==0.5.0",
         "gensim>=4.0.0",
         "pandas",
         "tqdm",
