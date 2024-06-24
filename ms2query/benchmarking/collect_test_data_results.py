@@ -13,7 +13,6 @@ from matchms import Spectrum
 from matchms.calculate_scores import calculate_scores
 from matchms.similarity.CosineGreedy import CosineGreedy
 from matchms.similarity.ModifiedCosine import ModifiedCosine
-from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import SiameseSpectralModel, compute_embedding_array
 from spec2vec.vector_operations import cosine_similarity_matrix
 from tqdm import tqdm

@@ -30,7 +30,7 @@ jobs:
       - name: Run test with coverage
         run: pytest --cov --cov-report term --cov-report xml -m "not integration"
       - name: Check style against standards using prospector
-        run: prospector -o grouped -o pylint:pylint-report.txt
+        run: prospector -o grouped -o pylint:pylint-report.txt --ignore-paths notebooks
       - name: Check whether import statements are used consistently
         run: isort --check-only --diff .
       - name: SonarCloud Scan

@@ -250,8 +250,6 @@ class MS2Library:
             Spectrum for which similarity scores should be calculated for all
             spectra in the ms2ds embeddings file.
         """
-        ms2ds = MS2DeepScore(self.ms2ds_model, progress_bar=False)
-
         query_embeddings = compute_embedding_array(self.ms2ds_model, [query_spectrum])
 
         library_ms2ds_embeddings_numpy = self.ms2ds_embeddings.to_numpy()
