@@ -14,7 +14,7 @@ from matchms.calculate_scores import calculate_scores
 from matchms.similarity.CosineGreedy import CosineGreedy
 from matchms.similarity.ModifiedCosine import ModifiedCosine
 from ms2deepscore import MS2DeepScore
-from ms2deepscore.models import SiameseSpectralModel
+from ms2deepscore.models import SiameseSpectralModel, compute_embedding_array
 from spec2vec.vector_operations import cosine_similarity_matrix
 from tqdm import tqdm
 from ms2query.create_new_library.calculate_tanimoto_scores import (
@@ -64,9 +64,8 @@ def get_all_ms2ds_scores(ms2ds_model: SiameseSpectralModel,
         Spectra for which similarity scores should be calculated for all
         spectra in the ms2ds embeddings file.
     """
-    # ms2ds_model = load_ms2ds_model(ms2ds_model_file_name)
-    ms2ds = MS2DeepScore(ms2ds_model, progress_bar=False)
-    query_embeddings = ms2ds.calculate_vectors(test_spectra)
+    query_embeddings = compute_embedding_array(ms2ds_model, test_spectra)
+
     library_ms2ds_embeddings_numpy = ms2ds_embeddings.to_numpy()
 
     ms2ds_scores = cosine_similarity_matrix(library_ms2ds_embeddings_numpy,
