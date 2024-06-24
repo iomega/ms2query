@@ -4,7 +4,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.8.18
+  - python=3.9.18
   - matchms=0.24.1
   - numpy=1.24.4
   - spec2vec=0.8.0
