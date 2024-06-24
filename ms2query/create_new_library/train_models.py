@@ -4,11 +4,9 @@ new models
 """
 
 import os
-
 from ms2deepscore import SettingsMS2Deepscore
 from ms2deepscore.train_new_model.train_ms2deepscore import train_ms2ds_model
 from spec2vec.model_building import train_new_word2vec_model
-
 from ms2query.clean_and_filter_spectra import (
     clean_normalize_and_split_annotated_spectra, create_spectrum_documents)
 from ms2query.create_new_library.library_files_creator import \

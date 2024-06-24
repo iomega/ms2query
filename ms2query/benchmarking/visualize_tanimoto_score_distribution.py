@@ -1,5 +1,4 @@
 from typing import Dict, List, Tuple
-
 import numpy as np
 from matplotlib import pyplot as plt
 

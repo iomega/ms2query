@@ -5,7 +5,6 @@ new models
 
 import random
 from typing import Dict, List
-
 from matchms import Spectrum
 
 

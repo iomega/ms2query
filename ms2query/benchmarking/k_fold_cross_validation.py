@@ -5,10 +5,8 @@ cross validation for the MS2Query manuscript
 import os
 import random
 from typing import List
-
 from matchms import Spectrum
 from matchms.exporting.save_as_mgf import save_as_mgf
-
 from ms2query.benchmarking.collect_test_data_results import (
     generate_exact_matches_test_results, generate_test_results)
 from ms2query.clean_and_filter_spectra import \

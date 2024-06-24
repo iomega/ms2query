@@ -5,11 +5,9 @@ test results for benchmarking MS2Query against other tools.
 import os
 import random
 from typing import Dict, List, Tuple
-
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
 from ms2query.utils import (load_df_from_parquet_file, load_json_file,
                             save_df_as_parquet_file)
 

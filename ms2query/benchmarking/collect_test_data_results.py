@@ -8,7 +8,6 @@ import random
 import sqlite3
 import tempfile
 from typing import List, Tuple, Union
-
 import pandas as pd
 from matchms import Spectrum
 from matchms.calculate_scores import calculate_scores
@@ -17,7 +16,6 @@ from matchms.similarity.ModifiedCosine import ModifiedCosine
 from ms2deepscore.models import SiameseSpectralModel, compute_embedding_array
 from spec2vec.vector_operations import cosine_similarity_matrix
 from tqdm import tqdm
-
 from ms2query.create_new_library.calculate_tanimoto_scores import (
     calculate_highest_tanimoto_score, calculate_single_tanimoto_score)
 from ms2query.ms2library import MS2Library

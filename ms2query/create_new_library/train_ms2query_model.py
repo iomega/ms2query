@@ -5,7 +5,6 @@ new models
 
 import os
 from typing import List
-
 import pandas as pd
 from matchms import Spectrum
 from onnxconverter_common import FloatTensorType
@@ -13,7 +12,6 @@ from skl2onnx import convert_sklearn
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
-
 from ms2query import MS2Library
 from ms2query.create_new_library.calculate_tanimoto_scores import \
     calculate_tanimoto_scores_from_smiles

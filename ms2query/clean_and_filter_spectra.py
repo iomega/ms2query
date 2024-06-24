@@ -1,5 +1,4 @@
 from typing import List, Optional, Tuple
-
 import matchms.filtering as msfilters
 from matchms.filtering.filter_utils.smile_inchi_inchikey_conversions import (
     is_valid_inchi, is_valid_inchikey, is_valid_smiles)
