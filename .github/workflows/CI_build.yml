@@ -113,7 +113,7 @@ jobs:
         with:
           activate-environment: ms2query
           environment-file: ./environment.yml
-          python-version: 3.8
+          python-version: 3.9
       - name: activate conda environment
         run: |
           conda activate ms2query
