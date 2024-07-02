@@ -36,7 +36,7 @@ def ms2library(path_to_general_test_files) -> MS2Library:
         "100_test_spectra_s2v_embeddings.parquet")
     ms2ds_model_file_name = os.path.join(
         path_to_general_test_files,
-        "ms2ds_siamese_210301_5000_500_400.hdf5")
+        "ms2deepscore_model.pt")
     ms2ds_embeddings_file_name = os.path.join(
         path_to_general_test_files,
         "100_test_spectra_ms2ds_embeddings.parquet")

@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 from gensim.models import Word2Vec
 from matchms.Spectrum import Spectrum
-from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model as load_ms2ds_model
+from ms2deepscore.models.SiameseSpectralModel import compute_embedding_array
 from spec2vec.vector_operations import calc_vector
 from tqdm import tqdm
 from ms2query.clean_and_filter_spectra import create_spectrum_documents
@@ -141,11 +141,9 @@ class LibraryFilesCreator:
         assert not os.path.exists(self.ms2ds_embeddings_file_name), \
             "Given ms2ds_embeddings_file_name already exists"
         assert self.ms2ds_model is not None, "No MS2deepscore model was provided"
-        ms2ds = MS2DeepScore(self.ms2ds_model,
-                             progress_bar=self.progress_bars)
 
         # Compute spectral embeddings
-        embeddings = ms2ds.calculate_vectors(self.list_of_spectra)
+        embeddings = compute_embedding_array(self.ms2ds_model, self.list_of_spectra)
         spectrum_ids = np.arange(0, len(self.list_of_spectra))
         all_embeddings_df = pd.DataFrame(embeddings, index=spectrum_ids)
         save_df_as_parquet_file(all_embeddings_df, self.ms2ds_embeddings_file_name)

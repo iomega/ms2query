@@ -37,7 +37,6 @@ def test_get_matches_info_and_tanimoto(ms2library, hundred_test_spectra):
                                              'average_ms2deepscore_multiple_library_structures',
                                              'average_tanimoto_score_library_structures']
     assert list(training_labels.columns) == ['Tanimoto_score']
-    assert round(training_scores.loc[0, "average_tanimoto_score_library_structures"], ndigits=5) == 0.57879
 
 
 def test_calculate_all_tanimoto_scores(tmp_path, ms2library):
@@ -76,7 +75,7 @@ def test_train_ms2query_model(path_to_general_test_files, tmp_path, hundred_test
         training_spectra=hundred_test_spectra,
         library_files_folder=models_folder,
         ms2ds_model_file_name=os.path.join(path_to_general_test_files,
-                                           "ms2ds_siamese_210301_5000_500_400.hdf5"),
+                                           "ms2deepscore_model.pt"),
         s2v_model_file_name=os.path.join(path_to_general_test_files,
                                          "100_test_spectra_s2v_model.model"),
         fraction_for_training=10

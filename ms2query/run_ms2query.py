@@ -10,8 +10,8 @@ from ms2query.utils import (SettingsRunMS2Query,
 
 def zenodo_dois(ionisation_mode):
     "Returns the most up to date url for Zenodo"
-    zenodo_DOIs = {"positive": 10527997,
-                   "negative": 10528030}
+    zenodo_DOIs = {"positive": 12622446,
+                   "negative": 12606475}
     assert ionisation_mode in zenodo_DOIs, "Expected 'positive' or 'negative' as input"
     zenodo_doi = zenodo_DOIs[ionisation_mode]
     zenodo_metadata_url = "https://zenodo.org/api/records/" + str(zenodo_doi)
@@ -25,12 +25,11 @@ def available_zenodo_files(zenodo_metadata_url,
     with urlopen(zenodo_metadata_url) as zenodo_metadata_file:
         file_names_metadata_json: dict = json.loads(zenodo_metadata_file.read())
     files = file_names_metadata_json["files"]
-
     file_names_and_sizes = {}
     for file in files:
         file_name = file["key"]
         if only_models:
-            model_extensions = [".model", ".hdf5", ".onnx", ".npy"]
+            model_extensions = [".model", ".pt", ".onnx", ".npy"]
             if any(file_name.endswith(e) for e in model_extensions):
                 file_names_and_sizes[file_name] = file["size"]
         else:

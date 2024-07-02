@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 1.5.0
+### Changed
+- MS2Query is now tested on python 3.9 and 3.10 instead of 3.8 and 3.9
+- MS2Query is using MS2Deepscore 2.0. This is a breaking change, making MS2Query not work with old models anymore
+- Updated model to use MS2Deepscore 2.0 and used newly available training data for all models.
+
 ## 1.4.0
 ### Changed
 - Made compatible with MS2Deepscore 0.5.0
