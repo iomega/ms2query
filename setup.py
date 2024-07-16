@@ -29,7 +29,7 @@ setup(
     test_suite="tests",
     python_requires='>=3.9',
     install_requires=[
-        "matchms>=0.24.0",
+        "matchms>=0.24.0,<0.27",
         "numpy>1.22,<1.27",
         "scipy>=1.11,<1.13",
         "spec2vec>=0.6.0",
