@@ -31,7 +31,7 @@ setup(
     install_requires=[
         "matchms>=0.24.0",
         "numpy>1.22,<1.27",
-        "scipy>=1.11",
+        "scipy>=1.11,<1.13",
         "spec2vec>=0.6.0",
         "h5py",
         "pyarrow",
