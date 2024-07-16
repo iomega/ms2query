@@ -30,7 +30,8 @@ setup(
     python_requires='>=3.9',
     install_requires=[
         "matchms>=0.24.0",
-        "numpy",
+        "numpy>1.22, <1.27",
+        "scipy = ">=1.11",
         "spec2vec>=0.6.0",
         "h5py",
         "pyarrow",
