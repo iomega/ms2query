@@ -29,7 +29,7 @@ setup(
     test_suite="tests",
     python_requires='>=3.9',
     install_requires=[
-        "matchms>=0.24.0",
+        "matchms>=0.24.0,<=0.26.4",
         "numpy",
         "spec2vec>=0.6.0",
         "h5py",
@@ -41,6 +41,7 @@ setup(
         "tqdm",
         "matplotlib",
         "skl2onnx",
+        "onnx<1.16.2",
         "onnxruntime<1.16", # 1.16 breaks the code due to the issue https://github.com/iomega/ms2query/issues/208
     ],
     extras_require={"dev": ["bump2version",
