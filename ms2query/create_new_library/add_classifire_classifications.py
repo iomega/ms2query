@@ -115,7 +115,7 @@ def select_compound_classes(spectra):
                 break
         if cf_classes is None:
             print(f"no classyfire annotation was found for inchikey {inchikey14}")
-            inchikey_results_list[i].append([inchikey14, "", "", "", "", ""])
+            inchikey_results_list[i] += ["", "", "", "", ""]
 
     #     select NPC classes
         npc_results = None
