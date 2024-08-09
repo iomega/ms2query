@@ -23,3 +23,10 @@ def test_add_classifier_annotation(spectra):
     result = select_compound_classes(spectra)
     assert sorted(result) == [['WRIPSIKIDAUKBP', 'Organic compounds', 'Phenylpropanoids and polyketides', 'Macrolactams', '', 'Macrolactams', '', '', 'Alkaloids', 'False'],
                               ['WXDBUBIFYCCNLE', 'Organic compounds', 'Organoheterocyclic compounds', 'Oxepanes', '', 'Oxepanes', 'Lipopeptides', 'Oligopeptides', 'Amino acids and Peptides', 'False']]
+
+
+def test_add_classifier_annotation_unknown_inchikey(spectra):
+    """This tests that when no compound class annotation is found, that it is correctly filled with empty strings"""
+    spectra[1].set("inchikey", "AAAAAAAAAAAAAA")
+    result = select_compound_classes(spectra)
+    assert len(result[0]) == len(result[1])
