@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.5.2
 ### Fixed
 - Handle missing compound names. Previously MS2Query would break, when no compound name was available for an analog.
+- Fix bug for creating sqlite files. Missing compound class annotations would be stored incorrectly. The creation now works correctly, but the download link to the models, still points to the sqlite files with mistakes. MS2Query can be used, but this leads to weird formatting in the results file of the class annotations. 
 
 ## 1.5.1
 ### Fixed
