@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.3
+### Fixed
+- Updated the doi to the MS2Query library. This new library has a fix for a bug misrepresenting the compound classes.
+
 ## 1.5.2
 ### Fixed
 - Handle missing compound names. Previously MS2Query would break, when no compound name was available for an analog.
