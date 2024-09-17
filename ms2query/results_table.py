@@ -133,12 +133,20 @@ class ResultsTable:
 
         # For each analog the compound name is selected from sqlite
         metadata_dict = self.sqlite_library.get_metadata_from_sqlite(list(selected_analogs["spectrum_ids"]))
-        compound_name_list = [metadata_dict[analog_spectrum_id]["compound_name"]
-                              for analog_spectrum_id
-                              in list(selected_analogs["spectrum_ids"])]
-        smiles_list = [metadata_dict[analog_spectrum_id]["smiles"]
-                       for analog_spectrum_id
-                       in list(selected_analogs["spectrum_ids"])]
+
+        compound_name_list = []
+        for metadata in metadata_dict.values():
+            if "compound_name" in metadata.keys():
+                compound_name_list.append(metadata["compound_name"])
+            else:
+                compound_name_list.append(None)
+
+        smiles_list = []
+        for metadata in metadata_dict.values():
+            if "smiles" in metadata.keys():
+                smiles_list.append(metadata["smiles"])
+            else:
+                smiles_list.append(None)
 
         # Add inchikey and ms2query model prediction to results df
         # results_df = selected_analogs.loc[:, ["spectrum_ids", "ms2query_model_prediction", "inchikey"]]
