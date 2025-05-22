@@ -31,6 +31,7 @@ setup(
     install_requires=[
         "matchms>=0.24.0,<=0.26.4",
         "numpy",
+        "torch<2.6",
         "spec2vec>=0.6.0",
         "h5py",
         "pyarrow",
