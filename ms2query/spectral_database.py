@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Tuple, Iterable, Optional, Dict, Any
 import sqlite3
@@ -23,7 +22,7 @@ def _as_float32_bytes(a: np.ndarray) -> bytes:
     return a.tobytes(order="C")
 
 def _from_float32_bytes(b: bytes, n: int) -> np.ndarray:
-    # n_peaks defines how many valid values; we read exactly n
+    # n_peaks defines how many valid values
     arr = np.frombuffer(b, dtype=np.float32, count=n)
     # Make it writeable for downstream use
     return np.array(arr, copy=True)
@@ -64,7 +63,7 @@ class SpectralDatabase:
 
     # ---------- public API ----------
 
-    def add_spectrum(self, spectra: List[Spectrum]) -> List[int]:
+    def add_spectra(self, spectra: List[Spectrum]) -> List[int]:
         """Add spectra to the database. Returns assigned spec_ids."""
         if not spectra:
             return []
@@ -102,6 +101,7 @@ class SpectralDatabase:
                 mz: Optional[np.ndarray] = getattr(sp, "mz", None)
                 intens: Optional[np.ndarray] = getattr(sp, "intensities", None)
                 # matchms >=0.20 stores as properties; otherwise: sp.peaks.mz, sp.peaks.intensities
+                # TODO: clean up and only focus on newer matchms
                 if mz is None or intens is None:
                     peaks = getattr(sp, "peaks", None)
                     if peaks is None:
@@ -138,6 +138,12 @@ class SpectralDatabase:
             raise
 
         return spec_ids
+
+    def ids(self) -> List[int]:
+        """Return all spec_ids in the database."""
+        cur = self._conn.cursor()
+        rows = cur.execute("SELECT spec_id FROM spectra").fetchall()
+        return [int(row["spec_id"]) for row in rows]
 
     def retrieve_spectra_by_ids(self, specIDs: List[int]) -> List[Spectrum]:
         """Retrieve full Spectrum objects for given specIDs (order preserved, missing IDs skipped)."""
