@@ -4,6 +4,9 @@ from pathlib import Path
 import sqlite3
 import numpy as np
 import pandas as pd
+from rdkit.Chem import rdFingerprintGenerator
+
+from ms2query.fingerprint_computation import compute_fingerprints_from_smiles
 
 # =========================
 # Utilities & placeholders
@@ -18,14 +21,31 @@ def inchikey14_from_full(inchikey: str) -> Optional[str]:
         return s.split("-", 1)[0][:14]
     return s[:14] if len(s) >= 14 else None
 
-def encode_fp_blob(fp: Optional[np.ndarray]) -> bytes:
-    """Encode fingerprint as a uint8 BLOB. Accepts any numeric dtype -> coerces to uint8."""
-    if fp is None:
-        return b""
-    fp = np.asarray(fp)
-    if fp.dtype != np.uint8:
-        fp = fp.astype(np.uint8, copy=False)
-    return fp.tobytes(order="C")
+def encode_sparse_fp(bits: Optional[np.ndarray], counts: Optional[np.ndarray]) -> tuple[bytes, bytes]:
+    """Store bits as uint32 indices, counts as int32
+    Returns (bits_blob, counts_blob). Accepts None -> empty blobs."""
+    if bits is None:
+        b = b""
+    else:
+        arr = np.asarray(bits)
+        if arr.dtype != np.uint32:
+            arr = arr.astype(np.uint32, copy=False)
+        b = arr.tobytes(order="C")
+    if counts is None:
+        c = b""
+    else:
+        arrc = np.asarray(counts)
+        if arrc.dtype != np.int32 and arrc.dtype != np.uint32 and arrc.dtype != np.uint16 and arrc.dtype != np.uint8:
+            arrc = arrc.astype(np.int32, copy=False)
+        c = arrc.tobytes(order="C")
+    return b, c
+
+def decode_sparse_fp(bits_blob: bytes, counts_blob: bytes) -> tuple[np.ndarray, np.ndarray]:
+    """Inverse of encode_sparse_fp. Returns (bits_uint32, counts_int32). Empty blobs -> empty arrays."""
+    bits = np.frombuffer(bits_blob, dtype=np.uint32).copy() if bits_blob else np.zeros(0, dtype=np.uint32)
+    # Guess signedness: store as int32 by default
+    counts = np.frombuffer(counts_blob, dtype=np.int32).copy() if counts_blob else np.zeros(0, dtype=np.int32)
+    return bits, counts
 
 def decode_fp_blob(blob: bytes) -> np.ndarray:
     """Decode fingerprint BLOB back to uint8 array. Unknown length -> infer from blob size."""
@@ -33,24 +53,59 @@ def decode_fp_blob(blob: bytes) -> np.ndarray:
         return np.zeros(0, dtype=np.uint8)
     return np.frombuffer(blob, dtype=np.uint8).copy()
 
-def compute_fingerprints(smiles: Optional[str], inchi: Optional[str]) -> np.ndarray:
+def compute_fingerprints(
+        smiles: Optional[str] = None,
+        inchis: Optional[str] = None,
+        sparse: bool = True,
+        count: bool = True,
+        radius: int = 9,
+        progress_bar: bool = True,
+        ) -> np.ndarray:
     """
     Placeholder: compute a molecular fingerprint from SMILES or InChI.
     For now return a dummy vector (replace with RDKit/Morgan etc. later).
     """
-    return np.array([0, 1, 0, 1], dtype=np.uint8)
+    fpgen = rdFingerprintGenerator.GetMorganGenerator(radius=radius, fpSize=4096)
+
+    if inchis and not smiles:
+        # convert inchis to smiles
+        smiles = []
+        for inchi in inchis:
+            try:
+                from rdkit import Chem
+                mol = Chem.MolFromInchi(inchi)
+                smi = Chem.MolToSmiles(mol) if mol is not None else None
+                smiles.append(smi)
+            except Exception as e:
+                print(f"Error converting InChI to SMILES for {inchi}: {e}")
+                smiles.append(None)
+    elif not smiles and not inchis:
+        raise ValueError("Either smiles or inchis must be provided.")
+    return compute_fingerprints_from_smiles(
+        smiles, 
+        fpgen,
+        count=count,
+        sparse=sparse,
+        progress_bar=progress_bar,
+    )
+
 
 # ==================================================
 # Compound database (compounds table) in SQLite
 # ==================================================
 
+# --- keep your imports/utilities as-is (encode/decode utils etc.) ---
+
 @dataclass
 class CompoundDatabase:
     sqlite_path: str
-    # Extend as needed (add more classyfire-like fields here)
     compound_fields: List[str] = field(default_factory=lambda: [
         "smiles", "inchi", "inchikey", "classyfire_class", "classyfire_superclass"
     ])
+    # Default FP parameters (used by the backfill method if you pass through to your compute_fingerprints)
+    fingerprint_radius: int = 9
+    fingerprint_sparse: bool = True
+    fingerprint_count: bool = True
     _conn: sqlite3.Connection = field(init=False, repr=False)
 
     def __post_init__(self):
@@ -60,33 +115,34 @@ class CompoundDatabase:
         self._ensure_schema()
 
     def close(self):
-        try:
-            self._conn.close()
-        except Exception:
-            pass
-
-    # ---------- schema ----------
+        try: self._conn.close()
+        except Exception: pass
 
     def _ensure_schema(self):
         cur = self._conn.cursor()
-        # comp_id is inchikey14 (PRIMARY KEY). inchikey (full) must be unique as well if present.
         cur.executescript("""
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS compounds(
-                comp_id              TEXT PRIMARY KEY,          -- inchikey14
-                smiles               TEXT,
-                inchi                TEXT,
-                inchikey             TEXT UNIQUE,               -- full InChIKey (27 chars)
-                fingerprint          BLOB,                      -- uint8 array
-                classyfire_class     TEXT,
+                comp_id               TEXT PRIMARY KEY,          -- inchikey14
+                smiles                TEXT,
+                inchi                 TEXT,
+                inchikey              TEXT UNIQUE,
+                -- old single blob may still exist; unused
+                fingerprint           BLOB,
+                classyfire_class      TEXT,
                 classyfire_superclass TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_compounds_smiles ON compounds(smiles);
             CREATE INDEX IF NOT EXISTS idx_compounds_inchi  ON compounds(inchi);
         """)
+        # add missing columns for sparse pair
+        cols = {r[1] for r in cur.execute("PRAGMA table_info(compounds)").fetchall()}
+        for name, typ in (("fingerprint_bits", "BLOB"), ("fingerprint_counts", "BLOB")):
+            if name not in cols:
+                cur.execute(f"ALTER TABLE compounds ADD COLUMN {name} {typ}")
         self._conn.commit()
 
-    # ---------- upsert ----------
+    # ---------- UPSERTS: write metadata only; DO NOT compute fingerprints here ----------
 
     def upsert_compound(
         self,
@@ -95,39 +151,48 @@ class CompoundDatabase:
         inchikey: Optional[str] = None,
         classyfire_class: Optional[str] = None,
         classyfire_superclass: Optional[str] = None,
-        fingerprint: Optional[np.ndarray] = None,
+        fingerprint: Optional[Tuple[np.ndarray, np.ndarray]] = None,  # allowed, but not required
     ) -> str:
-        """Upsert a single compound. Returns comp_id (inchikey14)."""
         if inchikey is None:
             raise ValueError("inchikey is required to form comp_id (inchikey14).")
         comp_id = inchikey14_from_full(inchikey)
         if not comp_id:
             raise ValueError(f"Invalid InChIKey: {inchikey}")
 
-        fp_blob = encode_fp_blob(fingerprint if fingerprint is not None else compute_fingerprints(smiles, inchi))
+        # If a fingerprint tuple was explicitly passed, persist it; otherwise leave empty
+        if fingerprint is not None:
+            bits_blob, counts_blob = encode_sparse_fp(*fingerprint)
+        else:
+            bits_blob, counts_blob = b"", b""
 
         cur = self._conn.cursor()
-        # Use INSERT ON CONFLICT for upsert semantics
         cur.execute("""
-            INSERT INTO compounds (comp_id, smiles, inchi, inchikey, fingerprint, classyfire_class, classyfire_superclass)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO compounds (
+                comp_id, smiles, inchi, inchikey,
+                fingerprint_bits, fingerprint_counts,
+                classyfire_class, classyfire_superclass
+            ) VALUES (?,?,?,?,?,?,?,?)
             ON CONFLICT(comp_id) DO UPDATE SET
-                smiles=excluded.smiles,
-                inchi=excluded.inchi,
-                inchikey=excluded.inchikey,
-                fingerprint=excluded.fingerprint,
-                classyfire_class=excluded.classyfire_class,
-                classyfire_superclass=excluded.classyfire_superclass
-        """, (comp_id, smiles, inchi, inchikey, fp_blob, classyfire_class, classyfire_superclass))
+                smiles=COALESCE(excluded.smiles, compounds.smiles),
+                inchi=COALESCE(excluded.inchi, compounds.inchi),
+                inchikey=COALESCE(excluded.inchikey, compounds.inchikey),
+                fingerprint_bits=CASE
+                    WHEN COALESCE(LENGTH(excluded.fingerprint_bits),0) > 0
+                    THEN excluded.fingerprint_bits ELSE compounds.fingerprint_bits END,
+                fingerprint_counts=CASE
+                    WHEN COALESCE(LENGTH(excluded.fingerprint_counts),0) > 0
+                    THEN excluded.fingerprint_counts ELSE compounds.fingerprint_counts END,
+                classyfire_class=COALESCE(excluded.classyfire_class, compounds.classyfire_class),
+                classyfire_superclass=COALESCE(excluded.classyfire_superclass, compounds.classyfire_superclass)
+        """, (
+            comp_id, smiles, inchi, inchikey,
+            bits_blob, counts_blob,
+            classyfire_class, classyfire_superclass,
+        ))
         self._conn.commit()
         return comp_id
 
     def upsert_many(self, rows: Iterable[Dict[str, Any]]) -> List[str]:
-        """
-        Upsert many compounds. Each row may include:
-        smiles, inchi, inchikey (required), classyfire_class, classyfire_superclass, fingerprint (np.ndarray optional).
-        Returns list of comp_ids.
-        """
         comp_ids: List[str] = []
         cur = self._conn.cursor()
         cur.execute("BEGIN")
@@ -140,24 +205,40 @@ class CompoundDatabase:
                 if not comp_id:
                     raise ValueError(f"Invalid InChIKey: {inchikey}")
 
-                smiles = r.get("smiles")
-                inchi = r.get("inchi")
-                fingerprint = r.get("fingerprint")
-                fp_blob = encode_fp_blob(fingerprint if fingerprint is not None else compute_fingerprints(smiles, inchi))
-                classyfire_class = r.get("classyfire_class")
-                classyfire_superclass = r.get("classyfire_superclass")
+                # explicit fingerprint tuple allowed; else empty blobs now
+                fp = r.get("fingerprint")
+                if fp is not None:
+                    bits_blob, counts_blob = encode_sparse_fp(*fp)
+                else:
+                    bits_blob, counts_blob = b"", b""
 
                 cur.execute("""
-                    INSERT INTO compounds (comp_id, smiles, inchi, inchikey, fingerprint, classyfire_class, classyfire_superclass)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO compounds (
+                        comp_id, smiles, inchi, inchikey,
+                        fingerprint_bits, fingerprint_counts,
+                        classyfire_class, classyfire_superclass
+                    ) VALUES (?,?,?,?,?,?,?,?)
                     ON CONFLICT(comp_id) DO UPDATE SET
-                        smiles=excluded.smiles,
-                        inchi=excluded.inchi,
-                        inchikey=excluded.inchikey,
-                        fingerprint=excluded.fingerprint,
-                        classyfire_class=excluded.classyfire_class,
-                        classyfire_superclass=excluded.classyfire_superclass
-                """, (comp_id, smiles, inchi, inchikey, fp_blob, classyfire_class, classyfire_superclass))
+                        smiles=COALESCE(excluded.smiles, compounds.smiles),
+                        inchi=COALESCE(excluded.inchi, compounds.inchi),
+                        inchikey=COALESCE(excluded.inchikey, compounds.inchikey),
+                        fingerprint_bits=CASE
+                            WHEN COALESCE(LENGTH(excluded.fingerprint_bits),0) > 0
+                            THEN excluded.fingerprint_bits ELSE compounds.fingerprint_bits END,
+                        fingerprint_counts=CASE
+                            WHEN COALESCE(LENGTH(excluded.fingerprint_counts),0) > 0
+                            THEN excluded.fingerprint_counts ELSE compounds.fingerprint_counts END,
+                        classyfire_class=COALESCE(excluded.classyfire_class, compounds.classyfire_class),
+                        classyfire_superclass=COALESCE(excluded.classyfire_superclass, compounds.classyfire_superclass)
+                """, (
+                    comp_id,
+                    r.get("smiles"),
+                    r.get("inchi"),
+                    inchikey,
+                    bits_blob, counts_blob,
+                    r.get("classyfire_class"),
+                    r.get("classyfire_superclass"),
+                ))
                 comp_ids.append(comp_id)
             cur.execute("COMMIT")
         except Exception:
@@ -165,18 +246,205 @@ class CompoundDatabase:
             raise
         return comp_ids
 
-    # ---------- queries ----------
+    # ---------- READ ----------
+    # ---------- single-row getters ----------
 
     def get_compound(self, comp_id: str) -> Optional[Dict[str, Any]]:
-        row = self._conn.execute("SELECT * FROM compounds WHERE comp_id = ?", (comp_id,)).fetchone()
+        """
+        Return metadata for one compound (no fingerprint blobs).
+        Keys: comp_id, smiles, inchi, inchikey, classyfire_class, classyfire_superclass
+        """
+        row = self._conn.execute("""
+            SELECT comp_id, smiles, inchi, inchikey, classyfire_class, classyfire_superclass
+            FROM compounds
+            WHERE comp_id = ?
+        """, (comp_id,)).fetchone()
+        return dict(row) if row else None
+
+    def get_fingerprint(self, comp_id: str) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Return (bits, counts) tuple for one compound; None if absent or empty.
+        """
+        row = self._conn.execute("""
+            SELECT fingerprint_bits, fingerprint_counts
+            FROM compounds
+            WHERE comp_id = ?
+        """, (comp_id,)).fetchone()
         if not row:
             return None
-        d = dict(row)
-        d["fingerprint"] = decode_fp_blob(d["fingerprint"])
-        return d
+        bits_blob = row["fingerprint_bits"] or b""
+        counts_blob = row["fingerprint_counts"] or b""
+        if not bits_blob and not counts_blob:
+            return None
+        return decode_sparse_fp(bits_blob, counts_blob)
+
+    # ---------- batch getters ----------
+
+    def get_compounds(self, comp_ids: List[str]) -> pd.DataFrame:
+        """
+        Return metadata for many compounds (no fingerprint blobs), order preserved as in comp_ids.
+        Missing comp_ids are omitted from the result.
+        """
+        if not comp_ids:
+            return pd.DataFrame(columns=[
+                "comp_id", "smiles", "inchi", "inchikey", "classyfire_class", "classyfire_superclass"
+            ])
+        placeholders = ",".join("?" for _ in comp_ids)
+        df = pd.read_sql_query(f"""
+            SELECT comp_id, smiles, inchi, inchikey, classyfire_class, classyfire_superclass
+            FROM compounds
+            WHERE comp_id IN ({placeholders})
+        """, self._conn, params=comp_ids)
+
+        if df.empty:
+            return df
+
+        # preserve caller order
+        order = {cid: i for i, cid in enumerate(comp_ids)}
+        df["__order"] = df["comp_id"].map(order)
+        df = df.sort_values("__order").drop(columns="__order").reset_index(drop=True)
+        return df
+
+    def get_fingerprints(self, comp_ids: List[str]) -> List[Optional[Tuple[np.ndarray, np.ndarray]]]:
+        """
+        Return a list of fingerprints aligned with comp_ids.
+        Each item is (bits, counts) or None if not found/empty.
+        """
+        if not comp_ids:
+            return []
+
+        placeholders = ",".join("?" for _ in comp_ids)
+        rows = self._conn.execute(f"""
+            SELECT comp_id, fingerprint_bits, fingerprint_counts
+            FROM compounds
+            WHERE comp_id IN ({placeholders})
+        """, comp_ids).fetchall()
+
+        by_id = {
+            r["comp_id"]:
+                (None if (not (r["fingerprint_bits"] or b"") and not (r["fingerprint_counts"] or b""))
+                 else decode_sparse_fp(r["fingerprint_bits"] or b"", r["fingerprint_counts"] or b""))
+            for r in rows
+        }
+
+        # align with input order; use None for missing
+        return [by_id.get(cid) for cid in comp_ids]
+
 
     def sql_query(self, query: str) -> pd.DataFrame:
         return pd.read_sql_query(query, self._conn)
+
+    # ---------- Compute fingerprints later, for all missing ----------
+
+    def compute_fingerprints_missing(
+        self,
+        batch_size: int = 1000,
+        use_progress_bar: bool = True,
+        fp_size: int = 4096,
+        radius: Optional[int] = None,
+        sparse: Optional[bool] = None,
+        count: Optional[bool] = None,
+    ) -> dict:
+        """
+        Compute fingerprints for all compounds that have SMILES (pass A) or, if no SMILES,
+        have InChI (pass B), and where fingerprints are missing.
+        Uses the project-level `compute_fingerprints` function that returns a
+        List[Optional[Tuple[np.ndarray,np.ndarray]]].
+
+        Returns stats: {"updated": int, "attempted": int, "skipped": int}
+        """
+        # parameters default to class defaults if not provided
+        radius = self.fingerprint_radius if radius is None else radius
+        sparse = self.fingerprint_sparse if sparse is None else sparse
+        count  = self.fingerprint_count  if count  is None else count
+
+        cur = self._conn.cursor()
+
+        def _select_batch(sql: str, params: tuple) -> List[sqlite3.Row]:
+            return cur.execute(sql, params).fetchall()
+
+        # helper: write results back
+        def _update_rows(comp_ids: List[str], results: List[Optional[Tuple[np.ndarray, np.ndarray]]]) -> int:
+            updated = 0
+            cur.execute("BEGIN")
+            try:
+                for cid, res in zip(comp_ids, results):
+                    if res is None:
+                        bits_blob, counts_blob = b"", b""
+                    else:
+                        bits_blob, counts_blob = encode_sparse_fp(*res)
+                        updated += 1
+                    cur.execute(
+                        "UPDATE compounds SET fingerprint_bits=?, fingerprint_counts=? WHERE comp_id=?",
+                        (bits_blob, counts_blob, cid),
+                    )
+                cur.execute("COMMIT")
+            except Exception:
+                cur.execute("ROLLBACK")
+                raise
+            return updated
+
+        stats = {"updated": 0, "attempted": 0, "skipped": 0}
+
+        # PASS A: SMILES-present & fingerprints missing
+        sql_smiles = """
+            SELECT comp_id, smiles
+            FROM compounds
+            WHERE smiles IS NOT NULL
+              AND TRIM(smiles) <> ''
+              AND COALESCE(LENGTH(fingerprint_bits),0)=0
+              AND COALESCE(LENGTH(fingerprint_counts),0)=0
+            LIMIT ?
+            OFFSET ?
+        """
+
+        # PASS B: no SMILES, but InChI-present & fingerprints missing
+        sql_inchi = """
+            SELECT comp_id, inchi
+            FROM compounds
+            WHERE (smiles IS NULL OR TRIM(smiles) = '')
+              AND inchi IS NOT NULL
+              AND TRIM(inchi) <> ''
+              AND COALESCE(LENGTH(fingerprint_bits),0)=0
+              AND COALESCE(LENGTH(fingerprint_counts),0)=0
+            LIMIT ?
+            OFFSET ?
+        """
+
+        for sql, which in [(sql_smiles, "smiles"), (sql_inchi, "inchi")]:
+            offset = 0
+            while True:
+                rows = _select_batch(sql, (batch_size, offset))
+                if not rows:
+                    break
+                comp_ids = [r[0] for r in rows]
+                reps = [r[1] for r in rows]  # list[str] of smiles or inchi
+
+                # call your project-level function ONCE for the whole batch
+                results = compute_fingerprints(
+                    smiles=reps if which == "smiles" else None,
+                    inchis=reps if which == "inchi" else None,
+                    sparse=sparse,
+                    count=count,
+                    radius=radius,
+                    progress_bar=use_progress_bar,
+                )  # -> List[Optional[Tuple[np.ndarray,np.ndarray]]]
+
+                upd = _update_rows(comp_ids, results)
+                stats["updated"] += upd
+                stats["attempted"] += len(comp_ids)
+                offset += batch_size
+
+        # rows without SMILES & without InChI are skipped
+        stats["skipped"] = self.sql_query("""
+            SELECT COUNT(*) AS n
+            FROM compounds
+            WHERE (smiles IS NULL OR TRIM(smiles)='')
+              AND (inchi  IS NULL OR TRIM(inchi) ='')
+        """)["n"].iloc[0]
+
+        return stats
+
 
 
 # ==================================================
@@ -291,16 +559,21 @@ def map_from_spectraldb_metadata(
     mapper = SpecToCompoundMap(map_db_path)
     compdb = CompoundDatabase(c_db_path)
 
-    # Pull spec_id + inchikey from SpectralDatabase.spectra table
-    # (the earlier SpectralDatabase example stores metadata as columns; ensure 'inchikey' exists there).
-    rows = s_conn.execute("SELECT spec_id, inchikey FROM spectra").fetchall()
+    # Discover which columns exist in the spectra table
+    cols = {r[1] for r in s_conn.execute("PRAGMA table_info(spectra)").fetchall()}
+    want = ["spec_id", "inchikey", "smiles", "inchi", "classyfire_class", "classyfire_superclass"]
+    have = [c for c in want if c in cols]
+    select_cols = ", ".join(have)
+
+    rows = s_conn.execute(f"SELECT {select_cols} FROM spectra").fetchall()
 
     to_link: List[Tuple[int, str]] = []
     new_comp_rows: List[Dict[str, Any]] = []
 
     for r in rows:
+        r = dict(r)
         spec_id = int(r["spec_id"])
-        ik_full = r["inchikey"]
+        ik_full = r.get("inchikey")
         if not ik_full:
             continue
         comp_id = inchikey14_from_full(ik_full)
@@ -310,12 +583,12 @@ def map_from_spectraldb_metadata(
 
         if create_missing_compounds:
             new_comp_rows.append({
-                "smiles": None,
-                "inchi": None,
+                "smiles": r.get("smiles"),
+                "inchi": r.get("inchi"),
                 "inchikey": ik_full,
-                "classyfire_class": None,
-                "classyfire_superclass": None,
-                "fingerprint": None,   # will be replaced by compute_fingerprints(...)
+                "classyfire_class": r.get("classyfire_class"),
+                "classyfire_superclass": r.get("classyfire_superclass"),
+                "fingerprint": None,  # still defer; backfill later
             })
 
     # Bulk linking
