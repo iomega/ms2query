@@ -23,6 +23,12 @@ def inchikey14_from_full(inchikey: str) -> Optional[str]:
 
 def encode_sparse_fp(bits: Optional[np.ndarray], counts: Optional[np.ndarray]) -> tuple[bytes, bytes]:
     """Store bits as uint32 indices, counts as int32
+
+    Parameters
+    ----------
+    bits : array-like of uint32 bit indices
+    counts : array-like of int32 counts
+
     Returns (bits_blob, counts_blob). Accepts None -> empty blobs."""
     if bits is None:
         b = b""
@@ -41,14 +47,23 @@ def encode_sparse_fp(bits: Optional[np.ndarray], counts: Optional[np.ndarray]) -
     return b, c
 
 def decode_sparse_fp(bits_blob: bytes, counts_blob: bytes) -> tuple[np.ndarray, np.ndarray]:
-    """Inverse of encode_sparse_fp. Returns (bits_uint32, counts_int32). Empty blobs -> empty arrays."""
+    """Inverse of encode_sparse_fp.
+
+    Parameters
+    ----------
+    bits_blob : BLOB bytes of uint32 bit indices
+    counts_blob : BLOB bytes of int32 counts
+
+    Returns (bits_uint32, counts_int32). Empty blobs -> empty arrays.
+    """
     bits = np.frombuffer(bits_blob, dtype=np.uint32).copy() if bits_blob else np.zeros(0, dtype=np.uint32)
     # Guess signedness: store as int32 by default
     counts = np.frombuffer(counts_blob, dtype=np.int32).copy() if counts_blob else np.zeros(0, dtype=np.int32)
     return bits, counts
 
 def decode_fp_blob(blob: bytes) -> np.ndarray:
-    """Decode fingerprint BLOB back to uint8 array. Unknown length -> infer from blob size."""
+    """Decode fingerprint BLOB back to uint8 array.
+    Unknown length -> infer from blob size."""
     if not blob:
         return np.zeros(0, dtype=np.uint8)
     return np.frombuffer(blob, dtype=np.uint8).copy()
@@ -62,8 +77,22 @@ def compute_fingerprints(
         progress_bar: bool = True,
         ) -> np.ndarray:
     """
-    Placeholder: compute a molecular fingerprint from SMILES or InChI.
-    For now return a dummy vector (replace with RDKit/Morgan etc. later).
+    Compute a molecular fingerprint from SMILES or InChI.
+
+    Parameters
+    ----------
+    smiles : str or None
+        SMILES string to compute the fingerprint from.
+    inchis : str or None
+        InChI strings to compute the fingerprint from (used if smiles is None).
+    sparse : bool
+        If True, compute sparse fingerprint (indices/counts); else dense bit vector.
+    count : bool
+        If True, compute count-based fingerprint; else binary fingerprint.
+    radius : int
+        Radius for Morgan fingerprint. Default 9.
+    progress_bar : bool
+        Whether to show a progress bar during computation. Default True.
     """
     fpgen = rdFingerprintGenerator.GetMorganGenerator(radius=radius, fpSize=4096)
 
@@ -94,15 +123,29 @@ def compute_fingerprints(
 # Compound database (compounds table) in SQLite
 # ==================================================
 
-# --- keep your imports/utilities as-is (encode/decode utils etc.) ---
-
 @dataclass
 class CompoundDatabase:
+    """SQLite-based compound database with sparse fingerprint storage.
+    Stores compounds identified by inchikey14, with optional metadata and molecular fingerprints.
+
+    Attributes
+    ----------
+    sqlite_path : str
+        Path to the SQLite database file.
+    compound_fields : List[str]
+        List of metadata fields to store for each compound.
+    fingerprint_radius : int
+        Radius for Morgan fingerprint computation (used in backfill).
+    fingerprint_sparse : bool
+        Whether to store fingerprints as sparse (True) or dense (False) (used in backfill).
+    fingerprint_count : bool
+        Whether to store count-based (True) or binary (False) fingerprints (used in backfill).
+    """
     sqlite_path: str
     compound_fields: List[str] = field(default_factory=lambda: [
         "smiles", "inchi", "inchikey", "classyfire_class", "classyfire_superclass"
     ])
-    # Default FP parameters (used by the backfill method if you pass through to your compute_fingerprints)
+    # Default FP parameters (used by the backfill method for compute_fingerprints)
     fingerprint_radius: int = 9
     fingerprint_sparse: bool = True
     fingerprint_count: bool = True
@@ -142,7 +185,7 @@ class CompoundDatabase:
                 cur.execute(f"ALTER TABLE compounds ADD COLUMN {name} {typ}")
         self._conn.commit()
 
-    # ---------- UPSERTS: write metadata only; DO NOT compute fingerprints here ----------
+    # ---------- UPSERTS ----------
 
     def upsert_compound(
         self,
@@ -420,7 +463,7 @@ class CompoundDatabase:
                 comp_ids = [r[0] for r in rows]
                 reps = [r[1] for r in rows]  # list[str] of smiles or inchi
 
-                # call your project-level function ONCE for the whole batch
+                # call compute_fingerprints ONCE for the whole batch
                 results = compute_fingerprints(
                     smiles=reps if which == "smiles" else None,
                     inchis=reps if which == "inchi" else None,
