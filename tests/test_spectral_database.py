@@ -60,7 +60,7 @@ def test_add_and_retrieve_single(tmp_db):
     sid = ids[0]
     assert isinstance(sid, int)
 
-    out = tmp_db.retrieve_spectra_by_ids([sid])
+    out = tmp_db.get_spectra_by_ids([sid])
     assert len(out) == 1
     sp_out = out[0]
 
@@ -81,7 +81,7 @@ def test_add_and_retrieve_multiple_order_preserved(tmp_db, spectra_small):
 
     # request in a permuted order; results should follow request order
     req = [ids[2], ids[0], ids[1]]
-    out = tmp_db.retrieve_spectra_by_ids(req)
+    out = tmp_db.get_spectra_by_ids(req)
     assert [sp.metadata["spec_id"] for sp in out] == req
 
     # spot-check one item’s content
@@ -89,11 +89,11 @@ def test_add_and_retrieve_multiple_order_preserved(tmp_db, spectra_small):
     assert s2.metadata["precursor_mz"] == pytest.approx(240.0)
 
 
-def test_retrieve_fragments_by_ids(tmp_db, spectra_small):
+def test_get_fragments_by_ids(tmp_db, spectra_small):
     ids = tmp_db.add_spectrum(spectra_small)
     req = [ids[1], ids[1], 9999999, ids[0]]  # includes duplicate + missing
     # Implementation skips missing IDs and preserves order for the present ones
-    frags = tmp_db.retrieve_fragments_by_ids(req)
+    frags = tmp_db.get_fragments_by_ids(req)
     # We expect two results (the duplicate is returned twice; missing is skipped)
     assert len(frags) == 3
     (mz_a, in_a), (mz_b, in_b), (mz_c, in_c) = frags
@@ -107,9 +107,9 @@ def test_retrieve_fragments_by_ids(tmp_db, spectra_small):
     assert mz_c.shape[0] == spectra_small[0].mz.shape[0]
 
 
-def test_retrieve_metadata_by_ids_df(tmp_db, spectra_small):
+def test_get_metadata_by_ids_df(tmp_db, spectra_small):
     ids = tmp_db.add_spectrum(spectra_small)
-    df = tmp_db.retrieve_metadata_by_ids([ids[2], ids[0]])
+    df = tmp_db.get_metadata_by_ids([ids[2], ids[0]])
 
     # Expected columns: spec_id + configured metadata fields
     expected_cols = ["spec_id"] + tmp_db.metadata_fields
@@ -141,9 +141,9 @@ def test_sql_query_simple(tmp_db, spectra_small):
 def test_missing_ids_handling(tmp_db, spectra_small):
     ids = tmp_db.add_spectrum(spectra_small)
     req = [999999, ids[1]]
-    out_spectra = tmp_db.retrieve_spectra_by_ids(req)
-    out_meta = tmp_db.retrieve_metadata_by_ids(req)
-    out_frags = tmp_db.retrieve_fragments_by_ids(req)
+    out_spectra = tmp_db.get_spectra_by_ids(req)
+    out_meta = tmp_db.get_metadata_by_ids(req)
+    out_frags = tmp_db.get_fragments_by_ids(req)
 
     # Implementation skips missing IDs but preserves order of the ones that exist
     assert [s.metadata["spec_id"] for s in out_spectra] == [ids[1]]

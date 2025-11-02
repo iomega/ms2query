@@ -145,7 +145,7 @@ class SpectralDatabase:
         rows = cur.execute("SELECT spec_id FROM spectra").fetchall()
         return [int(row["spec_id"]) for row in rows]
 
-    def retrieve_spectra_by_ids(self, specIDs: List[int]) -> List[Spectrum]:
+    def get_spectra_by_ids(self, specIDs: List[int]) -> List[Spectrum]:
         """Retrieve full Spectrum objects for given specIDs (order preserved, missing IDs skipped)."""
         rows = self._fetch_rows_by_ids(specIDs, cols="spec_id, mz_blob, intensity_blob, n_peaks, " + ", ".join(self.metadata_fields))
         by_id = {row["spec_id"]: row for row in rows}
@@ -163,7 +163,7 @@ class SpectralDatabase:
             result.append(Spectrum(mz=mz, intensities=inten, metadata=md))
         return result
 
-    def retrieve_fragments_by_ids(self, specIDs: List[int]) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def get_fragments_by_ids(self, specIDs: List[int]) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Retrieve (mz, intensity) arrays for given specIDs (order preserved, missing IDs skipped)."""
         rows = self._fetch_rows_by_ids(specIDs, cols="spec_id, mz_blob, intensity_blob, n_peaks")
         by_id = {row["spec_id"]: row for row in rows}
@@ -179,7 +179,7 @@ class SpectralDatabase:
             out.append((mz, inten))
         return out
 
-    def retrieve_metadata_by_ids(self, specIDs: List[int]) -> pd.DataFrame:
+    def get_metadata_by_ids(self, specIDs: List[int]) -> pd.DataFrame:
         """Retrieve metadata for given specIDs (order preserved)."""
         cols = ["spec_id"] + self.metadata_fields
         rows = self._fetch_rows_by_ids(specIDs, cols=", ".join(cols))
