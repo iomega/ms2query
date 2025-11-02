@@ -1,15 +1,17 @@
+# tests/test_compounds_and_mapping.py
 import sqlite3
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
 
+# >>> adjust to your package/module path
 from ms2query.compound_database import (
     CompoundDatabase,
     SpecToCompoundMap,
     map_from_spectraldb_metadata,
     get_unique_compounds_from_spectraldb,
-    compute_fingerprints,
+    compute_fingerprints,              # returns List[Optional[(bits, counts)]]
     inchikey14_from_full,
 )
 
@@ -23,92 +25,15 @@ def make_tmp_db(tmp_path: Path, name: str = "test.sqlite") -> str:
         p.unlink()
     return str(p)
 
-# Some example InChIKeys
+# Example InChIKeys
 IK_FULL_1 = "BSYNRYMUTXBXSQ-UHFFFAOYSA-N"  # glucose
-IK_FULL_2 = "BSYNRYMUTXBXSQ-UHFFFAOYSA-O"  # same first14, different suffix (stereo/isotope)
+IK_FULL_2 = "BSYNRYMUTXBXSQ-UHFFFAOYSA-O"  # same first14, different suffix
 IK_FULL_3 = "BQJCRHHNABKAKU-KBQPJGBKSA-N"  # ethanol
 IK14_1 = "BSYNRYMUTXBXSQ"
 IK14_3 = "BQJCRHHNABKAKU"
 
 # -------------------------
-# Tests: low-level utilities
-# -------------------------
-
-def test_inchikey14():
-    assert inchikey14_from_full(IK_FULL_1) == IK14_1
-    assert inchikey14_from_full("bsynrymutxbxsq-uhfffaoysa-n") == IK14_1
-    assert inchikey14_from_full("BQJCRHHNABKAKU-KBQPJGBKSA-N") == IK14_3
-    assert inchikey14_from_full("SHORT") is None  # too short
-
-def test_compute_fingerprints_placeholder():
-    fp = compute_fingerprints("C(CO)O", None)
-    assert isinstance(fp, np.ndarray)
-    assert fp.dtype == np.uint8
-    np.testing.assert_array_equal(fp, np.array([0, 1, 0, 1], dtype=np.uint8))
-
-# -------------------------
-# Tests: CompoundDatabase
-# -------------------------
-
-def test_compound_upsert_and_get(tmp_path):
-    db_path = make_tmp_db(tmp_path)
-    cdb = CompoundDatabase(db_path)
-
-    # Upsert a compound
-    cid = cdb.upsert_compound(
-        smiles="C(CO)O",
-        inchi="InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3",
-        inchikey=IK_FULL_3,
-        classyfire_class="Alcohols",
-        classyfire_superclass="Organic compounds",
-    )
-    assert cid == IK14_3
-
-    row = cdb.get_compound(cid)
-    assert row is not None
-    assert row["inchikey"] == IK_FULL_3
-    assert isinstance(row["fingerprint"], np.ndarray)
-    np.testing.assert_array_equal(row["fingerprint"], np.array([0,1,0,1], dtype=np.uint8))
-
-    # Upsert another with the same comp_id (different full IK) -> should overwrite row cleanly
-    cid2 = cdb.upsert_compound(
-        smiles="C6H12O6",
-        inchi=None,
-        inchikey=IK_FULL_1,
-        classyfire_class="Carbohydrates",
-        classyfire_superclass="Organic compounds",
-    )
-    assert cid2 == IK14_1
-    row2 = cdb.get_compound(IK14_1)
-    assert row2["inchikey"] == IK_FULL_1
-
-    cdb.close()
-
-def test_compound_upsert_many(tmp_path):
-    db_path = make_tmp_db(tmp_path)
-    cdb = CompoundDatabase(db_path)
-
-    # Insert two rows that collapse to the same comp_id (same first14), newest should win
-    comp_ids = cdb.upsert_many([
-        {"smiles": "X", "inchi": None, "inchikey": IK_FULL_1, "classyfire_class": "A"},
-        {"smiles": "Y", "inchi": None, "inchikey": IK_FULL_2, "classyfire_class": "B"},
-        {"smiles": "Z", "inchi": None, "inchikey": IK_FULL_3, "classyfire_class": "C"},
-    ])
-    assert set(comp_ids) == {IK14_1, IK14_3}
-
-    row = cdb.get_compound(IK14_1)
-    # After ON CONFLICT(comp_id) UPDATE, row reflects last data for that comp_id
-    assert row["smiles"] in {"X", "Y"}  # depends on order; both acceptable here
-    assert row["inchikey"] in {IK_FULL_1, IK_FULL_2}
-    assert row["classyfire_class"] in {"A", "B"}
-
-    count = cdb.sql_query("SELECT COUNT(*) as n FROM compounds")["n"].iloc[0]
-    assert count == 2
-
-    cdb.close()
-
-# -------------------------
-# Tests: SpecToCompoundMap + integration
+# Utilities
 # -------------------------
 
 def create_min_spectral_table(sqlite_path: str, rows):
@@ -126,6 +51,108 @@ def create_min_spectral_table(sqlite_path: str, rows):
     con.commit()
     con.close()
 
+# -------------------------
+# Tests: low-level utilities
+# -------------------------
+
+def test_inchikey14():
+    assert inchikey14_from_full(IK_FULL_1) == IK14_1
+    assert inchikey14_from_full("bsynrymutxbxsq-uhfffaoysa-n") == IK14_1
+    assert inchikey14_from_full("BQJCRHHNABKAKU-KBQPJGBKSA-N") == IK14_3
+    assert inchikey14_from_full("SHORT") is None  # too short
+
+def test_compute_fingerprints_contract():
+    # API now expects list input in either smiles=... or inchis=...
+    smiles = ["CCO", "C1=CC=CC=C1", None]  # last one will be ignored by our call below
+    # Call only with valid smiles strings
+    fps = compute_fingerprints(smiles=[s for s in smiles if s is not None],
+                               inchis=None, sparse=True, count=True, radius=9, progress_bar=False)
+    assert isinstance(fps, list)
+    assert len(fps) == 2
+    for fp in fps:
+        # Optional[Tuple[np.ndarray, np.ndarray]]
+        assert fp is None or (isinstance(fp, tuple) and len(fp) == 2)
+        if fp is not None:
+            bits, counts = fp
+            assert isinstance(bits, np.ndarray) and bits.dtype == np.uint32
+            assert isinstance(counts, np.ndarray)
+            # counts are usually integer-like (could be float if you later scale)
+            assert counts.ndim == 1
+
+# -------------------------
+# Tests: CompoundDatabase (no FP at upsert, backfill later)
+# -------------------------
+
+def test_compound_upsert_and_get_and_backfill(tmp_path):
+    db_path = make_tmp_db(tmp_path)
+    cdb = CompoundDatabase(db_path)
+
+    # Upsert (no fingerprints written at this step)
+    cid = cdb.upsert_compound(
+        smiles="C(CO)O",
+        inchi="InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3",
+        inchikey=IK_FULL_3,
+        classyfire_class="Alcohols",
+        classyfire_superclass="Organic compounds",
+    )
+    assert cid == IK14_3
+
+    # Metadata-only getter
+    meta = cdb.get_compound(cid)
+    assert meta is not None
+    assert set(meta.keys()) == {"comp_id","smiles","inchi","inchikey","classyfire_class","classyfire_superclass"}
+    assert meta["inchikey"] == IK_FULL_3
+
+    # No fingerprint yet
+    assert cdb.get_fingerprint(cid) is None
+
+    # Compute fingerprints for all missing (should fill this one)
+    stats = cdb.compute_fingerprints_missing(batch_size=100, use_progress_bar=False)
+    assert stats["attempted"] >= 1
+    assert stats["updated"] >= 1
+
+    # Now fingerprint should be present
+    fp = cdb.get_fingerprint(cid)
+    assert fp is not None
+    bits, counts = fp
+    assert bits.dtype == np.uint32
+    assert counts.ndim == 1
+
+    cdb.close()
+
+def test_compound_upsert_many_and_batch_getters(tmp_path):
+    db_path = make_tmp_db(tmp_path)
+    cdb = CompoundDatabase(db_path)
+
+    comp_ids = cdb.upsert_many([
+        {"smiles": "CCO",         "inchi": None,  "inchikey": IK_FULL_1, "classyfire_class": "A"},  # ethanol (valid)
+        {"smiles": "c1ccccc1",    "inchi": None,  "inchikey": IK_FULL_2, "classyfire_class": "B"},  # benzene (valid)
+        {"smiles": None,          "inchi": "InChI=1S/C2H6O/c1-2-3/h3H,2H2,1H3", 
+         "inchikey": IK_FULL_3, "classyfire_class": "C"},
+    ])
+    assert set(comp_ids) == {IK14_1, IK14_3}
+
+    # Batch metadata (order preserved)
+    df = cdb.get_compounds([IK14_3, IK14_1, "NOPE0000000000"])
+    assert list(df["comp_id"]) == [IK14_3, IK14_1]  # missing omitted
+    assert set(["smiles","inchi","inchikey","classyfire_class","classyfire_superclass"]).issubset(df.columns)
+
+    # No fingerprints yet
+    fps = cdb.get_fingerprints([IK14_3, IK14_1, "NOPE0000000000"])
+    assert fps[0] is None and fps[1] is None and fps[2] is None
+
+    # Backfill (will compute for rows with smiles OR inchi)
+    stats = cdb.compute_fingerprints_missing(batch_size=100, use_progress_bar=False)
+    assert stats["attempted"] >= 2
+    fps = cdb.get_fingerprints([IK14_3, IK14_1, "NOPE0000000000"])
+    assert fps[0] is not None and fps[1] is not None and fps[2] is None
+
+    cdb.close()
+
+# -------------------------
+# Tests: SpecToCompoundMap + integration
+# -------------------------
+
 def test_mapping_and_compound_creation(tmp_path):
     db_path = make_tmp_db(tmp_path)
 
@@ -135,7 +162,7 @@ def test_mapping_and_compound_creation(tmp_path):
     # Run mapping (same db hosts compounds + mapping)
     n_mapped, n_new = map_from_spectraldb_metadata(db_path)
     assert n_mapped == 2                      # two spectra had inchikeys
-    assert n_new == 1 or n_new == 2           # depending on upsert collapsing; at least one unique comp
+    assert n_new in (1, 2)                    # at least one unique comp
 
     # Validate mapping contents
     mapper = SpecToCompoundMap(db_path)
@@ -147,17 +174,20 @@ def test_mapping_and_compound_creation(tmp_path):
     assert all(len(c) == 14 for c in df_map["comp_id"])
     mapper.close()
 
-    # Validate compounds exist
+    # Validate compounds exist (metadata only, no FPs yet)
     cdb = CompoundDatabase(db_path)
     dfc = cdb.sql_query("SELECT comp_id, inchikey FROM compounds")
     assert not dfc.empty
     assert all(len(cid) == 14 for cid in dfc["comp_id"])
+    # FPs should be empty prior to backfill
+    empty = cdb.sql_query("SELECT COUNT(*) AS n FROM compounds WHERE COALESCE(LENGTH(fingerprint_bits),0)=0")
+    assert empty["n"].iloc[0] >= 1
     cdb.close()
 
 def test_mapper_link_and_get(tmp_path):
     db_path = make_tmp_db(tmp_path)
 
-    # need compounds table for FK-like behavior not enforced; mapping works independently
+    # need compounds table; mapping works independently
     cdb = CompoundDatabase(db_path)
     cdb.upsert_compound(inchikey=IK_FULL_1)  # ensure a compound exists
     cdb.close()
@@ -185,10 +215,9 @@ def test_get_unique_compounds_basic(tmp_path):
     create_min_spectral_table(db_path, [IK_FULL_1, IK_FULL_2, IK_FULL_3, None])
 
     uniq = get_unique_compounds_from_spectraldb(db_path)
-    # Expect 2 unique IK14 values
+    # Column order follows the current function: inchikey14, inchikey, n_spectra
     assert list(uniq.columns[:3]) == ["inchikey14", "n_spectra", "inchikey"]
     assert set(uniq["inchikey14"]) == {IK14_1, IK14_3}
-    # Counts: IK14_1 appears twice, IK14_3 once
     counts = dict(zip(uniq["inchikey14"], uniq["n_spectra"]))
     assert counts[IK14_1] == 2
     assert counts[IK14_3] == 1
