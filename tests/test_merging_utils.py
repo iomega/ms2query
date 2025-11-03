@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from matchms import Spectrum
 
 # Adjust if your module name is different:
-from ms2query.spectral_processing.spectra_merging import (
+from ms2query.spectral_processing.merging_utils import (
     _normalize_spectrum_sum,
     _merge_cluster_to_consensus,
     get_merged_spectra,
