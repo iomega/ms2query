@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from matchms import Spectrum
 
-from ms2query.spectral_database import SpectralDatabase
+from ms2query.database.spectral_database import SpectralDatabase
 
 
 @pytest.fixture
@@ -129,7 +129,7 @@ def test_get_metadata_by_ids_df(tmp_db, spectra_small):
 
 
 def test_sql_query_simple(tmp_db, spectra_small):
-    ids = tmp_db.add_spectrum(spectra_small)
+    _ = tmp_db.add_spectrum(spectra_small)
     df = tmp_db.sql_query("SELECT COUNT(*) AS n FROM spectra")
     assert df.iloc[0]["n"] == 3
     # Query some metadata back

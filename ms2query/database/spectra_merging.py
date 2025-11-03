@@ -1,7 +1,6 @@
 from typing import List, Dict, Tuple, Optional
 import sqlite3
 import json
-import io
 from collections import Counter
 import numpy as np
 from matchms import Spectrum

@@ -92,7 +92,7 @@ def test_dense_count_weights_requires_count_true():
 
 def test_dense_weights_shape_validation():
     fpgen = FakeFPGen(dense_count_fp=[1, 1, 1, 1])
-    gen = FingerprintGenerator(fpgen)
+    _ = FingerprintGenerator(fpgen)
     # wrong length
     # TODO: check/fix:
     # with pytest.raises(ValueError):
