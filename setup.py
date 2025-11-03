@@ -27,10 +27,10 @@ setup(
     license="Apache Software License 2.0",
     zip_safe=False,
     test_suite="tests",
-    python_requires='>=3.9',
+    python_requires='>=3.9, <3.13',
     install_requires=[
         "matchms>=0.24.0,<=0.26.4",
-        "numpy",
+        "numpy<2.0", # Once fixed the python requied <3.13 can probably also be removed.
         "torch<2.6",
         "spec2vec>=0.6.0",
         "h5py",
