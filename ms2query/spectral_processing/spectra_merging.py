@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
 from matchms import Spectrum
 
 
@@ -167,7 +169,7 @@ def _merge_cluster_to_consensus(cluster_spectra, mz_tol=0.01, min_frac=0.25):
     return Spectrum(mz=consensus_mz, intensities=consensus_int, metadata=md)
 
 
-# --------------------- Main function ---------------------
+# --------------------- Main functions ---------------------
 def get_merged_spectra(spectra, clusters, mz_tol=0.01, min_frac=0.25):
     """Given a list of spectra and clusters (lists of indices into spectra),
     return a list of merged consensus spectra.
@@ -193,3 +195,34 @@ def get_merged_spectra(spectra, clusters, mz_tol=0.01, min_frac=0.25):
             # singletons: normalize to sum=1 for consistency
             spectra_new.append(_normalize_spectrum_sum(spectra[cluster[0]]))
     return spectra_new
+
+
+def cluster_block(spectra, sim_score, threshold=0.95):
+    """Find clusters of highly similar spectra (according to Cosine).
+    Hint: Use lower intensity_power to emphasize smaller peaks.
+
+    Parameters
+    ----------
+    spectra:
+        List of matchms Spectrum objects.
+    sim_score:
+        Matchms scoring method, e.g. CosineGreedy()
+    threshold: float
+        Spectra with similarity >= threshold will be merged.
+    """
+    # similarity
+    sim = sim_score.matrix(spectra, spectra, is_symmetric=True)
+    S = sim["score"]
+
+    # Graph by threshold on upper triangle
+    iu = np.triu_indices_from(S, 1)
+    edges = np.where(S[iu] >= threshold)[0]
+    rows = iu[0][edges]; cols = iu[1][edges]
+    n = S.shape[0]
+    G = csr_matrix((np.ones_like(rows), (rows, cols)), shape=(n, n))
+    G = G + G.T + csr_matrix(np.eye(n))
+
+    # Connected components = clusters
+    n_comp, labels = connected_components(G, directed=False)
+    clusters = [np.where(labels == k)[0] for k in range(n_comp)]
+    return clusters, S
