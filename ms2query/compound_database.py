@@ -574,6 +574,11 @@ class SpecToCompoundMap:
         rows = self._conn.execute("SELECT spec_id FROM spec_to_comp WHERE comp_id = ?", (comp_id,)).fetchall()
         return [r[0] for r in rows]
 
+    def get_all_mappings(self) -> pd.DataFrame:
+        """Return all spec_id <-> comp_id mappings as a DataFrame."""
+        rows = self._conn.execute("SELECT spec_id, comp_id FROM spec_to_comp").fetchall()
+        return pd.DataFrame(rows, columns=["spec_id", "comp_id"])
+
 
 # ==================================================
 # Integrations with SpectralDatabase
