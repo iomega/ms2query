@@ -10,6 +10,8 @@ import faiss
 
 from .spectra_merging import ensure_merged_tables  # schema with precursor_mz + metadata fields
 from .database_utils import blob_to_ndarray, ndarray_to_blob
+from ms2query.spectral_processing import normalize_spectrum_sum
+from ms2query.spectral_processing import normalize_spectrum_sum
 
 
 @dataclass
@@ -64,6 +66,7 @@ class ANNIndex:
         """Lazy-load MS2DeepScore model."""
         if self._model is None:
             self._model = load_model(self.model_path)
+            self._model.eval()
         return self._model
 
     # ---------- step 2a: embeddings ----------
@@ -289,6 +292,9 @@ class ANNIndex:
         if isinstance(queries, Spectrum):
             queries = [queries]
 
+        # Assure same processing as for index building (here only minimal first variant: normalize to sum=1)
+        queries = [normalize_spectrum_sum(q) for q in queries]
+
         model = self.load_model()
         Q = compute_embedding_array(model, queries).astype(np.float32, copy=False)
 
@@ -311,7 +317,9 @@ class ANNIndex:
                 if mid == -1:
                     continue
                 dist = float(distances[qi, rk])
-                score = dist if self.faiss_metric.lower() == "ip" else -dist
+                score = dist if self.faiss_metric.lower() == "ip" else 1 - dist
+                dist = 1 - dist if self.faiss_metric.lower() == "ip" else dist
+                
                 item: Dict[str, Any] = {"rank": rk+1, "merged_id": mid, "score": score, "distance": dist}
 
                 if include_metadata or include_peaks or include_sources:
@@ -363,3 +371,47 @@ class ANNIndex:
             df = df[cols_front + cols_rest]
             dfs.append(df)
         return dfs
+
+    def get_embeddings(
+        self,
+        ids: Optional[List[int]] = None,
+        *,
+        normalized: Optional[bool] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Fetch embeddings by merged_id (or all if ids=None).
+        Returns (ids_array[int64], embeddings[float32 of shape (n, d)]).
+        If normalized is True and faiss_metric=='ip', L2-normalize before returning.
+        """
+        cur = self.conn.cursor()
+        if ids is None:
+            cur.execute("SELECT merged_id, embedding FROM merged_embeddings ORDER BY merged_id ASC;")
+        else:
+            ph = ",".join("?" for _ in ids)
+            cur.execute(f"SELECT merged_id, embedding FROM merged_embeddings WHERE merged_id IN ({ph}) ORDER BY merged_id ASC;", ids)
+
+        mids = []
+        vecs = []
+        for mid, blob in cur:
+            mids.append(int(mid))
+            vecs.append(blob_to_ndarray(blob).astype(np.float32, copy=False))
+        if not vecs:
+            return np.empty((0,), dtype=np.int64), np.empty((0, 0), dtype=np.float32)
+
+        X = np.vstack(vecs).astype(np.float32, copy=False)
+        if normalized is None:
+            normalized = (self.faiss_metric.lower() == "ip" and self.normalize_embeddings)
+        if normalized:
+            faiss.normalize_L2(X)
+        return np.asarray(mids, dtype=np.int64), X
+
+    def get_embedding_for_id(
+        self,
+        merged_id: int,
+        *,
+        normalized: Optional[bool] = None,
+    ) -> Optional[np.ndarray]:
+        ids, X = self.get_embeddings([merged_id], normalized=normalized)
+        if X.shape[0] == 0:
+            return None
+        return X[0]
