@@ -5,8 +5,7 @@ import json
 import numpy as np
 import pandas as pd
 from matchms import Spectrum
-from ms2deepscore.models import load_model
-from ms2deepscore import compute_embedding_array
+from ms2deepscore.models import compute_embedding_array, load_model
 import faiss
 
 from .spectra_merging import ensure_merged_tables  # schema with precursor_mz + metadata fields

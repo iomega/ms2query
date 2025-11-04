@@ -324,6 +324,7 @@ class CompoundDatabase:
     # ---------- batch getters ----------
 
     def get_compounds(self, comp_ids: List[str]) -> pd.DataFrame:
+        # TODO: Allow returning duplicates? And handle arrays.
         """
         Return metadata for many compounds (no fingerprint blobs), order preserved as in comp_ids.
         Missing comp_ids are omitted from the result.
@@ -349,12 +350,16 @@ class CompoundDatabase:
         return df
 
     def get_fingerprints(self, comp_ids: List[str]) -> List[Optional[Tuple[np.ndarray, np.ndarray]]]:
+        # TODO: Allow returning duplicates? And handle arrays.
         """
         Return a list of fingerprints aligned with comp_ids.
         Each item is (bits, counts) or None if not found/empty.
         """
         if not comp_ids:
             return []
+        
+        if isinstance(comp_ids, np.ndarray):
+            comp_ids = [x for x in comp_ids]
 
         placeholders = ",".join("?" for _ in comp_ids)
         rows = self._conn.execute(f"""
