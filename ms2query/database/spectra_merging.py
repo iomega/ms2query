@@ -5,6 +5,7 @@ from collections import Counter
 import numpy as np
 from matchms import Spectrum
 from matchms.similarity import CosineGreedy
+from tqdm import tqdm
 
 from ms2query.spectral_processing import cluster_block, get_merged_spectra
 from ms2query.spectral_processing.merging_utils import METADATA_FIELDS_FROM_FIRST, METADATA_FIELDS_SUM
@@ -193,7 +194,7 @@ def cluster_and_merge_to_sqlite(
     inserted = 0
     processed = 0
 
-    for comp_id in comp_ids:
+    for comp_id in tqdm(comp_ids, desc="Merging spectra per compound..."):
         if skip_if_comp_done:
             cur.execute("SELECT 1 FROM merged_spectra WHERE comp_id=? LIMIT 1;", (comp_id,))
             if cur.fetchone():
