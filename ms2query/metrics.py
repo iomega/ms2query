@@ -482,6 +482,6 @@ def compute_cosine_greedy(cosine_obj, spectra):
     scores_data = np.array(scores, dtype=cosine_obj.score_datatype)
     # TODO: make StackedSparseArray the default and add fixed function to output different formats (with code below)
 
-    scores_array = np.zeros(shape=(n_rows, n_cols), dtype=self.score_datatype)
+    scores_array = np.zeros(shape=(n_rows, n_cols), dtype=cosine_obj.score_datatype)
     scores_array[idx_row, idx_col] = scores_data.reshape(-1)
     return scores_array
