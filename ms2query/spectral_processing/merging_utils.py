@@ -13,13 +13,14 @@ METADATA_FIELDS_SUM = ["instrument_type", "adduct", "collision_energy"]
 
 
 # --------------------- Helper functions ---------------------
-def _normalize_spectrum_sum(s):
-    """Return a *copy* of s with intensities normalized to sum=1 (if possible)."""
+def normalize_spectrum_sum(s):
+    """Return a spectrum with intensities normalized to sum=1 (if possible)."""
     mz = np.asarray(s.peaks.mz, dtype=float)
     intens = np.asarray(s.peaks.intensities, dtype=float)
     tot = intens.sum()
     if tot > 0:
         intens = intens / tot
+
     # Build a shallow copy with normalized peaks but same metadata
     md = dict(s.metadata) if hasattr(s, "metadata") else {}
     return Spectrum(mz=mz, intensities=intens, metadata=md)
@@ -39,10 +40,10 @@ def _merge_cluster_to_consensus(cluster_spectra, mz_tol=0.01, min_frac=0.25):
     n = len(cluster_spectra)
     if n == 1:
         # Shouldn’t happen here, but keep it safe.
-        return _normalize_spectrum_sum(cluster_spectra[0])
+        return normalize_spectrum_sum(cluster_spectra[0])
 
     # Normalize each spectrum (sum=1)
-    specs = [_normalize_spectrum_sum(s) for s in cluster_spectra]
+    specs = [normalize_spectrum_sum(s) for s in cluster_spectra]
 
     # Collect all peaks with a spectrum index
     all_mz = []
@@ -195,7 +196,7 @@ def get_merged_spectra(spectra, clusters, mz_tol=0.01, min_frac=0.25):
             spectra_new.append(merged)
         else:
             # singletons: normalize to sum=1 for consistency
-            spectra_new.append(_normalize_spectrum_sum(spectra[cluster[0]]))
+            spectra_new.append(normalize_spectrum_sum(spectra[cluster[0]]))
     return spectra_new
 
 

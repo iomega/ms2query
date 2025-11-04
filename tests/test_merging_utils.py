@@ -6,7 +6,7 @@ from matchms import Spectrum
 
 # Adjust if your module name is different:
 from ms2query.spectral_processing.merging_utils import (
-    _normalize_spectrum_sum,
+    normalize_spectrum_sum,
     _merge_cluster_to_consensus,
     get_merged_spectra,
 )
@@ -23,7 +23,7 @@ def spec(mz, intensities, **metadata):
 
 def test_normalize_spectrum_sum():
     s = spec([100, 150], [10, 5])
-    sn = _normalize_spectrum_sum(s)
+    sn = normalize_spectrum_sum(s)
     assert pytest.approx(sn.peaks.intensities.sum()) == 1.0
     # Same mz layout
     assert_allclose(sn.peaks.mz, [100, 150])
