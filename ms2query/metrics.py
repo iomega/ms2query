@@ -459,3 +459,29 @@ def generalized_tanimoto_similarity_matrix_weighted(references: np.ndarray, quer
         for j in range(size2):
             scores[i, j] = generalized_tanimoto_similarity_weighted(references[i, :], queries[j, :], weights)
     return scores
+
+
+def compute_cosine_greedy(cosine_obj, spectra):
+    # This is only a replacement of the matchme method until that will allow disabling tqdm
+    n_rows = n_cols = len(spectra)
+
+    idx_row = []
+    idx_col = []
+    scores = []
+    # Wrap the outer loop with tqdm to track progress
+    for i_ref, reference in enumerate(spectra[:n_rows]):
+        for i_query, query in enumerate(spectra[i_ref:n_cols], start=i_ref):
+            score = cosine_obj.pair(reference, query)
+            if cosine_obj.keep_score(score):
+                idx_row += [i_ref, i_query]
+                idx_col += [i_query, i_ref]
+                scores += [score, score]
+
+    idx_row = np.array(idx_row, dtype=np.int_)
+    idx_col = np.array(idx_col, dtype=np.int_)
+    scores_data = np.array(scores, dtype=cosine_obj.score_datatype)
+    # TODO: make StackedSparseArray the default and add fixed function to output different formats (with code below)
+
+    scores_array = np.zeros(shape=(n_rows, n_cols), dtype=self.score_datatype)
+    scores_array[idx_row, idx_col] = scores_data.reshape(-1)
+    return scores_array

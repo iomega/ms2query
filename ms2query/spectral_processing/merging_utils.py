@@ -3,6 +3,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from matchms import Spectrum
 
+from ms2query.metrics import compute_cosine_greedy
+
 
 METADATA_FIELDS_FROM_FIRST = [
     "ionmode", "smiles", "inchikey", "inchi", "name", "precursor_mz",
@@ -211,7 +213,8 @@ def cluster_block(spectra, sim_score, threshold=0.95):
         Spectra with similarity >= threshold will be merged.
     """
     # similarity
-    sim = sim_score.matrix(spectra, spectra, is_symmetric=True)
+    #sim = sim_score.matrix(spectra, spectra, is_symmetric=True)
+    sim = compute_cosine_greedy(sim_score, spectra)
     S = sim["score"]
 
     # Graph by threshold on upper triangle
