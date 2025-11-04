@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 # >>> adjust to your package/module path
-from ms2query.compound_database import (
+from ms2query.database.compound_database import (
     CompoundDatabase,
     SpecToCompoundMap,
     map_from_spectraldb_metadata,
