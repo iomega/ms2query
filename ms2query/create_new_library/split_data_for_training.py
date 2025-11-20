@@ -71,7 +71,11 @@ def split_spectra_on_inchikeys(spectra, validation_fraction):
     random.shuffle(unique_inchikeys)
     nr_of_inchikeys = len(unique_inchikeys)//validation_fraction
     validation_inchikeys = unique_inchikeys[-nr_of_inchikeys:]
-
+    if len(validation_inchikeys) == 0:
+        raise ValueError(f"Too little spectra are used for training. "
+                         f"{len(spectra)} spectra are provided, with {len(unique_inchikeys)} unique inchikeys. "
+                         f"The minimum number of unique_inchikeys needed is {validation_fraction}, "
+                         f"since there won't be any validation spectra selected otherwise")
     # Select spectra belonging to the selected inchikeys
     validation_spectra, training_spectra = select_spectra_belonging_to_inchikey(spectra, validation_inchikeys)
     return training_spectra, validation_spectra
